@@ -52,7 +52,16 @@ for i in range(n):
             "sed -i.bak 's/SIMULATION_STEPS/'" +
             str(simulation_steps) +
             "'/g' "+protein_name+".in")
-    os.system("lmp_serial < "+protein_name+".in")
+    if(platform.system() == 'Darwin'):
+        os.system("lmp_serial < "+protein_name+".in")
+    elif(platform.system() == 'Linux'):
+        os.system(  # replace RANDOM with a radnom number
+            "sed 's/NUMBER/'" +
+            str(i) +
+            "'/g' " "~/opt/run.slurm > run.slurm_"+str(i))
+        os.system("sbatch run.slurm_"+str(i))
+    else:
+        print("system unkown")
     os.chdir("../..")
 
 # print("hello world")
