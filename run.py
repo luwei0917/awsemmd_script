@@ -5,6 +5,7 @@ import random
 import time
 from random import seed, randint
 import argparse
+import platform
 
 parser = argparse.ArgumentParser(
         description="This is a python3 script to\
