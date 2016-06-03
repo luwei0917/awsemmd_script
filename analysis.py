@@ -1,4 +1,4 @@
-#!/Users/weilu/anaconda/envs/3.5/bin/python3
+#!/usr/bin/env python3
 import os
 import argparse
 import sys
@@ -11,7 +11,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument("template", help="the name of template file")
 parser.add_argument("-n", "--number", type=int, default=20,
                     help="Number of simulation run")
-
+parser.add_argument("-m", "--movie", help="generate the movie",
+                    action="store_true")
 args = parser.parse_args()
 
 list_of_max_q = []
@@ -23,15 +24,20 @@ os.system("mkdir -p results")
 for i in range(n):
     # analysis
     os.system("mkdir -p analysis/"+str(i))
-    sys.stdout = open("analysis/"+str(i)+"/chosen.txt", "w")
-
     record_time = 0
-    os.chdir("simulation/"+str(i))
+    # move necessary file into analysis folder
+    os.chdir("analysis/"+str(i))
+    sys.stdout = open("chosen.txt", "w")
+    os.system("mv ../../simulation/"+str(i)+"/dump.lammpstrj .")
+    os.system("mv ../../simulation/"+str(i)+"/wham.dat .")
+    os.system("mv ../../simulation/"+str(i)+"/energy.dat .")
+    if(args.movie):
+        os.system(
+            "python ~/opt/script/BuildAllAtomsFromLammps.py \
+            dump.lammpstrj movie")
     os.system(
-        "python ~/opt/script/BuildAllAtomsFromLammps.py dump.lammpstrj \
-        ../../analysis/"+str(i)+"/movie")
-    os.system("python ~/opt/script/CalcRMSD.py "+protein_name+" dump.lammpstrj \
-        ../../analysis/"+str(i)+"/rmsd")
+        "python ~/opt/script/CalcRMSD.py "+protein_name+" \
+        dump.lammpstrj rmsd")
 
     with open('wham.dat') as input_data:
         # Skips text before the beginning of the interesting block:
@@ -62,9 +68,6 @@ for i in range(n):
                 break
             print(line.strip())
     sys.stdout.close()
-    os.system("cp wham.dat ../../analysis/"+str(i))
-    os.chdir("../..")
-    os.chdir("analysis/"+str(i))
     os.system(
         "python ~/opt/script/BuildAllAtomsFromLammps.py chosen.txt chosen")
     # os.system("cp ~/opt/plot_scripts/energy.plt .")
