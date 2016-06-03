@@ -33,10 +33,10 @@ for i in range(n):
     os.system("mv ../../simulation/"+str(i)+"/energy.dat .")
     if(args.movie):
         os.system(
-            "python ~/opt/script/BuildAllAtomsFromLammps.py \
+            "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
             dump.lammpstrj movie")
     os.system(
-        "python ~/opt/script/CalcRMSD.py "+protein_name+" \
+        "python2 ~/opt/script/CalcRMSD.py "+protein_name+" \
         dump.lammpstrj rmsd")
 
     with open('wham.dat') as input_data:
@@ -69,7 +69,7 @@ for i in range(n):
             print(line.strip())
     sys.stdout.close()
     os.system(
-        "python ~/opt/script/BuildAllAtomsFromLammps.py chosen.txt chosen")
+        "python2 ~/opt/script/BuildAllAtomsFromLammps.py chosen.txt chosen")
     # os.system("cp ~/opt/plot_scripts/energy.plt .")
     # os.system(  # replace PROTEIN with pdb name
     #         "sed -i.bak 's/NUMBER/'" +
