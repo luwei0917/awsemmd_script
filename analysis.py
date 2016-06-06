@@ -41,8 +41,9 @@ for i in range(n):
     # os.system(
     #     "python2 ~/opt/script/CalcRMSD.py "+protein_name+" \
     #     dump.lammpstrj rmsd")
-    subprocess.Popen("python2 ~/opt/script/CalcRMSD.py "+protein_name+" \
-        dump.lammpstrj rmsd", env=my_env)
+    subprocess.Popen(
+        "python2 ~/opt/script/CalcRMSD.py "+protein_name+" dump.lammpstrj rmsd",
+        env=my_env)
     with open('wham.dat') as input_data:
         # Skips text before the beginning of the interesting block:
         record_time = 0
