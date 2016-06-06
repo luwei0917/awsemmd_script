@@ -5,7 +5,7 @@ import sys
 from time import sleep
 import subprocess
 
-my_env = os.environ.copy()
+os.environ["PATH"] = "/home/wl45/python/bin:" + my_env["PATH"]
 
 parser = argparse.ArgumentParser(
         description="This is a python3 script to\
