@@ -5,7 +5,9 @@ import sys
 from time import sleep
 import subprocess
 
-os.environ["PATH"] = "/home/wl45/python/bin:" + my_env["PATH"]
+mypath = os.environ["PATH"]
+os.environ["PATH"] = "/home/wl45/python/bin:" + mypath
+my_env = os.environ.copy()
 
 parser = argparse.ArgumentParser(
         description="This is a python3 script to\
@@ -38,12 +40,12 @@ for i in range(n):
         os.system(
             "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
             dump.lammpstrj movie")
-    # os.system(
-    #     "python2 ~/opt/script/CalcRMSD.py "+protein_name+" \
-    #     dump.lammpstrj rmsd")
-    subprocess.Popen(
-        "python2 ~/opt/script/CalcRMSD.py "+protein_name+" dump.lammpstrj rmsd",
-        env=my_env)
+    os.system(
+        "python2 ~/opt/script/CalcRMSD.py "+protein_name+" \
+        dump.lammpstrj rmsd")
+    # subprocess.Popen(
+    #     "python2 ~/opt/script/CalcRMSD.py "+protein_name+" dump.lammpstrj rmsd",
+    #     env=my_env)
     with open('wham.dat') as input_data:
         # Skips text before the beginning of the interesting block:
         record_time = 0
