@@ -6,9 +6,8 @@ from time import sleep
 import subprocess
 
 mypath = os.environ["PATH"]
-os.environ["PATH"] = "/home/wl45/python/bin:" + mypath
+os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
-
 
 parser = argparse.ArgumentParser(
         description="This is a python3 script to\
@@ -89,8 +88,8 @@ for i in range(n):
             "sed -i.bak 's/NUMBER/'" +
             str(i) +
             "'/g' q_value.plt")
-    # os.system("gnuplot q_value.plt")
-    subprocess.Popen("gnuplot q_value.plt", env=my_env)
+    os.system("gnuplot q_value.plt")
+    # subprocess.Popen("gnuplot q_value.plt", env=my_env)
     os.system("cp ~/opt/plot_scripts/show.tcl .")
     os.system(  # replace PROTEIN with pdb name
             "sed -i.bak 's/PROTEIN/'" +
