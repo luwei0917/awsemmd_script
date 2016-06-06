@@ -9,6 +9,7 @@ mypath = os.environ["PATH"]
 os.environ["PATH"] = "/home/wl45/python/bin:" + mypath
 my_env = os.environ.copy()
 
+
 parser = argparse.ArgumentParser(
         description="This is a python3 script to\
         automatically analysis the simulation")
