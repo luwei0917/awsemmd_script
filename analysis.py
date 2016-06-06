@@ -3,6 +3,9 @@ import os
 import argparse
 import sys
 from time import sleep
+import subprocess
+
+my_env = os.environ.copy()
 
 parser = argparse.ArgumentParser(
         description="This is a python3 script to\
@@ -35,10 +38,11 @@ for i in range(n):
         os.system(
             "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
             dump.lammpstrj movie")
-    os.system(
-        "python2 ~/opt/script/CalcRMSD.py "+protein_name+" \
-        dump.lammpstrj rmsd")
-
+    # os.system(
+    #     "python2 ~/opt/script/CalcRMSD.py "+protein_name+" \
+    #     dump.lammpstrj rmsd")
+    subprocess.Popen("python2 ~/opt/script/CalcRMSD.py "+protein_name+" \
+        dump.lammpstrj rmsd", env=my_env)
     with open('wham.dat') as input_data:
         # Skips text before the beginning of the interesting block:
         record_time = 0
@@ -81,7 +85,8 @@ for i in range(n):
             "sed -i.bak 's/NUMBER/'" +
             str(i) +
             "'/g' q_value.plt")
-    os.system("gnuplot q_value.plt")
+    # os.system("gnuplot q_value.plt")
+    subprocess.Popen("gnuplot q_value.plt", env=my_env)
     os.system("cp ~/opt/plot_scripts/show.tcl .")
     os.system(  # replace PROTEIN with pdb name
             "sed -i.bak 's/PROTEIN/'" +
