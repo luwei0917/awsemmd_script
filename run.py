@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/Users/weilu/anaconda/envs/3.5/bin/python3
 import os
 import sys
 import random
@@ -6,6 +6,7 @@ import time
 from random import seed, randint
 import argparse
 import platform
+from datetime import datetime
 
 parser = argparse.ArgumentParser(
         description="This is a python3 script to\
@@ -36,7 +37,7 @@ else:  # -1 means a test run with 10000 steps
     warm_up_steps = 10**3
     n = 1  # also set n to be 1
 for i in range(n):
-    seed(time.clock())
+    seed(datetime.now())
 # simulation set up
     os.system("mkdir -p simulation/"+str(i))
     os.system("cp -r "+args.template+"* simulation/"+str(i))
