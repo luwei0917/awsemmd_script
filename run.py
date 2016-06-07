@@ -1,4 +1,4 @@
-#!/Users/weilu/anaconda/envs/3.5/bin/python3
+#!/usr/bin/env python3
 import os
 import sys
 import random
