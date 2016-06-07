@@ -79,17 +79,21 @@ for i in range(n):
             "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
             chosen.txt chosen")
     # os.system("cp ~/opt/plot_scripts/energy.plt .")
-    # os.system(  # replace PROTEIN with pdb name
-    #         "sed -i.bak 's/NUMBER/'" +
-    #         str(i) +
-    #         "'/g' energy.plt")
-    # os.system("gnuplot energy.plt")
-    os.system("cp ~/opt/plot_scripts/q_value.plt .")
+    os.system("cp ~/opt/plot_scripts/*.plt .")
+
+    os.system(  # replace PROTEIN with pdb name
+            "sed -i.bak 's/NUMBER/'" +
+            str(i) +
+            "'/g' energy.plt")
+    os.system("gnuplot energy.plt")
+
     os.system(  # replace PROTEIN with pdb name
             "sed -i.bak 's/NUMBER/'" +
             str(i) +
             "'/g' q_value.plt")
     os.system("gnuplot q_value.plt")
+
+    os.system("gnuplot detail_energy.plt")
     # subprocess.Popen("gnuplot q_value.plt", env=my_env)
     os.system("cp ~/opt/plot_scripts/show.tcl .")
     os.system(  # replace PROTEIN with pdb name
@@ -97,7 +101,8 @@ for i in range(n):
             protein_name +
             "'/g' show.tcl")
     os.chdir("../..")
-    os.system("cp "+protein_name+"/*.pdb analysis/"+str(i))
+    if not args.plotOnly:
+        os.system("cp "+protein_name+"/*.pdb analysis/"+str(i))
 
 if not args.plotOnly:
     sys.stdout = open("analysis/list_of_max_q", "w")
