@@ -19,7 +19,7 @@ parser.add_argument("-n", "--number", type=int, default=20,
 parser.add_argument("-m", "--movie", help="generate the movie",
                     action="store_true")
 parser.add_argument("-p", "--plotOnly", help="only generate the plot",
-                    action="store_false")
+                    action="store_true")
 args = parser.parse_args()
 
 list_of_max_q = []
