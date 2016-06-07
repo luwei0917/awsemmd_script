@@ -4,4 +4,4 @@ set output 'detail_energy.pdf'
 set xlabel "time"
 set ylabel "energy"
 
-plot "energy.dat"  u 1:2 w l,"energy.dat" u 1:4  w l 
+plot "energy.dat"  u 1:5 w l,"energy.dat" u 1:6  w l 

@@ -5,4 +5,4 @@ set output '../../results/energy_NUMBER.pdf'
 set xlabel "time"
 set ylabel "energy"
 
-plot "wham.dat"  u 1:6 w l
+plot "wham.dat"  u 1:5 w l
