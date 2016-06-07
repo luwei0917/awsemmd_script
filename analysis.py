@@ -98,6 +98,7 @@ for i in range(n):
             "'/g' show.tcl")
     os.chdir("../..")
     os.system("cp "+protein_name+"/*.pdb analysis/"+str(i))
+
 if not args.plotOnly:
     sys.stdout = open("analysis/list_of_max_q", "w")
     for q in list_of_max_q:
