@@ -8,4 +8,4 @@
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
 echo $SLURM_NODELIST
-srun ~/bin/lmp_serial -in 4cpv.in
+srun ~/bin/lmp_serial -in PROTEIN.in

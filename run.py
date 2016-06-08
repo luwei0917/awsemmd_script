@@ -57,10 +57,11 @@ for i in range(n):
     if(platform.system() == 'Darwin'):
         os.system("lmp_serial < "+protein_name+".in")
     elif(platform.system() == 'Linux'):
-        os.system(  # replace RANDOM with a radnom number
-            "sed 's/NUMBER/'" +
-            str(i) +
-            "'/g' " "~/opt/run.slurm > run.slurm_"+str(i))
+        os.system("cp ~/opt/run.slurm .")
+        os.system(  # replace PROTEIN with pdb name
+                "sed -i.bak 's/PROTEIN/'" +
+                protein_name +
+                "'/g' run.slurm_"+str(i))
         os.system("sbatch run.slurm_"+str(i))
     else:
         print("system unkown")
