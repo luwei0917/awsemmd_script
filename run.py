@@ -61,8 +61,8 @@ for i in range(n):
         os.system(  # replace PROTEIN with pdb name
                 "sed -i.bak 's/PROTEIN/'" +
                 protein_name +
-                "'/g' run.slurm_"+str(i))
-        os.system("sbatch run.slurm_"+str(i))
+                "'/g' run.slurm")
+        os.system("sbatch run.slurm")
     else:
         print("system unkown")
     os.chdir("../..")
