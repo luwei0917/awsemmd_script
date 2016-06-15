@@ -3,6 +3,7 @@ bin/
 bin-debug/
 bin-release/
 script/PDBs/
+script/Indices/
 # Other files and folders
 .settings/
 
