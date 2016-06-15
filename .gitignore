@@ -2,7 +2,7 @@
 bin/
 bin-debug/
 bin-release/
-
+script/PDBs/
 # Other files and folders
 .settings/
 
