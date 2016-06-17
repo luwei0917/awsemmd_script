@@ -28,7 +28,7 @@ n = args.number
 protein_name = args.template.strip('/')
 
 os.system("mkdir -p results")
-for i in range(n):
+for i in range(6, n):
     # analysis
     os.system("mkdir -p analysis/"+str(i))
     os.chdir("analysis/"+str(i))
