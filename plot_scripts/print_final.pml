@@ -12,13 +12,13 @@ color red,ss h
 color yellow ,ss s
 color blue,ss l+''
 
-ray 2000,2000
-png final.png
-
 ending
 movie.add_roll(8.0,axis='x',start=1)
 ending
 movie.add_roll(8.0,axis='y',start=241)
 movie.produce final.mpg,quality=90,quiet=0
+
+ray 2000,2000
+png final.png
 
 quit
