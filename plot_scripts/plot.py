@@ -1,4 +1,4 @@
-#!/Users/weilu/anaconda/envs/3.5/bin/python3
+#!/usr/bin/env python3
 import os
 os.system("echo hello world")
 os.system("sort -r 4cpv_HA/analysis/list_of_max_q > ha_q")

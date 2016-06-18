@@ -20,6 +20,9 @@ parser.add_argument("-m", "--movie", help="generate the movie",
                     action="store_true")
 parser.add_argument("-p", "--plotOnly", help="only generate the plot",
                     action="store_true")
+parser.add_argument("-s", "--steps", type=int, default=4,
+                    help="Simulation steps in unit of million,\
+                    default is 4 million, -1 means test run")
 args = parser.parse_args()
 
 list_of_max_q = []
@@ -28,7 +31,7 @@ n = args.number
 protein_name = args.template.strip('/')
 
 os.system("mkdir -p results")
-for i in range(1, n):
+for i in range(n):
     # analysis
     os.system("mkdir -p analysis/"+str(i))
     os.chdir("analysis/"+str(i))
@@ -79,8 +82,14 @@ for i in range(1, n):
             "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
             chosen.txt chosen")
     # os.system("cp ~/opt/plot_scripts/energy.plt .")
+    os.system(
+        "python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py \
+        dump.lammpstrj final.pdb ../../" +
+        protein_name+"/"+protein_name+".seq "+str(args.steps*1000))
+    # plots
     os.system("cp ~/opt/plot_scripts/*.plt .")
-
+    os.system("cp ~/opt/plot_scripts/*.pml .")
+    os.system("/usr/local/bin/pymol -r print_final.pml")
     os.system(  # replace PROTEIN with pdb name
             "sed -i.bak 's/NUMBER/'" +
             str(i) +
@@ -95,7 +104,7 @@ for i in range(1, n):
 
     os.system("gnuplot detail_energy.plt")
     # subprocess.Popen("gnuplot q_value.plt", env=my_env)
-    os.system("cp ~/opt/plot_scripts/show.tcl .")
+    os.system("cp ~/opt/plot_scripts/*.tcl .")
     os.system(  # replace PROTEIN with pdb name
             "sed -i.bak 's/PROTEIN/'" +
             protein_name +
