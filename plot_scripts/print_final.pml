@@ -19,6 +19,6 @@ ending
 movie.add_roll(8.0,axis='x',start=1)
 ending
 movie.add_roll(8.0,axis='y',start=241)
-movie.produce test_new.mpg,quality=90,quiet=0
+movie.produce final.mpg,quality=90,quiet=0
 
 quit
