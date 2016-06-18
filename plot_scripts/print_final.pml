@@ -20,5 +20,3 @@ movie.produce final.mpg,quality=90,quiet=0
 
 ray 2000,2000
 png final.png
-
-quit
