@@ -1,5 +1,3 @@
-
-
 bg_color white
 load final.pdb, final
 # Hide all the atoms, then make the cartoon and display just the ribbons:
@@ -12,12 +10,7 @@ color red,ss h
 color yellow ,ss s
 color blue,ss l+''
 
-ending
-movie.add_roll(8.0,axis='x',start=1)
-ending
-movie.add_roll(8.0,axis='y',start=241)
-movie.produce final.mpg,quality=90,quiet=0
-ending
-
 ray 2000,2000
 png final.png
+
+quit
