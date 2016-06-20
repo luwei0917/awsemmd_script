@@ -12,6 +12,8 @@ color red,ss h
 color yellow ,ss s
 color blue,ss l+''
 
+spectrum count, rainbow_rev
+
 ending
 movie.add_roll(8.0,axis='x',start=1)
 ending

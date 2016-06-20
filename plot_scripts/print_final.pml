@@ -10,7 +10,9 @@ color red,ss h
 color yellow ,ss s
 color blue,ss l+''
 
+spectrum count, rainbow_rev
+
 ray 2000,2000
 png final.png
 
-quit
+#quit
