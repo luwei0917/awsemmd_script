@@ -15,4 +15,4 @@ spectrum count, rainbow_rev
 ray 2000,2000
 png final.png
 
-#quit
+quit

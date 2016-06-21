@@ -78,9 +78,26 @@ for i in range(n):
                     break
                 print(line.strip())
         sys.stdout.close()
-        os.system(
-            "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
-            chosen.txt chosen")
+
+    sys.stdout = open("final.txt", "w")
+    print('ITEM: TIMESTEP')
+    time_step = args.steps*1000*1000
+    with open('dump.lammpstrj') as input_data:
+        # Skips text before the beginning of the interesting block:
+        for line in input_data:
+            if line.strip() == str(time_step):
+                print(line.strip())  # Or whatever test is needed
+                break
+        # Reads text until the end of the block:
+        for line in input_data:  # This keeps reading the file
+            if line.strip() == 'ITEM: TIMESTEP':
+                break
+            print(line.strip())
+    sys.stdout.close()
+
+    os.system(
+        "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
+        chosen.txt chosen")
     # os.system("cp ~/opt/plot_scripts/energy.plt .")
     os.system(
         "python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py \
