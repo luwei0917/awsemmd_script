@@ -1,5 +1,5 @@
 # Bacterio
-mol load pdb 4cpv.pdb
+mol load pdb PROTEIN.pdb
 
 while {[molinfo top get numreps] > 0} {mol delrep 0 top}
 mol representation NewCartoon

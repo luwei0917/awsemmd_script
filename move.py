@@ -26,5 +26,7 @@ protein_name = args.template.strip('/')
 for i in range(n):
     # move
     os.chdir("analysis/"+str(i))
-    os.system("cp final.png ../../results/final_"+str(i)+".png")
+    # os.system("cp final.png ../../results/final_"+str(i)+".png")
+    os.system("cp final.pdb ../../results/final_"+str(i)+".pdb")
+    os.system("cp final.txt ../../results/final_"+str(i)+".txt")
     os.chdir("../..")
