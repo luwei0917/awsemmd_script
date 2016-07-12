@@ -11,10 +11,10 @@ mol addrep top
 
 mol load pdb movie.pdb
 
-#graphics 0 line {-1000 5 -35} {1000 5 -35} width 2
-#graphics 0 line {-1000 5 -65} {1000 5 -65} width 2
-#graphics 0 line {-1000 -5 -35} {1000 -5 -35} width 2
-#graphics 0 line {-1000 -5 -65} {1000 -5 -65} width 2
+graphics 0 line {-1000 5 -35} {1000 5 -35} width 2
+graphics 0 line {-1000 5 -65} {1000 5 -65} width 2
+graphics 0 line {-1000 -5 -35} {1000 -5 -35} width 2
+graphics 0 line {-1000 -5 -65} {1000 -5 -65} width 2
 
 
 while {[molinfo top get numreps] > 0} {mol delrep 0 top}

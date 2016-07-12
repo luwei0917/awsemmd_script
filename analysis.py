@@ -41,13 +41,6 @@ for i in range(n):
         os.system("mv ../../simulation/"+str(i)+"/dump.lammpstrj .")
         os.system("mv ../../simulation/"+str(i)+"/wham.dat .")
         os.system("mv ../../simulation/"+str(i)+"/energy.dat .")
-        if(args.movie):
-            os.system(
-                "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
-                dump.lammpstrj movie")
-        os.system(
-            "python2 ~/opt/script/CalcRMSD.py "+protein_name+" \
-            dump.lammpstrj rmsd")
         record_time = 0
         with open('wham.dat') as input_data:
             # Skips text before the beginning of the interesting block:
@@ -78,6 +71,10 @@ for i in range(n):
                     break
                 print(line.strip())
         sys.stdout.close()
+    if(args.movie):
+        os.system(
+            "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
+            dump.lammpstrj movie")
 
     sys.stdout = open("final.txt", "w")
     print('ITEM: TIMESTEP')
@@ -125,11 +122,16 @@ for i in range(n):
     os.system(  # replace PROTEIN with pdb name
             "sed -i.bak 's/PROTEIN/'" +
             protein_name +
+            "'/g' membrane_show.tcl")
+    os.system(  # replace PROTEIN with pdb name
+            "sed -i.bak 's/PROTEIN/'" +
+            protein_name +
             "'/g' show.tcl")
+    os.system("cp ../../"+protein_name+"/*.pdb .")
+    os.system(
+            "python2 ~/opt/script/CalcRMSD.py "+protein_name+" \
+            dump.lammpstrj rmsd")
     os.chdir("../..")
-    if not args.plotOnly:
-        os.system("cp "+protein_name+"/*.pdb analysis/"+str(i))
-
 if not args.plotOnly:
     sys.stdout = open("analysis/list_of_max_q", "w")
     for q in list_of_max_q:

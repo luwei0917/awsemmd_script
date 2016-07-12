@@ -7,7 +7,8 @@ from random import seed, randint
 import argparse
 import platform
 from datetime import datetime
-
+import imp
+# from run_parameter import *
 parser = argparse.ArgumentParser(
         description="This is a python3 script to\
         automatic copy the template file, \
@@ -19,12 +20,13 @@ parser.add_argument("-n", "--number", type=int, default=20,
 parser.add_argument("-s", "--steps", type=int, default=4,
                     help="Simulation steps in unit of million,\
                     default is 4 million, -1 means test run")
+parser.add_argument("-r", "--read", help="Read from config file",
+                    action="store_true")
 args = parser.parse_args()
 
 # TODO:
 # add clean command.
 # test analysis, and fullfill missing anaylsis.
-
 
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 n = args.number
@@ -36,6 +38,12 @@ else:  # -1 means a test run with 10000 steps
     simulation_steps = 10**4
     warm_up_steps = 10**3
     n = 1  # also set n to be 1
+
+# imp.load_source('run_paramter.py', '')
+if(args.read):
+    exec (open("myconfig.py").read())
+    print(n, x, y, type(y))
+    sys.exit(0)
 for i in range(n):
     seed(datetime.now())
 # simulation set up
@@ -54,8 +62,12 @@ for i in range(n):
             "sed -i.bak 's/SIMULATION_STEPS/'" +
             str(simulation_steps) +
             "'/g' "+protein_name+".in")
+# if(platform.system() == 'Darwin'):
+#     os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
+#     < "+protein_name+".in")
     if(platform.system() == 'Darwin'):
-        os.system("lmp_serial < "+protein_name+".in")
+        os.system("lmp_serial \
+        < "+protein_name+".in")
     elif(platform.system() == 'Linux'):
         os.system("cp ~/opt/run.slurm .")
         os.system(  # replace PROTEIN with pdb name
