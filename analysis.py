@@ -16,8 +16,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument("template", help="the name of template file")
 parser.add_argument("-n", "--number", type=int, default=20,
                     help="Number of simulation run")
-parser.add_argument("-m", "--movie", help="generate the movie",
-                    action="store_true")
+parser.add_argument("-m", "--movie", type=int, default=-1,
+                    help="generate the movie,defalut is all")
 parser.add_argument("-p", "--plotOnly", help="only generate the plot",
                     action="store_true")
 parser.add_argument("-s", "--steps", type=int, default=4,
@@ -28,6 +28,9 @@ args = parser.parse_args()
 list_of_max_q = []
 
 n = args.number
+if args.steps == -1:
+    n = 1  # also set n to be 1
+
 protein_name = args.template.strip('/')
 
 os.system("mkdir -p results")
@@ -46,6 +49,7 @@ for i in range(n):
             # Skips text before the beginning of the interesting block:
             record_time = 0
             max_q = 0
+            last_q = 0
             next(input_data)
             for line in input_data:
                 # time, q = line.strip().split()
@@ -55,7 +59,8 @@ for i in range(n):
                 if(q > max_q):
                     record_time = time
                     max_q = q
-            list_of_max_q += [max_q]
+                last_q = q
+            list_of_max_q += [(max_q, record_time, last_q)]
         time_step = record_time
 
         print('ITEM: TIMESTEP')
@@ -71,7 +76,7 @@ for i in range(n):
                     break
                 print(line.strip())
         sys.stdout.close()
-    if(args.movie):
+    if(args.movie == -1 or args.movie == i):
         os.system(
             "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
             dump.lammpstrj movie")
@@ -103,7 +108,12 @@ for i in range(n):
     # plots
     os.system("cp ~/opt/plot_scripts/*.plt .")
     os.system("cp ~/opt/plot_scripts/*.pml .")
-    os.system("/usr/local/bin/pymol -r print_final.pml")
+    os.system("/usr/local/bin/pymol -qc -r print_final.pml")
+    os.system(  # replace PROTEIN with pdb name
+            "sed -i.bak 's/PROTEIN/'" +
+            protein_name +
+            "'/g' show_origin.pml")
+
     os.system(  # replace PROTEIN with pdb name
             "sed -i.bak 's/NUMBER/'" +
             str(i) +
@@ -135,5 +145,5 @@ for i in range(n):
 if not args.plotOnly:
     sys.stdout = open("analysis/list_of_max_q", "w")
     for q in list_of_max_q:
-        print(q)
+        print(q[0], q[1], q[2])  # max q, timestep of max q, last q
     sys.stdout.close()
