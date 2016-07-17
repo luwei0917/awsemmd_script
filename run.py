@@ -23,6 +23,9 @@ parser.add_argument("-s", "--steps", type=int, default=4,
 parser.add_argument("-r", "--read", help="Read from config file",
                     action="store_true")
 args = parser.parse_args()
+parser.add_argument("-ws", "--warmSteps", type=int, default=1,
+                    help="Warmup Simulation steps in unit of hundred thousand,\
+                    default is 1 hundred thousand")
 
 # TODO:
 # add clean command.
@@ -33,7 +36,7 @@ n = args.number
 protein_name = args.template.strip('/')
 if args.steps != -1:
     simulation_steps = args.steps * 10**6
-    warm_up_steps = 10**5
+    warm_up_steps = args.warmSteps * 10**5
 else:  # -1 means a test run with 10000 steps
     simulation_steps = 10**4
     warm_up_steps = 10**3

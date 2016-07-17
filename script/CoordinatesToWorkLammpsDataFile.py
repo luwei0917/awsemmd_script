@@ -73,15 +73,15 @@ else:
 
 cg = True
 
-xlo = -200.0
-xhi = 200.0
-ylo = -200.0
-yhi = 200.0
-zlo = -200.0
-zhi = 200.0
+xlo = -1000.0
+xhi = 1000.0
+ylo = -1000.0
+yhi = 1000.0
+zlo = -1000.0
+zhi = 1000.0
 masses = [12.0, 14.0, 16.0, 12.0, 1.0]
 if cg and not go:
-	masses = [27.0, 14.0, 28.0, 60.0, 60.0]
+	masses = [27.0, 14.0, 28.0, 60.0, 2.0]
 n_atom_types = 5
 if cg:
 	if cg_bonds: n_bond_types = 5
@@ -239,11 +239,16 @@ out.write( "\n" )
 
 if cg and cg_bonds and not go:
 	out.write( "Bond Coeffs\n\n" )
-	out.write( space11 + "1\t200.0\t3.77\n" )
-	out.write( space11 + "2\t200.0\t2.41\n" )
-	out.write( space11 + "3\t200.0\t2.50\n" )
-	out.write( space11 + "4\t200.0\t1.54\n" )
-	out.write( space11 + "5\t200.0\t1.54\n" )
+	#out.write( space11 + "1\t20\t3.77\n" )
+	#out.write( space11 + "2\t20\t2.41\n" )
+	#out.write( space11 + "3\t20\t2.50\n" )
+	#out.write( space11 + "4\t20\t1.54\n" )
+	#out.write( space11 + "5\t20\t1.54\n" )
+	out.write( space11 + "1\t60\t3.816\n" )
+	out.write( space11 + "2\t60\t2.40\n" )
+	out.write( space11 + "3\t60\t2.76\n" )
+	out.write( space11 + "4\t60\t1.53\n" )
+	out.write( space11 + "5\t60\t1.09\n" )
 
 if (cg_bonds or not cg) and not go:
 	out.write( "Bonds\n\n" )

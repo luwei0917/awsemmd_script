@@ -57,9 +57,9 @@ class PDB_Atom:
 		f.write(' ')
 		f.write('T')
 		f.write(('    '+str(self.res_no))[-4:])
-		f.write(('            '+str(round(self.x,3)))[-12:])
-		f.write(('        '+str(round(self.y,3)))[-8:])
-		f.write(('        '+str(round(self.z,3)))[-8:])
+		f.write(('            '+str(round(self.x,2)))[-12:])
+		f.write(('        '+str(round(self.y,2)))[-8:])
+		f.write(('        '+str(round(self.z,2)))[-8:])
 		f.write('  1.00')
 		f.write('  0.00')
 		f.write(('            '+self.atm)[-12:]+'  ')
@@ -96,10 +96,9 @@ class Atom:
 		f.write(self.desc)
 		f.write('\n')
 
-#if len(sys.argv)!=3 and len(sys.argv)!=4:
-if len(sys.argv)!=4 and len(sys.argv)!=5 and len(sys.argv)!=6:
-	print "\n" + sys.argv[0] + " lammps_Input pdb_Output pdbID.seq [snapshot] [chnlen_1,chnlen_2,...]\n"
-	sys.exit()
+if len(sys.argv)!=3 and len(sys.argv)!=4:
+	print "\n" + sys.argv[0] + " lammps_Input pdb_Output pdbID.seq [snapshot]\n"
+	exit()
 
 lammps_file = sys.argv[1]
 
@@ -121,25 +120,8 @@ if psf_file[-4:]==".pdb": psf_file = psf_file[:-3] + "psf"
 if psf_file[-4:]!=".psf": psf_file = psf_file + ".psf"
 
 snapshot = -1
-Chain_sizes = []
-#if len(sys.argv)>4: snapshot = int(sys.argv[4])
-if len(sys.argv)>4: 
-	if sys.argv[4].find(',') == -1 :
-		snapshot = int(sys.argv[4])
-		if len(sys.argv) > 5 : #parse
-			Chain_sizes = sys.argv[5].split(',')
-	else : #parse
-		Chain_sizes = sys.argv[4].split(',')
+if len(sys.argv)>4: snapshot = int(sys.argv[4])
 
-print Chain_sizes
-Cterminal_Cp_indices = []
-Total_Chain_size = 0
-if len(Chain_sizes) != 0:
-	for Chain_size in Chain_sizes:
-		Total_Chain_size += int(Chain_size)
-		Cterminal_Cp_indices.append((int(Total_Chain_size)-1)*5+2)
-		
-		
 an = 0.4831806
 bn = 0.7032820
 cn = -0.1864262
@@ -236,7 +218,7 @@ def buildBonds():
 			if Ca_index!=-1 and Hb_index!=-1:
 				bonds.append([Ca_index, Hb_index])
 			N_index = i+1
-			if Cp_index!=-1 and Cp_index not in Cterminal_Cp_indices :
+			if Cp_index!=-1:
 				bonds.append([Cp_index, N_index])
 			Ca_index = -1
 			Cp_index = -1

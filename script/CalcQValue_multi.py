@@ -1,9 +1,5 @@
 #!/usr/bin/python
 
-# Modified by Weihua Zheng, Peter Wolynes Group Apr., 2011
-# Use BioPython to calculate RMSD from the ref. structure.
-# Only C-alpha atoms are used.
-
 # ----------------------------------------------------------------------
 # Copyright (2010) Aram Davtyan and Garegin Papoian
 
@@ -14,12 +10,9 @@
 # ----------------------------------------------------------------------
 
 import sys
-
-##
-import numpy
-##
-
 from VectorAlgebra import *
+
+#from Bio.PDB.PDBParser import PDBParser
 
 atom_type = {'1' : 'C', '2' : 'N', '3' : 'O', '4' : 'C', '5' : 'H', '6' : 'C'}
 atom_desc = {'1' : 'C-Alpha', '2' : 'N', '3' : 'O', '4' : 'C-Beta', '5' : 'H-Beta', '6' : 'C-Prime'}
@@ -28,26 +21,30 @@ PDB_type = {'1' : 'CA', '2' : 'N', '3' : 'O', '4' : 'CB', '5' : 'HB', '6' : 'C' 
 class PDB_Atom:
 	no = 0
 	ty = ''
+	mol = 0
 	res = 'UNK'
 	res_no = 0
 	x = 0.0
 	y = 0.0
 	z = 0.0
 	atm = 'C'
-
-	def __init__(self, no, ty, res, res_no, x, y, z, atm):
+	
+	def __init__(self, no, ty, mol, res, res_no, x, y, z, atm):
 		self.no = no
 		self.ty = ty
+		self.mol = mol
 		self.res = res
 		self.res_no = res_no
 		self.x = x
 		self.y = y
 		self.z = z
 		self.atm = atm
-
+		
 	def write_(self, f):
 		f.write('ATOM')
 		f.write(('       '+str(self.no))[-7:])
+		f.write('  ')
+		f.write(self.mol)
 		f.write('  ')
 		f.write((self.ty+'    ')[:4])
 		f.write(self.res)
@@ -69,7 +66,7 @@ class Atom:
 	y = 0.0
 	z = 0.0
 	desc = ''
-
+	
 	def __init__(self, No, ty, No_m, x, y, z, desc=''):
 		self.No = No
 		self.ty = ty
@@ -78,7 +75,7 @@ class Atom:
 		self.y = y
 		self.z = z
 		self.desc = desc
-
+	
 	def write_(self, f):
 		f.write(str(self.No))
 		f.write(' ')
@@ -93,85 +90,99 @@ class Atom:
 		f.write(self.desc)
 		f.write('\n')
 
-if len(sys.argv)!=5 and len(sys.argv)!=4:
-	print "\nCalcQValue.py PDB_Id Input_file(lammpstrj) Output_file(rmsd)\n"
-	exit()
+if len(sys.argv)!=6 and len(sys.argv)!=5:
+	print "\nCalcQValue.py PDB_Id Input_file Output_file qonuchic_flag(1 for q_o, 0 for q_w) [-i]\n"
+	print
+	print "\t\t-i\tcalculate individual q values for each chain"
+	print
+	sys.exit()
+cutoff = 9.5
+splitq = False
+for iarg in range(0, len(sys.argv)):
+	if sys.argv[iarg]=="-i":
+		splitq = True
+		sys.argv.pop(iarg)
 
 struct_id = sys.argv[1]
-pdb_file = struct_id + ".pdb"
+if struct_id[-4:].lower()==".pdb":
+	pdb_file = struct_id
+else:
+	pdb_file = struct_id + ".pdb"
 lammps_file = sys.argv[2]
 
 output_file = ""
 if len(sys.argv)>3: output_file = sys.argv[3]
 
 sigma_exp = 0.15
-if len(sys.argv)==5:
-	sigma_exp = float(sys.argv[4])
+qo_flag = int(sys.argv[4])
 
 n_atoms = 0
 i_atom = 0
 item = ''
 step = 0
 ca_atoms_pdb = []
+pdb_chain_id = []
 ca_atoms = []
 box = []
 A = []
 sigma = []
 sigma_sq = []
 
+
 out = open(output_file, 'w')
 
 from Bio.PDB.PDBParser import PDBParser
 
-##
-from Bio.SVDSuperimposer import SVDSuperimposer
-##
-
 p = PDBParser(PERMISSIVE=1)
 
-##
-def computeRMSD():
+def computeQ():
 	if len(ca_atoms)!=len(ca_atoms_pdb):
-		print "Error. Length mismatch!", len(ca_atoms), len(ca_atoms_pdb)
-		exit()
-	l = len(ca_atoms)
+		print "Error. Length mismatch!"
+		print "Pdb: ", len(ca_atoms_pdb), "trj: ", len(ca_atoms)
+		sys.exit()
+	Q = {}
+	norm = {}
+	N = len(ca_atoms)
+	min_sep = 3
+	if qo_flag == 1 : min_sep = 4
+	for ia in range(0, N):
+		for ja in range(ia+min_sep, N):
+			if (splitq and pdb_chain_id[ia]==pdb_chain_id[ja]) or not splitq:
 
-	fixed_coord  = numpy.zeros((l, 3))
-	moving_coord = numpy.zeros((l, 3))
+				rn = vabs(vector(ca_atoms_pdb[ia], ca_atoms_pdb[ja]))
+				if qo_flag == 1 and rn >= cutoff : continue
 
-	for i in range(0, l):
-		fixed_coord[i]  = numpy.array ([ca_atoms_pdb[i][0], ca_atoms_pdb[i][1], ca_atoms_pdb[i][2]])
-		moving_coord[i] = numpy.array ([ca_atoms[i][0], ca_atoms[i][1], ca_atoms[i][2]])
-	sup = SVDSuperimposer()
-	sup.set(fixed_coord, moving_coord)
-	sup.run()
-	rms = sup.get_rms()
-	return rms
-##
+				r = vabs(vector(ca_atoms[ia], ca_atoms[ja]))
+				dr = r - rn
+				if splitq: index = pdb_chain_id[ia]
+				else: index = 1
+				if not Q.has_key(index):
+					Q[index] = 0.0
+					norm[index] = 0
+				#change
+				if ( not splitq ) and ( pdb_chain_id[ia] != pdb_chain_id[ja] ) :
+					Q[index] = Q[index] + exp(-dr*dr/(2*sigma_sq[N]))
+				else: #change
+					Q[index] = Q[index] + exp(-dr*dr/(2*sigma_sq[ja-ia]))
+				#change
 
-#def computeQ():
-#	if len(ca_atoms)!=len(ca_atoms_pdb):
-#		print "Error. Length mismatch!"
-#		exit()
-#	Q = 0
-#	N = len(ca_atoms)
-#	for ia in range(0, N):
-#		for ja in range(ia+3, N):
-#			r = vabs(vector(ca_atoms[ia], ca_atoms[ja]))
-#			rn = vabs(vector(ca_atoms_pdb[ia], ca_atoms_pdb[ja]))
-#			dr = r - rn
-#			Q = Q + exp(-dr*dr/(2*sigma_sq[ja-ia]));
-#	Q = 2*Q/((N-2)*(N-3))
-#	return Q
+				norm[index] = norm[index] + 1
+	for key in Q:
+		Q[key] = Q[key]/norm[key]
+	return Q
 
 s = p.get_structure(struct_id, pdb_file)
 chains = s[0].get_list()
-chain = chains[0]
-for res in chain:
-	is_regular_res = res.has_id('CA') and res.has_id('O')
-	res_id = res.get_id()[0]
-        if (res_id==' ' or res_id=='H_MSE' or res_id=='H_M3L') and is_regular_res:
+#chain = chains[0]
+ichain = 0
+for chain in chains:
+	ichain = ichain + 1
+	for res in chain:
+		is_regular_res = res.has_id('CA') and res.has_id('O')
+		res_id = res.get_id()[0]
+	        if (res_id==' ' or res_id=='H_MSE' or res_id=='H_M3L' or res_id=='H_CAS' ) and is_regular_res:
 			ca_atoms_pdb.append(res['CA'].get_coord())
+			pdb_chain_id.append(ichain)
 
 for i in range(0, len(ca_atoms_pdb)+1):
 	sigma.append( (1+i)**sigma_exp )
@@ -185,10 +196,11 @@ for l in lfile:
 	else:
 		if item == "TIMESTEP":
 			if len(ca_atoms)>0:
-				q = computeRMSD()
-				#q = computeQ()
-				out.write(str(round(q,3)))
-				out.write(' ')
+				q = computeQ()
+				for key in q:
+					out.write(str(round(q[key],3)))
+					out.write(' ')
+				out.write('\n')
 				n_atoms = len(ca_atoms)
 			step = int(l)
 			ca_atoms = []
@@ -217,10 +229,11 @@ for l in lfile:
 lfile.close()
 
 if len(ca_atoms)>0:
-	q = computeRMSD()
-	#q = computeQ()
-	out.write(str(round(q,3)))
-	out.write(' ')
+	q = computeQ()
+	for key in q:
+		out.write(str(round(q[key],3)))
+		out.write(' ')
+	out.write('\n')
 	n_atoms = len(ca_atoms)
 
 out.close()
