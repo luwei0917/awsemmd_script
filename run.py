@@ -22,7 +22,7 @@ parser.add_argument("-s", "--steps", type=int, default=4,
                     default is 4 million, -1 means test run")
 parser.add_argument("-r", "--read", help="Read from config file",
                     action="store_true")
-parser.add_argument("-ws", "--warmSteps", type=int, default=1,
+parser.add_argument("-ws", "--warmSteps", type=int, default=10,
                     help="Warmup Simulation steps in unit of hundred thousand,\
                     default is 1 hundred thousand")
 args = parser.parse_args()

@@ -103,7 +103,7 @@ for i in range(n):
     # os.system("cp ~/opt/plot_scripts/energy.plt .")
     os.system(
         "python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py \
-        dump.lammpstrj final.pdb ../../" +
+        final.txt final.pdb ../../" +
         protein_name+"/"+protein_name+".seq "+str(args.steps*1000))
     # plots
     os.system("cp ~/opt/plot_scripts/*.plt .")

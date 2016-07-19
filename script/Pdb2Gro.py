@@ -17,7 +17,7 @@ class Atom:
     x = 0.0
     y = 0.0
     z = 0.0
-    
+
     def __init__(self, atom_no, atom_name, res_no, res_name, x, y, z, desc=''):
         self.atom_no = atom_no
         self.atom_name = atom_name
@@ -48,7 +48,7 @@ class Atom:
     	f.write( ("     "+str(self.atom_no))[-5:] )
     	f.write( ("        "+str(round(self.x/10,3)))[-8:] )
     	f.write( ("        "+str(round(self.y/10,3)))[-8:] )
-    	f.write( ("        "+str(round(self.z/10,3)))[-8:] )  
+    	f.write( ("        "+str(round(self.z/10,3)))[-8:] )
     	f.write("\n")
 
 if len(sys.argv)!=4 and len(sys.argv)!=3:
@@ -60,7 +60,7 @@ from Bio.PDB.PDBParser import PDBParser
 p = PDBParser(PERMISSIVE=1)
 
 pdb_file = sys.argv[1]
-pdb_id = pdb_file 
+pdb_id = pdb_file
 if pdb_file[-4:].lower()!=".pdb":
 	pdb_file = pdb_file + ".pdb"
 if pdb_id[-4:].lower()==".pdb":
@@ -94,7 +94,7 @@ for chain in chains:
 					iatom = iatom + 1
 					atom_name = atom.get_name()
 					xyz = atom.get_coord()
-					
+
 #					residue_no = atom.get_full_id()[3][1]
 					atoms.append( Atom(iatom, atom_name, residue_no, res_name, xyz) )
 

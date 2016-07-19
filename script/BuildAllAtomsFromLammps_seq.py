@@ -17,14 +17,14 @@ atom_type = {'1' : 'C', '2' : 'N', '3' : 'O', '4' : 'C', '5' : 'H', '6' : 'C'}
 atom_desc = {'1' : 'C-Alpha', '2' : 'N', '3' : 'O', '4' : 'C-Beta', '5' : 'H-Beta', '6' : 'C-Prime'}
 PDB_type = {'1' : 'CA', '2' : 'N', '3' : 'O', '4' : 'CB', '5' : 'HB', '6' : 'C' }
 
-def one2three(one_letter_code): 
+def one2three(one_letter_code):
     """ translate a protein sequence from 3 to 1 letter code"""
-    
+
     code = {
 	    "R": "ARG", "K": "LYS", "N": "ASN", "Q": "GLN", "E": "GLU",
 	    "D": "ASP", "H": "HIS", "Y": "TYR", "W": "TRP", "S":"SER",
 	    "T":"THR", "G":"GLY", "P":"PRO", "A":"ALA", "M":"MET",
-	    "C":"CYS", "F":"PHE", "L":"LEU", "V":"VAL", "I":"ILE" }    
+	    "C":"CYS", "F":"PHE", "L":"LEU", "V":"VAL", "I":"ILE" }
     index = code[one_letter_code]
     return index
 
@@ -37,7 +37,7 @@ class PDB_Atom:
 	y = 0.0
 	z = 0.0
 	atm = 'C'
-	
+
 	def __init__(self, no, ty, res, res_no, x, y, z, atm):
 		self.no = no
 		self.ty = ty
@@ -47,7 +47,7 @@ class PDB_Atom:
 		self.y = y
 		self.z = z
 		self.atm = atm
-		
+
 	def write_(self, f):
 		f.write('ATOM')
 		f.write(('       '+str(self.no))[-7:])
@@ -57,9 +57,9 @@ class PDB_Atom:
 		f.write(' ')
 		f.write('T')
 		f.write(('    '+str(self.res_no))[-4:])
-		f.write(('            '+str(round(self.x,2)))[-12:])
-		f.write(('        '+str(round(self.y,2)))[-8:])
-		f.write(('        '+str(round(self.z,2)))[-8:])
+		f.write(('            '+str(round(self.x,3)))[-12:])
+		f.write(('        '+str(round(self.y,3)))[-8:])
+		f.write(('        '+str(round(self.z,3)))[-8:])
 		f.write('  1.00')
 		f.write('  0.00')
 		f.write(('            '+self.atm)[-12:]+'  ')
@@ -72,7 +72,7 @@ class Atom:
 	y = 0.0
 	z = 0.0
 	desc = ''
-	
+
 	def __init__(self, No, ty, No_m, x, y, z, desc=''):
 		self.No = No
 		self.ty = ty
@@ -81,7 +81,7 @@ class Atom:
 		self.y = y
 		self.z = z
 		self.desc = desc
-	
+
 	def write_(self, f):
 		f.write(str(self.No))
 		f.write(' ')
@@ -96,9 +96,10 @@ class Atom:
 		f.write(self.desc)
 		f.write('\n')
 
-if len(sys.argv)!=3 and len(sys.argv)!=4:
-	print "\n" + sys.argv[0] + " lammps_Input pdb_Output pdbID.seq [snapshot]\n"
-	exit()
+#if len(sys.argv)!=3 and len(sys.argv)!=4:
+if len(sys.argv)!=4 and len(sys.argv)!=5 and len(sys.argv)!=6:
+	print "\n" + sys.argv[0] + " lammps_Input pdb_Output pdbID.seq [snapshot] [chnlen_1,chnlen_2,...]\n"
+	sys.exit()
 
 lammps_file = sys.argv[1]
 
@@ -120,7 +121,24 @@ if psf_file[-4:]==".pdb": psf_file = psf_file[:-3] + "psf"
 if psf_file[-4:]!=".psf": psf_file = psf_file + ".psf"
 
 snapshot = -1
-if len(sys.argv)>4: snapshot = int(sys.argv[4])
+Chain_sizes = []
+#if len(sys.argv)>4: snapshot = int(sys.argv[4])
+if len(sys.argv)>4:
+	if sys.argv[4].find(',') == -1 :
+		snapshot = int(sys.argv[4])
+		if len(sys.argv) > 5 : #parse
+			Chain_sizes = sys.argv[5].split(',')
+	else : #parse
+		Chain_sizes = sys.argv[4].split(',')
+
+print Chain_sizes
+Cterminal_Cp_indices = []
+Total_Chain_size = 0
+if len(Chain_sizes) != 0:
+	for Chain_size in Chain_sizes:
+		Total_Chain_size += int(Chain_size)
+		Cterminal_Cp_indices.append((int(Total_Chain_size)-1)*5+2)
+
 
 an = 0.4831806
 bn = 0.7032820
@@ -167,21 +185,21 @@ def buildAllAtoms():
 				Cai = atoms[last_Ca_index]
 				Cai1 = ia
 				Oi = atoms[last_O_index]
-				
+
 				nx = an*Cai.x + bn*Cai1.x + cn*Oi.x
 				ny = an*Cai.y + bn*Cai1.y + cn*Oi.y
 				nz = an*Cai.z + bn*Cai1.z + cn*Oi.z
-				
+
 				px = ap*Cai.x + bp*Cai1.x + cp*Oi.x
                                 py = ap*Cai.y + bp*Cai1.y + cp*Oi.y
                                 pz = ap*Cai.z + bp*Cai1.z + cp*Oi.z
-				
+
 				N = Atom(index, 'N', '2', nx, ny, nz, 'N')
 				index = index + 1
 				Cp = Atom(int(Cai.No) + 1, 'C', '6', px, py, pz, 'C-Prime')
 #				Cp = Atom(index, 'C', '6', px, py, pz, 'C-Prime')
 #				index = index + 1
-				
+
 				atoms2.append(N)
 				atoms2.pop(Cp_index)
 				atoms2.insert(Cp_index, Cp)
@@ -195,7 +213,7 @@ def buildAllAtoms():
 			index = index + 1
 	if atoms2[Cp_index].No==0: atoms2.pop(Cp_index)
 	for i in range(Cp_index, len(atoms2)):
-		atoms2[i].No = atoms2[i].No - 1 
+		atoms2[i].No = atoms2[i].No - 1
 
 def buildBonds():
 	N_index = -1
@@ -218,7 +236,7 @@ def buildBonds():
 			if Ca_index!=-1 and Hb_index!=-1:
 				bonds.append([Ca_index, Hb_index])
 			N_index = i+1
-			if Cp_index!=-1:
+			if Cp_index!=-1 and Cp_index not in Cterminal_Cp_indices :
 				bonds.append([Cp_index, N_index])
 			Ca_index = -1
 			Cp_index = -1
@@ -272,7 +290,7 @@ def print_psf():
 	psfout.write((space8+str(len(bonds)))[-8:]+" !NBOND")
 	for i in range(0, len(bonds)):
 		ib = bonds[i]
-		if i%4==0: psfout.write("\n") 
+		if i%4==0: psfout.write("\n")
 		psfout.write((space8+str(ib[0]))[-8:])
 		psfout.write((space8+str(ib[1]))[-8:])
 	psfout.close()
@@ -317,7 +335,7 @@ if snapshot<0:
 				desc = atom_desc[l[1]]
 				atom = Atom(i_atom, atom_type[l[1]], l[1], x, y, z, desc)
 				atoms.append(atom)
-	
+
 	if len(atoms)>0:
 		buildAllAtoms()
 		convertToPDB()
