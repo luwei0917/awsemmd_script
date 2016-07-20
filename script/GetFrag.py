@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 import sys
 import os
 import glob
@@ -29,7 +30,7 @@ def number_assign(strength, number):
     return MemInd
 
 
-def memory_assign(number, wd):
+def memory_assign(number):
     # number: is the number of memories to be assigned, in our case should be
     # 20
     memfile = open("frag.mem", 'w')
@@ -38,9 +39,9 @@ def memory_assign(number, wd):
 
     memfile.write("[Memories]" + "\n")
     # T089
-    # start1=[1,22,42,56];
-    # start2=[86,107,127,141]
-    # length=[41,34,28,26];
+    start1=[1,22,42,56];
+    start2=[86,107,127,141]
+    length=[41,34,28,26];
 
     # TOP7
     # start1=[1,9,22,40];
@@ -48,9 +49,9 @@ def memory_assign(number, wd):
     # length=[18,27,24,37];
 
     # T120
-    start1 = [1, 17, 31, 41, 48, 62, 82, 92]
-    start2 = [1, 17, 31, 41, 48, 62, 82, 92]
-    length = [25, 22, 18, 20, 28, 29, 21, 24]
+    # start1 = [1, 17, 31, 41, 48, 62, 82, 92]
+    # start2 = [1, 17, 31, 41, 48, 62, 82, 92]
+    # length = [25, 22, 18, 20, 28, 29, 21, 24]
 
     # T251
     # start1=[1,17,40,53,71,77];
@@ -80,11 +81,11 @@ def memory_assign(number, wd):
     fragnum = len(start1)
     for ii in range(1, fragnum + 1):
         # wd = "/dascratch/mc70/opt/script/1R69_AWSEM/fragment_final";
-        fragwd = wd + "/frag" + str(ii)
+        fragwd = "frag" + str(ii)
         # qqq = subprocess.Popen(['cd',fragwd], stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-        qqq = subprocess.check_output("cd %s" % (fragwd), shell=True)
+        # qqq = subprocess.check_output("cd %s" % (fragwd), shell=True)
         os.chdir(fragwd)
-        print(fragwd)
+        # print(fragwd)
         filelist = glob.glob("clustersize*.pdb")
         print(filelist)
         strength = []
@@ -98,15 +99,16 @@ def memory_assign(number, wd):
             if MemInd[i] != 0:
                 namegro = "frag_" + str(i) + '.gro'
                 # q = subprocess.Popen(['python','~/opt/script/Pdb2Gro.py',filelist[i],namegro], stderr=subprocess.STDOUT, stdout=subprocess.PIPE);
-                os.chdir(fragwd)
-                q = subprocess.check_output(
-                    "python2 ~/opt/script/Pdb2Gro.py %s %s" % (filelist[i][0:-4], namegro), shell=True)
+                # os.chdir(fragwd)
+                os.system("python2 ~/opt/script/Pdb2Gro.py %s %s" % (filelist[i][0:-4], namegro))
+                # os.system("echo %s %s" % ("Hello", "world"))
+                # q = subprocess.check_output(
+                #     "python2 ~/opt/script/Pdb2Gro.py %s %s" % (filelist[i][0:-4], namegro), shell=True)
                 for j in range(MemInd[i]):
                     memfile.write(fragwd + "/" + namegro + " " + str(start1[ii - 1]) + " " + str(
                         start2[ii - 1]) + " " + str(length[ii - 1]) + " " + "1" + "\n")
                 # qq = subprocess.Popen(['cd','..'], stderr=subprocess.STDOUT, stdout=subprocess.PIPE);
         # qq = subprocess.check_output("cd ..",shell=True)
-
+        os.chdir("..")
 # wd = sys.argv[1]
-wd = "/Users/weilu/Documents/Research/July-18/t120_aa"
-memory_assign(20, wd)
+memory_assign(20)

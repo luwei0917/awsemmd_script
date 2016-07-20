@@ -4,47 +4,33 @@ import argparse
 import sys
 from time import sleep
 import subprocess
-import imp
 
-mypath = os.environ["PATH"]
-os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
-my_env = os.environ.copy()
+# mypath = os.environ["PATH"]
+# os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
+# my_env = os.environ.copy()
 
-parser = argparse.ArgumentParser(
-        description="This is a python3 script to\
-        automatically analysis the simulation")
-
-parser.add_argument("template", help="the name of template file")
-parser.add_argument("-n", "--number", type=int, default=20,
-                    help="Number of simulation run")
-parser.add_argument("-m", "--movie", type=int, default=-1,
-                    help="generate the movie,defalut is all")
-parser.add_argument("-p", "--plotOnly", help="only generate the plot",
-                    action="store_true")
-parser.add_argument("-s", "--steps", type=int, default=4,
-                    help="Simulation steps in unit of million,\
-                    default is 4 million, -1 means test run")
-parser.add_argument("-r", "--read", help="Read from config file",
-                    action="store_true")
-args = parser.parse_args()
-
-list_of_max_q = []
-
-n = args.number
-steps = args.steps
-if args.steps == -1:
-    n = 1  # also set n to be 1 ,this is for debug
-
-# imp.load_source('run_paramter.py', '')
-if(args.read):
-    exec (open("config.py").read())
-    # print(n, x, y, type(y))
-    n = number_of_run
-    steps = simulation_steps
-    print(number, steps)
-    sys.exit(0)
-
-protein_name = args.template.strip('/')
+# parser = argparse.ArgumentParser(
+#         description="This is a python3 script to\
+#         automatically analysis the simulation")
+#
+# parser.add_argument("template", help="the name of template file")
+# parser.add_argument("-n", "--number", type=int, default=20,
+#                     help="Number of simulation run")
+# parser.add_argument("-m", "--movie", type=int, default=-1,
+#                     help="generate the movie,defalut is all")
+# parser.add_argument("-p", "--plotOnly", help="only generate the plot",
+#                     action="store_true")
+# parser.add_argument("-s", "--steps", type=int, default=4,
+#                     help="Simulation steps in unit of million,\
+#                     default is 4 million, -1 means test run")
+# args = parser.parse_args()
+# list_of_max_q = []
+#
+# n = args.number
+# if args.steps == -1:
+#     n = 1  # also set n to be 1
+#
+# protein_name = args.template.strip('/')
 
 os.system("mkdir -p results")
 for i in range(n):
@@ -96,7 +82,7 @@ for i in range(n):
 
     sys.stdout = open("final.txt", "w")
     print('ITEM: TIMESTEP')
-    time_step = steps*1000*1000
+    time_step = args.steps*1000*1000
     with open('dump.lammpstrj') as input_data:
         # Skips text before the beginning of the interesting block:
         for line in input_data:
@@ -117,7 +103,7 @@ for i in range(n):
     os.system(
         "python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py \
         final.txt final.pdb ../../" +
-        protein_name+"/"+protein_name+".seq "+str(steps*1000))
+        protein_name+"/"+protein_name+".seq "+str(args.steps*1000))
     # plots
     os.system("cp ~/opt/plot_scripts/*.plt .")
     os.system("cp ~/opt/plot_scripts/*.pml .")

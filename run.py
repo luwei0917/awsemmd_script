@@ -41,11 +41,6 @@ else:  # -1 means a test run with 10000 steps
     warm_up_steps = 10**3
     n = 1  # also set n to be 1
 
-# imp.load_source('run_paramter.py', '')
-if(args.read):
-    exec (open("myconfig.py").read())
-    print(n, x, y, type(y))
-    sys.exit(0)
 for i in range(n):
     seed(datetime.now())
 # simulation set up
