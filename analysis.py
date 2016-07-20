@@ -41,7 +41,7 @@ if(args.read):
     # print(n, x, y, type(y))
     n = number_of_run
     steps = simulation_steps
-    print(number, steps)
+    print(n, steps)
     sys.exit(0)
 
 protein_name = args.template.strip('/')
