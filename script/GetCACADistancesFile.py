@@ -1,4 +1,4 @@
-#!/shared/local/bin/python
+#!/usr/bin/env python2
 
 import sys
 from VectorAlgebra import *
@@ -9,18 +9,18 @@ def calc_dis(p1, p2):
 
 def three2one(prot):
     """ translate a protein sequence from 3 to 1 letter code"""
-    
+
     code = {"GLY" : "G", "ALA" : "A", "LEU" : "L", "ILE" : "I",
             "ARG" : "R", "LYS" : "K", "MET" : "M", "CYS" : "C",
             "TYR" : "Y", "THR" : "T", "PRO" : "P", "SER" : "S",
             "TRP" : "W", "ASP" : "D", "GLU" : "E", "ASN" : "N",
 	    "GLN" : "Q", "PHE" : "F", "HIS" : "H", "VAL" : "V",
 	    "M3L" : "K", "MSE" : "M", "CAS" : "C" }
-    
+
     newprot = ""
     for a in prot:
         newprot += code.get(a, "?")
-    
+
     return newprot
 
 def checkIfNative(ires, jres):
@@ -106,12 +106,12 @@ for ch in chains:
 	    else:
 		file_name = output_fn+"_"+ch.get_id()+".dat"
             out = open( file_name, 'w' )
-	
+
 	for ri in dis:
 		for rij in ri:
 			out.write( str(round(rij, 6)) )
 			out.write( ' ' )
-		out.write( '\n' )	
+		out.write( '\n' )
         if not splite:
             out.write('\n')
         if splite:

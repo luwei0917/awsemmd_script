@@ -56,9 +56,9 @@ go = False
 for cl in sys.argv[3:]:
 	if cl == '-b': cg_bonds = True
 	if cl == '-go': go = True
-		
 
-seq_file = "sequance.seq"    
+
+seq_file = "sequance.seq"
 lammps_out_file = "file.in"
 if out_file[:5]=="data.":
     lammps_out_file = out_file[5:] + ".in"
@@ -99,7 +99,7 @@ atoms = []
 bonds = []
 groups = []
 
-fix_string = "2 alpha_carbons backbone beta_atoms oxygens fix_backbone_coeff.data " + seq_file
+fix_string = "4 alpha_carbons backbone beta_atoms oxygens fix_backbone_coeff.data " + seq_file
 if go:
 	fix_string = "2 alpha_carbons gomodel fix_gomodel_coeff.data"
 

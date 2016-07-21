@@ -31,18 +31,18 @@ args = parser.parse_args()
 list_of_max_q = []
 
 n = args.number
-steps = args.steps
+steps = args.steps*1000*1000
 if args.steps == -1:
     n = 1  # also set n to be 1 ,this is for debug
-
+    steps = 10*1000
 # imp.load_source('run_paramter.py', '')
 if(args.read):
     exec (open("config.py").read())
     # print(n, x, y, type(y))
     n = number_of_run
     steps = simulation_steps
-    print(n, steps)
-    sys.exit(0)
+    # print(n, steps)
+    # sys.exit(0)
 
 protein_name = args.template.strip('/')
 
@@ -96,7 +96,7 @@ for i in range(n):
 
     sys.stdout = open("final.txt", "w")
     print('ITEM: TIMESTEP')
-    time_step = steps*1000*1000
+    time_step = steps
     with open('dump.lammpstrj') as input_data:
         # Skips text before the beginning of the interesting block:
         for line in input_data:
@@ -117,7 +117,7 @@ for i in range(n):
     os.system(
         "python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py \
         final.txt final.pdb ../../" +
-        protein_name+"/"+protein_name+".seq "+str(steps*1000))
+        protein_name+"/"+protein_name+".seq "+str(steps/1000))
     # plots
     os.system("cp ~/opt/plot_scripts/*.plt .")
     os.system("cp ~/opt/plot_scripts/*.pml .")

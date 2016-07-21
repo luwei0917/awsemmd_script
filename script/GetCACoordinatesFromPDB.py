@@ -1,21 +1,21 @@
-#!/shared/local/bin/python
+#!/usr/bin/env python2
 
 import sys
 
 def three2one(prot):
     """ translate a protein sequence from 3 to 1 letter code"""
-    
+
     code = {"GLY" : "G", "ALA" : "A", "LEU" : "L", "ILE" : "I",
             "ARG" : "R", "LYS" : "K", "MET" : "M", "CYS" : "C",
             "TYR" : "Y", "THR" : "T", "PRO" : "P", "SER" : "S",
             "TRP" : "W", "ASP" : "D", "GLU" : "E", "ASN" : "N",
 	    "GLN" : "Q", "PHE" : "F", "HIS" : "H", "VAL" : "V",
 	    "M3L" : "K", "MSE" : "M", "CAS" : "C" }
-    
+
     newprot = ""
     for a in prot:
         newprot += code.get(a, "?")
-    
+
     return newprot
 
 if len(sys.argv)!=3:

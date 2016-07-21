@@ -25,6 +25,8 @@ parser.add_argument("-r", "--read", help="Read from config file",
 parser.add_argument("-ws", "--warmSteps", type=int, default=10,
                     help="Warmup Simulation steps in unit of hundred thousand,\
                     default is 1 hundred thousand")
+parser.add_argument("-d", "--debug", help="debug mode",
+                    action="store_true")
 args = parser.parse_args()
 # TODO:
 # add clean command.
@@ -33,13 +35,21 @@ args = parser.parse_args()
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 n = args.number
 protein_name = args.template.strip('/')
-if args.steps != -1:
-    simulation_steps = args.steps * 10**6
-    warm_up_steps = args.warmSteps * 10**5
-else:  # -1 means a test run with 10000 steps
+if args.steps == -1:  # smallest run for debug.
     simulation_steps = 10**4
     warm_up_steps = 10**3
-    n = 1  # also set n to be 1
+    n = 1  # also set
+elif args.debug:  # test run
+    simulation_steps = 50 * 10**3
+    warm_up_steps = 50 * 10**3
+else:
+    simulation_steps = args.steps * 10**6
+    warm_up_steps = args.warmSteps * 10**5
+
+config = open('config.py', 'w')
+config.write("number_of_run = %d\nsimulation_steps = %d\n\
+warm_up_steps = %d\n" % (n, simulation_steps, warm_up_steps))
+config.close()
 
 for i in range(n):
     seed(datetime.now())
@@ -63,7 +73,7 @@ for i in range(n):
 #     os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
 #     < "+protein_name+".in")
     if(platform.system() == 'Darwin'):
-        os.system("lmp_serial \
+        os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
         < "+protein_name+".in")
     elif(platform.system() == 'Linux'):
         os.system("cp ~/opt/run.slurm .")

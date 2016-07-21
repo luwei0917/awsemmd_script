@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 # This script will take a STRIDE file and turn it into the standard format
 # ssweight file for AWSEM-MD simulations.
 # This is useful if you want to use the "correct" secondary structure
@@ -25,5 +26,3 @@ for line in f:
 
             else:
                 print '0.0 0.0'
-
-                

@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 # Script created by Bobby Kim and Nick Schafer on 1/8/13
 # This script assumes that you have a file called "pdbtmall"
 # in the current directory. This file is an XML version of the
