@@ -113,11 +113,14 @@ for i in range(n):
     os.system(
         "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
         chosen.txt chosen")
-    # os.system("cp ~/opt/plot_scripts/energy.plt .")
     os.system(
-        "python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py \
-        final.txt final.pdb ../../" +
-        protein_name+"/"+protein_name+".seq "+str(steps/1000))
+        "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
+        final.txt final")
+    # os.system("cp ~/opt/plot_scripts/energy.plt .")
+    # os.system(
+    #     "python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py \
+    #     final.txt final.pdb ../../" +
+    #     protein_name+"/"+protein_name+".seq "+str(steps/1000))
     # plots
     os.system("cp ~/opt/plot_scripts/*.plt .")
     os.system("cp ~/opt/plot_scripts/*.pml .")
