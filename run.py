@@ -17,14 +17,14 @@ parser = argparse.ArgumentParser(
 parser.add_argument("template", help="the name of template file")
 parser.add_argument("-n", "--number", type=int, default=20,
                     help="Number of simulation run")
-parser.add_argument("-s", "--steps", type=int, default=4,
+parser.add_argument("-s", "--steps", type=int, default=8,
                     help="Simulation steps in unit of million,\
-                    default is 4 million, -1 means test run")
+                    default is 8 million, -1 means test run")
 parser.add_argument("-r", "--read", help="Read from config file",
                     action="store_true")
-parser.add_argument("-ws", "--warmSteps", type=int, default=10,
+parser.add_argument("-ws", "--warmSteps", type=int, default=20,
                     help="Warmup Simulation steps in unit of hundred thousand,\
-                    default is 1 hundred thousand")
+                    default is 2 million")
 parser.add_argument("-d", "--debug", help="debug mode",
                     action="store_true")
 args = parser.parse_args()
