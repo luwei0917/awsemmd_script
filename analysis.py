@@ -24,8 +24,8 @@ parser.add_argument("-p", "--plotOnly", help="only generate the plot",
 parser.add_argument("-s", "--steps", type=int, default=4,
                     help="Simulation steps in unit of million,\
                     default is 4 million, -1 means test run")
-parser.add_argument("-r", "--read", help="Read from config file",
-                    action="store_true")
+parser.add_argument("-o", "--offAuto", help="turn off from Read from \
+                    config file", action="store_true")
 args = parser.parse_args()
 
 list_of_max_q = []
@@ -36,7 +36,7 @@ if args.steps == -1:
     n = 1  # also set n to be 1 ,this is for debug
     steps = 10*1000
 # imp.load_source('run_paramter.py', '')
-if(args.read):
+if(not args.offAuto):
     exec (open("config.py").read())
     # print(n, x, y, type(y))
     n = number_of_run
@@ -124,7 +124,7 @@ for i in range(n):
     # plots
     os.system("cp ~/opt/plot_scripts/*.plt .")
     os.system("cp ~/opt/plot_scripts/*.pml .")
-    os.system("/usr/local/bin/pymol -qc -r print_final.pml")
+    # os.system("/usr/local/bin/pymol -qc -r print_final.pml")
     os.system(  # replace PROTEIN with pdb name
             "sed -i.bak 's/PROTEIN/'" +
             protein_name +
@@ -160,6 +160,6 @@ for i in range(n):
     os.chdir("../..")
 if not args.plotOnly:
     sys.stdout = open("analysis/list_of_max_q", "w")
-    for q in list_of_max_q:
-        print(q[0], q[1], q[2])  # max q, timestep of max q, last q
+    for idx, q in enumerate(list_of_max_q):
+        print(q[0], q[1], q[2], idx)  # max q, timestep of max q, last q
     sys.stdout.close()

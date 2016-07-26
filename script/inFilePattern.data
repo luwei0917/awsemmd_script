@@ -38,7 +38,7 @@ run WARM_UP_STEPS
 velocity all create 600.0 RANDOM
 
 unfix 1
-fix               1 all nvt temp 600.0 200.0 100.0
+fix               1 all nvt temp 600.0 300.0 100.0
 
 
 ###################################################################
