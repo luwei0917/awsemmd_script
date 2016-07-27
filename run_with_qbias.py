@@ -8,7 +8,6 @@ import argparse
 import platform
 from datetime import datetime
 import imp
-import numpy as np
 # from run_parameter import *
 parser = argparse.ArgumentParser(
         description="This is a python3 script to\
