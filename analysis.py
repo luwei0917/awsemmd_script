@@ -17,8 +17,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument("template", help="the name of template file")
 parser.add_argument("-n", "--number", type=int, default=20,
                     help="Number of simulation run")
-parser.add_argument("-m", "--movie", type=int, default=-1,
-                    help="generate the movie,defalut is all")
+parser.add_argument("-m", "--movie", type=int, default=0,
+                    help="generate the movie,defalut is the first one")
 parser.add_argument("-p", "--plotOnly", help="only generate the plot",
                     action="store_true")
 parser.add_argument("-s", "--steps", type=int, default=4,
