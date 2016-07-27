@@ -53,7 +53,7 @@ config = open('config.py', 'w')
 config.write("number_of_run = %d\nsimulation_steps = %d\n\
 warm_up_steps = %d\n" % (n, simulation_steps, warm_up_steps))
 config.close()
-for temp in range(200, 250, 50):
+for temp in range(200, 300, 50):
     # print(temp)
     seed(datetime.now())
 # simulation set up
