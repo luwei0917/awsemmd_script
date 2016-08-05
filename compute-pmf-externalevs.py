@@ -9,11 +9,14 @@ import math
 import sys
 import os
 import pickle # used to save files so that the initialization calculations don't have to be repeated
-import pymbar # used to do the computations of free energy
+#import pymbar # used to do the computations of free energy
 #sys.path.append('C:\\Users\\Dell\\Anaconda\\Lib\\site-packages\\pymbar\\')
 #sys.path.append('/home/hht1/programs/anaconda/pkgs/pymbar-3.0.0.beta2-np19py27_1/lib/python2.7/site-packages/pymbar-3.0.0.dev0-py2.7-linux-x86_64.egg/pymbar')
 #sys.path.append('/home/hht1/programs/anaconda/lib/python2.7/site-packages/pymbar-3.0.0.dev0-py2.7-linux-x86_64.egg/pymbar/')
-sys.path.append('/home/hht1/CODES/pymbar-2.1.0-beta/build/lib.linux-x86_64-2.7/pymbar')
+#sys.path.append('/home/hht1/CODES/pymbar-2.1.0-beta/build/lib.linux-x86_64-2.7/pymbar')
+#sys.path.append('/home/wl45/pymbar/build/lib.linux-ppc64-2.7')
+sys.path.append('/home/wl45/python/lib/python2.7/site-packages/pymbar-3.0.0.dev0-py2.7-linux-ppc64.egg')
+import pymbar
 import timeseries # used to subsample data so that the samples are uncorrelated
 
 # Flags
