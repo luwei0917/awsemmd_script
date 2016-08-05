@@ -28,7 +28,7 @@ os.system("cp ~/opt/parameter/* .")
 print("You need zim")
 # grep -E "CB|CA  GLY" 1qjp.pdb > cbs.data
 #awk '{if($8>12.7) print "1"; else if($8<-12.7) print "3";else print "2" }' cbs.data  > zim
-
+#awk '{if($8>14.4) print "1"; else if($8<-14.4) print "3";else print "2" }'  temp.data  > zim
 # os.system("echo '%s A' > pdbidlist" % protein_name)
 # os.system("getTransmembraneRegions.py pdbidlist")
 # os.system("mv %sA.tm zim" % protein_name)
