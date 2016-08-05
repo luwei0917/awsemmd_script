@@ -46,7 +46,7 @@ else:
     simulation_steps = args.steps * 10**6
     warm_up_steps = args.warmSteps * 10**5
 
-warm_up_steps = 20**6
+warm_up_steps = 2*10**6
 simulation_steps = 8*10**6
 
 config = open('config.py', 'w')
