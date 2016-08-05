@@ -73,6 +73,10 @@ for i in range(n):
         str(q0) +
         "'/g' fix_qbias_coeff.data")
     os.system(  # replace TEMPERATURE with specific steps
+        "sed -i.bak 's/Q0/'" +
+        str(q0) +
+        "'/g' fix_qbias_coeff1.data")
+    os.system(  # replace TEMPERATURE with specific steps
         "sed -i.bak 's/TEMPERATURE/'" +
         str(temp) +
         "'/g' "+protein_name+".in")
