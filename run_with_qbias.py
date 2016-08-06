@@ -59,7 +59,6 @@ temp = 400
 seed(datetime.now())
 # simulation set up
 os.system("mkdir -p simulation/"+str(temp))
-
 os.chdir("simulation/"+str(temp))
 q_bias_step = 1.0/n
 q0 = 0
