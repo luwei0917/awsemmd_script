@@ -1,0 +1,4 @@
+you need to change the directory first;
+and the q file is named p_total by default, energy file e_total;
+Also, since wham is the excutable compiled from c script on Davinci, YOU NEED TO RECOMPILE IT.
+
