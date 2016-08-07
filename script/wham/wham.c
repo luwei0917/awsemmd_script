@@ -1,37 +1,41 @@
 /*
    (C) Emilio Gallicchio, Rutgers University, 2005
 
-   A program for WHAM (Weighted Histogram Analysis Method) analysis of 
+   A program for WHAM (Weighted Histogram Analysis Method) analysis of
    histograms with error analysis. Use of this program in published work
    should be acknowledged by citing the following paper:
 
-   Gallicchio, E., M. Andrec, A.K. Felts, and R.M. Levy.  
-   "T-WHAM, Replica Exchange, and Transition Paths." 
-    J. Phys. Chem. B, (2005) in press. 
+   Gallicchio, E., M. Andrec, A.K. Felts, and R.M. Levy.
+   "T-WHAM, Replica Exchange, and Transition Paths."
+    J. Phys. Chem. B, (2005) in press.
 
  */
-
+#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
 #include <time.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
-#include "ranlib.h"
-
+#include <string.h>
+// #include "ranlib.h"
+//gcc -x c wham.c -lm
 #define MAXSTRING 128
 
-/*extern int dirichlet_gen2bins(int nbins, double *p, double *counts, 
+/*extern int dirichlet_gen2bins(int nbins, double *p, double *counts,
 			      int bin0, int bin1);*/
-
+int ignuin(int rangeLow, int rangeHigh) {
+    double myRand = rand()/(1.0 + RAND_MAX);
+    int range = rangeHigh - rangeLow + 1;
+    int myRand_scaled = (myRand * range) + rangeLow;
+    return myRand_scaled;
+}
 
 int wham_error_analysis(int nbins, double *counts, double *p0,
 			int nsim, double *simcounts, double **cu,
 			double *avp, double *dp, int nsamples,
 			int npasses, int no_zerocb, int verbose,
 			FILE *samples_file){
-  /* 
+  /*
   Samples WHAM distribution and returns standard deviation of each
   population.
 
@@ -45,8 +49,8 @@ int wham_error_analysis(int nbins, double *counts, double *p0,
   j: bin index
   pj: probability of bin j
   nj: total count in bin j (from any simulation)
-     
-  Samples by rejection using proposals from Dirichlet distribution 
+
+  Samples by rejection using proposals from Dirichlet distribution
   */
 
   double *p = (double *)calloc(nbins,sizeof(double));
@@ -56,7 +60,7 @@ int wham_error_analysis(int nbins, double *counts, double *p0,
   int i,j, jj, m;
   long moves = 0;
   long accepted = 0;
-  int pass; 
+  int pass;
   long seed1 = (long)time(NULL);
   long seed2 = (long)sqrt((double)seed1);
   int bin0, bin1;
@@ -81,8 +85,8 @@ int wham_error_analysis(int nbins, double *counts, double *p0,
   }
 
   /* init random number generator */
-  setall(seed1,seed2);
-
+  // setall(seed1,seed2);
+	srand (time(NULL));
   if(verbose) fprintf(stderr,"Starting sampling ...\n");
 
   for(sample=0;sample<nsamples;sample++){
@@ -94,11 +98,11 @@ int wham_error_analysis(int nbins, double *counts, double *p0,
       if(verbose) fprintf(stderr,"Begin pass %d\n",pass+1);
 
       for(bin1=0;bin1<nbins;bin1++){
-	
+
 	if(no_zerocb && counts[bin1] <= 0) continue;
-	
+
 	moves += 1;
-	
+
 	/* select another bin at random */
 	bin0 = bin1;
 	while(bin0 == bin1 || (no_zerocb && counts[bin0] <= 0)){
@@ -110,18 +114,18 @@ int wham_error_analysis(int nbins, double *counts, double *p0,
 	  fprintf(stderr,"wham_error_analysis: error in dirichlet_gen2bins().\n");
 	  return -1;
 	}*/
-	
+
 	/* recompute f's */
 	for(i=0;i<nsim;i++){
-	  fnew[i] = f[i] + 
+	  fnew[i] = f[i] +
 	    cu[i][bin0]*(p[bin0]-p0_old) + cu[i][bin1]*(p[bin1]-p1_old);
 	}
 	t = 1.0;
 	for(i=0;i<nsim;i++){
 	  t *= pow(f[i]/fnew[i],simcounts[i]);
 	}
-	csi =  genunf(0.,1.); /* random numb  0 <= x <= 1 */
-	
+	// csi =  genunf(0.,1.); /* random numb  0 <= x <= 1 */
+	csi = ((double)rand()/(double)RAND_MAX);
 	if(t>(double)csi){
 	  /* accept */
 	  accepted += 1;
@@ -151,7 +155,7 @@ int wham_error_analysis(int nbins, double *counts, double *p0,
     if(verbose) fprintf(stderr,"End of sample %d\n",sample+1);
 
   }
-  
+
 
   /* print acceptance ratio */
   fprintf(stderr,"Error analysis acceptance ratio: %10.3f\n",
@@ -180,11 +184,11 @@ void print_usage(void){
 int main(int argc, char *argv[]){
 
   /* usage:
-     wham -c <counts_file> -s <simcount_file> -u <umbrella_potential_file> 
-      [-r <rmsd_convergence_value>] [-x <max_iterations>] 
-      [-e [-o <error_analysis_file>] [-n <nsamples>] [-p <passes_per_sample>] 
+     wham -c <counts_file> -s <simcount_file> -u <umbrella_potential_file>
+      [-r <rmsd_convergence_value>] [-x <max_iterations>]
+      [-e [-o <error_analysis_file>] [-n <nsamples>] [-p <passes_per_sample>]
           [-z] ]
-      
+
       if -e is given do error analysis
       if -o is given dump <nsamples> alternative probability distributions
         in file <error_analysis_file>.
@@ -206,7 +210,7 @@ int main(int argc, char *argv[]){
        p(xj): unbiased distribution at xj
        N(xj): total count at xj from all simulations (from counts_file)
        ni: total samples from simulation i (from totalcount_file)
-       cij: umbrella potential in bin j of simulation i 
+       cij: umbrella potential in bin j of simulation i
             (from umbrella_potential_file)
 
 	    cij = exp[-(betai-beta)Ej] exp(-betai wi(x_j))
@@ -214,7 +218,7 @@ int main(int argc, char *argv[]){
 	    where betai is temperature of simulation of i
 	    and wi(x_j) is umbrella potential at bin j from simulation i.
 	    If the temperatue is different in each simulation it is assumed
-	    that the potential energy E is one of the binned quantities. 
+	    that the potential energy E is one of the binned quantities.
 	    Therefore Ej is potential energy in bin j. If the temperature
 	    is the same in all simulations the first term in the r.h.s of
 	    the equation for cij is 1 (betai = beta).
@@ -349,7 +353,7 @@ int main(int argc, char *argv[]){
     fprintf(stderr,"wham: cannot allocate counts array (%d doubles)\n",
 	    nbins);
     return(-1);
-  }  
+  }
   rewind(counts_file);
   for(j=0;j<nbins;j++){
     if(fscanf(counts_file, "%lf", &(counts[j])) != 1){
@@ -375,7 +379,7 @@ int main(int argc, char *argv[]){
     fprintf(stderr,"wham: cannot allocate simcounts array (%d doubles)\n",
 	    nsim);
     return(-1);
-  }  
+  }
   rewind(simcounts_file);
   for(i=0;i<nsim;i++){
     if(fscanf(simcounts_file, "%lf", &(simcounts[i])) != 1){
@@ -426,7 +430,7 @@ int main(int argc, char *argv[]){
   p = (double *)calloc(nbins,sizeof(double));
   t = (double *)calloc(nbins,sizeof(double));
   if(!f || !u || !p || !t){
-    fprintf(stderr,"wham: cannot allocate work arrays (%d doubles)\n", 
+    fprintf(stderr,"wham: cannot allocate work arrays (%d doubles)\n",
 	    2.*nsim+2*nbins);
     return(-1);
   }
@@ -486,7 +490,7 @@ int main(int argc, char *argv[]){
   }else{
     fprintf(stderr,"Maximum number of iterations exceeded.\n");
   }
-  
+
   fprintf(stderr,"Simulation   -log(f)\n");
   for(i=0;i<nsim;i++){
     fprintf(stderr,"%d %16.8e %.8f\n",i,-log(f[i]), f[i]);

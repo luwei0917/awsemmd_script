@@ -15,7 +15,7 @@ import pickle # used to save files so that the initialization calculations don't
 #sys.path.append('/home/hht1/programs/anaconda/lib/python2.7/site-packages/pymbar-3.0.0.dev0-py2.7-linux-x86_64.egg/pymbar/')
 #sys.path.append('/home/hht1/CODES/pymbar-2.1.0-beta/build/lib.linux-x86_64-2.7/pymbar')
 #sys.path.append('/home/wl45/pymbar/build/lib.linux-ppc64-2.7')
-sys.path.append('/home/wl45/python/lib/python2.7/site-packages/pymbar-3.0.0.dev0-py2.7-linux-ppc64.egg')
+sys.path.append('/home/wl45/python/lib/python2.7/site-packages/pymbar-3.0.0.dev0-py2.7-linux-ppc64.egg/pymbar')
 import pymbar
 import timeseries # used to subsample data so that the samples are uncorrelated
 
@@ -133,7 +133,7 @@ for arg in range(len(sys.argv)):
       pmf_variable_column_2_file = 'DEFAULT'
       pmf_variable_column_2 = int(pmf_variable_column_2)
   elif sys.argv[arg] == "-v2n":
-    nbins2 = int(sys.argv[arg+1])    
+    nbins2 = int(sys.argv[arg+1])
   elif sys.argv[arg] == "-st":
     start_temperature = int(sys.argv[arg+1])
   elif sys.argv[arg] == "-et":
@@ -220,7 +220,7 @@ if submit_to_cluster == False:
     elif answer == 'n':
       print "Okay. Exiting."
       sys.exit()
-  
+
   # Check to see if you've already generated an mbar.pkl file and offer to reuse it to save time
   load_pickle = False
   if check_for_pickle_files:
@@ -309,8 +309,8 @@ if load_pickle == False:
     k =0 # simuluation index
     for trajectory_file in files:
         print "Reading file %s ..." % trajectory_file
-        kT = kB * temperatures[k]   # thermal energy 
-        beta = 1.0 / kT             # inverse temperature 
+        kT = kB * temperatures[k]   # thermal energy
+        beta = 1.0 / kT             # inverse temperature
         t = 0                       # time step index
         for line in open(trajectory_file, 'r'):
             if line[0] == '#':
@@ -468,8 +468,8 @@ if load_pickle == False:
         N = N_k[k] # number of uncorrelated snapshots
         for l in range(K):
             # Compute reduced potential in all other temperatures and biasing potentials indexed by l.
-            kT = kB * temperatures[l] # thermal energy 
-            beta = 1.0 / kT           # inverse temperature 
+            kT = kB * temperatures[l] # thermal energy
+            beta = 1.0 / kT           # inverse temperature
             u_kln[k,l,0:N] = beta * (U_kn[0][k,0:N])
             for i in range(nbiases):
                 U_bias = (biasing_strengths[i][l]/2.0) * (biasing_variable_kn[i][k,0:N] - biasing_values[i][l])**2 # biasing potential for this sample
@@ -790,7 +790,7 @@ for perturbation_index in range(nperturbations+1):
                     # if bin clustering, include pmf information in feppb file
                     if cluster_binning:
                         fep_pb_output_file.write("%12.3f %12.3f %12.3f %12.3f " % (f_i[i], df_i[i], E_i[i], S_i[i]))
-                    
+
                     for j in range(len(reduced_fep_data)):
                         fep_pb_output_file.write("%12.3f " % fep_values[i][j])
                     fep_pb_output_file.write("\n")
