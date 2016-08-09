@@ -9,11 +9,11 @@ import imp
 parser = argparse.ArgumentParser(
         description="This is a python3 script to scancel my jobs")
 
-parser.add_argument("from", type=int, help="starting from")
-parser.add_argument("N", type=int, help="next n jobs")
+parser.add_argument("start", type=int, help="starting from")
+parser.add_argument("-n", type=int, default=1, help="next n jobs")
 args = parser.parse_args()
 
-n = args.N
-start = args.from
+n = args.n
+start = args.start
 for i in range(n):
-    print(start+i)# os.system("scancel "+str(start+i))
+    os.system("scancel "+str(start+i))
