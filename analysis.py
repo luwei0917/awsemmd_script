@@ -94,28 +94,29 @@ for i in range(n):
             "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
             dump.lammpstrj movie")
 
-    sys.stdout = open("final.txt", "w")
-    print('ITEM: TIMESTEP')
-    time_step = steps
-    with open('dump.lammpstrj') as input_data:
-        # Skips text before the beginning of the interesting block:
-        for line in input_data:
-            if line.strip() == str(time_step):
-                print(line.strip())  # Or whatever test is needed
-                break
-        # Reads text until the end of the block:
-        for line in input_data:  # This keeps reading the file
-            if line.strip() == 'ITEM: TIMESTEP':
-                break
-            print(line.strip())
-    sys.stdout.close()
+    # sys.stdout = open("final.txt", "w")
+    # print('ITEM: TIMESTEP')
+    # time_step = steps
+    # with open('dump.lammpstrj') as input_data:
+    #     # Skips text before the beginning of the interesting block:
+    #     for line in input_data:
+    #         if line.strip() == str(time_step):
+    #             print(line.strip())  # Or whatever test is needed
+    #             break
+    #     # Reads text until the end of the block:
+    #     for line in input_data:  # This keeps reading the file
+    #         if line.strip() == 'ITEM: TIMESTEP':
+    #             break
+    #         print(line.strip())
+    # sys.stdout.close()
+    #
+    # os.system(
+    #     "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
+    #     chosen.txt chosen")
+    # os.system(
+    #     "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
+    #     final.txt final")
 
-    os.system(
-        "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
-        chosen.txt chosen")
-    os.system(
-        "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
-        final.txt final")
     # os.system("cp ~/opt/plot_scripts/energy.plt .")
     # os.system(
     #     "python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py \
@@ -154,9 +155,9 @@ for i in range(n):
             protein_name +
             "'/g' show.tcl")
     os.system("cp ../../"+protein_name+"/*.pdb .")
-    os.system(
-            "python2 ~/opt/script/CalcRMSD.py "+protein_name+" \
-            dump.lammpstrj rmsd")
+    # os.system(
+    #         "python2 ~/opt/script/CalcRMSD.py "+protein_name+" \
+    #         dump.lammpstrj rmsd")
     os.chdir("../..")
 if not args.plotOnly:
     sys.stdout = open("analysis/list_of_max_q", "w")

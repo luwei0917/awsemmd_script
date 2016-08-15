@@ -19,27 +19,35 @@ args = parser.parse_args()
 
 w_helix_list = [0.1, 0.5, 1, 1.5]
 m_helix_list = [0.1, 0.5, 1, 1.5]
+
 for i in range(len(w_helix_list)):
     w = w_helix_list[i]
     for j in range(len(m_helix_list)):
-        m = m_helix_list[j]
-        folder_name = str(i)+"_"+str(j)
-        os.system("mkdir "+folder_name)
-        os.chdir(folder_name)
-        os.system("cp -r ../2xov .")
-        os.chdir("2xov")
-        os.system(
-                "sed -i.bak 's/W_HELIX/'" +
-                str(w) +
-                "'/g' fix_backbone_coeff.data")
-        os.system(
-                "sed -i.bak 's/M_HELIX/'" +
-                str(m) +
-                "'/g' fix_backbone_coeff.data")
-        os.chdir("..")
-        os.system("run.py 2xov/ -n 5")
 
-os.system("cp ~/opt/gg.py this_gg.py")
+        # m = m_helix_list[j]
+        folder_name = str(i)+"_"+str(j)
+        # os.system("cd "folder_name)
+        os.chdir(folder_name)
+        # os.system("analysis.py 2xov/")
+        # os.system("echo "+folder_name+" >> ../all")
+        os.system("sort -k 3 analysis/list_of_max_q > ../data/"+folder_name)
+        os.chdir("..")
+        # os.system("mkdir "+folder_name)
+        # os.chdir(folder_name)
+        # os.system("cp -r ../2xov .")
+        # os.chdir("2xov")
+        # os.system(
+        #         "sed -i.bak 's/W_HELIX/'" +
+        #         str(w) +
+        #         "'/g' fix_backbone_coeff.data")
+        # os.system(
+        #         "sed -i.bak 's/M_HELIX/'" +
+        #         str(m) +
+        #         "'/g' fix_backbone_coeff.data")
+        # os.chdir("..")
+        # os.system("run.py 2xov/ -n 5")
+
+# os.system("cp ~/opt/gg.py this_gg.py")
 # for i in range(5):
 #     os.system("mkdir "+str(i))
 #     os.chdir(str(i))
