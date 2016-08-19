@@ -65,5 +65,6 @@ for SpringConstant in rg_cylindrical_spring_constants:
     else:
         print("system unkown")
     os.chdir("..")
+    folder_name = ""
 
 # print("hello world")

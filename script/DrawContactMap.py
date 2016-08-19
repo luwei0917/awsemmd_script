@@ -56,7 +56,7 @@ else:
 
 frame = int(sys.argv[3])
 
-p = PDBParser(PERMISSIVE=1)
+p = PDBParser(PERMISSIVE=1, QUIET=True)
 
 s = p.get_structure(pdb_id, pdb_file)
 
@@ -144,5 +144,5 @@ if len(ca_atoms)>0:
         	        if isNative(sigma[i][j-i-4]):
                 	        plot([i+1],[j],'bs')
 #                        	plot([j],[i+1],'rs')
-
-show()
+savefig('foo.png')
+# show()

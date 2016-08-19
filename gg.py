@@ -5,7 +5,10 @@ import sys
 from time import sleep
 import subprocess
 import imp
-
+# Useful codes
+# os.system("awk '{print $NF}' all_wham.dat > e_total")
+# tr " " "\n"
+# sed 1d
 mypath = os.environ["PATH"]
 os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
@@ -15,37 +18,58 @@ parser = argparse.ArgumentParser(
 parser.add_argument("protein", help="the name of protein")
 # parser.add_argument("template", help="the name of template file")
 args = parser.parse_args()
+result_folder = "Wei_Results_Aug_18"
+os.system("mkdir -p "+result_folder)
+protein_list = ['T089', 'T120', 'T251', 'top7', '1UBQ']
+# sublist = ['_ha', '_he']
+sublist = ['_lp', '_ha']
+os.chdir(result_folder)
+for protein in protein_list:
+    os.system("mkdir -p "+protein)
+    os.chdir(protein)
+    for sub in sublist:
+        if sub == '_ha':
+            os.system("mkdir -p best_1st")
+            os.system("cp ../../"+protein+".pdb best_1st/")
+            for i in range(20):
+                os.system("cp ../../"+protein+sub+"/best_q/"+str(i)+".pdb best_1st/"+str(i+1)+".pdb")
+        if sub == '_lp':
+            os.system("mkdir -p best_2nd")
+            os.system("cp ../../"+protein+".pdb best_2nd/")
+            for i in range(20):
+                os.system("cp ../../"+protein+sub+"/best_q/"+str(i)+".pdb best_2nd/"+str(i+1)+".pdb")
+    os.chdir("..")
+# exit(1)
 
-
-w_helix_list = [0.1, 0.5, 1, 1.5]
-m_helix_list = [0.1, 0.5, 1, 1.5]
-
-for i in range(len(w_helix_list)):
-    w = w_helix_list[i]
-    for j in range(len(m_helix_list)):
-
-        # m = m_helix_list[j]
-        folder_name = str(i)+"_"+str(j)
-        # os.system("cd "folder_name)
-        os.chdir(folder_name)
-        # os.system("analysis.py 2xov/")
-        # os.system("echo "+folder_name+" >> ../all")
-        os.system("sort -k 3 analysis/list_of_max_q > ../data/"+folder_name)
-        os.chdir("..")
-        # os.system("mkdir "+folder_name)
-        # os.chdir(folder_name)
-        # os.system("cp -r ../2xov .")
-        # os.chdir("2xov")
-        # os.system(
-        #         "sed -i.bak 's/W_HELIX/'" +
-        #         str(w) +
-        #         "'/g' fix_backbone_coeff.data")
-        # os.system(
-        #         "sed -i.bak 's/M_HELIX/'" +
-        #         str(m) +
-        #         "'/g' fix_backbone_coeff.data")
-        # os.chdir("..")
-        # os.system("run.py 2xov/ -n 5")
+# w_helix_list = [0.1, 0.5, 1, 1.5]
+# m_helix_list = [0.1, 0.5, 1, 1.5]
+#
+# for i in range(len(w_helix_list)):
+#     w = w_helix_list[i]
+#     for j in range(len(m_helix_list)):
+#
+#         # m = m_helix_list[j]
+#         folder_name = str(i)+"_"+str(j)
+#         # os.system("cd "folder_name)
+#         os.chdir(folder_name)
+#         # os.system("analysis.py 2xov/")
+#         # os.system("echo "+folder_name+" >> ../all")
+#         os.system("sort -k 3 analysis/list_of_max_q > ../data/"+folder_name)
+#         os.chdir("..")
+#         # os.system("mkdir "+folder_name)
+#         # os.chdir(folder_name)
+#         # os.system("cp -r ../2xov .")
+#         # os.chdir("2xov")
+#         # os.system(
+#         #         "sed -i.bak 's/W_HELIX/'" +
+#         #         str(w) +
+#         #         "'/g' fix_backbone_coeff.data")
+#         # os.system(
+#         #         "sed -i.bak 's/M_HELIX/'" +
+#         #         str(m) +
+#         #         "'/g' fix_backbone_coeff.data")
+#         # os.chdir("..")
+#         # os.system("run.py 2xov/ -n 5")
 
 # os.system("cp ~/opt/gg.py this_gg.py")
 # for i in range(5):
@@ -168,10 +192,7 @@ for i in range(len(w_helix_list)):
 #         os.system("cp chosen.pdb ../../../{}/".format(result_folder) + folder+"/best_q/"+str(i)+".pdb")
 #         os.chdir("../..")
 #     os.chdir("..")
-# Useful codes
-# os.system("awk '{print $NF}' all_wham.dat > e_total")
-# tr " " "\n"
-# sed 1d
+
 
 # result_folder = "WeiLu_Aug_07"
 # os.system("mkdir -p "+result_folder)
