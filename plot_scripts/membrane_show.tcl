@@ -17,12 +17,12 @@ graphics 0 line {-1000 -15 14.4} {1000 -15 14.4} width 2
 graphics 0 line {-1000 -15 -14.4} {1000 -15 -14.4} width 2
 
 
-#while {[molinfo top get numreps] > 0} {mol delrep 0 top}
-#mol representation NewCartoon
-#mol color ColorID 1
-#mol selection all
-#mol material Opaque
-#mol addrep top
+while {[molinfo top get numreps] > 0} {mol delrep 0 top}
+mol representation NewCartoon
+mol color ColorID 1
+mol selection all
+mol material Opaque
+mol addrep top
 
 
 axes location off
