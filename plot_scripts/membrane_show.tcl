@@ -32,8 +32,10 @@ color Display Background white
 
 user add key q {rotate x by 90}
 user add key w {rotate x by -90}
+
 puts "ahora anda lindo todo!!!"
 
+animate style Once
 animate goto 0
 display resetview
 rotate x by 90.000000

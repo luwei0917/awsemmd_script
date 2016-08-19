@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 import os
-import argparse
 import sys
-from time import sleep
-import subprocess
+import random
+import time
+from random import seed, randint
+import argparse
+import platform
+from datetime import datetime
 import imp
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
@@ -18,26 +21,50 @@ parser = argparse.ArgumentParser(
 parser.add_argument("protein", help="the name of protein")
 # parser.add_argument("template", help="the name of template file")
 args = parser.parse_args()
-result_folder = "Wei_Results_Aug_18"
-os.system("mkdir -p "+result_folder)
-protein_list = ['T089', 'T120', 'T251', 'top7', '1UBQ']
-# sublist = ['_ha', '_he']
-sublist = ['_lp', '_ha']
-os.chdir(result_folder)
-for protein in protein_list:
-    os.system("mkdir -p "+protein)
-    os.chdir(protein)
-    for sub in sublist:
-        if sub == '_ha':
-            os.system("mkdir -p best_1st")
-            os.system("cp ../../"+protein+".pdb best_1st/")
-            for i in range(20):
-                os.system("cp ../../"+protein+sub+"/best_q/"+str(i)+".pdb best_1st/"+str(i+1)+".pdb")
-        if sub == '_lp':
-            os.system("mkdir -p best_2nd")
-            os.system("cp ../../"+protein+".pdb best_2nd/")
-            for i in range(20):
-                os.system("cp ../../"+protein+sub+"/best_q/"+str(i)+".pdb best_2nd/"+str(i+1)+".pdb")
+# protein_name = args.template.split('_', 1)[-1].strip('/')
+protein_name = args.protein.strip('/')
+simulation_steps = 4 * 10**6
+warm_up_steps = 10 * 10**5
+
+seed(datetime.now())
+folder_name = ""
+
+
+n = 3
+for i in range(n):
+    # simulation set up
+    folder_name = str(i)
+    os.system("mkdir -p "+folder_name)
+    os.system("cp -r "+args.protein+"* "+folder_name)
+    os.chdir(folder_name)
+    os.system("cp ../../helix_less/simulation/"+str(i)+"/restart.4000000 .")
+    os.system(  # replace SIMULATION_STEPS with specific steps
+        "sed -i.bak 's/WARM_UP_STEPS/'" +
+        str(warm_up_steps) +
+        "'/g' "+protein_name+".in")
+    os.system(  # replace RANDOM with a radnom number
+            "sed -i.bak 's/RANDOM/'" +
+            str(randint(1, 10**6)) +
+            "'/g' "+protein_name+".in")
+    os.system(  # replace SIMULATION_STEPS with specific steps
+            "sed -i.bak 's/SIMULATION_STEPS/'" +
+            str(simulation_steps) +
+            "'/g' "+protein_name+".in")
+# if(platform.system() == 'Darwin'):
+#     os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
+#     < "+protein_name+".in")
+    if(platform.system() == 'Darwin'):
+        os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
+        < "+protein_name+".in")
+    elif(platform.system() == 'Linux'):
+        os.system("cp ~/opt/run.slurm .")
+        os.system(  # replace PROTEIN with pdb name
+                "sed -i.bak 's/PROTEIN/'" +
+                protein_name +
+                "'/g' run.slurm")
+        os.system("sbatch run.slurm")
+    else:
+        print("system unkown")
     os.chdir("..")
 # exit(1)
 
