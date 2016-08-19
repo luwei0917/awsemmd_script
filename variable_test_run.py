@@ -23,15 +23,17 @@ simulation_steps = 4 * 10**6
 warm_up_steps = 10 * 10**5
 
 seed(datetime.now())
-folder_name = ""
+folder_list = open('folder_list', 'w')
+
 rg_cylindrical_spring_constants = [1, 0.1]
-add_force_strengths = [10, 1]
+add_force_strengths = [-10, -1]
 for ForceStrength in add_force_strengths:
-    folder_name += "ForceStrength"+str(ForceStrength)
+    pre_folder_name = "ForceStrength"+str(ForceStrength)
     for SpringConstant in rg_cylindrical_spring_constants:
         # simulation set up
-        folder_name += "SpringConstant"+str(SpringConstant)+"/"
+        folder_name = pre_folder_name+"SpringConstant"+str(SpringConstant)+"/"
         os.system("mkdir -p "+folder_name)
+        folder_list.write(folder_name+"\n")
         os.system("cp -r "+args.template+"* "+folder_name)
         os.chdir(folder_name)
         os.system(  # replace SIMULATION_STEPS with specific steps
@@ -71,4 +73,5 @@ for ForceStrength in add_force_strengths:
             print("system unkown")
         os.chdir("..")
 
+folder_list.close()
 # print("hello world")
