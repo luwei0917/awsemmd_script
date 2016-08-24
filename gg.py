@@ -27,45 +27,58 @@ simulation_steps = 4 * 10**6
 warm_up_steps = 10 * 10**5
 
 seed(datetime.now())
-folder_name = ""
+# folder_name = ""
+# result_folder = "WeiLu_Aug_07"
 
-
-n = 3
-for i in range(n):
-    # simulation set up
-    folder_name = str(i)
-    os.system("mkdir -p "+folder_name)
-    os.system("cp -r "+args.protein+"* "+folder_name)
-    os.chdir(folder_name)
-    os.system("cp ../../helix_less/simulation/"+str(i)+"/restart.4000000 .")
-    os.system(  # replace SIMULATION_STEPS with specific steps
-        "sed -i.bak 's/WARM_UP_STEPS/'" +
-        str(warm_up_steps) +
-        "'/g' "+protein_name+".in")
-    os.system(  # replace RANDOM with a radnom number
-            "sed -i.bak 's/RANDOM/'" +
-            str(randint(1, 10**6)) +
-            "'/g' "+protein_name+".in")
-    os.system(  # replace SIMULATION_STEPS with specific steps
-            "sed -i.bak 's/SIMULATION_STEPS/'" +
-            str(simulation_steps) +
-            "'/g' "+protein_name+".in")
-# if(platform.system() == 'Darwin'):
-#     os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
-#     < "+protein_name+".in")
-    if(platform.system() == 'Darwin'):
-        os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
-        < "+protein_name+".in")
-    elif(platform.system() == 'Linux'):
-        os.system("cp ~/opt/run.slurm .")
-        os.system(  # replace PROTEIN with pdb name
-                "sed -i.bak 's/PROTEIN/'" +
-                protein_name +
-                "'/g' run.slurm")
-        os.system("sbatch run.slurm")
-    else:
-        print("system unkown")
+protein_list = ['T089', 'T120', 'T251', 'TOP7', '1UBQ']
+# sublist = ['_ha', '_he']
+# sublist = ['_lp', '_he_lp']
+# folder_list = []
+for protein in protein_list:
+    os.chdir(protein)
+    os.chdir("best_1st")
+    os.system("python3 ~/opt/small_script/cross_q.py")
     os.chdir("..")
+    os.chdir("best_2nd")
+    os.system("python3 ~/opt/small_script/cross_q.py")
+    os.chdir("..")
+    os.chdir("..")
+# n = 3
+# for i in range(n):
+#     # simulation set up
+#     folder_name = str(i)
+#     os.system("mkdir -p "+folder_name)
+#     os.system("cp -r "+args.protein+"* "+folder_name)
+#     os.chdir(folder_name)
+#     os.system("cp ../../helix_less/simulation/"+str(i)+"/restart.4000000 .")
+#     os.system(  # replace SIMULATION_STEPS with specific steps
+#         "sed -i.bak 's/WARM_UP_STEPS/'" +
+#         str(warm_up_steps) +
+#         "'/g' "+protein_name+".in")
+#     os.system(  # replace RANDOM with a radnom number
+#             "sed -i.bak 's/RANDOM/'" +
+#             str(randint(1, 10**6)) +
+#             "'/g' "+protein_name+".in")
+#     os.system(  # replace SIMULATION_STEPS with specific steps
+#             "sed -i.bak 's/SIMULATION_STEPS/'" +
+#             str(simulation_steps) +
+#             "'/g' "+protein_name+".in")
+# # if(platform.system() == 'Darwin'):
+# #     os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
+# #     < "+protein_name+".in")
+#     if(platform.system() == 'Darwin'):
+#         os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
+#         < "+protein_name+".in")
+#     elif(platform.system() == 'Linux'):
+#         os.system("cp ~/opt/run.slurm .")
+#         os.system(  # replace PROTEIN with pdb name
+#                 "sed -i.bak 's/PROTEIN/'" +
+#                 protein_name +
+#                 "'/g' run.slurm")
+#         os.system("sbatch run.slurm")
+#     else:
+#         print("system unkown")
+#     os.chdir("..")
 # exit(1)
 
 # w_helix_list = [0.1, 0.5, 1, 1.5]
