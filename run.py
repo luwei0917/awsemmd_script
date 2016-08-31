@@ -27,6 +27,9 @@ parser.add_argument("-ws", "--warmSteps", type=int, default=20,
                     default is 2 million")
 parser.add_argument("-t", "--test", help="test mode",
                     action="store_true")
+parser.add_argument("-c", "--copy",
+                    help="copy the restart file before run",
+                    action="store_true")
 args = parser.parse_args()
 # TODO:
 # add clean command.
@@ -54,8 +57,12 @@ config.close()
 for i in range(n):
     seed(datetime.now())
 # simulation set up
+    if(args.copy):
+        os.system("cp restart/{}/melt.4000000 1qjp/".format(i))
+
     os.system("mkdir -p simulation/"+str(i))
     os.system("cp -r "+args.template+"* simulation/"+str(i))
+
     os.chdir("simulation/"+str(i))
     os.system(  # replace SIMULATION_STEPS with specific steps
         "sed -i.bak 's/WARM_UP_STEPS/'" +
