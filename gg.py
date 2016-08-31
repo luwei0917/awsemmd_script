@@ -12,17 +12,19 @@ import imp
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
 # sed 1d
+# sort -u -k 3
+# sed -e 's/+T//'
 mypath = os.environ["PATH"]
 os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
 
 parser = argparse.ArgumentParser(
         description="This is my playground for current project")
-parser.add_argument("protein", help="the name of protein")
+# parser.add_argument("protein", help="the name of protein")
 # parser.add_argument("template", help="the name of template file")
 args = parser.parse_args()
 # protein_name = args.template.split('_', 1)[-1].strip('/')
-protein_name = args.protein.strip('/')
+# protein_name = args.protein.strip('/')
 simulation_steps = 4 * 10**6
 warm_up_steps = 10 * 10**5
 
@@ -31,18 +33,27 @@ seed(datetime.now())
 # result_folder = "WeiLu_Aug_07"
 
 protein_list = ['T089', 'T120', 'T251', 'TOP7', '1UBQ']
+sublist = ['_he_lp']
 # sublist = ['_ha', '_he']
 # sublist = ['_lp', '_he_lp']
 # folder_list = []
 for protein in protein_list:
-    os.chdir(protein)
-    os.chdir("best_1st")
-    os.system("python3 ~/opt/small_script/cross_q.py")
-    os.chdir("..")
-    os.chdir("best_2nd")
-    os.system("python3 ~/opt/small_script/cross_q.py")
-    os.chdir("..")
-    os.chdir("..")
+    for sub in sublist:
+        folder_name = protein+sub
+        os.chdir(folder_name)
+        os.chdir("best_q")
+        os.system("python3 ~/opt/small_script/cross_q.py")
+        # for i in range(19, -1, -1):
+        #     os.system("mv {}.pdb {}.pdb".format(i, i+1))
+        os.chdir("../..")
+    # os.chdir(protein)
+    # os.chdir("best_1st")
+    # os.system("python3 ~/opt/small_script/cross_q.py")
+    # os.chdir("..")
+    # os.chdir("best_2nd")
+    # os.system("python3 ~/opt/small_script/cross_q.py")
+    # os.chdir("..")
+    # os.chdir("..")
 # n = 3
 # for i in range(n):
 #     # simulation set up
