@@ -33,7 +33,7 @@ seed(datetime.now())
 # result_folder = "WeiLu_Aug_07"
 
 protein_list = ['T089', 'T120', 'T251', 'TOP7', '1UBQ']
-sublist = ['_he_lp']
+sublist = ['']
 # sublist = ['_ha', '_he']
 # sublist = ['_lp', '_he_lp']
 # folder_list = []
@@ -41,8 +41,9 @@ for protein in protein_list:
     for sub in sublist:
         folder_name = protein+sub
         os.chdir(folder_name)
-        os.chdir("best_q")
-        os.system("python3 ~/opt/small_script/cross_q.py")
+        os.chdir("best_2nd")
+        os.system("pymol ~/opt/plot_scripts/align.pml > matrix.dat")
+        os.system("head -n 70 matrix.dat | tail -n 20 > cealign_matrix.dat")
         # for i in range(19, -1, -1):
         #     os.system("mv {}.pdb {}.pdb".format(i, i+1))
         os.chdir("../..")
