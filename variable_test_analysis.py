@@ -8,6 +8,7 @@ import argparse
 import platform
 from datetime import datetime
 import imp
+import glob
 # from run_parameter import *
 parser = argparse.ArgumentParser(
         description="This is a python3 script to\
@@ -41,16 +42,18 @@ vmd = "/Applications/VMD\ 1.9.2.app/Contents/MacOS/startup.command"
 #                 folder_name = pre_folder_name+"SpringConstant"+str(SpringConstant)+"_"+str(i)+"/"
 #                 os.system("mkdir -p "+folder_name)
 #                 folder_list.write(folder_name+"\n")
-folder_list = [line.rstrip('/\n') for line in open('folder_list')]
+folder_list = glob.glob("MemK1ForceStrength-3SpringConstant1_*")
+#folder_list = [line.rstrip('/\n') for line in open('folder_list')]
+
 # folder_list = ["MemK2ForceStrength-4SpringConstant0.1_0"]
-os.system("mkdir -p Results")
+os.system("mkdir -p MyResults")
 for folder_name in folder_list:
     os.chdir(folder_name)
     # os.system("vmd -e memmbrane_show.tcl")
-    os.system("cp ~/opt/plot_scripts/2xov_movie.tcl .")
-    os.system(vmd+" -e 2xov_movie.tcl")
+    os.system("cp ~/opt/plot_scripts/2xov_movie_screenshot.tcl .")
+    os.system(vmd+" -e 2xov_movie_screenshot.tcl")
     print(folder_name)
-    os.system("cp frame200.tga ../Results/frame"+folder_name+"_200.tga")
-    os.system("cp frame450.tga ../Results/frame"+folder_name+"_450.tga")
+    os.system("cp frame1000.tga ../MyResults/frame"+folder_name+"_1000.tga")
+    #os.system("cp frame450.tga ../Results/frame"+folder_name+"_450.tga")
     # os.system("movie.py "+protein_name)
     os.chdir("..")
