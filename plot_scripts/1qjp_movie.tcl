@@ -1,10 +1,4 @@
-# Bacterio
-#mol load pdb 2xov.pdb
-
 mol load pdb movie.pdb
-
-
-
 
 while {[molinfo top get numreps] > 0} {mol delrep 0 top}
 
