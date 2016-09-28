@@ -4,7 +4,7 @@ import argparse
 import sys
 from time import sleep
 import subprocess
-import glob
+import imp
 
 mypath = os.environ["PATH"]
 os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
@@ -14,34 +14,70 @@ parser = argparse.ArgumentParser(
         description="This is a python3 script to\
         automatically analysis the simulation")
 
-parser.add_argument("template", help="the name of template file")
-# parser.add_argument("-n", "--number", type=int, default=20,
-                    #  help="Number of simulation run")
-parser.add_argument("-o", "--offAuto", help="turn off from Read from \
-                    config file", action="store_true")
+# parser.add_argument("template", help="the name of template file")
+parser.add_argument("-m", "--movie", type=int, default=-2,
+                    help="generate the movie,defalut is none")
 args = parser.parse_args()
 
-# n = args.number
-protein_name = args.template.strip('/')
+list_of_max_q = []
 
-# folder_list = glob.glob("*")
-# print(folder_list)
-# sys.exit()
-if(not args.offAuto):
-    exec (open("config.py").read())
-    n = number_of_run
-    steps = simulation_steps
-os.system("mkdir -p "+protein_name+"/lowest_energy")
+exec(open("config.py").read())
+# print(n, x, y, type(y))
+n = number_of_run
+steps = simulation_steps
+# print(n, steps)
+# sys.exit(0)
+
+# protein_name = args.template.strip('/')
+
+os.system("mkdir -p analysis")
 for i in range(n):
-    # move
+    # analysis
+    os.system("mkdir -p analysis/"+str(i))
     os.chdir("analysis/"+str(i))
-    # os.system("cp chosen.pdb ../../../weilu/"+folder+"/best_q/"+str(i)+".pdb")
-    # os.system("cp ~/opt/plot_scripts/print_chosen.pml .")
-    # os.system("/usr/local/bin/pymol -qc -r print_chosen.pml")
-    # os.system("cp chosen.png ../../results/chosen_"+str(i)+".png")
-    # os.system("cp final.png ../../results/final_"+str(i)+".png")
-    # os.system("cp final.pdb ../../results/final_"+str(i)+".pdb")
-    # os.system("cp final.txt ../../results/final_"+str(i)+".txt")
-    os.system("cp lowest_energy.pdb \
-        ../../"+protein_name+"/lowest_energy/lowest_energy_" + str(i)+".pdb")
+    # move necessary file into analysis folder
+    sys.stdout = open("chosen.txt", "w")
+    os.system("mv ../../simulation/"+str(i)+"/dump.lammpstrj .")
+    os.system("mv ../../simulation/"+str(i)+"/wham.dat .")
+    os.system("mv ../../simulation/"+str(i)+"/energy.dat .")
+    record_time = 0
+    with open('wham.dat') as input_data:
+        # Skips text before the beginning of the interesting block:
+        record_time = 0
+        max_q = 0
+        last_q = 0
+        next(input_data)
+        for line in input_data:
+            # time, q = line.strip().split()
+
+            time = int(line.strip().split()[0])
+            q = float(line.strip().split()[1])
+            if(q > max_q):
+                record_time = time
+                max_q = q
+            last_q = q
+        list_of_max_q += [(max_q, record_time, last_q)]
+    time_step = record_time
+
+    print('ITEM: TIMESTEP')
+    with open('dump.lammpstrj') as input_data:
+        # Skips text before the beginning of the interesting block:
+        for line in input_data:
+            if line.strip() == str(time_step):
+                print(line.strip())  # Or whatever test is needed
+                break
+        # Reads text until the end of the block:
+        for line in input_data:  # This keeps reading the file
+            if line.strip() == 'ITEM: TIMESTEP':
+                break
+            print(line.strip())
+    sys.stdout.close()
+    if(args.movie == -1 or args.movie == i):
+        os.system(
+            "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
+            dump.lammpstrj movie")
     os.chdir("../..")
+sys.stdout = open("analysis/list_of_max_q", "w")
+for idx, q in enumerate(list_of_max_q):
+    print(q[0], q[1], q[2], idx)  # max q, timestep of max q, last q
+sys.stdout.close()

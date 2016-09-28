@@ -5,53 +5,33 @@ import sys
 from time import sleep
 import subprocess
 import imp
-import glob
 
+# mypath = os.environ["PATH"]
+# os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
+# my_env = os.environ.copy()
 
 parser = argparse.ArgumentParser(
-        description="This moves all plot scripts here")
-
-parser.add_argument("template", help="the name of template file")
+        description="Plot my graphs quickly")
+# parser.add_argument("template", help="the name of template file")
 args = parser.parse_args()
-protein_name = args.template.split('.')[0]
-os.system("cp -r ~/opt/plot_scripts .")
-os.chdir("plot_scripts")
-# os.system("/usr/local/bin/pymol -qc -r print_final.pml")
-os.system(  # replace PROTEIN with pdb name
-        "sed -i.bak 's/PROTEIN/'" +
-        protein_name +
-        "'/g' show_origin.pml")
+# protein_name = args.template.strip('/')
 
-# os.system(  # replace PROTEIN with pdb name
-#         "sed -i.bak 's/NUMBER/'" +
-#         str(i) +
-#         "'/g' energy.plt")
-# os.system("gnuplot energy.plt")
 
-# os.system(  # replace PROTEIN with pdb name
-#         "sed -i.bak 's/NUMBER/'" +
-#         str(i) +
-#         "'/g' q_value.plt")
-# os.system("gnuplot q_value.plt")
+exec(open("config.py").read())
+# print(n, x, y, type(y))
+n = number_of_run
+steps = simulation_steps
+# protein_name
 
-# os.system("gnuplot detail_energy.plt")
-# subprocess.Popen("gnuplot q_value.plt", env=my_env)
+# print(n, steps)
+# sys.exit(0)
 
-os.system(  # replace PROTEIN with pdb name
-        "sed -i.bak 's/PROTEIN/'" +
-        protein_name +
-        "'/g' membraneProtein.tcl")
-
-# os.system("cp ../../"+protein_name+"/*.pdb .")
-
-# # os.chdir('')
-# name_list = glob.glob('*.dat')
-# # os.chdir('..')
-# print(name_list)
-# # os.system("gnuplot -e 'out_file_name="test"; in_file_name="T120_400"'")
-# for name in name_list:
-#     print("gnuplot -e \"out_file_name='%s'; in_file_name='%s'\" \
-#         ~/opt/plot_scripts/list_q.gp" % (name[0:-4]+'.pdf', name))
-#     os.system("gnuplot -e \"out_file_name='%s'; in_file_name='%s'\" \
-#         ~/opt/plot_scripts/list_q.gp" % (name[0:-4]+'.pdf', name))
-os.chdir("..")
+os.system("mkdir -p results")
+os.system("qw_all.plt")
+for i in range(n):
+    # analysis
+    os.chdir("analysis/"+str(i))
+    os.system("cp ~/opt/plot_scripts/*.plt .")
+    os.system("gnuplot qw.plt")
+    os.system("mv qw.pdf ../../results/qw_{0}.pdf".format(str(i)))
+    os.chdir("../..")

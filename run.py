@@ -50,10 +50,10 @@ else:
     warm_up_steps = args.warmSteps * 10**5
 
 config = open('config.py', 'w')
-config.write("number_of_run = %d\nsimulation_steps = %d\n\
-warm_up_steps = %d\n" % (n, simulation_steps, warm_up_steps))
+config.write("protein_name = '%s'\nnumber_of_run = %d\nsimulation_steps = %d\n\
+warm_up_steps = %d\n" % (protein_name, n, simulation_steps, warm_up_steps))
 config.close()
-
+# sys.exit()
 for i in range(n):
     seed(datetime.now())
 # simulation set up
