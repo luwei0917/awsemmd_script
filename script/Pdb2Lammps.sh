@@ -16,7 +16,7 @@ output_file=$2
 echo $pdb_file
 echo $output_file
 
-python $s/PDBToSequanceFile.py $pdb_file $output_file".se"
-python $s/SequanceToZ-Matrix.py $output_file".se" $output_file".zm" -d
-python $s/Z-MatrixToCoordinates.py $output_file".zm" $output_file".coord"
-python $s/CoordinatesToWorkLammpsDataFile.py $output_file".coord" "data."$output_file -b
+python2 $s/PDBToSequanceFile.py $pdb_file $output_file".se"
+python2 $s/SequanceToZ-Matrix.py $output_file".se" $output_file".zm" -d
+python2 $s/Z-MatrixToCoordinates.py $output_file".zm" $output_file".coord"
+python2 $s/CoordinatesToWorkLammpsDataFile.py $output_file".coord" "data."$output_file -b
