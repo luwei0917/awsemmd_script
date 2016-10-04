@@ -32,6 +32,8 @@ steps = simulation_steps
 
 os.system("mkdir -p analysis")
 for i in range(n):
+    sys.stdout = sys.__stdout__
+    print(i)
     # analysis
     os.system("mkdir -p analysis/"+str(i))
     os.chdir("analysis/"+str(i))
@@ -40,6 +42,7 @@ for i in range(n):
     os.system("mv ../../simulation/"+str(i)+"/dump.lammpstrj .")
     os.system("mv ../../simulation/"+str(i)+"/wham.dat .")
     os.system("mv ../../simulation/"+str(i)+"/energy.dat .")
+    os.system("cp ../../simulation/"+str(i)+"/"+protein_name+".pdb .")
     record_time = 0
     with open('wham.dat') as input_data:
         # Skips text before the beginning of the interesting block:

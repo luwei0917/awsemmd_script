@@ -29,6 +29,7 @@ steps = simulation_steps
 os.system("mkdir -p results")
 os.system("qw_all.plt")
 for i in range(n):
+    print(i)
     # analysis
     os.chdir("analysis/"+str(i))
     os.system("cp ~/opt/plot_scripts/*.plt .")

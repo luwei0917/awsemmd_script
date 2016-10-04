@@ -26,7 +26,3 @@ else:
             "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
             part_dump movie")
 os.system("cp ~/opt/plot_scripts/*.tcl .")
-os.system(  # replace PROTEIN with pdb name
-        "sed -i.bak 's/PROTEIN/'" +
-        protein_name +
-        "'/g' membrane_show.tcl")
