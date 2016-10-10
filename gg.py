@@ -25,28 +25,50 @@ parser = argparse.ArgumentParser(
 args = parser.parse_args()
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 # protein_name = args.protein.strip('/')
-simulation_steps = 4 * 10**6
-warm_up_steps = 10 * 10**5
 
-seed(datetime.now())
+os.system("mkdir ga_2m")
+os.system("cp -r 2lhc variables.dat ga_2m/")
+os.chdir("")
+# simulation_steps = 4 * 10**6
+# warm_up_steps = 10 * 10**5
+#
+# seed(datetime.now())
+# n= 20
+# vmd = "/Applications/VMD\ 1.9.2.app/Contents/MacOS/startup.command"
+#
+# os.system("BuildAllAtomsFromLammps.py dump.lammpstrj movie")
+# os.system("cp ~/opt/plot_scripts/2xov_movie.tcl .")
+# os.system(vmd+" -e 2xov_movie.tcl ")
+# os.system("mkdir -p MyResults")
+# for i in range(n):
+#     print(i)
+#     os.chdir("analysis/"+str(i))
+#     os.system("cp ~/opt/plot_scripts/2xov_movie_screenshot.tcl .")
+#     os.system(vmd+" -e 2xov_movie_screenshot.tcl")
+#     os.system("cp frame1000.tga ../../MyResults/frame"+str(i)+"_1000.tga")
+#     #os.system("cp frame450.tga ../Results/frame"+folder_name+"_450.tga")
+#     # os.system("movie.py "+protein_name)
+#     os.chdir("../..")
+#     # analysis
+
 # folder_name = ""
 # result_folder = "WeiLu_Aug_07"
 
-protein_list = ['T089', 'T120', 'T251', 'TOP7', '1UBQ']
-sublist = ['']
-# sublist = ['_ha', '_he']
-# sublist = ['_lp', '_he_lp']
-# folder_list = []
-for protein in protein_list:
-    for sub in sublist:
-        folder_name = protein+sub
-        os.chdir(folder_name)
-        os.chdir("best_2nd")
-        os.system("pymol ~/opt/plot_scripts/align.pml > matrix.dat")
-        os.system("head -n 70 matrix.dat | tail -n 20 > cealign_matrix.dat")
-        # for i in range(19, -1, -1):
-        #     os.system("mv {}.pdb {}.pdb".format(i, i+1))
-        os.chdir("../..")
+# protein_list = ['T089', 'T120', 'T251', 'TOP7', '1UBQ']
+# sublist = ['']
+# # sublist = ['_ha', '_he']
+# # sublist = ['_lp', '_he_lp']
+# # folder_list = []
+# for protein in protein_list:
+#     for sub in sublist:
+#         folder_name = protein+sub
+#         os.chdir(folder_name)
+#         os.chdir("best_2nd")
+#         os.system("pymol ~/opt/plot_scripts/align.pml > matrix.dat")
+#         os.system("head -n 70 matrix.dat | tail -n 20 > cealign_matrix.dat")
+#         # for i in range(19, -1, -1):
+#         #     os.system("mv {}.pdb {}.pdb".format(i, i+1))
+#         os.chdir("../..")
     # os.chdir(protein)
     # os.chdir("best_1st")
     # os.system("python3 ~/opt/small_script/cross_q.py")
