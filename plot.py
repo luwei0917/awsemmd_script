@@ -27,7 +27,8 @@ steps = simulation_steps
 # sys.exit(0)
 
 os.system("mkdir -p results")
-os.system("qw_all.plt")
+os.system("cp ~/opt/plot_scripts/qw_all.plt .")
+os.system("gnuplot -e 'number_of_run={}' qw_all.plt".format(n-1))
 for i in range(n):
     print(i)
     # analysis

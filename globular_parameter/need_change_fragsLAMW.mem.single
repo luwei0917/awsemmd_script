@@ -1,0 +1,5 @@
+[Target]
+2lhc
+
+[Memories]
+./2lhc.gro 1 1 56 1
