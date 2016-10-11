@@ -16,5 +16,5 @@ output_file=$2
 echo $pdb_file
 echo $output_file
 
-python $s/PDBToCoordinates.py $pdb_file $output_file".coord"
-python $s/CoordinatesToWorkLammpsDataFile.py $output_file".coord" "data."$output_file -b
+python2 $s/PDBToCoordinates.py $pdb_file $output_file".coord"
+python2 $s/CoordinatesToWorkLammpsDataFile.py $output_file".coord" "data."$output_file -b

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 
 # ----------------------------------------------------------------------
 # Copyright (2010) Aram Davtyan and Garegin Papoian
@@ -33,7 +33,7 @@ class Atom:
     x = 0.0
     y = 0.0
     z = 0.0
-    
+
     def __init__(self, No, ch, ty, x, y, z, desc=''):
         self.No = No
         self.ty = ty
@@ -77,7 +77,7 @@ class PDB_Atom:
 	y = 0.0
 	z = 0.0
 	atm = 'C'
-	
+
 	def __init__(self, no, ty, ch, res, res_no, x, y, z, atm):
 		self.no = no
 		self.ty = ty
@@ -88,7 +88,7 @@ class PDB_Atom:
 		self.y = y
 		self.z = z
 		self.atm = atm
-		
+
 	def write_(self, f):
 		f.write('ATOM')
 		f.write(('       '+str(self.no))[-7:])
@@ -105,24 +105,24 @@ class PDB_Atom:
 		f.write('  0.00')
 		f.write(('            '+self.atm)[-12:]+'  ')
 		f.write('\n')
-	
+
 	def print_(self):
 		pass
 
 def three2one(prot):
     """ translate a protein sequence from 3 to 1 letter code"""
-    
+
     code = {"GLY" : "G", "ALA" : "A", "LEU" : "L", "ILE" : "I",
             "ARG" : "R", "LYS" : "K", "MET" : "M", "CYS" : "C",
             "TYR" : "Y", "THR" : "T", "PRO" : "P", "SER" : "S",
             "TRP" : "W", "ASP" : "D", "GLU" : "E", "ASN" : "N",
 	    "GLN" : "Q", "PHE" : "F", "HIS" : "H", "VAL" : "V",
             "M3L" : "K", "MSE" : "M", "CAS" : "C" }
-    
+
     newprot = ""
     for a in prot:
         newprot += code.get(a, "?")
-    
+
     return newprot
 
 if len(sys.argv)==1:
@@ -176,14 +176,14 @@ for ch in chains:
 	res_id = res.get_id()[0]
         if (res_id==' ' or res_id=='H_MSE' or res_id=='H_M3L' or res_id=='H_CAS') and is_regular_res:
             ires = ires + 1
-            resname = res.get_resname() 
+            resname = res.get_resname()
             if res:
                 sequance.append(resname)
             xyz_N = res['N'].get_coord()
             xyz_CA = res['CA'].get_coord()
             xyz_C = res['C'].get_coord()
 #            xyz_O = res['O'].get_coord()
-            # Get coordinates of O, including for labeled terminal residues 
+            # Get coordinates of O, including for labeled terminal residues
             if(res.has_id('O')):
                 xyz_O = res['O'].get_coord()
             elif(res.has_id('OT')):
@@ -201,32 +201,32 @@ for ch in chains:
                 xyz_H[0] = aH*xyz_N[0] + bH*xyz_CA[0] + cH*xyz_C[0]
                 xyz_H[1] = aH*xyz_N[1] + bH*xyz_CA[1] + cH*xyz_C[1]
                 xyz_H[2] = aH*xyz_N[2] + bH*xyz_CA[2] + cH*xyz_C[2]
-            
+
             iatom = iatom + 1
             atom = Atom(iatom, ichain, 'N', xyz_N[0], xyz_N[1], xyz_N[2], 'N')
             atoms.append(atom)
-            
+
             iatom = iatom + 1
             atom = Atom(iatom, ichain, 'C', xyz_CA[0], xyz_CA[1], xyz_CA[2], 'C-Alpha')
             atoms.append(atom)
-            
+
             iatom = iatom + 1
             atom = Atom(iatom, ichain, 'C', xyz_C[0], xyz_C[1], xyz_C[2], 'C-Prime')
             atoms.append(atom)
-            
+
             iatom = iatom + 1
             atom = Atom(iatom, ichain, 'O', xyz_O[0], xyz_O[1], xyz_O[2], 'O')
             atoms.append(atom)
-            
+
             if res.has_id('CB'):
                 iatom = iatom + 1
                 atom = Atom(iatom, ichain, 'C', xyz_CB[0], xyz_CB[1], xyz_CB[2], 'C-Beta')
                 atoms.append(atom)
-            else:            
+            else:
                 iatom = iatom + 1
                 atom = Atom(iatom, ichain, 'H', xyz_H[0], xyz_H[1], xyz_H[2], 'H-Beta')
                 atoms.append(atom)
-            
+
     if output_fn!="":
         if splite and len(sequance)==0: continue
         if splite:

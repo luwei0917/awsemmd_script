@@ -27,19 +27,12 @@ atom_style	peptide
 ``pair_coeff
 
 thermo 1000
-velocity	all create 600.0 RANDOM
+velocity all create TSTART RANDOM
 
 ``groups
-fix		  1 all nvt temp 600.0 600.0 100.0
+fix               1 all nvt temp TSTART TEND 100.0
 fix		  ``main_fix
-
-run WARM_UP_STEPS
-
-velocity all create 600.0 RANDOM
-
-unfix 1
-fix               1 all nvt temp 600.0 300.0 100.0
-
+fix     5 all momentum 1000 linear 1 1 0
 
 ###################################################################
 # calculate and output collective variables during the simulation #

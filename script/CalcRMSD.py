@@ -217,9 +217,10 @@ for l in lfile:
 lfile.close()
 
 if len(ca_atoms)>0:
+	print len(ca_atoms)
 	q = computeRMSD()
 	#q = computeQ()
-	out.write(str(round(q,3)))
+	out.write(str(round(q, 3)))
 	out.write(' ')
 	n_atoms = len(ca_atoms)
 

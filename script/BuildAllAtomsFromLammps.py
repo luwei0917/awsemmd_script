@@ -17,9 +17,9 @@ atom_type = {'1' : 'C', '2' : 'N', '3' : 'O', '4' : 'C', '5' : 'H', '6' : 'C'}
 atom_desc = {'1' : 'C-Alpha', '2' : 'N', '3' : 'O', '4' : 'C-Beta', '5' : 'H-Beta', '6' : 'C-Prime'}
 PDB_type = {'1' : 'CA', '2' : 'N', '3' : 'O', '4' : 'CB', '5' : 'HB', '6' : 'C' }
 
-d_res = {"C" : "CYS", "I" : "ILE", "S" : "SER", "Q" : "GLN", "K" : "LYS", 
-	 "N" : "ASN", "P" : "PRO", "T" : "THR", "F" : "PHE", "A" : "ALA", 
-	 "H" : "HIS", "G" : "GLY", "D" : "ASP", "L" : "LEU", "R" : "ARG", 
+d_res = {"C" : "CYS", "I" : "ILE", "S" : "SER", "Q" : "GLN", "K" : "LYS",
+	 "N" : "ASN", "P" : "PRO", "T" : "THR", "F" : "PHE", "A" : "ALA",
+	 "H" : "HIS", "G" : "GLY", "D" : "ASP", "L" : "LEU", "R" : "ARG",
 	 "W" : "TRP", "V" : "VAL", "E" : "GLU", "Y" : "TYR", "M" : "MET"}
 
 class PDB_Atom:
@@ -31,7 +31,7 @@ class PDB_Atom:
 	y = 0.0
 	z = 0.0
 	atm = 'C'
-	
+
 	def __init__(self, no, ty, res, res_no, x, y, z, atm):
 		self.no = no
 		self.ty = ty
@@ -41,7 +41,7 @@ class PDB_Atom:
 		self.y = y
 		self.z = z
 		self.atm = atm
-		
+
 	def write_(self, f):
 		f.write('ATOM')
 		f.write(('       '+str(self.no))[-7:])
@@ -66,7 +66,7 @@ class Atom:
 	y = 0.0
 	z = 0.0
 	desc = ''
-	
+
 	def __init__(self, No, ty, No_m, x, y, z, desc=''):
 		self.No = No
 		self.ty = ty
@@ -75,7 +75,7 @@ class Atom:
 		self.y = y
 		self.z = z
 		self.desc = desc
-	
+
 	def write_(self, f):
 		f.write(str(self.No))
 		f.write(' ')
@@ -183,21 +183,21 @@ def buildAllAtoms():
 				Cai = atoms[last_Ca_index]
 				Cai1 = ia
 				Oi = atoms[last_O_index]
-				
+
 				nx = an*Cai.x + bn*Cai1.x + cn*Oi.x
 				ny = an*Cai.y + bn*Cai1.y + cn*Oi.y
 				nz = an*Cai.z + bn*Cai1.z + cn*Oi.z
-				
+
 				px = ap*Cai.x + bp*Cai1.x + cp*Oi.x
                                 py = ap*Cai.y + bp*Cai1.y + cp*Oi.y
                                 pz = ap*Cai.z + bp*Cai1.z + cp*Oi.z
-				
+
 				N = Atom(index, 'N', '2', nx, ny, nz, 'N')
 				index = index + 1
 				Cp = Atom(int(Cai.No) + 1, 'C', '6', px, py, pz, 'C-Prime')
 #				Cp = Atom(index, 'C', '6', px, py, pz, 'C-Prime')
 #				index = index + 1
-				
+
 				atoms2.append(N)
 				atoms2.pop(Cp_index)
 				atoms2.insert(Cp_index, Cp)
@@ -211,7 +211,7 @@ def buildAllAtoms():
 			index = index + 1
 	if atoms2[Cp_index].No==0: atoms2.pop(Cp_index)
 	for i in range(Cp_index, len(atoms2)):
-		atoms2[i].No = atoms2[i].No - 1 
+		atoms2[i].No = atoms2[i].No - 1
 
 def buildBonds():
 	N_index = -1
@@ -288,7 +288,7 @@ def print_psf():
 	psfout.write((space8+str(len(bonds)))[-8:]+" !NBOND")
 	for i in range(0, len(bonds)):
 		ib = bonds[i]
-		if i%4==0: psfout.write("\n") 
+		if i%4==0: psfout.write("\n")
 		psfout.write((space8+str(ib[0]))[-8:])
 		psfout.write((space8+str(ib[1]))[-8:])
 	psfout.close()
@@ -333,7 +333,7 @@ if snapshot<0:
 				desc = atom_desc[l[1]]
 				atom = Atom(i_atom, atom_type[l[1]], l[1], x, y, z, desc)
 				atoms.append(atom)
-	
+
 	if len(atoms)>0:
 		buildAllAtoms()
 		convertToPDB()
