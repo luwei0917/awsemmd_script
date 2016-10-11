@@ -25,10 +25,15 @@ parser = argparse.ArgumentParser(
 args = parser.parse_args()
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 # protein_name = args.protein.strip('/')
-
-os.system("mkdir ga_2m")
-os.system("cp -r 2lhc variables.dat ga_2m/")
-os.chdir("")
+    # name = "ga_2m"
+number_of_run_list = [2, 4, 8, 16]
+for n in number_of_run_list:
+    name = "ga_"+str(n)+"m"
+    os.system("mkdir "+name)
+    os.system("cp -r 2lhc variables.dat "+name)
+    os.chdir(name)
+    os.system("run.py 2lhc/ -s "+str(n))
+    os.chdir("..")
 # simulation_steps = 4 * 10**6
 # warm_up_steps = 10 * 10**5
 #

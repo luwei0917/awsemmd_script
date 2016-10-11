@@ -33,7 +33,7 @@ for ForceStrength in add_force_strengths:
         str(ForceStrength) +
         "'/g' "+protein_name+".in")
     os.chdir("..")
-    os.system("run.py "+protein_name + "-n 1")
+    os.system("run.py " + protein_name + "/ -o")
     os.chdir("..")
 # n = 5
 # membrane_k = [1, 2, 3]
