@@ -5,6 +5,7 @@ bin-release/
 script/PDBs/
 script/Indices/
 # Other files and folders
+._.DS_Store
 .settings/
 VectorAlgebra.pyc
 script/VectorAlgebra.pyc
