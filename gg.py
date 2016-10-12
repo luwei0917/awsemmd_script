@@ -29,9 +29,23 @@ args = parser.parse_args()
 number_of_run_list = [2, 4, 8, 16]
 for n in number_of_run_list:
     name = "ga_"+str(n)+"m"
-    os.system("mkdir "+name)
-    os.system("cp -r 2lhc variables.dat "+name)
+    # os.system("mkdir "+name)
+    os.system("cp -r 2lhd.pdb "+name)
+
+    # os.system("cp -r 2lhc variables.dat "+name)
     os.chdir(name)
+    for i in range(20):
+        os.chdir("analysis/"+str(i))
+        os.system("cp ../../2lhd.pdb .")
+        os.system("python2 ~/opt/script/CalcQValue.py 2lhd.pdb dump.lammpstrj q_gb.dat")
+        os.system("python2 ~/opt/script/CalcQValue.py 2lhc.pdb dump.lammpstrj q_ga.dat")
+        os.system("")
+        os.system("gnuplot qw.plt")
+        os.system("mv qw.pdf ../../results/qw_{0}.pdf".format(str(i)))
+        os.chdir("../..")
+
+        os.chdir("../..")
+
     os.system("run.py 2lhc/ -s "+str(n))
     os.chdir("..")
 # simulation_steps = 4 * 10**6
