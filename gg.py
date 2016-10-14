@@ -20,14 +20,20 @@ my_env = os.environ.copy()
 
 parser = argparse.ArgumentParser(
         description="This is my playground for current project")
-parser.add_argument("protein", help="the name of protein")
+# parser.add_argument("protein", help="the name of protein")
 # parser.add_argument("template", help="the name of template file")
 args = parser.parse_args()
 # protein_name = args.template.split('_', 1)[-1].strip('/')
-protein_name = args.protein.strip('/')
+# protein_name = args.protein.strip('/')
     # name = "ga_2m"
 
 ## -------------Pulling--------
+os.system("cp ~/opt/small_script/springForce.plt .")
+os.system("cp ~/opt/small_script/springForce_smooth.plt .")
+os.system("gnuplot springForce.plt")
+os.system("gnuplot springForce_smooth.plt")
+os.system("open springForce.pdf")
+os.system("open springForce_smooth.pdf")
 # SpringConstant_list = [0.0001, 0.00001, 0.000001, 0.0000001]
 # for SpringConstant in SpringConstant_list:
 #     name = "spring"+str(SpringConstant)
