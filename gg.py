@@ -20,54 +20,71 @@ my_env = os.environ.copy()
 
 parser = argparse.ArgumentParser(
         description="This is my playground for current project")
-# parser.add_argument("protein", help="the name of protein")
+parser.add_argument("protein", help="the name of protein")
 # parser.add_argument("template", help="the name of template file")
 args = parser.parse_args()
 # protein_name = args.template.split('_', 1)[-1].strip('/')
-# protein_name = args.protein.strip('/')
+protein_name = args.protein.strip('/')
     # name = "ga_2m"
 
-
-number_of_run_list = [2, 4, 8, 16]
-for n in number_of_run_list:
-    name = "ga_"+str(n)+"m"
-    # os.system("mkdir "+name)
-    os.system("cp -r 2lhd.pdb "+name)
-
-    # os.system("cp -r 2lhc variables.dat "+name)
-    os.chdir(name)
-    for i in range(20):
-        os.chdir("analysis/"+str(i))
-        os.system("cp ../../2lhd.pdb .")
-        os.system("python2 ~/opt/script/CalcQValue.py 2lhd.pdb dump.lammpstrj q_gb.dat")
-        os.system("python2 ~/opt/script/CalcQValue.py 2lhc.pdb dump.lammpstrj q_ga.dat")
-        os.system("cp ~/opt/small_script/qw_gagb.plt .")
-        os.system("gnuplot qw_gagb.plt")
-        os.system("mv qw_gagb.pdf ../../results/qw_gagb_{0}.pdf".format(str(i)))
-        os.chdir("../..")
-    os.chdir("..")
-
-for n in number_of_run_list:
-    name = "ga_"+str(n)+"m"
-    # os.system("mkdir "+name)
-    os.system("cp -r 2lhd.pdb "+name)
-
-    # os.system("cp -r 2lhc variables.dat "+name)
-    os.chdir(name)
-    for i in range(20):
-        os.chdir("analysis/"+str(i))
-        os.system("paste q_ga.dat q_gb.dat > q_gagb.dat")
-        os.system("cp ~/opt/small_script/qw_ga-gb.plt .")
-        os.system("gnuplot qw_ga-gb.plt")
-        os.system("mv qw_ga-gb.pdf ../../results/qw_ga-gb_{0}.pdf".format(str(i)))
-        os.chdir("../..")
-    os.system("cp ~/opt/small_script/qw_ga_all.plt .")
-    os.system("gnuplot qw_ga_all.plt")
-    os.system("cp ~/opt/small_script/qw_gb_all.plt .")
-    os.system("gnuplot qw_gb_all.plt")
-    os.system("cp ~/opt/small_script/qw_diff_all.plt .")
-    os.system("gnuplot qw_diff_all.plt")
-    os.chdir("..")
+## -------------Pulling--------
+# SpringConstant_list = [0.0001, 0.00001, 0.000001, 0.0000001]
+# for SpringConstant in SpringConstant_list:
+#     name = "spring"+str(SpringConstant)
+#     os.system("mkdir "+name)
+#     os.chdir(name)
+#     os.system("cp -r ../2xov/ .")
+#     os.system("cp ../variables.dat .")
+#     os.chdir("2xov")
+#     os.system(  # replace SIMULATION_STEPS with specific steps
+#         "sed -i.bak 's/SpringForce/'" +
+#         str(SpringConstant) +
+#         "'/g' "+protein_name+".in")
+#     os.chdir("..")
+#     os.system("run.py 2xov/ -s 2")
+#     os.chdir("..")
+# #-----------------GAGB------------------------------
+# number_of_run_list = [2, 4, 8, 16]
+# for n in number_of_run_list:
+#     name = "ga_"+str(n)+"m"
+#     # os.system("mkdir "+name)
+#     os.system("cp -r 2lhd.pdb "+name)
+#
+#     # os.system("cp -r 2lhc variables.dat "+name)
+#     os.chdir(name)
+#     for i in range(20):
+#         os.chdir("analysis/"+str(i))
+#         os.system("cp ../../2lhd.pdb .")
+#         os.system("python2 ~/opt/script/CalcQValue.py 2lhd.pdb dump.lammpstrj q_gb.dat")
+#         os.system("python2 ~/opt/script/CalcQValue.py 2lhc.pdb dump.lammpstrj q_ga.dat")
+#         os.system("cp ~/opt/small_script/qw_gagb.plt .")
+#         os.system("gnuplot qw_gagb.plt")
+#         os.system("mv qw_gagb.pdf ../../results/qw_gagb_{0}.pdf".format(str(i)))
+#         os.chdir("../..")
+#     os.chdir("..")
+#
+# for n in number_of_run_list:
+#     name = "ga_"+str(n)+"m"
+#     # os.system("mkdir "+name)
+#     os.system("cp -r 2lhd.pdb "+name)
+#
+#     # os.system("cp -r 2lhc variables.dat "+name)
+#     os.chdir(name)
+#     for i in range(20):
+#         os.chdir("analysis/"+str(i))
+#         os.system("paste q_ga.dat q_gb.dat > q_gagb.dat")
+#         os.system("cp ~/opt/small_script/qw_ga-gb.plt .")
+#         os.system("gnuplot qw_ga-gb.plt")
+#         os.system("mv qw_ga-gb.pdf ../../results/qw_ga-gb_{0}.pdf".format(str(i)))
+#         os.chdir("../..")
+#     os.system("cp ~/opt/small_script/qw_ga_all.plt .")
+#     os.system("gnuplot qw_ga_all.plt")
+#     os.system("cp ~/opt/small_script/qw_gb_all.plt .")
+#     os.system("gnuplot qw_gb_all.plt")
+#     os.system("cp ~/opt/small_script/qw_diff_all.plt .")
+#     os.system("gnuplot qw_diff_all.plt")
+#     os.chdir("..")
+# #-----------------GAGB------------------------------
 
 # simulation_steps = 4 * 10**6
 # warm_up_steps = 10 * 10**5
