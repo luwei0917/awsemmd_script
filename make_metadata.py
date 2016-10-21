@@ -14,14 +14,14 @@ parser = argparse.ArgumentParser(
         make metadata")
 args = parser.parse_args()
 
-temp_list = range(200, 300, 50)
-q0_list = range(10, 95, 5)
+temp_list = range(200, 500, 100)
+q0_list = range(10, 100, 10)
 
 # config = open('config.py', 'w')
 # config.write("number_of_run = %d\nsimulation_steps = %d\n\
 # warm_up_steps = %d\n" % (n, simulation_steps, warm_up_steps))
 # config.close()
-kconstant = 400
+kconstant = 200
 metadata = open("metadatafile", "w")
 for temp in temp_list:
     for q0_percent in q0_list:

@@ -44,6 +44,7 @@ for i in range(n):
     os.system("mv ../../simulation/"+str(i)+"/energy.dat .")
     os.system("cp ../../simulation/"+str(i)+"/"+protein_name+".pdb .")
     record_time = 0
+    os.system("BuildAllAtomsFromLammps.py dump.lammpstrj final {}".format(int(steps/1000)))
     with open('wham.dat') as input_data:
         # Skips text before the beginning of the interesting block:
         record_time = 0
