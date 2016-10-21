@@ -41,7 +41,7 @@ args = parser.parse_args()
 n = args.number
 protein_name = args.template.strip('/')
 if args.steps == -1:  # smallest run for debug.
-    simulation_steps = 10**4
+    simulation_steps = 10**5
     warm_up_steps = 10**3
     n = 1  # also set
 elif args.test:  # test run

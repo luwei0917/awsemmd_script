@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("template", help="the name of template file")
 parser.add_argument("-n", "--number", type=int, default=20,
                     help="Number of simulation run")
-parser.add_argument("-s", "--steps", type=int, default=8,
+parser.add_argument("-s", "--steps", type=int, default=2,
                     help="Simulation steps in unit of million,\
                     default is 8 million, -1 means test run")
 parser.add_argument("-r", "--read", help="Read from config file",
@@ -50,13 +50,13 @@ warm_up_steps = 2*10**6
 simulation_steps = 4*10**6
 
 config = open('config.py', 'w')
-config.write("number_of_run = %d\nsimulation_steps = %d\n\
-warm_up_steps = %d\n" % (n, simulation_steps, warm_up_steps))
+config.write("protein_name = '%s'\nnumber_of_run = %d\nsimulation_steps = %d\n\
+warm_up_steps = %d\n" % (protein_name, n, simulation_steps, warm_up_steps))
 config.close()
 
-# temp_list = [200, 300, 400]
-n = 1
-temp_list = [200]
+temp_list = [200, 300, 400]
+n = 10
+# temp_list = [300, 350, 400]
 # print(temp)
 
 # simulation set up
@@ -81,6 +81,14 @@ for temp in temp_list:
             "'/g' fix_qbias_coeff1.data")
         os.system(  # replace TEMPERATURE with specific steps
             "sed -i.bak 's/TEMPERATURE/'" +
+            str(temp) +
+            "'/g' "+protein_name+".in")
+        os.system(  # replace TEMPERATURE with specific steps
+            "sed -i.bak 's/TSTART/'" +
+            str(temp) +
+            "'/g' "+protein_name+".in")
+        os.system(  # replace TEMPERATURE with specific steps
+            "sed -i.bak 's/TEND/'" +
             str(temp) +
             "'/g' "+protein_name+".in")
         os.system(  # replace SIMULATION_STEPS with specific steps
