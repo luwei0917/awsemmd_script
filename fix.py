@@ -22,7 +22,6 @@ parser = argparse.ArgumentParser(description="This is my playground for current 
 # parser.add_argument("protein", help="the name of protein")
 # parser.add_argument("template", help="the name of template file")
 parser.add_argument("-f", "--freeEnergy", help="free energy data sort ", action="store_true", default=False)
-parser.add_argument("--fix", help="fix ", action="store_true", default=False)
 args = parser.parse_args()
 
 
@@ -92,22 +91,9 @@ def free_energy_analysis():
             os.chdir("..")
         os.chdir("..")
 
-
-def fix():
-    n = 20
-    os.chdir("analysis")
-    os.system("rm highest_q")
-    for i in range(n):
-        os.chdir(str(i))
-        os.system("python2 ~/opt/script/CalcQValue.py 2lhc.pdb dump.lammpstrj ga")
-        os.system("tail -n 1000 ga | sort | tail -n 1 > ga_highest")
-        os.system("cat ga_highest >> ../highest_q")
-        os.chdir("..")
 # wham_analysis()
-if(args.freeEnergy):
-    free_energy_analysis()
-if(args.fix):
-    fix()
+free_energy_analysis()
+
 
 ## -------------Pulling--------
 # os.system("cp ~/opt/small_script/springForce.plt .")

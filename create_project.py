@@ -21,12 +21,13 @@ os.system("stride %s.pdb > ssweight.stride" % protein_name)
 os.system("stride2ssweight.py > ssweight")
 os.system("GetCACADistancesFile.py %s native.dat" % protein_name)
 os.system("GetCACoordinatesFromPDB.py %s nativecoords.dat" % protein_name)
-os.system("cp ~/opt/database/* .")
-os.system("prepFragsLAMW_index.py \
-    cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 0" % protein_name)
+# os.system("cp ~/opt/database/* .")
+# os.system("prepFragsLAMW_index.py \
+#     cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 0" % protein_name)
 # os.system("cp ~/opt/globular_parameter/* .")
 os.system("cp ~/opt/parameter/* .")
 os.system("python2 ~/opt/script/Pdb2Gro.py %s.pdb %s.gro" % (protein_name, protein_name))
+os.system("cp ~/opt/variables.dat .")
 # print("You need zim")
 # grep -E "CB|CA  GLY" 1qjp.pdb > cbs.data
 #awk '{if($8>12.7) print "1"; else if($8<-12.7) print "3";else print "2" }' cbs.data  > zim

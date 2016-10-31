@@ -28,7 +28,7 @@ class PDB_Atom:
 	y = 0.0
 	z = 0.0
 	atm = 'C'
-	
+
 	def __init__(self, no, ty, mol, res, res_no, x, y, z, atm):
 		self.no = no
 		self.ty = ty
@@ -39,7 +39,7 @@ class PDB_Atom:
 		self.y = y
 		self.z = z
 		self.atm = atm
-		
+
 	def write_(self, f):
 		f.write('ATOM')
 		f.write(('       '+str(self.no))[-7:])
@@ -66,7 +66,7 @@ class Atom:
 	y = 0.0
 	z = 0.0
 	desc = ''
-	
+
 	def __init__(self, No, ty, No_m, x, y, z, desc=''):
 		self.No = No
 		self.ty = ty
@@ -75,7 +75,7 @@ class Atom:
 		self.y = y
 		self.z = z
 		self.desc = desc
-	
+
 	def write_(self, f):
 		f.write(str(self.No))
 		f.write(' ')
@@ -189,7 +189,7 @@ for chain in chains:
 
 if len(ca_atoms_pdb) != len(ca_atoms_pdb2):
 	print "Error: Pdb structures have different lengths!"
-	exit() 
+	exit()
 
 for i in range(0, len(ca_atoms_pdb)+1):
 	sigma.append( (1+i)**sigma_exp )

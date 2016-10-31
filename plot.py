@@ -12,11 +12,15 @@ import imp
 
 parser = argparse.ArgumentParser(
         description="Plot my graphs quickly")
-# parser.add_argument("template", help="the name of template file")
+
+parser.add_argument("-t", "--temperature", type=int, default=400,
+                    help="temperature")
 args = parser.parse_args()
 # protein_name = args.template.strip('/')
-
-
+# os.system("cp ~/opt/plot_scripts/free_energy.plt .")
+# os.system("gnuplot free_energy.plt ")
+# os.system("open free_energy.pdf")
+#
 exec(open("config.py").read())
 # print(n, x, y, type(y))
 n = number_of_run

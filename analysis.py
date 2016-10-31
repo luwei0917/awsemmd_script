@@ -11,4 +11,5 @@ os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
 
 os.system("move.py")
-os.system("plot.py")
+os.system("gg.py --fix")
+# os.system("plot.py")
