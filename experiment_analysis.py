@@ -20,7 +20,7 @@ exec(open("config.py").read())
 n = number_of_run
 steps = simulation_steps
 # protein_name = protein_name
-
+os.system("mkdir results")
 clean()
 os.chdir("analysis")
 
@@ -30,10 +30,19 @@ for i in range(n):
     os.chdir("..")
 
 os.chdir("../results")
-os.system("paste ga.dat gb.dat > gagb.dat")
+os.system("paste ga_highest.dat gb_highest.dat > gagb.dat")
+
 os.system("cp ~/opt/gagb/q_ga-gb.gp .")
 os.system("gnuplot q_ga-gb.gp")
 os.system("open q_ga-gb.pdf")
+
+os.system("cp ~/opt/gagb/q_ga.gp .")
+os.system("gnuplot q_ga.gp")
+os.system("open q_ga.pdf")
+
+os.system("cp ~/opt/gagb/q_gb.gp .")
+os.system("gnuplot q_gb.gp")
+os.system("open q_gb.pdf")
 os.chdir("..")
 # os.system("mkdir -p results")
 # for i in range(n):

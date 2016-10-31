@@ -39,9 +39,9 @@ def memory_assign(number):
 
     memfile.write("[Memories]" + "\n")
     # T089
-    start1=[1,22,42,56];
-    start2=[86,107,127,141]
-    length=[41,34,28,26];
+    # start1=[1,22,42,56];
+    # start2=[86,107,127,141]
+    # length=[41,34,28,26];
 
     # TOP7
     # start1=[1,9,22,40];
@@ -69,9 +69,9 @@ def memory_assign(number):
     # length=[22,30,29,30,30,19];
 
     # 1R69
-    # start1=[1,17,27,44];
-    # start2=[1,17,27,44];
-    # length=[23,21,26,20];
+    start1=[1,17,27,44];
+    start2=[1,17,27,44];
+    length=[23,21,26,20];
 
     # GAGB
     # start1=[1,22];
@@ -85,6 +85,8 @@ def memory_assign(number):
         # qqq = subprocess.Popen(['cd',fragwd], stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
         # qqq = subprocess.check_output("cd %s" % (fragwd), shell=True)
         os.chdir(fragwd)
+        os.chdir(fragwd+".cluster")
+
         # print(fragwd)
         filelist = glob.glob("clustersize*.pdb")
         print(filelist)
@@ -100,7 +102,8 @@ def memory_assign(number):
                 namegro = "frag_" + str(i) + '.gro'
                 # q = subprocess.Popen(['python','~/opt/script/Pdb2Gro.py',filelist[i],namegro], stderr=subprocess.STDOUT, stdout=subprocess.PIPE);
                 # os.chdir(fragwd)
-                os.system("python2 ~/opt/script/Pdb2Gro.py %s %s" % (filelist[i][0:-4], namegro))
+                # print("python2 ~/opt/script/Pdb2Gro.py %s ../%s" % (filelist[i][0:-4], namegro))
+                os.system("python2 ~/opt/script/Pdb2Gro.py %s ../%s" % (filelist[i][0:-4], namegro))
                 # os.system("echo %s %s" % ("Hello", "world"))
                 # q = subprocess.check_output(
                 #     "python2 ~/opt/script/Pdb2Gro.py %s %s" % (filelist[i][0:-4], namegro), shell=True)
@@ -109,6 +112,6 @@ def memory_assign(number):
                         start2[ii - 1]) + " " + str(length[ii - 1]) + " " + "1" + "\n")
                 # qq = subprocess.Popen(['cd','..'], stderr=subprocess.STDOUT, stdout=subprocess.PIPE);
         # qq = subprocess.check_output("cd ..",shell=True)
-        os.chdir("..")
+        os.chdir("../..")
 # wd = sys.argv[1]
 memory_assign(20)
