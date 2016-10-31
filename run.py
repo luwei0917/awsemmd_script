@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("template", help="the name of template file")
 parser.add_argument("-n", "--number", type=int, default=20,
                     help="Number of simulation run")
-parser.add_argument("-s", "--steps", type=int, default=5,
+parser.add_argument("-s", "--steps", type=int, default=8,
                     help="Simulation steps in unit of million,\
                     default is 8 million, -1 means test run")
 parser.add_argument("-r", "--read", help="Read from config file",
