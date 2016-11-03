@@ -6,7 +6,7 @@ for protein_i=1:1
     fsize=20; tsize=14; mr=3; mc=1;
     color=colormap(jet(repeat));
     label = labels(protein_i); pdbID_upper = pdb_array{protein_i};
-    path = sprintf('/Users/weilu/Research/server/Oct_21/free_energy/gb_good_start/simulation/wham400');
+    path = sprintf('.');
 
     %load q
     for i_label=1:length(label)

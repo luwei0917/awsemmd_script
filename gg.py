@@ -23,20 +23,31 @@ parser = argparse.ArgumentParser(description="This is my playground for current 
 # parser.add_argument("template", help="the name of template file")
 parser.add_argument("-f", "--freeEnergy", help="free energy data sort ", action="store_true", default=False)
 parser.add_argument("--fix", help="fix ", action="store_true", default=False)
+parser.add_argument("--wham", help="wham analysis ", action="store_true", default=False)
+parser.add_argument("--wham400", help="wham analysis in temp 400 ", action="store_true", default=False)
+parser.add_argument("-p", "--plot", help="plot", action="store_true", default=False)
 args = parser.parse_args()
+
+def calQo():
+    os.system("python2 ~/opt/script/CalcQValue_multi.py 2lhc dump.lammpstrj qo 1")
 
 
 def wham_analysis():
     os.system("mkdir -p wham")
     os.system("rm wham/all.dat")
+    os.system("rm wham/*_total")
     os.chdir("300")
     for i in range(18):
         os.system("cat {}/halfdata.dat >> ../wham/all.dat".format(i))
+        os.system("tail -n+3 rerun_"+str(i)+"/wham.dat | awk '{print $3}' | tail -n 5000 >> ../wham/p_total")
+
+        # os.system("tail -n+3 rerun_{}/wham.dat | awk '{print $3}' >> ../wham/qo_total".format(str(i)))
     os.chdir("../wham")
     os.system("awk '{print $2}' all.dat > Qw_total")
     os.system("awk '{print $3}' all.dat > Qgb_total")
-    os.system("awk '{print $3}' all.dat > p_total")
+    os.system("awk '{print $1}' all.dat > qwa_total")
     os.system("awk '{print $4}' all.dat > e_total")
+    # os.system("awk '{print $6}' all.dat > p_total")
     os.system("cp ~/opt/wham_analysis/*.m .")
     os.chdir("..")
     os.system("~/opt/script/wham/fused_calc_cv.sc wham/ 2lhd 18 300 250 350 10 50 200 0.05 0.9")
@@ -57,17 +68,20 @@ def wham_analysis():
 def wham_analysis400():
     os.system("mkdir -p wham400")
     os.system("rm wham400/all.dat")
+    os.system("rm wham400/*_total")
     os.chdir("400")
     for i in range(18):
         os.system("cat {}/halfdata.dat >> ../wham400/all.dat".format(i))
+        os.system("tail -n+3 rerun_"+str(i)+"/wham.dat | awk '{print $3}' | tail -n 5000 >> ../wham400/p_total")
+
     os.chdir("../wham400")
     os.system("awk '{print $2}' all.dat > Qw_total")
     os.system("awk '{print $3}' all.dat > Qgb_total")
-    os.system("awk '{print $3}' all.dat > p_total")
+    os.system("awk '{print $1}' all.dat > qwa_total")
     os.system("awk '{print $4}' all.dat > e_total")
     os.system("cp ~/opt/wham_analysis/*.m .")
     os.chdir("..")
-    os.system("~/opt/script/wham/fused_calc_cv.sc wham400/ 2lhd 18 400 350 450 5 50 200 0.05 0.9")
+    os.system("~/opt/script/wham/fused_calc_cv.sc wham400/ 2lhd 18 400 350 450 10 50 200 0.05 0.9")
 
 
 def free_energy_analysis():
@@ -77,38 +91,68 @@ def free_energy_analysis():
         os.chdir(str(temp))
         for i in range(n):
             os.chdir(str(i))
-            os.system("awk '{print $2}' wham.dat | tail -n +2 > p.dat")
-            os.system("awk '{print $3}' wham.dat | tail -n +2 > p2.dat")
-            os.system("cp ~/opt/gagb/2lhc_part.pdb .")
-            os.system("awk '{if ((!((($1>0 && $1<25) || ($1>159 && $1<200) ) && $3>-10)  ) ) print }' dump.lammpstrj > data_test")
-            os.system("python2 ~/opt/script/CalcQValue.py 2lhc_part.pdb data_test test")
-            os.system("tail -n +2 test > q_ga_part.dat")
-            os.system("python2 ~/opt/script/CalcQValue.py 2lhc dump.lammpstrj q_ga_included.dat")
-            os.system("tail -n +2 q_ga_included.dat > q_ga.dat")
-            os.system("python2 ~/opt/script/CalcQValue.py 2lhd dump.lammpstrj q_gb_included.dat")
-            os.system("tail -n +2 q_gb_included.dat > q_gb.dat")
-            os.system("paste q_ga.dat q_ga_part.dat q_gb.dat p.dat p2.dat > data.dat")
+            # os.system("awk '{print $2}' wham.dat | tail -n +2 > p.dat")
+            # os.system("awk '{print $3}' wham.dat | tail -n +2 > p2.dat")
+            # os.system("cp ~/opt/gagb/2lhc_part.pdb .")
+            # os.system("awk '{if ((!((($1>0 && $1<25) || ($1>159 && $1<200) ) && $3>-10)  ) ) print }' dump.lammpstrj > data_test")
+            # os.system("python2 ~/opt/script/CalcQValue.py 2lhc_part.pdb data_test test")
+            # os.system("tail -n +2 test > q_ga_part.dat")
+            # os.system("python2 ~/opt/script/CalcQValue.py 2lhc dump.lammpstrj q_ga_included.dat")
+            # os.system("tail -n +2 q_ga_included.dat > q_ga.dat")
+            # os.system("python2 ~/opt/script/CalcQValue.py 2lhd dump.lammpstrj q_gb_included.dat")
+            # os.system("tail -n +2 q_gb_included.dat > q_gb.dat")
+            os.system("cp ~/opt/gagb/nativecoords_g* .")
+            os.system("mv nativecoords_ga.dat nativecoords.dat")
+            os.system("python2 ~/opt/script/CalcQValue_multi.py 2lhc dump.lammpstrj qo 1")
+            os.system("tail -n +2 qo > qo.dat")
+            os.system("paste q_ga.dat q_ga_part.dat q_gb.dat p.dat p2.dat qo.dat > data.dat")
             os.system("tail -n 5000 data.dat > halfdata.dat")
             os.chdir("..")
         os.chdir("..")
 
 
+def plot():
+    print("Plotting")
+    # os.system("python2 ~/opt/script/CalcQValue.py 2lhc dump2.lammpstrj qw.dat")
+    os.system("cp ~/opt/temp.gp .")
+    out_file = "test.pdf"
+    out = "'out_file_name=\"{}\"'".format(out_file)
+    in_file = "gb_sequence/wham.dat_2"
+    gp_in = "'in_file_name=\"{}\"'".format(in_file)
+    in_file_2 = "0/wham.dat"
+    gp_in_2 = "'in_file_name_2=\"{}\"'".format(in_file_2)
+    os.system("gnuplot -e {} -e {} -e {} temp.gp ".format(gp_in, gp_in_2, out))
+    os.system("open test.pdf ")
+
+
 def fix():
     n = 20
-    os.chdir("analysis")
+    # os.chdir("analysis")
+    os.system("rm highest_q_gb")
     os.system("rm highest_q")
     for i in range(n):
         os.chdir(str(i))
+        os.system("cp ~/opt/gagb/2lhc.pdb .")
+        os.system("cp ~/opt/gagb/2lhd.pdb .")
         os.system("python2 ~/opt/script/CalcQValue.py 2lhc.pdb dump.lammpstrj ga")
         os.system("tail -n 1000 ga | sort | tail -n 1 > ga_highest")
         os.system("cat ga_highest >> ../highest_q")
+
+        os.system("python2 ~/opt/script/CalcQValue.py 2lhd dump.lammpstrj gb")
+        os.system("tail -n 1000 gb | sort | tail -n 1 > gb_highest")
+        os.system("cat gb_highest >> ../highest_q_gb")
         os.chdir("..")
-# wham_analysis()
+
+if(args.wham):
+    wham_analysis()
+if(args.wham400):
+    wham_analysis400()
 if(args.freeEnergy):
     free_energy_analysis()
 if(args.fix):
     fix()
-
+if(args.plot):
+    plot()
 ## -------------Pulling--------
 # os.system("cp ~/opt/small_script/springForce.plt .")
 # os.system("cp ~/opt/small_script/springForce_smooth.plt .")

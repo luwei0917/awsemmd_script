@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(
         make metadata")
 args = parser.parse_args()
 
-temp_list = range(200, 500, 100)
+temp_list = range(300, 500, 100)
 # q0_list = range(10, 100, 10)
 
 # config = open('config.py', 'w')

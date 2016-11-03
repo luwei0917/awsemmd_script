@@ -2,8 +2,8 @@
 function qbias_pmf1dplot
 figure(1);
 
-for T=350:5:445
-    qbias_pmf1d(T,(T-345)/5);
+for T=250:10:340
+    qbias_pmf1d(T,(T-240)/10);
     %legend(str(T));
 end
 
@@ -43,7 +43,7 @@ fsize=25; tsize=16; %mr=3; mc=2;
     for i_label=1
         sim_label = sim_labels(i_label);
         pdbID_upper = pdb_array{i_label};
-        path = sprintf('/Users/weilu/Research/server/Oct_21/free_energy/gb_good_start/simulation/wham400');
+        path = sprintf('.');
         %title([pdbID_upper, ' ', num2str(T), 'K'], 'fontsize', fsize);
 
         filename = sprintf('%s/%s',path, qa_name); qa = load(filename);

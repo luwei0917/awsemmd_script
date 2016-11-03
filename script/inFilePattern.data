@@ -32,6 +32,7 @@ velocity all create TSTART RANDOM
 ``groups
 fix               1 all nvt temp TSTART TEND 100.0
 fix		  ``main_fix
+#fix     radialconstraint all spring/rg/cylindrical 0.01 0.0# NULL means use the starting configuration to define the radius, otherwise specify in Angstroms
 fix     5 all momentum 1000 linear 1 1 0
 
 ###################################################################

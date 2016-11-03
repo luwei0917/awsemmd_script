@@ -93,7 +93,7 @@ for i in range(n):
 #     os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
 #     < "+protein_name+".in")
     if(platform.system() == 'Darwin'):
-        os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
+        os.system("/Users/weilu/Research/Build/lammps-9Oct12_modified/src/lmp_serial \
         < "+protein_name+".in")
     elif(platform.system() == 'Linux'):
         os.system("cp ~/opt/run.slurm .")
