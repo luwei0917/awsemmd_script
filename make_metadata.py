@@ -22,7 +22,7 @@ temp_list = range(300, 500, 100)
 # warm_up_steps = %d\n" % (n, simulation_steps, warm_up_steps))
 # config.close()
 kconstant = 400
-n = 18
+n = 20
 q_bias_step = 0.05
 
 metadata = open("metadatafile", "w")

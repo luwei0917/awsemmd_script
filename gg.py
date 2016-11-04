@@ -37,20 +37,30 @@ def wham_analysis():
     os.system("rm wham/all.dat")
     os.system("rm wham/*_total")
     os.chdir("300")
-    for i in range(18):
-        os.system("cat {}/halfdata.dat >> ../wham/all.dat".format(i))
-        os.system("tail -n+3 rerun_"+str(i)+"/wham.dat | awk '{print $3}' | tail -n 5000 >> ../wham/p_total")
+    for i in range(20):
+        # os.system("cat {}/halfdata.dat >> ../wham/all.dat".format(i))
+        # os.system("tail -n+3 rerun_"+str(i)+"/wham.dat | awk '{print $3}' | tail -n 5000 >> ../wham/p_total")
+        os.system("tail -n+2 " + str(i) + "/wham.dat | awk '{print $3}' | tail -n 5000 >> ../wham/p_total")
+        os.system("tail -n+2 " + str(i) + "/wham.dat | awk '{print $5}' | tail -n 5000 >> ../wham/e_total")
+        os.system("tail -n+2 " + str(i) + "/wham.dat | awk '{print $2}' | tail -n 5000 >> ../wham/qw_total")
 
+        os.chdir(str(i))
+        os.system("cp ~/opt/gagb/2lhc_part.pdb .")
+        os.system("awk '{if ((!((($1>0 && $1<25) || ($1>159 && $1<200) ) && $3>-10)  ) ) print }' dump.lammpstrj > data_test")
+        os.system("python2 ~/opt/script/CalcQValue.py 2lhc_part.pdb data_test test")
+        os.system("tail -n +2 test > qw_ga.dat")
+        os.chdir("..")
+        os.system("tail -n 5000 " + str(i) + "/qw_ga.dat >> ../wham/qw_ga_total")
         # os.system("tail -n+3 rerun_{}/wham.dat | awk '{print $3}' >> ../wham/qo_total".format(str(i)))
     os.chdir("../wham")
-    os.system("awk '{print $2}' all.dat > Qw_total")
-    os.system("awk '{print $3}' all.dat > Qgb_total")
-    os.system("awk '{print $1}' all.dat > qwa_total")
-    os.system("awk '{print $4}' all.dat > e_total")
+    # os.system("awk '{print $2}' all.dat > Qw_total")
+    # os.system("awk '{print $3}' all.dat > Qgb_total")
+    # os.system("awk '{print $1}' all.dat > qwa_total")
+    # os.system("awk '{print $4}' all.dat > e_total")
     # os.system("awk '{print $6}' all.dat > p_total")
     os.system("cp ~/opt/wham_analysis/*.m .")
     os.chdir("..")
-    os.system("~/opt/script/wham/fused_calc_cv.sc wham/ 2lhd 18 300 250 350 10 50 200 0.05 0.9")
+    os.system("~/opt/script/wham/fused_calc_cv.sc wham/ 2lhd 20 300 250 350 10 50 200 0.05 1")
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 # protein_name = args.protein.strip('/')
     # name = "ga_2m"
@@ -127,11 +137,12 @@ def plot():
 
 def fix():
     n = 20
-    # os.chdir("analysis")
+    os.chdir("analysis")
     os.system("rm highest_q_gb")
     os.system("rm highest_q")
     for i in range(n):
         os.chdir(str(i))
+        # os.system("tail -n 5000 wham.dat > halfdata.dat")
         os.system("cp ~/opt/gagb/2lhc.pdb .")
         os.system("cp ~/opt/gagb/2lhd.pdb .")
         os.system("python2 ~/opt/script/CalcQValue.py 2lhc.pdb dump.lammpstrj ga")
@@ -143,6 +154,17 @@ def fix():
         os.system("cat gb_highest >> ../highest_q_gb")
         os.chdir("..")
 
+
+def rerun():
+    n = 20
+    for i in range(n):
+        os.system("cp -r {} rerun_{}".format(str(i)))
+        os.chdir("rerun_"+str(i))
+        os.system("cp ~/opt/gagb/rerun.slurm .")
+        os.system("cp ~/opt/gagb/2lhc_rerun.in .")
+        os.system("sbatch rerun.slurm")
+
+rerun()
 if(args.wham):
     wham_analysis()
 if(args.wham400):

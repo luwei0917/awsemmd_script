@@ -4,21 +4,21 @@ pdb_array= {'q30'};
 sim_labels = [12];
 
 % what data to load
-q_name={  'Qw_total' ,'rmsd_total'};
-T=400;
+q_name={  'qw_ga_total' ,'qw_total'};
+T=300;
 %xy_limit=1; % whose range to use for plotting, 1 or 2?
 
 n_contour=20; % # of contour lines
 fsize=25; tsize=20; mr=1; mc=length(sim_labels);
-cutoff=20;scrnsize = get(0,'ScreenSize'); 
+cutoff=20;scrnsize = get(0,'ScreenSize');
 figure('position', [1 scrnsize(4) 0.25*mc*scrnsize(3) 0.35*scrnsize(4)]);
 
 for i_label=1:length(sim_labels)
     protein_i = i_label; pdbID_upper = pdb_array{protein_i};
-    path = sprintf('/Users/weilu/Documents/Research/Results_Aug_06/top7_t400_q100_v3');
+    path = sprintf('.');
     sim_label = sim_labels(i_label);
     qa_name=q_name{1}; qb_name=q_name{2};
-    
+
     filename = sprintf('%s/%s',path, qa_name); qa = load(filename);
     filename = sprintf('%s/%s',path, qb_name); qb = load(filename);
     if strcmp(q_name{1},'dih')
@@ -34,9 +34,9 @@ for i_label=1:length(sim_labels)
     Nsample=size(qa,1);
     assert(Nsample==size(qb,1));
     %load pmf file and calculate pi_sample
-    T_i=T; T=T_i;    
+    T_i=T; T=T_i;
     filename = sprintf('%s/p_total',path); q = load(filename);
-    filename=sprintf('%s/top7_%d_pmf.dat',path, T_i);
+    filename=sprintf('%s/2lhd_%d_pmf.dat',path, T_i);
     FF=load(filename); qx=FF(:,1);  Fy = FF(:,2); nbin=length(qx);
     dq=qx(2)-qx(1); qmin=qx(1)-dq/2; qmax= qx(nbin)+dq/2;
     Py=exp(-Fy/(0.001987*T_i)); P_norm = sum(Py); Py=Py/P_norm;
@@ -44,14 +44,14 @@ for i_label=1:length(sim_labels)
     %calculate pi_sample
     for i_bin= 1:nbin
         qi_min = qmin + (i_bin-1)*dq; qi_max= qi_min + dq;
-        ids = find( q >= qi_min & q < qi_max ) ;    
-        ni_sample(i_bin) = length(ids);        
+        ids = find( q >= qi_min & q < qi_max ) ;
+        ni_sample(i_bin) = length(ids);
         if ni_sample(i_bin) > 0
             pi_sample(ids) = Py(i_bin)/ni_sample(i_bin);
         end
-    end    
+    end
     fprintf('probability = %.3f\n', sum(pi_sample));
-        
+
     binN=20;ObinN=20;
     qa_lin=linspace(min(qa), max(qa),ObinN); qb_lin=linspace(min(qb), max(qb),binN); H=zeros(ObinN,binN);
     [~, bin_index_x] = histc(qa, qa_lin); [~, bin_index_y] = histc(qb, qb_lin);
@@ -59,16 +59,16 @@ for i_label=1:length(sim_labels)
         x=bin_index_x(i_sample); y=bin_index_y(i_sample);
         H(x,y) = H(x,y) + pi_sample(i_sample);
     end
-    H=H'; fprintf('sum(sum(H))=%.3f\n', sum(sum(H)));     
-    F=-0.001987*T*log(H); ids = (F>= cutoff); F(ids) = cutoff; 
+    H=H'; fprintf('sum(sum(H))=%.3f\n', sum(sum(H)));
+    F=-0.001987*T*log(H); ids = (F>= cutoff); F(ids) = cutoff;
     subplot(mr,mc,i_label)
     F
     [~,h] = contourf(qa_lin, qb_lin,F,n_contour); shading flat,
-    colormap(jet), colorbar, 
+    colormap(jet), colorbar,
     title([num2str(pdbID_upper), ' T= ', num2str(T)],'fontsize', fsize);
     %%%fill the top area white
     ccc = get(h,'children'); max_cdata = -inf; cdata_list=zeros(size(ccc,1), 1);
-    
+
     for k=1:size(ccc,1)
         cd1 = get(ccc(k), 'cdata');
         if cd1 > max_cdata
@@ -81,9 +81,9 @@ for i_label=1:length(sim_labels)
     for k=1:size(id,1)
         set(ccc(id(k)), 'facecolor', 'white');
     end
-    
-    xlabel(q_name{1}, 'fontsize', fsize), 
-    ylabel(q_name{2}, 'fontsize', fsize); 
+
+    xlabel(q_name{1}, 'fontsize', fsize),
+    ylabel(q_name{2}, 'fontsize', fsize);
     set(gca, 'FontSize', fsize);
     xlim([qa_min, qa_max])
     ylim([qb_min, qb_max])
