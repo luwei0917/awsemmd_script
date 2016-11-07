@@ -37,7 +37,7 @@ warm_up_steps = %d\n" % (protein_name, n, simulation_steps, warm_up_steps))
 config.close()
 
 # temp_list = [400, 500]
-temp_list = [300, 400]
+temp_list = [300]
 n = 20
 # temp_list = [300, 350, 400]
 # print(temp)
