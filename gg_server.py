@@ -18,13 +18,21 @@ mypath = os.environ["PATH"]
 os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
 
-parser = argparse.ArgumentParser(
-        description="This is my playground for current project")
-parser.add_argument("protein", help="the name of protein")
-# parser.add_argument("template", help="the name of template file")
-args = parser.parse_args()
-# protein_name = args.template.split('_', 1)[-1].strip('/')
-protein_name = args.protein.strip('/')
+n = 20
+for i in range(n):
+    os.system("cp -r {0} rerun_{0}".format(str(i)))
+    os.system("cp ~/opt/gagb/2lhc_rerun.in 2lhc.in")
+    os.system("cp 2lhc.in rerun_{}/".format(str(i)))
+    os.chdir("rerun_"+str(i))
+    os.system("sbatch run.slurm")
+    os.chdir("..")
+# parser = argparse.ArgumentParser(
+#         description="This is my playground for current project")
+# parser.add_argument("protein", help="the name of protein")
+# # parser.add_argument("template", help="the name of template file")
+# args = parser.parse_args()
+# # protein_name = args.template.split('_', 1)[-1].strip('/')
+# protein_name = args.protein.strip('/')
     # name = "ga_2m"
 ## -------------Pulling--------
 # os.system("cp ~/opt/small_script/springForce.plt .")
@@ -33,22 +41,22 @@ protein_name = args.protein.strip('/')
 # os.system("gnuplot springForce_smooth.plt")
 # os.system("open springForce.pdf")
 # os.system("open springForce_smooth.pdf")
-SpringConstant_list = [3e-05, 5e-05, 1e-06, 3e-06, 5e-06, 1e-05, 1e-07]
-# SpringConstant_list = [3e-06, 5e-06]
-for SpringConstant in SpringConstant_list:
-    name = "spring"+str(SpringConstant)
-    os.system("mkdir "+name)
-    os.chdir(name)
-    os.system("cp -r ../2xov/ .")
-    os.system("cp ../variables.dat .")
-    os.chdir("2xov")
-    os.system(  # replace SIMULATION_STEPS with specific steps
-        "sed -i.bak 's/SpringForce/'" +
-        str(SpringConstant) +
-        "'/g' "+protein_name+".in")
-    os.chdir("..")
-    os.system("run.py 2xov/ -s 8 -n 2")
-    os.chdir("..")
+# SpringConstant_list = [3e-05, 5e-05, 1e-06, 3e-06, 5e-06, 1e-05, 1e-07]
+# # SpringConstant_list = [3e-06, 5e-06]
+# for SpringConstant in SpringConstant_list:
+#     name = "spring"+str(SpringConstant)
+#     os.system("mkdir "+name)
+#     os.chdir(name)
+#     os.system("cp -r ../2xov/ .")
+#     os.system("cp ../variables.dat .")
+#     os.chdir("2xov")
+#     os.system(  # replace SIMULATION_STEPS with specific steps
+#         "sed -i.bak 's/SpringForce/'" +
+#         str(SpringConstant) +
+#         "'/g' "+protein_name+".in")
+#     os.chdir("..")
+#     os.system("run.py 2xov/ -s 8 -n 2")
+#     os.chdir("..")
 
 # number_of_run_list = [2, 4, 8, 16]
 # for n in number_of_run_list:

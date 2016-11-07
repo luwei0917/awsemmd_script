@@ -17,16 +17,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("template", help="the name of template file")
 parser.add_argument("-n", "--number", type=int, default=20,
                     help="Number of simulation run")
-parser.add_argument("-s", "--steps", type=int, default=2,
-                    help="Simulation steps in unit of million,\
-                    default is 8 million, -1 means test run")
-parser.add_argument("-r", "--read", help="Read from config file",
-                    action="store_true")
-parser.add_argument("-ws", "--warmSteps", type=int, default=20,
-                    help="Warmup Simulation steps in unit of hundred thousand,\
-                    default is 2 million")
-parser.add_argument("-t", "--test", help="test mode",
-                    action="store_true")
+
 args = parser.parse_args()
 # TODO:
 # add clean command.
@@ -35,16 +26,7 @@ args = parser.parse_args()
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 n = args.number
 protein_name = args.template.strip('/')
-if args.steps == -1:  # smallest run for debug.
-    simulation_steps = 10**4
-    warm_up_steps = 10**3
-    n = 1  # also set
-elif args.test:  # test run
-    simulation_steps = 50 * 10**3
-    warm_up_steps = 50 * 10**3
-else:
-    simulation_steps = args.steps * 10**6
-    warm_up_steps = args.warmSteps * 10**5
+
 
 warm_up_steps = 2*10**6
 simulation_steps = 10*10**6
@@ -55,7 +37,7 @@ warm_up_steps = %d\n" % (protein_name, n, simulation_steps, warm_up_steps))
 config.close()
 
 # temp_list = [400, 500]
-temp_list = [300, 400]
+temp_list = [300]
 n = 20
 # temp_list = [300, 350, 400]
 # print(temp)
