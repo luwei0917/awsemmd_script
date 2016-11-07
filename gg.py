@@ -158,13 +158,46 @@ def fix():
 def rerun():
     n = 20
     for i in range(n):
-        os.system("cp -r {} rerun_{}".format(str(i)))
+        os.system("cp -r {0} rerun_{0}".format(str(i)))
         os.chdir("rerun_"+str(i))
         os.system("cp ~/opt/gagb/rerun.slurm .")
         os.system("cp ~/opt/gagb/2lhc_rerun.in .")
         os.system("sbatch rerun.slurm")
+        os.chdir("..")
 
-rerun()
+
+def rerun_wham_analysis():
+    os.system("mkdir -p wham")
+    os.system("rm wham/all.dat")
+    os.system("rm wham/*_total")
+    os.chdir("300")
+    for i in range(20):
+        # os.system("cat {}/halfdata.dat >> ../wham/all.dat".format(i))
+        # os.system("tail -n+3 rerun_"+str(i)+"/wham.dat | awk '{print $3}' | tail -n 5000 >> ../wham/p_total")
+        os.system("tail -n+2 rerun_" + str(i) + "/wham.dat | awk '{print $3}' | tail -n 2000 >> ../wham/p_total")
+        os.system("tail -n+2 rerun_" + str(i) + "/wham.dat | awk '{print $6}' | tail -n 2000 >> ../wham/e_total")
+        os.system("tail -n+2 rerun_" + str(i) + "/wham.dat | awk '{print $2}' | tail -n 2000 >> ../wham/qw_total")
+
+        # os.chdir(str(i))
+        # os.system("cp ~/opt/gagb/2lhc_part.pdb .")
+        # os.system("awk '{if ((!((($1>0 && $1<25) || ($1>159 && $1<200) ) && $3>-10)  ) ) print }' dump.lammpstrj > data_test")
+        # os.system("python2 ~/opt/script/CalcQValue.py 2lhc_part.pdb data_test test")
+        # os.system("tail -n +2 test > qw_ga.dat")
+        # os.chdir("..")
+        os.system("tail -n 2000 " + str(i) + "/qw_ga.dat >> ../wham/qw_ga_total")
+        # os.system("tail -n+3 rerun_{}/wham.dat | awk '{print $3}' >> ../wham/qo_total".format(str(i)))
+    os.chdir("../wham")
+    # os.system("awk '{print $2}' all.dat > Qw_total")
+    # os.system("awk '{print $3}' all.dat > Qgb_total")
+    # os.system("awk '{print $1}' all.dat > qwa_total")
+    # os.system("awk '{print $4}' all.dat > e_total")
+    # os.system("awk '{print $6}' all.dat > p_total")
+    os.system("cp ~/opt/wham_analysis/*.m .")
+    os.chdir("..")
+    os.system("~/opt/script/wham/fused_calc_cv.sc wham/ 2lhd 20 300 250 350 10 50 200 0.05 1")
+#rerun()
+# rerun_wham_analysis()
+
 if(args.wham):
     wham_analysis()
 if(args.wham400):
