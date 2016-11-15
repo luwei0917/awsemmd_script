@@ -1,0 +1,13 @@
+#!/usr/bin/env gnuplot
+set term pdfcairo
+set output 'f_extension.pdf'
+#set pointtype 5
+set xlabel "Extension(Angstroms)"
+set ylabel "Force(Kcal/mole-Angstrom)"
+set title "2xov pulling"
+#set yrange [-0.5:0.5]
+set key outside
+
+#plot "addforce.dat" u 2:3 w l
+plot for [i=0:19] ''.i.'/addforce.dat' u 2:3 w l dt i t 'run '.i \
+,for [i=0:19] ''.i.'/addforce_back.dat' u 2:3 w l dt i t 'run '.i

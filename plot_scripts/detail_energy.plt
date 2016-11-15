@@ -6,4 +6,4 @@ set ylabel "energy"
 
 #plot "energy.dat"  u 1:9 w l,"energy.dat" u 1:10  w l ,"energy.dat" u 1:11  w l
 set key outside
-plot for [col=2:20] 'energy.dat' using 0:col with lines title columnheader
+plot for [col=2:20] 'energy.log' using 0:col with lines title columnheader

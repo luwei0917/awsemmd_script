@@ -26,12 +26,34 @@ parser.add_argument("--fix", help="fix ", action="store_true", default=False)
 parser.add_argument("--wham", help="wham analysis ", action="store_true", default=False)
 parser.add_argument("--wham400", help="wham analysis in temp 400 ", action="store_true", default=False)
 parser.add_argument("-p", "--plot", help="plot", action="store_true", default=False)
+parser.add_argument("--pull", help="pull ", action="store_true", default=False)
+parser.add_argument("--energy", help="energy ", action="store_true", default=False)
 args = parser.parse_args()
+
 
 def calQo():
     os.system("python2 ~/opt/script/CalcQValue_multi.py 2lhc dump.lammpstrj qo 1")
 
 
+def pull():
+    os.system("cp ~/opt/pulling/fx.gp .")
+    os.system("gnuplot fx.gp")
+    os.system("open f_extension.pdf")
+if(args.pull):
+    pull()
+
+
+def energy():
+    in_file_name = "qw.dat"
+    os.system("cp ~/opt/gagb/temp.gp .")
+    out_file = "test.pdf"
+    out = "'out_file_name=\"{}\"'".format(out_file)
+    in_file = "gb_sequence/wham.dat_2"
+    gp_in = "'in_file_name=\"{}\"'".format(in_file)
+    # in_file_2 = "0/wham.dat"
+    # gp_in_2 = "'in_file_name_2=\"{}\"'".format(in_file_2)
+    os.system("gnuplot -e {} -e {} -e {} temp.gp ".format(gp_in, gp_in_2, out))
+    os.system("open test.pdf ")
 # def wham_analysis():
 #     os.system("mkdir -p wham")
 #     os.system("rm wham/all.dat")
@@ -78,20 +100,25 @@ def wham_analysis():
     os.system("mkdir -p wham")
     os.system("rm wham/all.dat")
     os.system("rm wham/*_total")
-    os.chdir("300")
-    for i in range(20):
+    os.chdir("350")
+    for i in range(50):
+
         # os.system("cat {}/halfdata.dat >> ../wham/all.dat".format(i))
         # os.system("tail -n+3 rerun_"+str(i)+"/wham.dat | awk '{print $3}' | tail -n 5000 >> ../wham/p_total")
         os.system("tail -n+2 " + str(i) + "/wham.dat | awk '{print $4}' | tail -n 2000 >> ../wham/p_total")
         os.system("tail -n+2 " + str(i) + "/wham.dat | awk '{print $6}' | tail -n 2000 >> ../wham/e_total")
         os.system("tail -n+2 " + str(i) + "/wham.dat | awk '{print $2}' | tail -n 2000 >> ../wham/qw_total")
-
+        #
         os.chdir(str(i))
         os.system("cp ~/opt/gagb/2lhc_part.pdb .")
         os.system("awk '{if ((!((($1>0 && $1<25) || ($1>159 && $1<200) ) && $3>-10)  ) ) print }' dump.lammpstrj > data_test")
         os.system("python2 ~/opt/script/CalcQValue.py 2lhc_part.pdb data_test test")
         os.system("tail -n +2 test > qw_ga.dat")
+        os.system("python2 ~/opt/script/CalcQValue_multi.py 2LHC dump.lammpstrj ga_qo.dat 1")
+
         os.chdir("..")
+
+        os.system("tail -n 2000 " + str(i) + "/ga_qo.dat >> ../wham/qo_ga_total")
         os.system("tail -n 2000 " + str(i) + "/qw_ga.dat >> ../wham/qw_ga_total")
         # os.system("tail -n+3 rerun_{}/wham.dat | awk '{print $3}' >> ../wham/qo_total".format(str(i)))
     os.chdir("../wham")
@@ -102,7 +129,7 @@ def wham_analysis():
     # os.system("awk '{print $6}' all.dat > p_total")
     os.system("cp ~/opt/wham_analysis/*.m .")
     os.chdir("..")
-    os.system("~/opt/script/wham/fused_calc_cv.sc wham/ 2lhd 20 300 250 350 10 50 200 0.05 1")
+    os.system("~/opt/script/wham/fused_calc_cv.sc wham/ 2lhd 50 350 300 400 10 50 50 0.02 1")
 
 
 def wham_analysis400():
