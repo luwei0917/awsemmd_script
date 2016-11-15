@@ -8,6 +8,7 @@ import argparse
 import platform
 from datetime import datetime
 import imp
+import glob
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -18,14 +19,36 @@ mypath = os.environ["PATH"]
 os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
 
-n = 20
-for i in range(n):
-    os.system("cp -r {0} rerun_{0}".format(str(i)))
-    os.system("cp ~/opt/gagb/2lhc_rerun.in 2lhc.in")
-    os.system("cp 2lhc.in rerun_{}/".format(str(i)))
-    os.chdir("rerun_"+str(i))
-    os.system("sbatch run.slurm")
-    os.chdir("..")
+parser = argparse.ArgumentParser(description="This is my playground for current project")
+parser.add_argument("--fix", help="fix ", action="store_true", default=False)
+
+
+def fix_error_run():
+    os.system("grep 'srun: error: Application launch failed: Socket timed out on send/recv operation' . -r | cut -d'/' -f2 > list")
+    array = []
+    with open('list', 'r') as ins:
+        for line in ins:
+            array.append(line.strip('\n'))
+    for i in array:
+        os.chdir(i)
+        os.system("rm slurm-*")
+        os.system("sbatch run.slurm")
+        # os.system("pwd")
+        os.chdir("..")
+
+    # os.system("cut -d'/' -f2 list >")
+fix_error_run()
+
+
+def rerun():
+    n = 20
+    for i in range(n):
+        os.system("cp -r {0} rerun_{0}".format(str(i)))
+        os.system("cp ~/opt/gagb/2lhc_rerun.in 2lhc.in")
+        os.system("cp 2lhc.in rerun_{}/".format(str(i)))
+        os.chdir("rerun_"+str(i))
+        os.system("sbatch run.slurm")
+        os.chdir("..")
 # parser = argparse.ArgumentParser(
 #         description="This is my playground for current project")
 # parser.add_argument("protein", help="the name of protein")

@@ -37,8 +37,8 @@ warm_up_steps = %d\n" % (protein_name, n, simulation_steps, warm_up_steps))
 config.close()
 
 # temp_list = [400, 500]
-temp_list = [300]
-n = 20
+temp_list = [350]
+n = 50
 # temp_list = [300, 350, 400]
 # print(temp)
 
@@ -47,7 +47,7 @@ for temp in temp_list:
     seed(datetime.now())
     os.system("mkdir -p simulation/"+str(temp))
     os.chdir("simulation/"+str(temp))
-    q_bias_step = 0.05
+    q_bias_step = 0.02
     q0 = 0
     for i in range(n):
         q0 += q_bias_step

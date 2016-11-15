@@ -6729,6 +6729,7 @@ void FixBackbone::compute_backbone()
 
   timerBegin();
 
+
   for (i=0;i<nn;i++) {
     if (chain_flag && res_info[i]==LOCAL)
     compute_chain_potential(i);
@@ -6986,9 +6987,10 @@ void FixBackbone::compute_backbone()
 
   if (ntimestep>=sStep && ntimestep<=eStep)
   fprintf(dout, "\n\n");
-
+  // print_log("cc flag on\n");
   #else
-
+  // fprintf(dout, "Hello World: %d\n", ntimestep);
+  // print_log("ABC flag on\n");
   for (i=0;i<nn;i++) {
     i_resno = res_no[i]-1;
     i_chno = chain_no[i]-1;
