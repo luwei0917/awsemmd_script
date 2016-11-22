@@ -27,12 +27,21 @@ parser.add_argument("--wham", help="wham analysis ", action="store_true", defaul
 parser.add_argument("--wham400", help="wham analysis in temp 400 ", action="store_true", default=False)
 parser.add_argument("-p", "--plot", help="plot", action="store_true", default=False)
 parser.add_argument("--pull", help="pull ", action="store_true", default=False)
+parser.add_argument("--cpull", help="cpull ", action="store_true", default=False)
 parser.add_argument("--energy", help="energy ", action="store_true", default=False)
 args = parser.parse_args()
 
 
 def calQo():
     os.system("python2 ~/opt/script/CalcQValue_multi.py 2lhc dump.lammpstrj qo 1")
+
+
+def cpull():
+    os.system("cp ~/opt/pulling/cfx.gp .")
+    os.system("gnuplot cfx.gp")
+    os.system("open cf_extension.*")
+if(args.cpull):
+    cpull()
 
 
 def pull():
@@ -108,7 +117,7 @@ def wham_analysis():
         os.system("tail -n+2 " + str(i) + "/wham.dat | awk '{print $4}' | tail -n 2000 >> ../wham/p_total")
         os.system("tail -n+2 " + str(i) + "/wham.dat | awk '{print $6}' | tail -n 2000 >> ../wham/e_total")
         os.system("tail -n+2 " + str(i) + "/wham.dat | awk '{print $2}' | tail -n 2000 >> ../wham/qw_total")
-        #
+        os.system("tail -n 2000 " + str(i) + "/energy.log | awk '{print $18-$13}' >> ../wham/e_total")
         os.chdir(str(i))
         os.system("cp ~/opt/gagb/2lhc_part.pdb .")
         os.system("awk '{if ((!((($1>0 && $1<25) || ($1>159 && $1<200) ) && $3>-10)  ) ) print }' dump.lammpstrj > data_test")
@@ -129,7 +138,7 @@ def wham_analysis():
     # os.system("awk '{print $6}' all.dat > p_total")
     os.system("cp ~/opt/wham_analysis/*.m .")
     os.chdir("..")
-    os.system("~/opt/script/wham/fused_calc_cv.sc wham/ 2lhd 50 350 300 400 10 50 50 0.02 1")
+    os.system("~/opt/script/wham/fused_calc_cv.sc wham/ 2lhd 50 350 300 400 10 60 100 0.02 1")
 
 
 def wham_analysis400():
@@ -194,22 +203,24 @@ def plot():
 
 def fix():
     n = 20
-    os.chdir("analysis")
-    os.system("rm highest_q_gb")
-    os.system("rm highest_q")
-    for i in range(n):
-        os.chdir(str(i))
-        # os.system("tail -n 5000 wham.dat > halfdata.dat")
-        os.system("cp ~/opt/gagb/2lhc.pdb .")
-        os.system("cp ~/opt/gagb/2lhd.pdb .")
-        os.system("python2 ~/opt/script/CalcQValue.py 2lhc.pdb dump.lammpstrj ga")
-        os.system("tail -n 1000 ga | sort | tail -n 1 > ga_highest")
-        os.system("cat ga_highest >> ../highest_q")
-
-        os.system("python2 ~/opt/script/CalcQValue.py 2lhd dump.lammpstrj gb")
-        os.system("tail -n 1000 gb | sort | tail -n 1 > gb_highest")
-        os.system("cat gb_highest >> ../highest_q_gb")
-        os.chdir("..")
+    # for i range(n):
+    #     os.system("tail -n 2000 energy.log | awk '{print $18-$13}' >> ../wham")
+    # os.chdir("analysis")
+    # os.system("rm highest_q_gb")
+    # os.system("rm highest_q")
+    # for i in range(n):
+    #     os.chdir(str(i))
+    #     # os.system("tail -n 5000 wham.dat > halfdata.dat")
+    #     os.system("cp ~/opt/gagb/2lhc.pdb .")
+    #     os.system("cp ~/opt/gagb/2lhd.pdb .")
+    #     os.system("python2 ~/opt/script/CalcQValue.py 2lhc.pdb dump.lammpstrj ga")
+    #     os.system("tail -n 1000 ga | sort | tail -n 1 > ga_highest")
+    #     os.system("cat ga_highest >> ../highest_q")
+    #
+    #     os.system("python2 ~/opt/script/CalcQValue.py 2lhd dump.lammpstrj gb")
+    #     os.system("tail -n 1000 gb | sort | tail -n 1 > gb_highest")
+    #     os.system("cat gb_highest >> ../highest_q_gb")
+    #     os.chdir("..")
 
 
 def rerun():

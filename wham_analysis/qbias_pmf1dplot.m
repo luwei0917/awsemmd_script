@@ -2,8 +2,8 @@
 function qbias_pmf1dplot
 figure(1);
 
-for T=250:10:340
-    qbias_pmf1d(T,(T-240)/10);
+for T=300:10:400
+    qbias_pmf1d(T,(T-290)/10);
     %legend(str(T));
 end
 

@@ -3,8 +3,8 @@ pdb_array= { 'q20' 'Abeta40_2' 'Abeta40_3' 'Abeta40_6_nonfibril'};
 sim_labels = [14 7 6 4];
 
 qa_name ='p_total';%new rxn co
-T=400;
-binN=20;
+T=350;
+binN=50;
 color={'r','m','g','b'};
 dih_range=16:22;
 
