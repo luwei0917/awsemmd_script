@@ -8,6 +8,7 @@ import argparse
 import platform
 from datetime import datetime
 import imp
+import numpy as np
 # from run_parameter import *
 parser = argparse.ArgumentParser(
         description="This is a python3 script to\
@@ -20,7 +21,8 @@ protein_name = args.template.strip('/')
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 
 folder_list = open('folder_list', 'w')
-add_force_strengths = [-10, -5, -1]
+add_force_strengths = np.arange(4, 5, 0.2)
+MGamma = 400
 for ForceStrength in add_force_strengths:
     folder_name = "ForceStrength"+str(ForceStrength)
     folder_list.write(folder_name+"\n")
@@ -32,8 +34,12 @@ for ForceStrength in add_force_strengths:
         "sed -i.bak 's/ForceStrength/'" +
         str(ForceStrength) +
         "'/g' "+protein_name+".in")
+    os.system(  # replace ForceStrength with specific steps
+        "sed -i.bak 's/MGamma/'" +
+        str(MGamma) +
+        "'/g' fix_backbone_coeff.data")
     os.chdir("..")
-    os.system("run.py " + protein_name + "/ -o")
+    os.system("run.py " + protein_name + "/ -o -n 10 -s 4")
     os.chdir("..")
 # n = 5
 # membrane_k = [1, 2, 3]

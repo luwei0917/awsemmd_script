@@ -21,34 +21,70 @@ my_env = os.environ.copy()
 
 parser = argparse.ArgumentParser(description="This is my playground for current project")
 parser.add_argument("--fix", help="fix ", action="store_true", default=False)
+parser.add_argument("--rerun", help="rerun ", action="store_true", default=False)
+parser.add_argument("--go", help="continue_run ", action="store_true", default=False)
+args = parser.parse_args()
 
 
 def fix_error_run():
-    os.system("grep 'srun: error: Application launch failed: Socket timed out on send/recv operation' . -r | cut -d'/' -f2 > list")
+    # os.system("grep 'srun: error: Application launch failed: Socket timed out on send/recv operation' . -r | cut -d':' -f1 | rev | cut -d"/" -f2- | rev > list")
     array = []
+    cwd = os.getcwd()
+    print(cwd)
     with open('list', 'r') as ins:
         for line in ins:
-            array.append(line.strip('\n'))
+            target = line.strip('\n')
+            array.append(target)
     for i in array:
         os.chdir(i)
         os.system("rm slurm-*")
         os.system("sbatch run.slurm")
         # os.system("pwd")
-        os.chdir("..")
+        os.chdir(cwd)
 
     # os.system("cut -d'/' -f2 list >")
-fix_error_run()
+if(args.fix):
+    fix_error_run()
 
 
 def rerun():
-    n = 20
+    n = 10
     for i in range(n):
         os.system("cp -r {0} rerun_{0}".format(str(i)))
-        os.system("cp ~/opt/gagb/2lhc_rerun.in 2lhc.in")
-        os.system("cp 2lhc.in rerun_{}/".format(str(i)))
+        # source = "~/opt/gagb/gagb_constant200_rerun.in"
+        # target = " 2lhc.in"
+        source = "~/opt/pulling/2xov_continue.in"
+        target = " 2xov.in"
+        os.system("cp "+source + target)
+        os.system("cp "+target+" rerun_{}/".format(str(i)))
         os.chdir("rerun_"+str(i))
+        os.system("rm slurm*")
         os.system("sbatch run.slurm")
         os.chdir("..")
+if(args.rerun):
+    rerun()
+
+def continue_run():
+    n = 10
+    os.chdir("simulation")
+    for i in range(n):
+        os.system("cp -r {0} continue_{0}".format(str(i)))
+        # source = "~/opt/gagb/gagb_constant200_rerun.in"
+        # target = " 2lhc.in"
+        source = "~/opt/pulling/2xov_continue_run.in"
+        target = " 2xov.in"
+        os.system("cp "+source + target)
+        os.system("cp "+target+" continue_{}/".format(str(i)))
+        os.chdir("continue_"+str(i))
+        os.system("rm slurm*")
+        os.system(  # replace RANDOM with a radnom number
+            "sed -i.bak 's/RANDOM/'" +
+            str(randint(1, 10**6)) +
+            "'/g' 2xov.in")
+        os.system("sbatch run.slurm")
+        os.chdir("..")
+if(args.go):
+    continue_run()
 # parser = argparse.ArgumentParser(
 #         description="This is my playground for current project")
 # parser.add_argument("protein", help="the name of protein")
