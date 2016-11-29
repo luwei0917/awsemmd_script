@@ -161,28 +161,28 @@ def wham_analysis400():
 
 
 def free_energy_analysis():
-    temp_list = [300, 400]
-    n = 20
+    temp_list = [350]
+    n = 50
     for temp in temp_list:
         os.chdir(str(temp))
         for i in range(n):
             os.chdir(str(i))
-            # os.system("awk '{print $2}' wham.dat | tail -n +2 > p.dat")
+            os.system("awk '{print $6}' wham.dat | tail -n +2 > p.dat")
             # os.system("awk '{print $3}' wham.dat | tail -n +2 > p2.dat")
-            # os.system("cp ~/opt/gagb/2lhc_part.pdb .")
-            # os.system("awk '{if ((!((($1>0 && $1<25) || ($1>159 && $1<200) ) && $3>-10)  ) ) print }' dump.lammpstrj > data_test")
-            # os.system("python2 ~/opt/script/CalcQValue.py 2lhc_part.pdb data_test test")
-            # os.system("tail -n +2 test > q_ga_part.dat")
-            # os.system("python2 ~/opt/script/CalcQValue.py 2lhc dump.lammpstrj q_ga_included.dat")
-            # os.system("tail -n +2 q_ga_included.dat > q_ga.dat")
-            # os.system("python2 ~/opt/script/CalcQValue.py 2lhd dump.lammpstrj q_gb_included.dat")
-            # os.system("tail -n +2 q_gb_included.dat > q_gb.dat")
+            os.system("cp ~/opt/gagb/*.pdb .")
+            os.system("awk '{if ((!((($1>0 && $1<25) || ($1>159 && $1<200) ) && $3>-10)  ) ) print }' dump.lammpstrj > data_test")
+            os.system("python2 ~/opt/script/CalcQValue.py 2lhc_part.pdb data_test test")
+            os.system("tail -n +2 test > q_ga_part.dat")
+            os.system("python2 ~/opt/script/CalcQValue.py 2lhc dump.lammpstrj q_ga_included.dat")
+            os.system("tail -n +2 q_ga_included.dat > q_ga.dat")
+            os.system("python2 ~/opt/script/CalcQValue.py 2lhd dump.lammpstrj q_gb_included.dat")
+            os.system("tail -n +2 q_gb_included.dat > q_gb.dat")
             os.system("cp ~/opt/gagb/nativecoords_g* .")
             os.system("mv nativecoords_ga.dat nativecoords.dat")
             os.system("python2 ~/opt/script/CalcQValue_multi.py 2lhc dump.lammpstrj qo 1")
             os.system("tail -n +2 qo > qo.dat")
-            os.system("paste q_ga.dat q_ga_part.dat q_gb.dat p.dat p2.dat qo.dat > data.dat")
-            os.system("tail -n 5000 data.dat > halfdata.dat")
+            os.system("paste q_ga.dat q_ga_part.dat q_gb.dat p.dat qo.dat > data.dat")
+            os.system("tail -n 2000 data.dat > halfdata.dat")
             os.chdir("..")
         os.chdir("..")
 
