@@ -59,7 +59,7 @@ fep_data = []                      # an array of numpy arrays to hold data used 
 cluster_binning = False            # True if you are using pre-assigned clusters to bin the data
 cluster_bin_map = []               # Used to map cluster indices
 nbiases = 1                        # Number of biases applied during the simulations
-nperturbations = 0                 # Number of perturbed Hamiltonians to evaluate
+nperturbations = 5                 # Number of perturbed Hamiltonians to evaluate
 biasing_variable_columns = []      # List of biasing variable columns in data file
 biasing_variable_columns.append(biasing_variable_column)
 specified_a_biasing_variable_column = False
