@@ -14,16 +14,16 @@ parser = argparse.ArgumentParser(
         make metadata")
 args = parser.parse_args()
 
-temp_list = range(300, 500, 100)
+temp_list = range(350, 400, 100)
 # q0_list = range(10, 100, 10)
 
 # config = open('config.py', 'w')
 # config.write("number_of_run = %d\nsimulation_steps = %d\n\
 # warm_up_steps = %d\n" % (n, simulation_steps, warm_up_steps))
 # config.close()
-kconstant = 400
-n = 20
-q_bias_step = 0.05
+kconstant = 200
+n = 50
+q_bias_step = 0.02
 
 metadata = open("metadatafile", "w")
 for temp in temp_list:
