@@ -4009,13 +4009,12 @@ if (ntimestep>=sStep && ntimestep<=eStep) {
   // print_forces(1);
 }
 
-
-fprintf(dout, "Only compute energy for residue %d to %d\n\n", startN, endN);
-
 if(!partial_flag){
   startN  = 0;
   endN    = nn;
 }
+fprintf(dout, "Only compute energy for residue %d to %d\n\n", startN, endN);
+
 timerBegin();
 
 

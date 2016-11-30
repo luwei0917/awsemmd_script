@@ -91,11 +91,13 @@ class Atom:
 		f.write('\n')
 
 if len(sys.argv)!=7:
-	print "\nCalcQValue.py PDB_Id Input_file Output_file sigma_exp minsep maxsep [-i]\n"
+	print "\nCalcQValue.py PDB_Id Input_file Output_file sigma_exp startN endN [-i]\n"
 	print
 	print "\t\t-i\tcalculate individual q values for each chain"
 	print
 	exit()
+
+
 
 splitq = False
 for iarg in range(0, len(sys.argv)):
@@ -115,9 +117,10 @@ if len(sys.argv)>3: output_file = sys.argv[3]
 
 sigma_exp = float(sys.argv[4])
 
-minsep = int(sys.argv[5])
-maxsep = int(sys.argv[6])
 
+
+startN = int(sys.argv[5])
+endN = int(sys.argv[6])
 n_atoms = 0
 i_atom = 0
 item = ''
@@ -145,7 +148,10 @@ def computeQ():
 	Q = {}
 	norm = {}
 	N = len(ca_atoms)
-	for ia in range(0, N):
+	N = endN
+	minsep = 3
+	maxsep = N
+	for ia in range(startN, endN):
 		for ja in range(ia+minsep, ia+maxsep):
 			if (ja >= N):
 				continue
@@ -162,8 +168,8 @@ def computeQ():
 				norm[index] = norm[index] + 1
 	for key in Q:
 		Q[key] = Q[key]/norm[key]
-		print Q[key]
-		print norm[key]
+		# print Q[key]
+		# print norm[key]
 	return Q
 
 s = p.get_structure(struct_id, pdb_file)
@@ -182,7 +188,11 @@ for chain in chains:
 for i in range(0, len(ca_atoms_pdb)+1):
 	sigma.append( (1+i)**sigma_exp )
 	sigma_sq.append(sigma[-1]*sigma[-1])
+# print sigma_sq
+# print len(sigma_sq)
 
+# for i in range(1, len(sigma_sq)):
+#     print(i**0.15)**2 - sigma_sq[i-1]
 lfile = open(lammps_file)
 for l in lfile:
 	l = l.strip()

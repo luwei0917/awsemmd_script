@@ -29,7 +29,22 @@ parser.add_argument("-p", "--plot", help="plot", action="store_true", default=Fa
 parser.add_argument("--pull", help="pull ", action="store_true", default=False)
 parser.add_argument("--cpull", help="cpull ", action="store_true", default=False)
 parser.add_argument("--energy", help="energy ", action="store_true", default=False)
+parser.add_argument("--qnqc", help="calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 args = parser.parse_args()
+
+
+def calQnQc():
+    qn_start = 0
+    qn_end = 81
+    qc_start = 81
+    qc_end = 181
+    qc2_start = 130
+    qc2_end = 181
+    os.system("python2 ~/opt/CalcQnQc.py 2xov.pdb dump.lammpstrj {} 0.15 {} {}".format("qn", qn_start, qn_end))
+    os.system("python2 ~/opt/CalcQnQc.py 2xov.pdb dump.lammpstrj {} 0.15 {} {}".format("qc", qc_start, qc_end))
+    os.system("python2 ~/opt/CalcQnQc.py 2xov.pdb dump.lammpstrj {} 0.15 {} {}".format("qc2", qc2_start, qc2_end))
+if(args.qnqc):
+    calQnQc()
 
 
 def calQo():
