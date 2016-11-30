@@ -8,6 +8,8 @@ import argparse
 import platform
 from datetime import datetime
 import imp
+from time import sleep
+
 # from run_parameter import *
 parser = argparse.ArgumentParser(
     description="This is a python3 script to\
@@ -103,6 +105,7 @@ for i in range(n):
             protein_name +
             "'/g' run.slurm")
         os.system("sbatch run.slurm")
+        sleep(0.2)  # Time in seconds.
     else:
         print("system unkown")
     os.chdir("../..")

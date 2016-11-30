@@ -11,9 +11,9 @@ import imp
 import numpy as np
 # from run_parameter import *
 parser = argparse.ArgumentParser(
-        description="This is a python3 script to\
-        do see the difference variable make \
-        run simulation")
+    description="This is a python3 script to\
+    do see the difference variable make \
+    run simulation")
 
 parser.add_argument("template", help="the name of template file")
 args = parser.parse_args()
@@ -21,26 +21,33 @@ protein_name = args.template.strip('/')
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 
 folder_list = open('folder_list', 'w')
-add_force_strengths = np.arange(4, 5, 0.2)
-MGamma = 400
-for ForceStrength in add_force_strengths:
-    folder_name = "ForceStrength"+str(ForceStrength)
-    folder_list.write(folder_name+"\n")
-    os.system("mkdir -p " + folder_name)
-    os.system("cp -r "+protein_name+" "+folder_name+"/")
-    os.chdir(folder_name)
-    os.chdir(protein_name)
-    os.system(  # replace ForceStrength with specific steps
-        "sed -i.bak 's/ForceStrength/'" +
-        str(ForceStrength) +
-        "'/g' "+protein_name+".in")
-    os.system(  # replace ForceStrength with specific steps
-        "sed -i.bak 's/MGamma/'" +
-        str(MGamma) +
-        "'/g' fix_backbone_coeff.data")
-    os.chdir("..")
-    os.system("run.py " + protein_name + "/ -o -n 10 -s 4")
-    os.chdir("..")
+distance_list = np.arange(50, 250, 10)
+temp_list = np.arange(300, 400, 25)
+folder_name = ""
+for temp in temp_list:
+    pre_folder_name = "T_"+str(temp)
+    for distance in distance_list:
+        folder_name = pre_folder_name + "_D_"+str(distance)
+        folder_list.write(folder_name+"\n")
+        os.system("mkdir -p " + folder_name)
+        os.system("cp -r "+protein_name+" "+folder_name+"/")
+        os.chdir(folder_name)
+        os.chdir(protein_name)
+        os.system(
+            "sed -i.bak 's/TEMPERATURE/'" +
+            str(temp) +
+            "'/g' "+protein_name+".in")
+        os.system(
+            "sed -i.bak 's/DISTANCE/'" +
+            str(distance) +
+            "'/g' colvars.x")
+        # os.system(
+        #     "sed -i.bak 's/MGamma/'" +
+        #     str(MGamma) +
+        #     "'/g' fix_backbone_coeff.data")
+        os.chdir("..")
+        os.system("run.py " + protein_name + "/ -o -n 2 -s 8")
+        os.chdir("..")
 # n = 5
 # membrane_k = [1, 2, 3]
 # rg_cylindrical_spring_constants = [1, 0.1]
