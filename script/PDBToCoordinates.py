@@ -163,7 +163,7 @@ for ch in chains:
     iatom = 0
     ichain = ichain + 1
     if output_fn!="":
-	pass
+        pass
 #        if not splite:
 #            out.write("Chain: ")
 #            out.write(ch.get_id())
@@ -171,9 +171,10 @@ for ch in chains:
     else:
         print "Chain:", ch.get_id()
     for res in ch:
+        print res
         is_regular_res = res.has_id('N') and res.has_id('CA') and res.has_id('C')
 
-	res_id = res.get_id()[0]
+        res_id = res.get_id()[0]
         if (res_id==' ' or res_id=='H_MSE' or res_id=='H_M3L' or res_id=='H_CAS') and is_regular_res:
             ires = ires + 1
             resname = res.get_resname()
@@ -187,15 +188,15 @@ for ch in chains:
             if(res.has_id('O')):
                 xyz_O = res['O'].get_coord()
             elif(res.has_id('OT')):
-               xyz_O = res['OT'].get_coord()
+                xyz_O = res['OT'].get_coord()
             else:
-               xyz_O = res['OT1'].get_coord()
+                xyz_O = res['OT1'].get_coord()
             if resname != 'GLY':
-              if not res.has_id('CB'):
-                print ires, resname, "missing CB atom!"
-                print "Abort!"
-                exit()
-              xyz_CB = res['CB'].get_coord()
+                if not res.has_id('CB'):
+                    print ires, resname, "missing CB atom!"
+                    print "Abort!"
+                    exit()
+                xyz_CB = res['CB'].get_coord()
             else:
                 xyz_H = [0.0, 0.0, 0.0]
                 xyz_H[0] = aH*xyz_N[0] + bH*xyz_CA[0] + cH*xyz_C[0]
