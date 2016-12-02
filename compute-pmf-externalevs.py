@@ -36,18 +36,18 @@ precision_threshold = 10e-13       # threshold to determine whether or not to at
 subsample_trajectories = False      # flag for using pymbar's built-in subsampling features
 compute_per_bin_quantities = False # flag for computing per-bin expectation values
 kB = 1.381e-23 * 6.022e23 / 4184.0 # Boltzmann constant in kcal/mol/K
-ndim = 1                           # dimension of the pmf, can be 1 or 2
+ndim = 2                           # dimension of the pmf, can be 1 or 2
 metadata_file = 'metadatafile'         # name of the metadata file
-biasing_variable_column = 1        # column in the trajectory file that contains the biasing variable information
+biasing_variable_column = 5        # column in the trajectory file that contains the biasing variable information
 energy_column = 4                  # column in the trajectory file that contains the total (unbiased) potential energy
-pmf_variable_column_1 = 3          # column in the trajectory file that contains the first pmf variable
+pmf_variable_column_1 = 1          # column in the trajectory file that contains the first pmf variable
 pmf_variable_column_2 = 2          # column in the trajectory file that contians the second pmf variable
-nbins1 = 20                        # number of bins for the first pmf variable
-nbins2 = 20                        # number of bins for the second pmf variable
+nbins1 = 50                        # number of bins for the first pmf variable
+nbins2 = 50                        # number of bins for the second pmf variable
 start_temperature = 200            # temperature at which to start the free energy calculations
-end_temperature = 200              # temperature at which to stop the free energy calculations
-temperature_increment = 100          # how often (in degrees) to compute the free energy
-N_samples = 10000                  # number of correlated samples per simulation
+end_temperature = 400              # temperature at which to stop the free energy calculations
+temperature_increment = 20         # how often (in degrees) to compute the free energy
+N_samples = 2000                   # number of correlated samples per simulation
 expectation_columns = []           # an array of column numbers for which to compute expectation values
 expectation_files = []             # an array containing the names of the files that the expectation value data should be read from
 pmf_variable_column_1_file = 'DEFAULT'
@@ -317,7 +317,13 @@ if load_pickle == False:
                 continue
             line = line.split()
             # Store order parameters.
+            # print line
+            # print nbiases
             for i in range(nbiases):
+                # print i
+                # print biasing_variable_columns[i]
+                # print float(line[biasing_variable_columns[i]-1])
+                # print k, t
                 biasing_variable_kt[i][k,t] = float(line[biasing_variable_columns[i]-1])
             if pmf_variable_column_1_file == 'DEFAULT':
               pmf_variable_kt_1[k,t] = float(line[pmf_variable_column_1-1])

@@ -8,6 +8,7 @@ import argparse
 import platform
 from datetime import datetime
 import imp
+from myPersonalFunctions import *
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -30,7 +31,15 @@ parser.add_argument("--pull", help="pull ", action="store_true", default=False)
 parser.add_argument("--cpull", help="cpull ", action="store_true", default=False)
 parser.add_argument("--energy", help="energy ", action="store_true", default=False)
 parser.add_argument("--qnqc", help="calculate q of n terminal and q of c terminal ", action="store_true", default=False)
+parser.add_argument("--test", help="test ", action="store_true", default=False)
 args = parser.parse_args()
+
+
+def test():
+    print("don't show me")
+
+if(args.test):
+    test()
 
 
 def calQnQc():
@@ -43,6 +52,18 @@ def calQnQc():
     os.system("python2 ~/opt/CalcQnQc.py 2xov.pdb dump.lammpstrj {} 0.15 {} {}".format("qn", qn_start, qn_end))
     os.system("python2 ~/opt/CalcQnQc.py 2xov.pdb dump.lammpstrj {} 0.15 {} {}".format("qc", qc_start, qc_end))
     os.system("python2 ~/opt/CalcQnQc.py 2xov.pdb dump.lammpstrj {} 0.15 {} {}".format("qc2", qc2_start, qc2_end))
+    size1 = file_len("qn")
+    size2 = file_len("qc")
+    size3 = file_len("qc2")
+    if(size1 < 400 or size2 < 400 or size3 < 400):
+        raise ValueError('file length too small')
+    os.system("head -n 4000 qn > qn_all")
+    os.system("head -n 4000 qc > qc_all")
+    os.system("head -n 4000 qc2 > qc2_all")
+    os.system("tail -n 2000 qn_all > qn_half")
+    os.system("tail -n 2000 qc_all > qc_half")
+    os.system("tail -n 2000 qc2_all > qc2_half")
+    # os.system("paste ")
 if(args.qnqc):
     calQnQc()
 

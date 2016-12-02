@@ -9,6 +9,7 @@ import platform
 from datetime import datetime
 import imp
 import glob
+from time import sleep
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -38,7 +39,10 @@ def fix_error_run():
     for i in array:
         os.chdir(i)
         os.system("rm slurm-*")
-        os.system("sbatch run.slurm")
+        os.system("sbatch rerun.slurm")
+        sleep(0.5)  # Time in seconds.
+        os.system("sbatch qnqc.slurm")
+        sleep(0.5)  # Time in seconds.
         # os.system("pwd")
         os.chdir(cwd)
 
@@ -63,6 +67,7 @@ def rerun():
         os.chdir("..")
 if(args.rerun):
     rerun()
+
 
 def continue_run():
     n = 10
