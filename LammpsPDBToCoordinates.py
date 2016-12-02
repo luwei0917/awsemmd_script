@@ -172,8 +172,8 @@ for ch in chains:
         print "Chain:", ch.get_id()
     for res in ch:
         # print res
-        is_regular_res = res.has_id('N') and res.has_id('CA') and res.has_id('C')
-        # is_regular_res = True
+        # is_regular_res = res.has_id('N') and res.has_id('CA') and res.has_id('C')
+        is_regular_res = True
         # print is_regular_res
         # print res.has_id('N')
         # print res.has_id('CA')
@@ -185,9 +185,9 @@ for ch in chains:
             resname = res.get_resname()
             if res:
                 sequance.append(resname)
-            xyz_N = res['N'].get_coord()
+            xyz_N = res['CA'].get_coord()
             xyz_CA = res['CA'].get_coord()
-            xyz_C = res['C'].get_coord()
+            xyz_C = res['CA'].get_coord()
 #            xyz_O = res['O'].get_coord()
             # Get coordinates of O, including for labeled terminal residues
             if(res.has_id('O')):

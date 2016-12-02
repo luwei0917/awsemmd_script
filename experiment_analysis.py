@@ -14,36 +14,51 @@ parser = argparse.ArgumentParser(
         description="This is a python3 script to\
         automatically analysis the simulation")
 
+parser.add_argument("--ptl", help="pdb to lammps ", action="store_true", default=False)
+
 args = parser.parse_args()
 
-exec(open("config.py").read())
-n = number_of_run
-steps = simulation_steps
-# protein_name = protein_name
-os.system("mkdir results")
-clean()
-os.chdir("analysis")
 
-for i in range(n):
-    os.chdir(str(i))
-    gagb()
-    os.chdir("..")
+def pdbToLammps():
+    os.system("BuildAllAtomsFromLammps_seq.py dump.lammpstrj frame16 2xov.seq 16")
+    os.system("python2 ~/opt/LammpsPDBToCoordinates.py frame16 frame16.coord)
+    os.system("python2 ~/opt/script/CoordinatesToWorkLammpsDataFile.py frame16.coord data.frame16 -b")
 
-os.chdir("../results")
-os.system("paste ga_highest.dat gb_highest.dat > gagb.dat")
 
-os.system("cp ~/opt/gagb/q_ga-gb.gp .")
-os.system("gnuplot q_ga-gb.gp")
-os.system("open q_ga-gb.pdf")
+if(args.ptl):
+    pdbToLammps()
 
-os.system("cp ~/opt/gagb/q_ga.gp .")
-os.system("gnuplot q_ga.gp")
-os.system("open q_ga.pdf")
 
-os.system("cp ~/opt/gagb/q_gb.gp .")
-os.system("gnuplot q_gb.gp")
-os.system("open q_gb.pdf")
-os.chdir("..")
+
+
+# exec(open("config.py").read())
+# n = number_of_run
+# steps = simulation_steps
+# # protein_name = protein_name
+# os.system("mkdir results")
+# clean()
+# os.chdir("analysis")
+#
+# for i in range(n):
+#     os.chdir(str(i))
+#     gagb()
+#     os.chdir("..")
+#
+# os.chdir("../results")
+# os.system("paste ga_highest.dat gb_highest.dat > gagb.dat")
+#
+# os.system("cp ~/opt/gagb/q_ga-gb.gp .")
+# os.system("gnuplot q_ga-gb.gp")
+# os.system("open q_ga-gb.pdf")
+#
+# os.system("cp ~/opt/gagb/q_ga.gp .")
+# os.system("gnuplot q_ga.gp")
+# os.system("open q_ga.pdf")
+#
+# os.system("cp ~/opt/gagb/q_gb.gp .")
+# os.system("gnuplot q_gb.gp")
+# os.system("open q_gb.pdf")
+# os.chdir("..")
 # os.system("mkdir -p results")
 # for i in range(n):
 #     # analysis
