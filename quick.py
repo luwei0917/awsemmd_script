@@ -26,6 +26,7 @@ parser = argparse.ArgumentParser(
     description="Do what I want quickly")
 
 parser.add_argument("--qnqc", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
+parser.add_argument("--qnqc2", help="step2", action="store_true", default=False)
 parser.add_argument("--wham", help="compute wham ", action="store_true", default=False)
 args = parser.parse_args()
 
@@ -81,26 +82,48 @@ def qnqc():
         os.chdir(i)
         os.system("pwd")
         folder_name = os.getcwd()
-        # os.system("tail -n+3 energy.log > energy")
-        # os.system("head -n 4000 energy > energy_all")
-        # os.system("tail -n 2000 energy_all > energy_half")
-        # os.system("awk '{print $17}' energy_half > etotal")
+        os.system("cp ~/opt/pulling/qnqc.slurm .")
+        os.system("sbatch qnqc.slurm")
+        os.system("cp ~/opt/pulling/2xov_rerun.in .")
+        os.system("cp ~/opt/pulling/rerun.slurm .")
+        os.system("sbatch rerun.slurm")
+
+        os.chdir(cwd)
+
+if(args.qnqc):
+    qnqc()
+
+
+def qnqc2():
+    array = []
+    cwd = os.getcwd()
+    print(cwd)
+    with open('folder_list', 'r') as ins:
+        for line in ins:
+            target = line.strip('\n')
+            t1 = target + "/simulation/0"
+            t2 = target + "/simulation/1"
+            array.append(t1)
+            array.append(t2)
+    for i in array:
+        os.chdir(i)
+        os.system("pwd")
+        folder_name = os.getcwd()
+        os.system("tail -n+3 energy.log > energy")
+        os.system("head -n 4000 energy > energy_all")
+        os.system("tail -n 2000 energy_all > energy_half")
+        os.system("awk '{print $17}' energy_half > etotal")
         os.system("sed '/^#/ d' x.colvars.traj > test")
         os.system("awk 'NR % 10 == 1 ' test > x")
         os.system("head -n 4000 x > x_all")
         os.system("tail -n 2000 x_all > x_half")
         os.system("awk '{print $2}' x_half > myx_half")
         os.system("paste qn_half qc_half qc2_half etotal myx_half > halfdata")
-        # os.system("cp ~/opt/pulling/qnqc.slurm .")
-        # os.system("sbatch qnqc.slurm")
-        # os.system("cp ~/opt/pulling/2xov_rerun.in .")
-        # os.system("cp ~/opt/pulling/rerun.slurm .")
-        # os.system("sbatch rerun.slurm")
         # os.system("pwd")
         os.chdir(cwd)
 
-if(args.qnqc):
-    qnqc()
+if(args.qnqc2):
+    qnqc2()
 # parser.add_argument("file", help="the name of file")
 # parser.add_argument("file2", help="the name of file")
 # vtotal = []
