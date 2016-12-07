@@ -11,7 +11,10 @@ import imp
 # my_env = os.environ.copy()
 
 parser = argparse.ArgumentParser(
-        description="Plot my graphs quickly")
+    description="Plot my graphs quickly")
+
+parser.add_argument("--qnqc", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
+parser.add_argument("--qnqc2", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 
 parser.add_argument("-t", "--temperature", type=int, default=400,
                     help="temperature")
@@ -21,23 +24,40 @@ args = parser.parse_args()
 # os.system("gnuplot free_energy.plt ")
 # os.system("open free_energy.pdf")
 #
-exec(open("config.py").read())
-# print(n, x, y, type(y))
-n = number_of_run
-steps = simulation_steps
-# protein_name
 
-# print(n, steps)
-# sys.exit(0)
 
-os.system("mkdir -p results")
-os.system("cp ~/opt/plot_scripts/qw_all.plt .")
-os.system("gnuplot -e 'number_of_run={}' qw_all.plt".format(n-1))
-for i in range(n):
-    print(i)
-    # analysis
-    os.chdir("analysis/"+str(i))
-    os.system("cp ~/opt/plot_scripts/*.plt .")
-    os.system("gnuplot qw.plt")
-    os.system("mv qw.pdf ../../results/qw_{0}.pdf".format(str(i)))
-    os.chdir("../..")
+def qnqc2():
+
+if(args.qnqc2):
+    qnqc2()
+
+
+def qnqc():
+    os.system("cp ~/opt/pulling/freeEnergy.gp .")
+    os.system("cp ~/opt/pulling/oneFreeEnergy.gp .")
+    os.system("gnuplot freeEnergy.gp")
+    os.system("gnuplot oneFreeEnergy.gp")
+    os.system("open freeEnergy.pdf ")
+    os.system("open oneFreeEnergy.pdf")
+if(args.qnqc):
+    qnqc()
+# exec(open("config.py").read())
+# # print(n, x, y, type(y))
+# n = number_of_run
+# steps = simulation_steps
+# # protein_name
+#
+# # print(n, steps)
+# # sys.exit(0)
+#
+# os.system("mkdir -p results")
+# os.system("cp ~/opt/plot_scripts/qw_all.plt .")
+# os.system("gnuplot -e 'number_of_run={}' qw_all.plt".format(n-1))
+# for i in range(n):
+#     print(i)
+#     # analysis
+#     os.chdir("analysis/"+str(i))
+#     os.system("cp ~/opt/plot_scripts/*.plt .")
+#     os.system("gnuplot qw.plt")
+#     os.system("mv qw.pdf ../../results/qw_{0}.pdf".format(str(i)))
+#     os.chdir("../..")

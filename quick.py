@@ -42,8 +42,8 @@ def wham():
             temp = target.split("_")[1]
             x = target.split("_")[3]
             if(temp == "300" and x != "50"):
-                t1 = target + "/simulation/0"
-                t2 = target + "/simulation/1"
+                t1 = "../"+target + "/simulation/0"
+                t2 = "../"+target + "/simulation/1"
                 array.append(t1)
             # array.append(t2)
     for i in array:
