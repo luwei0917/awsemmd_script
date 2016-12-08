@@ -67,29 +67,40 @@ if(args.wham):
     wham()
 
 
+# def qnqc():
+#     array = []
+#     cwd = os.getcwd()
+#     print(cwd)
+#     with open('folder_list', 'r') as ins:
+#         for line in ins:
+#             target = line.strip('\n')
+#             t1 = target + "/simulation/0"
+#             t2 = target + "/simulation/1"
+#             array.append(t1)
+#             array.append(t2)
+#     for i in array:
+#         os.chdir(i)
+#         os.system("pwd")
+#         folder_name = os.getcwd()
+#         os.system("cp ~/opt/pulling/qnqc.slurm .")
+#         os.system("sbatch qnqc.slurm")
+#         os.system("cp ~/opt/pulling/2xov_rerun.in .")
+#         os.system("cp ~/opt/pulling/rerun.slurm .")
+#         os.system("sbatch rerun.slurm")
+#
+#         os.chdir(cwd)
 def qnqc():
-    array = []
+    n = 20
     cwd = os.getcwd()
     print(cwd)
-    with open('folder_list', 'r') as ins:
-        for line in ins:
-            target = line.strip('\n')
-            t1 = target + "/simulation/0"
-            t2 = target + "/simulation/1"
-            array.append(t1)
-            array.append(t2)
-    for i in array:
-        os.chdir(i)
+    for i in range(n):
+        os.chdir(str(i))
         os.system("pwd")
         folder_name = os.getcwd()
         os.system("cp ~/opt/pulling/qnqc.slurm .")
         os.system("sbatch qnqc.slurm")
-        os.system("cp ~/opt/pulling/2xov_rerun.in .")
-        os.system("cp ~/opt/pulling/rerun.slurm .")
-        os.system("sbatch rerun.slurm")
 
         os.chdir(cwd)
-
 if(args.qnqc):
     qnqc()
 

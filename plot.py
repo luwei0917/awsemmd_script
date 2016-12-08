@@ -5,7 +5,8 @@ import sys
 from time import sleep
 import subprocess
 import imp
-
+import numpy as np
+import pandas as pd
 # mypath = os.environ["PATH"]
 # os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 # my_env = os.environ.copy()
@@ -27,7 +28,9 @@ args = parser.parse_args()
 
 
 def qnqc2():
-
+    print("hello wolrd")
+    print("hello")
+    
 if(args.qnqc2):
     qnqc2()
 

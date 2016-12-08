@@ -1,0 +1,10 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    // Whether to lint Python files using pylint.
+    "python.linting.pylintEnabled": false,
+
+    // Whether to lint Python files using pep8
+    "python.linting.pep8Enabled": true, 
+    // Arguments passed in. Each argument is a separate item in the array.
+    "python.linting.pep8Args": ["--ignore=E303, E501"]
+}
