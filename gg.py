@@ -37,7 +37,11 @@ args = parser.parse_args()
 
 def test():
     print("don't show me")
-
+    for i in range(20):
+        os.chdir(str(i))
+        # os.system("gg.py --qnqc")
+        os.system("paste qn qc > qnqc")
+        os.chdir("..")
 if(args.test):
     test()
 
@@ -55,14 +59,15 @@ def calQnQc():
     size1 = file_len("qn")
     size2 = file_len("qc")
     size3 = file_len("qc2")
-    if(size1 < 400 or size2 < 400 or size3 < 400):
-        raise ValueError('file length too small')
-    os.system("head -n 4000 qn > qn_all")
-    os.system("head -n 4000 qc > qc_all")
-    os.system("head -n 4000 qc2 > qc2_all")
-    os.system("tail -n 2000 qn_all > qn_half")
-    os.system("tail -n 2000 qc_all > qc_half")
-    os.system("tail -n 2000 qc2_all > qc2_half")
+    os.system("paste qn qc > qnqc")
+    # if(size1 < 400 or size2 < 400 or size3 < 400):
+    #     raise ValueError('file length too small')
+    # os.system("head -n 4000 qn > qn_all")
+    # os.system("head -n 4000 qc > qc_all")
+    # os.system("head -n 4000 qc2 > qc2_all")
+    # os.system("tail -n 2000 qn_all > qn_half")
+    # os.system("tail -n 2000 qc_all > qc_half")
+    # os.system("tail -n 2000 qc2_all > qc2_half")
     # os.system("paste ")
 if(args.qnqc):
     calQnQc()
@@ -141,6 +146,7 @@ def energy():
 # os.system("gnuplot energy2.gp ")
 # os.system("open energy2.pdf ")
 
+
 def wham_analysis():
     os.system("mkdir -p wham")
     os.system("rm wham/all.dat")
@@ -203,24 +209,30 @@ def free_energy_analysis():
         os.chdir(str(temp))
         for i in range(n):
             os.chdir(str(i))
-            os.system("awk '{print $6}' wham.dat | tail -n +2 > p.dat")
+            os.system("awk '{print $6}' wham.dat | tail -n +2 > e.dat")
             # os.system("awk '{print $3}' wham.dat | tail -n +2 > p2.dat")
             os.system("cp ~/opt/gagb/*.pdb .")
-            os.system("awk '{if ((!((($1>0 && $1<25) || ($1>159 && $1<200) ) && $3>-10)  ) ) print }' dump.lammpstrj > data_test")
-            os.system("python2 ~/opt/script/CalcQValue.py 2lhc_part.pdb data_test test")
-            os.system("tail -n +2 test > q_ga_part.dat")
-            os.system("python2 ~/opt/script/CalcQValue.py 2lhc dump.lammpstrj q_ga_included.dat")
-            os.system("tail -n +2 q_ga_included.dat > q_ga.dat")
-            os.system("python2 ~/opt/script/CalcQValue.py 2lhd dump.lammpstrj q_gb_included.dat")
-            os.system("tail -n +2 q_gb_included.dat > q_gb.dat")
+            # os.system("awk '{if ((!((($1>0 && $1<25) || ($1>159 && $1<200) ) && $3>-10)  ) ) print }' dump.lammpstrj > data_test")
+            # os.system("python2 ~/opt/script/CalcQValue.py 2lhc_part.pdb data_test test")
+            # os.system("tail -n +2 test > q_ga_part.dat")
+            # os.system("python2 ~/opt/script/CalcQValue.py 2lhc dump.lammpstrj q_ga_included.dat")
+            # os.system("tail -n +2 q_ga_included.dat > q_ga.dat")
+            # os.system("python2 ~/opt/script/CalcQValue.py 2lhd dump.lammpstrj q_gb_included.dat")
+            # os.system("tail -n +2 q_gb_included.dat > q_gb.dat")
             os.system("cp ~/opt/gagb/nativecoords_g* .")
             os.system("mv nativecoords_ga.dat nativecoords.dat")
-            os.system("python2 ~/opt/script/CalcQValue_multi.py 2lhc dump.lammpstrj qo 1")
-            os.system("tail -n +2 qo > qo.dat")
-            os.system("paste q_ga.dat q_ga_part.dat q_gb.dat p.dat qo.dat > data.dat")
+            os.system("python2 ~/opt/script/CalcQValue_multi.py 2lhc dump.lammpstrj qo_ga 1")
+            os.system("tail -n +2 qo_ga > qo_ga.dat")
+            os.system("mv nativecoords_gb.dat nativecoords.dat")
+            os.system("python2 ~/opt/script/CalcQValue_multi.py 2lhd dump.lammpstrj qo_gb 1")
+            os.system("tail -n +2 qo_gb > qo_gb.dat")
+            os.system("paste qo_ga.dat  qo_gb.dat e.dat > data.dat")
             os.system("tail -n 2000 data.dat > halfdata.dat")
             os.chdir("..")
         os.chdir("..")
+
+if(args.freeEnergy):
+    free_energy_analysis()
 
 
 def plot():
@@ -309,8 +321,7 @@ if(args.wham):
     wham_analysis()
 if(args.wham400):
     wham_analysis400()
-if(args.freeEnergy):
-    free_energy_analysis()
+
 if(args.fix):
     fix()
 if(args.plot):
