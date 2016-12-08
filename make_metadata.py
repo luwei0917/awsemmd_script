@@ -20,6 +20,7 @@ args = parser.parse_args()
 
 def qnqc():
     print("QnQc")
+    # os.system("cp folder_list .")
     kconstant = 0.05
 
     metadata = open("metadatafile", "w")
@@ -29,9 +30,10 @@ def qnqc():
             temp = target.split("_")[1]
             x = target.split("_")[3]
             # print(temp)
-            t1 = "../" + target + "/simulation/0/halfdata {} {} -{}\n".format(temp, kconstant, x)
-            # t2 = "../" + target + "/simulation/1/halfdata {} {} {}\n".format(temp, kconstant, x)
-            metadata.write(t1)
+            # t1 = "../" + target + "/simulation/0/halfdata {} {} -{}\n".format(temp, kconstant, x)
+            t2 = "../" + target + "/simulation/1/halfdata {} {} {}\n".format(temp, kconstant, x)
+            # metadata.write(t1)
+            metadata.write(t2)
     metadata.close()
 if(args.qnqc):
     qnqc()

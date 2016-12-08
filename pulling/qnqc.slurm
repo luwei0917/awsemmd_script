@@ -1,6 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=CTBP_WL
-#SBATCH --partition=commons
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=1G
 #SBATCH --time=00:20:00
