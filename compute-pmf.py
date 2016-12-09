@@ -182,6 +182,8 @@ for arg in range(len(sys.argv)):
     print "I don't recognize %s as an argument. Use -help to see the proper usage." % sys.argv[arg]
     sys.exit()
 
+exec(open("config.py").read())
+
 nbiases = len(biasing_variable_columns)
 nperturbations = len(perturbation_columns)
 

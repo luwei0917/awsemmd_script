@@ -50,7 +50,7 @@ zi = griddata((data[:,args.x], data[:,args.y]), data[:,args.z], (xi[None,:], yi[
 #plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
 jet = cm = plt.get_cmap('jet')
 print(jet)
-plt.contourf(xi, yi, zi, 50, cmap=jet)
+plt.contourf(xi, yi, zi, 50, cmap='rainbow')
 
 plt.xlim(args.xmin, args.xmax)
 plt.ylim(args.ymin, args.ymax)

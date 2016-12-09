@@ -19,6 +19,7 @@ parser = argparse.ArgumentParser(
 # parser.add_argument("data", help="the name of data file")
 parser.add_argument("--qnqc", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 # parser.add_argument("--qnqc2", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
+parser.add_argument("--gagb", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 
 parser.add_argument("-t", "--temperature", type=int, default=400,
                     help="temperature")
@@ -30,6 +31,18 @@ args = parser.parse_args()
 #
 
 
+def gagb():
+    print("Hello World GaGb")
+    name = 'pmf-330.dat'
+    data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
+    print(data)
+    data.plot(x='bin_center_1', y='f')
+    fig = plt.gcf()
+    fig.savefig('figure.pdf')
+    os.system("open figure.pdf")
+    # data.show()
+if(args.gagb):
+    gagb()
 # def qnqc():
 #     print("Hello World")
 #     n = 2
@@ -64,7 +77,7 @@ args = parser.parse_args()
 #     # data.show()
 def qnqc():
     print("Hello World")
-    n = 20
+    n = 10
     for i in range(n):
         name = str(i) + "/qnqc"
         data = pd.read_table(name, header=None, names=["qn", "qc"])
