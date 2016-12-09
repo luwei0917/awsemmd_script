@@ -44,7 +44,7 @@ n = args.number
 protein_name = args.template.strip('/')
 if args.steps == -1:  # smallest run for debug.
     simulation_steps = 10**5
-    warm_up_steps = 10**3
+    warm_up_steps = 10**4
     n = 1  # also set
 elif args.test:  # test run
     simulation_steps = 50 * 10**3
@@ -82,6 +82,15 @@ for i in range(n):
         "sed -i.bak 's/SIMULATION_STEPS/'" +
         str(simulation_steps) +
         "'/g' "+protein_name+".in")
+    if args.steps == -1:
+        os.system(  # replace TEMPERATURE with specific steps
+            "sed -i.bak 's/Q0/'" +
+            str(0.5) +
+            "'/g' fix_qbias_coeff.data")
+        os.system(  # replace TEMPERATURE with specific steps
+            "sed -i.bak 's/TEMPERATURE/'" +
+            str(350) +
+            "'/g' "+protein_name+".in")
     if(not args.offAuto):
             os.system(  # replace SIMULATION_STEPS with specific steps
                 "sed -i.bak 's/TSTART/'" +

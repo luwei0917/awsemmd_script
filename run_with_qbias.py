@@ -29,16 +29,18 @@ protein_name = args.template.strip('/')
 
 
 warm_up_steps = 2*10**6
-simulation_steps = 10*10**6
-
-config = open('config.py', 'w')
-config.write("protein_name = '%s'\nnumber_of_run = %d\nsimulation_steps = %d\n\
-warm_up_steps = %d\n" % (protein_name, n, simulation_steps, warm_up_steps))
-config.close()
+simulation_steps = 8*10**6
 
 # temp_list = [400, 500]
 temp_list = [350]
-n = 50
+n = 40
+
+config = open('config.py', 'w')
+config.write("protein_name = '%s'\nnumber_of_run = %d\nsimulation_steps = %d\n\
+warm_up_steps = %d\nn = %d\n" % (protein_name, n, simulation_steps, warm_up_steps, n))
+config.close()
+
+
 # temp_list = [300, 350, 400]
 # print(temp)
 
@@ -48,7 +50,7 @@ for temp in temp_list:
     os.system("mkdir -p simulation/"+str(temp))
     os.chdir("simulation/"+str(temp))
     q_bias_step = 0.02
-    q0 = 0
+    q0 = 0.1
     for i in range(n):
         q0 += q_bias_step
         os.system("mkdir -p "+str(i))
