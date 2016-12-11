@@ -9,6 +9,7 @@ import platform
 from datetime import datetime
 import imp
 from myPersonalFunctions import *
+import glob
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -25,18 +26,17 @@ parser = argparse.ArgumentParser(description="This is my playground for current 
 # parser.add_argument("template", help="the name of template file")
 parser.add_argument("--gagb", help="Project gagb", action="store_true", default=False)
 parser.add_argument("-f", "--freeEnergy", help="free energy calculation", action="store_true", default=False)
-parser.add_argument("--test", help="test ", action="store_true", default=False)
+parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 
 args = parser.parse_args()
 
 
 def test():
-    print("don't show me")
-    for i in range(20):
-        os.chdir(str(i))
-        # os.system("gg.py --qnqc")
-        os.system("paste qn qc > qnqc")
-        os.chdir("..")
+    data_list = glob.glob("*.dat")
+    print(data_list)
+    # script = "tail -n+2 cv-200-400-10.dat | sort -r -k 2 | head -n1"
+    # result = subprocess.check_output(script, shell=True).decode("utf-8").split()[0]
+    # print(result)
 if(args.test):
     test()
 
@@ -59,25 +59,67 @@ pmf_variable_column_2 = 2
 
 
 def gagb_freeEnergy_calculation():
+    os.chdir("simulation")
+    os.system("gg.py -f")
+    os.chdir("..")
     print("gagb_freeEnergy_calculation")
     # wham one d on ga, gb
-    # name_list = ["ga", "gb"]
-    name_list = ["test"]
+    name_list = ["ga", "gb", "two_d"]
+    # name_list = ["test"]
     for name in name_list:
-        folder = "one_d_"+name
+        if name == "two_d":
+            folder = "two_d"
+        else:
+            folder = "one_d_"+name
         os.system("mkdir -p "+folder)
         os.chdir(folder)
         os.system("make_metadata.py --gagb")
         config = open('config.py', 'w')
-        this_config = gagb_free_energy_config.format(ndim, pmf_variable_column_2, pmf_variable_column_1)
+        if name == "ga":
+            ndim = 1
+            pmf_variable_column_1 = 2
+            pmf_variable_column_2 = 3
+        if name == "gb":
+            ndim = 1
+            pmf_variable_column_1 = 3
+            pmf_variable_column_2 = 2
+        if name == "two_d":
+            ndim = 2
+            pmf_variable_column_1 = 3           # gb
+            pmf_variable_column_2 = 2
+        this_config = gagb_free_energy_config.format(ndim, pmf_variable_column_1, pmf_variable_column_2)
         config.write(this_config)
         # config.write("protein_name = '%s'\nnumber_of_run = %d\nsimulation_steps = %d\n\
         # warm_up_steps = %d\n" % (protein_name, n, simulation_steps, warm_up_steps))
         config.close()
         os.system("python2 ~/opt/compute-pmf.py")
-        os.system("myplot.py --gagb")
+        os.system("cp pmf-330.dat ../"+name+"_pmf-330.dat")
+        script = "tail -n+2 cv-200-400-10.dat | sort -r -k 2 | head -n1"
+        cv_peak_temp = subprocess.check_output(script, shell=True).decode("utf-8").split()[0]
+        os.system("cp pmf-"+str(cv_peak_temp)+".dat ../"+name+"_cv_peak_"+str(cv_peak_temp)+".dat")
+        os.system("cp cv-200-400-10.dat ../"+name+"_cv-200-400-10.dat")
+        os.system("myplot.py --gagb ../" + name + ".pdf")
         os.chdir("..")
     # wham two d
 
+
+def gagb_calall():
+    name_list = ["ga77", "gb77"]
+    os.system("mkdir -p results")
+    for name in name_list:
+        os.chdir(name)
+        gagb_freeEnergy_calculation()
+        # os.system("cp ga.pdf ../results/" + name+"_ga.pdf")
+        # os.system("cp gb.pdf ../results/" + name+"_gb.pdf")
+        # os.system("cp two_d.pdf ../results/"+name+"_two_d.pdf")
+        pdf_list = glob.glob("*.pdf")
+        for pdf in pdf_list:
+            os.system("cp "+pdf+" ../results/"+name+pdf)
+        data_list = glob.glob("*.dat")
+        for data in data_list:
+            os.system("cp "+data+" ../results/"+name+data)
+        # os.system("cp pmf-330.dat ../results/"+name+"_pmf-330.dat")
+        os.chdir("..")
+
 if(args.gagb and args.freeEnergy):
-    gagb_freeEnergy_calculation()
+    gagb_calall()

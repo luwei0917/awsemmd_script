@@ -20,8 +20,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--qnqc", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 # parser.add_argument("--qnqc2", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--gagb", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
-
-parser.add_argument("-t", "--temperature", type=int, default=400,
+parser.add_argument("outname", help="output filename")
+parser.add_argument("-t", "--temperature", type=int, default=330,
                     help="temperature")
 args = parser.parse_args()
 # protein_name = args.template.strip('/')
@@ -33,13 +33,16 @@ args = parser.parse_args()
 
 def gagb():
     print("Hello World GaGb")
-    name = 'pmf-330.dat'
+    output = args.outname
+    temp = args.temperature
+
+    name = 'pmf-'+str(temp)+'.dat'
     data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
     print(data)
     data.plot(x='bin_center_1', y='f')
     fig = plt.gcf()
-    fig.savefig('figure.pdf')
-    os.system("open figure.pdf")
+    fig.savefig(output)
+    os.system("open " + output)
     # data.show()
 if(args.gagb):
     gagb()

@@ -9,6 +9,7 @@ import platform
 from datetime import datetime
 import imp
 from myPersonalFunctions import *
+import glob
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
