@@ -98,23 +98,39 @@ def gagb_freeEnergy_calculation():
         cv_peak_temp = subprocess.check_output(script, shell=True).decode("utf-8").split()[0]
         os.system("cp pmf-"+str(cv_peak_temp)+".dat ../"+name+"_cv_peak_"+str(cv_peak_temp)+".dat")
         os.system("cp cv-200-400-10.dat ../"+name+"_cv-200-400-10.dat")
-        os.system("myplot.py --gagb ../" + name + ".pdf")
+        # os.system("myplot.py --gagb ../" + name + ".pdf")
         os.chdir("..")
     # wham two d
 
 
+def gagb_freeEnergy_analysis():
+    name_list = ["ga", "gb", "two_d"]
+    # name_list = ["test"]
+    for name in name_list:
+        os.system("cp pmf-330.dat ../"+name+"_pmf-330.dat")
+        script = "tail -n+2 cv-200-400-10.dat | sort -r -k 2 | head -n1"
+        cv_peak_temp = subprocess.check_output(script, shell=True).decode("utf-8").split()[0]
+        os.system("cp pmf-"+str(cv_peak_temp)+".dat ../"+name+"_cv_peak_"+str(cv_peak_temp)+".dat")
+        os.system("cp cv-200-400-10.dat ../"+name+"_cv-200-400-10.dat")
+        # os.system("myplot.py --gagb ../" + name + ".pdf")
+        os.chdir("..")
+
+
 def gagb_calall():
     name_list = ["ga77", "gb77"]
+    # name_list = ["ga", "gb"]
     os.system("mkdir -p results")
     for name in name_list:
         os.chdir(name)
-        gagb_freeEnergy_calculation()
+        skip = False
+        if not skip:
+            gagb_freeEnergy_calculation()
         # os.system("cp ga.pdf ../results/" + name+"_ga.pdf")
         # os.system("cp gb.pdf ../results/" + name+"_gb.pdf")
         # os.system("cp two_d.pdf ../results/"+name+"_two_d.pdf")
-        pdf_list = glob.glob("*.pdf")
-        for pdf in pdf_list:
-            os.system("cp "+pdf+" ../results/"+name+pdf)
+        # pdf_list = glob.glob("*.pdf")
+        # for pdf in pdf_list:
+        #     os.system("mv "+pdf+" ../results/"+name+pdf)
         data_list = glob.glob("*.dat")
         for data in data_list:
             os.system("cp "+data+" ../results/"+name+data)

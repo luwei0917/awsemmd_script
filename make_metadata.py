@@ -22,9 +22,9 @@ args = parser.parse_args()
 def gagb():
     print("GaGb")
     # os.system("cp folder_list .")
-    kconstant = 56
+    kconstant = 112   # double the k constant
     temp = 350
-    q0 = 0.1
+    q0 = 0.12
     metadata = open("metadatafile", "w")
     for i in range(40):
         q = q0 + i*0.02
