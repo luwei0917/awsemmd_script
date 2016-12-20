@@ -12,6 +12,6 @@ set key outside
 
 #plot "addforce.dat" u 2:3 w l
 
-plot for [i=0:19] ''.i.'/addforce.dat' u 1:2 w l t 'run '.i
+plot for [i=0:19] 'rerun_'.i.'/addforce.dat' u 1:2 w l t 'run '.i
 #plot for [i=0:19] ''.i.'/addforce.dat' u 2:3 w l t 'run '.i \
 #,for [i=0:19] ''.i.'/addforce_back.dat' u 2:3 w l t 'run '.i

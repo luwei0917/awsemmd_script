@@ -33,15 +33,18 @@ parser.add_argument("--cpull", help="cpull ", action="store_true", default=False
 parser.add_argument("--energy", help="energy ", action="store_true", default=False)
 parser.add_argument("--qnqc", help="calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--test", help="test ", action="store_true", default=False)
+parser.add_argument("-n", "--number", type=int, default=10, help="number of run")
 args = parser.parse_args()
 
 
 def test():
     print("don't show me")
-    for i in range(20):
+    n = args.number
+    for i in range(n):
+        print(i)
         os.chdir(str(i))
-        # os.system("gg.py --qnqc")
-        os.system("paste qn qc > qnqc")
+        os.system("gg.py --qnqc")
+        # os.system("paste qn qc > qnqc")
         os.chdir("..")
 if(args.test):
     test()

@@ -24,6 +24,8 @@ parser.add_argument("--gagb_compare", help="for all calculate q of n terminal an
 parser.add_argument("outname", help="output filename")
 parser.add_argument("-t", "--temperature", type=int, default=330,
                     help="temperature")
+parser.add_argument("-n", "--number", type=int, default=10,
+                    help="number")
 args = parser.parse_args()
 # protein_name = args.template.strip('/')
 # os.system("cp ~/opt/plot_scripts/free_energy.plt .")
@@ -102,7 +104,7 @@ if(args.gagb):
 #     # data.show()
 def qnqc():
     print("Hello World")
-    n = 10
+    n = args.number
     for i in range(n):
         name = str(i) + "/qnqc"
         data = pd.read_table(name, header=None, names=["qn", "qc"])

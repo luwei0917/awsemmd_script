@@ -24,27 +24,33 @@ parser = argparse.ArgumentParser(description="This is my playground for current 
 parser.add_argument("--fix", help="fix ", action="store_true", default=False)
 parser.add_argument("--rerun", help="rerun ", action="store_true", default=False)
 parser.add_argument("--go", help="continue_run ", action="store_true", default=False)
+parser.add_argument("-n", "--number", type=int, default=10, help="number of run")
 args = parser.parse_args()
 
 
 def fix_error_run():
-    # os.system("grep 'srun: error: Application launch failed: Socket timed out on send/recv operation' . -r | cut -d':' -f1 | rev | cut -d"/" -f2- | rev > list")
-    array = []
-    cwd = os.getcwd()
-    print(cwd)
-    with open('list', 'r') as ins:
-        for line in ins:
-            target = line.strip('\n')
-            array.append(target)
-    for i in array:
-        os.chdir(i)
-        os.system("rm slurm-*")
-        os.system("sbatch rerun.slurm")
-        sleep(0.5)  # Time in seconds.
+    n = args.number
+    for i in range(n):
+        os.chdir(str(i))
         os.system("sbatch qnqc.slurm")
-        sleep(0.5)  # Time in seconds.
-        # os.system("pwd")
-        os.chdir(cwd)
+        os.chdir("..")
+    # os.system("grep 'srun: error: Application launch failed: Socket timed out on send/recv operation' . -r | cut -d':' -f1 | rev | cut -d"/" -f2- | rev > list")
+    # array = []
+    # cwd = os.getcwd()
+    # print(cwd)
+    # with open('list', 'r') as ins:
+    #     for line in ins:
+    #         target = line.strip('\n')
+    #         array.append(target)
+    # for i in array:
+    #     os.chdir(i)
+    #     os.system("rm slurm-*")
+    #     os.system("sbatch rerun.slurm")
+    #     sleep(0.5)  # Time in seconds.
+    #     os.system("sbatch qnqc.slurm")
+    #     sleep(0.5)  # Time in seconds.
+    #     # os.system("pwd")
+    #     os.chdir(cwd)
 
     # os.system("cut -d'/' -f2 list >")
 if(args.fix):
