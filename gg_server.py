@@ -32,6 +32,7 @@ def fix_error_run():
     n = args.number
     for i in range(n):
         os.chdir(str(i))
+        os.system("cp ~/opt/pulling/qnqc.slurm .")
         os.system("sbatch qnqc.slurm")
         os.chdir("..")
     # os.system("grep 'srun: error: Application launch failed: Socket timed out on send/recv operation' . -r | cut -d':' -f1 | rev | cut -d"/" -f2- | rev > list")
