@@ -59,7 +59,7 @@ if(args.fix):
 
 
 def rerun():
-    n = 10
+    n = args.number
     for i in range(n):
         os.system("cp -r {0} rerun_{0}".format(str(i)))
         # source = "~/opt/gagb/gagb_constant200_rerun.in"
