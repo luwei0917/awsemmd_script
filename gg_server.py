@@ -64,7 +64,7 @@ def rerun():
         os.system("cp -r {0} rerun_{0}".format(str(i)))
         # source = "~/opt/gagb/gagb_constant200_rerun.in"
         # target = " 2lhc.in"
-        source = "~/opt/pulling/2xov_dis.in"
+        source = "~/opt/pulling/2xov_force_load_dis.in"
         target = " 2xov.in"
         os.system("cp "+source + target)
         os.system("cp "+target+" rerun_{}/".format(str(i)))
