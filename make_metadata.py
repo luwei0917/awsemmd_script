@@ -14,6 +14,8 @@ parser = argparse.ArgumentParser(
     make metadata")
 
 parser.add_argument("--qnqc", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
+parser.add_argument("--qnqc2", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
+
 parser.add_argument("--gagb", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 
 args = parser.parse_args()
@@ -55,6 +57,23 @@ def qnqc():
     metadata.close()
 if(args.qnqc):
     qnqc()
+
+
+def qnqc2():
+    print("QnQc2")
+    # os.system("cp folder_list .")
+    kconstant = 400   # double the k constant
+    temp = 350
+    q0 = 0.12
+    metadata = open("metadatafile", "w")
+    for i in range(40):
+        q = q0 + i*0.02
+        target = "../simulation/350/" + str(i) + "/halfdata.dat {} {} {:.2f}\n".format(temp, kconstant, q)
+        metadata.write(target)
+    metadata.close()
+
+if(args.qnqc2):
+    qnqc2()
 # temp_list = range(350, 400, 100)
 # # q0_list = range(10, 100, 10)
 #

@@ -43,8 +43,9 @@ def test():
     for i in range(n):
         print(i)
         os.chdir(str(i))
-        os.system("gg.py --qnqc")
-        # os.system("paste qn qc > qnqc")
+        # os.system("gg.py --qnqc")
+        os.system("paste qn qc wham.dat | tail -n+2 > total")
+        os.system("head -n 5000 total | tail -n 3000 > halfdata")
         os.chdir("..")
 if(args.test):
     test()

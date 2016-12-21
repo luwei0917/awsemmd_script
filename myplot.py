@@ -18,6 +18,8 @@ parser = argparse.ArgumentParser(
     description="Plot my graphs quickly")
 # parser.add_argument("data", help="the name of data file")
 parser.add_argument("--qnqc", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
+parser.add_argument("--qnqc_pull", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
+
 # parser.add_argument("--qnqc2", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--gagb", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--gagb_compare", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
@@ -26,6 +28,8 @@ parser.add_argument("-t", "--temperature", type=int, default=330,
                     help="temperature")
 parser.add_argument("-n", "--number", type=int, default=10,
                     help="number")
+parser.add_argument("-m", "--minor", type=int, default=1,
+                    help="minor control")
 args = parser.parse_args()
 # protein_name = args.template.strip('/')
 # os.system("cp ~/opt/plot_scripts/free_energy.plt .")
@@ -142,6 +146,59 @@ def qnqc():
     # data.show()
 if(args.qnqc):
     qnqc()
+
+
+def qnqc_pull():
+    print("Hello World")
+    n = args.number
+    for i in range(n):
+        if(args.minor == 1):
+            name = "" + str(i) + "/addforce.dat"
+        elif(args.minor == 2):
+            name = "rerun_" + str(i) + "/addforce.dat"
+        data = pd.read_table(name, sep='\s+')
+        # print(data)
+        # data = pd.read_table(name, header=None, names=["qn", "qc"])
+        ax = plt.subplot(4, 5, i + 1)
+        plt.tick_params(
+            axis='x',
+            which='both',
+            bottom='off',
+            top='off',
+            labelbottom='off'
+        )
+        plt.tick_params(
+            axis='y',
+            which='both',
+            right='off',
+        )
+        if(args.minor == 1):
+            data["addedFroce"] = -data["addedFroce"]
+            data.plot(ax=ax, legend=False, x="Distance", y="addedFroce", xlim=(0, 400), ylim=(0, 2))
+        elif(args.minor == 2):
+            data["addedFroce"] = data["addedFroce"]/2.0
+            data.plot(ax=ax, legend=False, x="Distance", y="addedFroce", xlim=(0, 400), ylim=(0, 2))
+
+    # print(data)
+    # data.plot()
+    # plt.plot(data[1])
+    # plt.show()
+    # ts = pd.Series(np.random.randn(1000), index=pd.date_range('1/1/2000', periods=1000))
+    # df = pd.DataFrame(np.random.randn(1000, 4), index=ts.index, columns=list('ABCD'))
+    # df = df.cumsum()
+    # fig = plt.figure()
+    # plt.subplot(4, 4, 13)
+    # plt.plot(range(12))
+    # plt.suptitle('Red is Qn, Blue is Qc')
+    fig = plt.gcf()
+    output = args.outname
+    fig.savefig(output)
+    os.system("open " + output)
+    # fig.savefig('figure.pdf')
+    # os.system("open figure.pdf")
+    # data.show()
+if(args.qnqc_pull):
+    qnqc_pull()
 # exec(open("config.py").read())
 # # print(n, x, y, type(y))
 # n = number_of_run
