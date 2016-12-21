@@ -117,8 +117,8 @@ def gagb_freeEnergy_analysis():
 
 
 def gagb_calall():
-    name_list = ["ga77", "gb77"]
-    # name_list = ["ga", "gb"]
+    # name_list = ["ga77", "gb77"]
+    name_list = ["ga", "gb"]
     os.system("mkdir -p results")
     for name in name_list:
         os.chdir(name)

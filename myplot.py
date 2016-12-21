@@ -43,6 +43,7 @@ def gagb_compare():
     ax = plt.subplot(1, 1, 1)
     # ax = plt.figure()
     ax.set_title("ga77")
+
     # name = 'pmf-'+str(temp)+'.dat'
     name = "ga77gb_pmf-330.dat"
     data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
@@ -52,6 +53,8 @@ def gagb_compare():
     data2 = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
     print(data2)
     data2.plot(ax=ax, x='bin_center_1', y='f', label="gb")
+    plt.ylabel("free energy is units of kT")
+    plt.xlabel("qo based on gb's sturcture")
     fig = plt.gcf()
     fig.savefig(output)
     os.system("open " + output)
