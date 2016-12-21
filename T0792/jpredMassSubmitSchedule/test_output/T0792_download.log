@@ -1,0 +1,11 @@
+--2016-12-21 15:56:01--  http://www.compbio.dundee.ac.uk/jpred4/results/jp_gMtjEtQ/jp_gMtjEtQ.jnet
+Resolving www.compbio.dundee.ac.uk... 134.36.67.203
+Connecting to www.compbio.dundee.ac.uk|134.36.67.203|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 3074 (3.0K) [text/plain]
+Saving to: 'jp_gMtjEtQ.jnet'
+
+     0K ...                                                   100%  140M=0s
+
+2016-12-21 15:56:02 (140 MB/s) - 'jp_gMtjEtQ.jnet' saved [3074/3074]
+
