@@ -4,33 +4,26 @@ import argparse
 import sys
 from time import sleep
 import subprocess
-parser = argparse.ArgumentParser(
-        description="The goal of this python3 code is to automatically create \
-        the project template as fast as possible. Written by Wei Lu."
-)
-parser.add_argument("protein", help="The name of the protein")
-
-args = parser.parse_args()
-protein_name = args.protein.split('.')[0]
-
-
-with open(protein_name+".fasta") as input_data:
-    for line in input_data:
-        if(line[0] == ">"):
-            print(line)
-        elif(line == "\n"):
-            pass
-        else:
-            data = line.strip("\n")
-            print(len(data))
-            out = open(protein_name+".pml", 'w')
-            out.write("sequence = \""+data+"\"\n")
-            out.write("for aa in sequence: cmd._alt(string.lower(aa))\n")
-            out.write("save "+protein_name+".pdb\n")
-            out.write("quit\n")
-            out.close()
-            os.system("pymol "+protein_name+".pml")
-
+folder_list = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
+# folder_list = ["T0815", "T0778"]
+os.system("mkdir -p aawsemDec25")
+os.chdir("aawsemDec25")
+for protein_name in folder_list:
+    os.system("mkdir -p "+protein_name)
+    os.chdir(protein_name)
+    os.system("mkdir -p "+protein_name)
+    os.chdir(protein_name)
+    os.system("cp ~/Research/project_AAWSEM/aasem/_output/"+protein_name+".fasta .")
+    os.system("create_project.py " + protein_name)
+    os.chdir("../..")
+# os.system("stride %s.pdb > ssweight.stride" % protein_name)
+# os.system("python2 ~/opt/script/stride2ssweight.py > ssweight")
+# os.system("python2 ~/opt/script/GetCACADistancesFile.py %s native.dat" % protein_name)
+# os.system("python2 ~/opt/script/GetCACoordinatesFromPDB.py %s nativecoords.dat" % protein_name)
+# os.system("cp ~/opt/database/* .")
+# os.system("python2 ~/opt/script/prepFragsLAMW_index.py \
+#     cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 0" % protein_name)
+# os.system("cp ~/opt/AASEM/parameter/* .")
 # os.system("cp ~/opt/parameter/* .")
 # os.system("python2 ~/opt/script/Pdb2Gro.py %s.pdb %s.gro" % (protein_name, protein_name))
 # os.system("cp ~/opt/variables.dat .")

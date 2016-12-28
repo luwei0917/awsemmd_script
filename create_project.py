@@ -12,21 +12,23 @@ parser.add_argument("protein", help="The name of the protein")
 
 args = parser.parse_args()
 protein_name = args.protein.split('.')[0]
-
+os.system("fasta2pdb.py "+protein_name)
 os.system("~/opt/script/PdbCoords2Lammps.sh "+protein_name+" "+protein_name)
 os.system("echo '>%s' > %s.fasta " % (protein_name.upper(), protein_name))
 os.system("cat %s.seq >> %s.fasta" % (protein_name, protein_name))
-
-os.system("stride %s.pdb > ssweight.stride" % protein_name)
-os.system("python2 ~/opt/script/stride2ssweight.py > ssweight")
-os.system("python2 ~/opt/script/GetCACADistancesFile.py %s native.dat" % protein_name)
-os.system("python2 ~/opt/script/GetCACoordinatesFromPDB.py %s nativecoords.dat" % protein_name)
+os.system("cp ~/Research/project_AAWSEM/aasem/_data/"+protein_name+" ssweight")
+os.system("cp ~/Research/project_AAWSEM/fragmem/HO_Mem/"+protein_name+"/frag.mem frag.mem_old")
+os.system("sed 's/\/work\/pw8\/mc70\/script/\/home\/wl45/g' frag.mem_old > frag.mem")
+# os.system("stride %s.pdb > ssweight.stride" % protein_name)
+# os.system("python2 ~/opt/script/stride2ssweight.py > ssweight")
+# os.system("python2 ~/opt/script/GetCACADistancesFile.py %s native.dat" % protein_name)
+# os.system("python2 ~/opt/script/GetCACoordinatesFromPDB.py %s nativecoords.dat" % protein_name)
 # os.system("cp ~/opt/database/* .")
 # os.system("python2 ~/opt/script/prepFragsLAMW_index.py \
 #     cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 0" % protein_name)
-os.system("cp ~/opt/globular_parameter/* .")
+os.system("cp ~/opt/AASEM/parameter/* .")
 # os.system("cp ~/opt/parameter/* .")
-os.system("python2 ~/opt/script/Pdb2Gro.py %s.pdb %s.gro" % (protein_name, protein_name))
+# os.system("python2 ~/opt/script/Pdb2Gro.py %s.pdb %s.gro" % (protein_name, protein_name))
 # os.system("cp ~/opt/variables.dat .")
 # print("You need zim")
 # grep -E "CB|CA  GLY" 1qjp.pdb > cbs.data
