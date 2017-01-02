@@ -159,6 +159,10 @@ def qnqc_pull():
             name = "" + str(i) + "/addforce.dat"
         elif(args.minor == 2):
             name = "rerun_" + str(i) + "/addforce.dat"
+        elif(args.minor == 3):
+            name = "restart_" + str(i) + "/addforce.dat"
+            name2 = "" + str(i) + "/addforce.dat"
+            data2 = pd.read_table(name2, sep='\s+')
         data = pd.read_table(name, sep='\s+')
         # print(data)
         # data = pd.read_table(name, header=None, names=["qn", "qc"])
@@ -177,10 +181,15 @@ def qnqc_pull():
         )
         if(args.minor == 1):
             data["addedFroce"] = -data["addedFroce"]
-            data.plot(ax=ax, legend=False, x="Distance", y="addedFroce", xlim=(0, 400), ylim=(0, 2))
+            data.plot(ax=ax, legend=False, x="position", y="addedFroce", xlim=(0, 400), ylim=(0, 2))
         elif(args.minor == 2):
             data["addedFroce"] = data["addedFroce"]/2.0
             data.plot(ax=ax, legend=False, x="Distance", y="addedFroce", xlim=(0, 400), ylim=(0, 2))
+        elif(args.minor == 3):
+            data["addedFroce"] = -data["addedFroce"]
+            data.plot(ax=ax, legend=False, x="Distance", y="addedFroce", xlim=(0, 600), ylim=(0, 2))
+            data2["addedFroce"] = -data2["addedFroce"]
+            data2.plot(ax=ax, legend=False, x="position", y="addedFroce", xlim=(0, 600), ylim=(0, 2))
 
     # print(data)
     # data.plot()
