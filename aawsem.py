@@ -12,8 +12,8 @@ parser.add_argument("--jan03", help="Run code on Jan 03 ", action="store_true", 
 args = parser.parse_args()
 
 if(args.jan03):
-    # folder_list = ["T0778", "T0782", "T0833", "T0844"]
-    folder_list = ["T0792"]
+    folder_list = ["T0792", "T0778", "T0782", "T0833", "T0844"]
+    # folder_list = ["T0792"]
     os.system("mkdir -p aawsemJan03")
     os.chdir("aawsemJan03")
     for protein_name in folder_list:
@@ -22,7 +22,7 @@ if(args.jan03):
         # os.system("cp  . -r".format(protein_name))
         os.system("mkdir -p simulation")
         os.chdir("simulation")
-        for i in range(2):
+        for i in range(20):
             my_from = "../../../aawsemDec25/{0}/simulation/".format(protein_name)+str(i)
             my_to = "."
             cmd = "rsync -a --exclude='dump.lammpstrj' --exclude='slurm-*' --exclude='movie*' --exclude='q*' {} {}".format(my_from, my_to)
