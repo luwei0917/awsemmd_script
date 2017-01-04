@@ -161,7 +161,7 @@ def qnqc_pull():
             name = "rerun_" + str(i) + "/addforce.dat"
         elif(args.minor == 3):
             name = "restart_" + str(i) + "/addforce.dat"
-            name2 = "" + str(i) + "/addforce.dat"
+            name2 = "rerun_" + str(i) + "/addforce.dat"
             data2 = pd.read_table(name2, sep='\s+')
         data = pd.read_table(name, sep='\s+')
         # print(data)
@@ -188,8 +188,8 @@ def qnqc_pull():
         elif(args.minor == 3):
             data["addedFroce"] = -data["addedFroce"]
             data.plot(ax=ax, legend=False, x="Distance", y="addedFroce", xlim=(0, 600), ylim=(0, 2))
-            data2["addedFroce"] = -data2["addedFroce"]
-            data2.plot(ax=ax, legend=False, x="position", y="addedFroce", xlim=(0, 600), ylim=(0, 2))
+            # data2["addedFroce"] = -data2["addedFroce"]
+            data2.plot(ax=ax, legend=False, x="Distance", y="addedFroce", xlim=(0, 600), ylim=(0, 2))
 
     # print(data)
     # data.plot()

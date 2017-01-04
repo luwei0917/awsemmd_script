@@ -4,18 +4,47 @@ import argparse
 import sys
 from time import sleep
 import subprocess
-folder_list = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
-# folder_list = ["T0815", "T0778"]
-os.system("mkdir -p aawsemDec25")
-os.chdir("aawsemDec25")
-for protein_name in folder_list:
-    os.system("mkdir -p "+protein_name)
-    os.chdir(protein_name)
-    os.system("mkdir -p "+protein_name)
-    os.chdir(protein_name)
-    os.system("cp ~/Research/project_AAWSEM/aasem/_output/"+protein_name+".fasta .")
-    os.system("create_project.py " + protein_name)
-    os.chdir("../..")
+
+parser = argparse.ArgumentParser(description="This is my aawsem project headquarter")
+parser.add_argument("--dec25", help="Run code on Dec 25", action="store_true", default=False)
+parser.add_argument("--jan03", help="Run code on Jan 03 ", action="store_true", default=False)
+
+args = parser.parse_args()
+
+if(args.jan03):
+    # folder_list = ["T0778", "T0782", "T0833", "T0844"]
+    folder_list = ["T0792"]
+    os.system("mkdir -p aawsemJan03")
+    os.chdir("aawsemJan03")
+    for protein_name in folder_list:
+        os.system("mkdir -p "+protein_name)
+        os.chdir(protein_name)
+        # os.system("cp  . -r".format(protein_name))
+        os.chdir("simulation")
+        for i in range(2):
+            my_from = "../../aawsemDec25/{0}/simulation/".format(protein_name)+str(i)
+            my_to = str(i)
+            os.chdir(str(i))
+            os.system(" rsync -av --exclude='dump.lammpstrj' --exclude='slurm-*' --exclude='movie*' --exclude='q*' {} {}".format(my_from, my_to))
+            os.system("sed -i '/read_data/c\read_restart restart.8000000' {}".format(protein_name))
+            os.system("sed -i 's/600/500/g' *.in")  # only apply to protein less than 200 residues, and only one .in file
+            os.system("sbatch run.slurm")
+            os.chdir("..")
+        os.chdir("../..")
+if(args.dec25):
+    folder_list = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
+    # folder_list = ["T0815", "T0778"]
+    os.system("mkdir -p aawsemDec25")
+    os.chdir("aawsemDec25")
+    for protein_name in folder_list:
+        os.system("mkdir -p "+protein_name)
+        os.chdir(protein_name)
+        os.system("mkdir -p "+protein_name)
+        os.chdir(protein_name)
+        os.system("cp ~/Research/project_AAWSEM/aasem/_output/"+protein_name+".fasta .")
+        os.system("create_project.py " + protein_name)
+        os.chdir("../..")
+
 # os.system("stride %s.pdb > ssweight.stride" % protein_name)
 # os.system("python2 ~/opt/script/stride2ssweight.py > ssweight")
 # os.system("python2 ~/opt/script/GetCACADistancesFile.py %s native.dat" % protein_name)
