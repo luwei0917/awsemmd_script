@@ -24,7 +24,7 @@ if(args.jan03):
         os.chdir("simulation")
         for i in range(2):
             my_from = "../../../aawsemDec25/{0}/simulation/".format(protein_name)+str(i)
-            my_to = str(i)
+            my_to = "."
             cmd = "rsync -av --exclude='dump.lammpstrj' --exclude='slurm-*' --exclude='movie*' --exclude='q*' {} {}".format(my_from, my_to)
             print(cmd)
             os.system(cmd)
