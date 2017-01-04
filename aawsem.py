@@ -29,7 +29,7 @@ if(args.jan03):
             print(cmd)
             os.system(cmd)
             os.chdir(str(i))
-            os.system("sed -i '/read_data/c\read_restart restart.8000000' {}.in".format(protein_name))
+            os.system("sed -i '/read_data/c\\read_restart restart.8000000' {}.in".format(protein_name))
             os.system("sed -i 's/600/500/g' *.in")  # only apply to protein less than 200 residues, and only one .in file
             os.system("sbatch run.slurm")
             os.chdir("..")
