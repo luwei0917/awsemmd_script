@@ -20,6 +20,7 @@ if(args.jan03):
         os.system("mkdir -p "+protein_name)
         os.chdir(protein_name)
         # os.system("cp  . -r".format(protein_name))
+        os.system("mkdir -p simulation")
         os.chdir("simulation")
         for i in range(2):
             my_from = "../../aawsemDec25/{0}/simulation/".format(protein_name)+str(i)
