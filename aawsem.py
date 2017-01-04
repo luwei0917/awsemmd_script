@@ -26,7 +26,9 @@ if(args.jan03):
             my_from = "../../aawsemDec25/{0}/simulation/".format(protein_name)+str(i)
             my_to = str(i)
             os.chdir(str(i))
-            os.system(" rsync -av --exclude='dump.lammpstrj' --exclude='slurm-*' --exclude='movie*' --exclude='q*' {} {}".format(my_from, my_to))
+            cmd = "rsync -av --exclude='dump.lammpstrj' --exclude='slurm-*' --exclude='movie*' --exclude='q*' {} {}".format(my_from, my_to)
+            print(cmd)
+            os.system(cmd)
             os.system("sed -i '/read_data/c\read_restart restart.8000000' {}".format(protein_name))
             os.system("sed -i 's/600/500/g' *.in")  # only apply to protein less than 200 residues, and only one .in file
             os.system("sbatch run.slurm")
