@@ -5,11 +5,11 @@ import sys
 from time import sleep
 import subprocess
 parser = argparse.ArgumentParser(
-        description="The goal of this python3 code is to automatically create \
-        the project template as fast as possible. Written by Wei Lu."
+    description="The goal of this python3 code is to automatically create \
+    the project template as fast as possible. Written by Wei Lu."
 )
 parser.add_argument("protein", help="The name of the protein")
-
+parser.add_argument("--jan03", help="Run code on Jan 03 ", action="store_true", default=False)
 args = parser.parse_args()
 protein_name = args.protein.split('.')[0]
 os.system("fasta2pdb.py "+protein_name)

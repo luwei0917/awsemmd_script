@@ -41,7 +41,7 @@ if(args.gagb):
 def qnqc():
     print("QnQc")
     # os.system("cp folder_list .")
-    kconstant = 0.05
+    kconstant = 0.01
 
     metadata = open("metadatafile", "w")
     with open('folder_list', 'r') as ins:
@@ -51,7 +51,7 @@ def qnqc():
             x = target.split("_")[3]
             # print(temp)
             # t1 = "../" + target + "/simulation/0/halfdata {} {} -{}\n".format(temp, kconstant, x)
-            t2 = "../" + target + "/simulation/1/halfdata {} {} {}\n".format(temp, kconstant, x)
+            t2 = "../" + target + "/simulation/1/halfdata {} {} -{}\n".format(temp, kconstant, x)
             # metadata.write(t1)
             metadata.write(t2)
     metadata.close()

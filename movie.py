@@ -16,13 +16,15 @@ args = parser.parse_args()
 protein_name = args.protein.split('.')[0]
 if(args.number == -1):
     if(not args.plot):
-        os.system(
-            "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
-            dump.lammpstrj movie")
+        os.system("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie "+protein_name+".seq")
+        # os.system(
+        #     "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
+        #     dump.lammpstrj movie")
 else:
     os.system("ghead -n 399648 dump.lammpstrj > part_dump")
     if(not args.plot):
-        os.system(
-            "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
-            part_dump movie")
+        os.system("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie "+protein_name+".seq")
+        # os.system(
+        #     "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
+        #     part_dump movie")
 os.system("cp ~/opt/plot_scripts/*.tcl .")
