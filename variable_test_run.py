@@ -21,8 +21,9 @@ protein_name = args.template.strip('/')
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 
 folder_list = open('folder_list', 'w')
-distance_list = np.arange(20, 350, 10)
-temp_list = np.arange(300, 400, 50)
+# distance_list = np.arange(20, 350, 10)
+distance_list = np.arange(20, 20, 10)
+temp_list = np.arange(300, 400, 100)
 folder_name = ""
 for temp in temp_list:
     pre_folder_name = "T_"+str(temp)
