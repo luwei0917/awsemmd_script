@@ -11,12 +11,37 @@ parser.add_argument("--dec25", help="Run code on Dec 25", action="store_true", d
 parser.add_argument("--jan03", help="Run code on Jan 03 ", action="store_true", default=False)
 parser.add_argument("--jan07", help="Run code on Jan 07 ", action="store_true", default=False)
 parser.add_argument("--jan10", help="Run code on Jan 10 ", action="store_true", default=False)
+parser.add_argument("--jan11", help="Run code on Jan 11 ", action="store_true", default=False)
 parser.add_argument("-t", "--test", help="Test run", action="store_true", default=False)
 args = parser.parse_args()
 
 
 if(args.test):
     print("Hello World")
+if(args.jan11):
+    folder_list = ["T0766"]
+    # folder_list = ["T0792"]
+    os.system("mkdir -p aawsemJan11")
+    os.chdir("aawsemJan11")
+    for protein_name in folder_list:
+        os.system("mkdir -p "+protein_name)
+        os.chdir(protein_name)
+        # os.system("cp  . -r".format(protein_name))
+        os.system("mkdir -p simulation")
+        os.chdir("simulation")
+        for i in range(20):
+            my_from = "../../../aawsemDec25/{0}/simulation/".format(protein_name)+str(i)
+            my_to = "."
+            cmd = "rsync -a --exclude='dump.lammpstrj' --exclude='slurm-*' --exclude='movie*' --exclude='q*' {} {}".format(my_from, my_to)
+            print(cmd)
+            os.system(cmd)
+            os.chdir(str(i))
+            os.system("sed -i '/read_data/c\\read_restart restart.8000000' {}.in".format(protein_name))
+            os.system("sed -i 's/600/500/g' *.in")  # only apply to protein less than 200 residues, and only one .in file
+            os.system("sbatch run.slurm")
+            os.chdir("..")
+        os.chdir("../..")
+
 if(args.jan10):
     folder_list = ["T0792", "T0778", "T0782", "T0833", "T0844"]
     # folder_list = ["T0792"]
