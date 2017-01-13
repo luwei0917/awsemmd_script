@@ -27,7 +27,7 @@ parser = argparse.ArgumentParser(description="This is my playground for current 
 parser.add_argument("--gagb", help="Project gagb", action="store_true", default=False)
 parser.add_argument("-f", "--freeEnergy", help="free energy calculation", action="store_true", default=False)
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
-
+parser.add_argument("--ga", action="store_true", default=False)
 args = parser.parse_args()
 
 
@@ -39,6 +39,20 @@ def test():
     # print(result)
 if(args.test):
     test()
+
+def ga():
+    name_list = ["gb77", "gb", "ga", "ga95", "ga77"]
+    for name in name_list:
+        os.chdir(name)
+        os.system("mkdir one_d_ga")
+        os.chdir("one_d_ga")
+        os.system("make_metadata.py --gagb")
+        os.system("python2 ~/opt/gagb-compute-pmf.py -v1 2")
+        os.system("cp pmf-350.dat ~/Research/results/ga/{}-350.dat".format(name))
+        os.chdir("..")
+        os.chdir("..")
+if(args.ga):
+    ga()
 
 gagb_free_energy_config = "\n\
 ndim = {} \n\
@@ -59,9 +73,9 @@ pmf_variable_column_2 = 2
 
 
 def gagb_freeEnergy_calculation():
-    os.chdir("simulation")
-    os.system("gg.py -f")
-    os.chdir("..")
+    # os.chdir("simulation")
+    # os.system("gg.py -f")
+    # os.chdir("..")
     print("gagb_freeEnergy_calculation")
     # wham one d on ga, gb
     name_list = ["ga", "gb", "two_d"]

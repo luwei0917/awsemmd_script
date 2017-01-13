@@ -17,7 +17,7 @@ parser.add_argument("--qnqc", help="for all calculate q of n terminal and q of c
 parser.add_argument("--qnqc2", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 
 parser.add_argument("--gagb", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
-
+parser.add_argument("-m", "--mode", type=int, default=1)
 args = parser.parse_args()
 
 
@@ -50,30 +50,53 @@ def qnqc():
             temp = target.split("_")[1]
             x = target.split("_")[3]
             # print(temp)
-            # t1 = "../" + target + "/simulation/0/halfdata {} {} -{}\n".format(temp, kconstant, x)
-            t2 = "../" + target + "/simulation/1/halfdata {} {} -{}\n".format(temp, kconstant, x)
-            # metadata.write(t1)
-            metadata.write(t2)
+            if(args.mode == 1):
+                t1 = "../" + target + "/simulation/0/halfdata {} {} -{}\n".format(temp, kconstant, x)
+                metadata.write(t1)
+            elif(args.mode == 2):
+                t2 = "../" + target + "/simulation/1/halfdata {} {} -{}\n".format(temp, kconstant, x)
+                metadata.write(t2)
     metadata.close()
 if(args.qnqc):
     qnqc()
 
-
 def qnqc2():
     print("QnQc2")
     # os.system("cp folder_list .")
-    kconstant = 400   # double the k constant
-    temp = 350
-    q0 = 0.12
-    metadata = open("metadatafile", "w")
-    for i in range(40):
-        q = q0 + i*0.02
-        target = "../simulation/350/" + str(i) + "/halfdata.dat {} {} {:.2f}\n".format(temp, kconstant, q)
-        metadata.write(target)
-    metadata.close()
+    kconstant = 0.02
 
+    metadata = open("metadatafile", "w")
+    with open('folder_list', 'r') as ins:
+        for line in ins:
+            target = line.strip('\n')
+            temp = target.split("_")[1]
+            x = target.split("_")[3]
+            # print(temp)
+            if(args.mode == 1):
+                t1 = "../" + target + "/simulation/0/halfdata {} {} {}\n".format(temp, kconstant, x)
+                metadata.write(t1)
+            elif(args.mode == 2):
+                t2 = "../" + target + "/simulation/1/halfdata {} {} {}\n".format(temp, kconstant, x)
+                metadata.write(t2)
+    metadata.close()
 if(args.qnqc2):
     qnqc2()
+
+# def qnqc2():
+#     print("QnQc2")
+#     # os.system("cp folder_list .")
+#     kconstant = 400   # double the k constant
+#     temp = 350
+#     q0 = 0.12
+#     metadata = open("metadatafile", "w")
+#     for i in range(40):
+#         q = q0 + i*0.02
+#         target = "../simulation/350/" + str(i) + "/halfdata.dat {} {} {:.2f}\n".format(temp, kconstant, q)
+#         metadata.write(target)
+#     metadata.close()
+#
+# if(args.qnqc2):
+#     qnqc2()
 # temp_list = range(350, 400, 100)
 # # q0_list = range(10, 100, 10)
 #

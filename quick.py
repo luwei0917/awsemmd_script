@@ -129,7 +129,8 @@ def qnqc2():
         os.system("head -n 4000 x > x_all")
         os.system("tail -n 2000 x_all > x_half")
         os.system("awk '{print $2}' x_half > myx_half")
-        os.system("paste qn_half qc_half qc2_half etotal myx_half > halfdata")
+        os.system("paste etotal myx_half > halfdata")
+        # os.system("paste qn_half qc_half qc2_half etotal myx_half > halfdata")
         # os.system("pwd")
         os.chdir(cwd)
 

@@ -12,12 +12,120 @@ parser.add_argument("--jan03", help="Run code on Jan 03 ", action="store_true", 
 parser.add_argument("--jan07", help="Run code on Jan 07 ", action="store_true", default=False)
 parser.add_argument("--jan10", help="Run code on Jan 10 ", action="store_true", default=False)
 parser.add_argument("--jan11", help="Run code on Jan 11 ", action="store_true", default=False)
+parser.add_argument("--jan12", action="store_true", default=False)
 parser.add_argument("-t", "--test", help="Test run", action="store_true", default=False)
 args = parser.parse_args()
 
 
 if(args.test):
-    print("Hello World")
+    # folder_list = ["T0792", "T0778", "T0782", "T0833", "T0844"]
+    #
+    # print(folder_list)
+    # # os.chdir("aawsemJan12")
+    # for protein_name in folder_list:
+    #     os.chdir(protein_name)
+    #     os.chdir(protein_name)
+    #     protein_size = myPersonalFunctions.file_len("ssweight")
+    #     # print(protein_name, protein_size)
+    #     with open("info.dat", 'w') as info:
+    #         n = 0
+    #         nn = 0
+    #         with open('frag1.mem', 'w') as w:
+    #             with open('ha_frag.mem', 'r') as f:
+    #                 for i in range(4):
+    #                     w.write(next(f))
+    #                 ha_lines = f.readlines()
+    #             # print(ha_lines)
+    #             with open('ho_frag.mem', 'r') as f:
+    #                 for i in range(4):
+    #                     next(f)
+    #                 ho_lines = f.readlines()
+    #             for i in range(1, protein_size-7):
+    #                 fragGroup = []
+    #                 for line in ho_lines:
+    #                     _, loc, _, fragLens, _ = line.split(" ")
+    #                     locEnd = int(loc) + int(fragLens)
+    #                     # print(loc, fragLens, locEnd)
+    #                     if(i <= int(loc) and i+9 >= locEnd):
+    #                         fragGroup += [line]
+    #                 groupLens = len(fragGroup)
+    #                 if(groupLens != 0):
+    #                     nn += 1
+    #                     for j in range(20):
+    #                         w.write(fragGroup[j % groupLens])
+    #                 else:
+    #                     n += 1
+    #                     for j in range(20):
+    #                         try:
+    #                             w.write(ha_lines[(i-1)*20+j])
+    #                         except:
+    #                             print(i*20+j)
+    #             info.write("Use "+str(nn)+" HO and "+str(n)+" HA\n")
+    #     os.chdir("../..")
+    # os.chdir("aawsemJan12")
+    # folder_list1 = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
+    folder_list = ["T0792", "T0778", "T0782", "T0833", "T0844"]
+    # folder_list = ["T0792"]
+    # folder_list = list(set(folder_list1) - set(folder_list2))
+    for protein_name in folder_list:
+        os.system("echo '"+protein_name+"' >> info.dat")
+        os.system("cat {0}/{0}/info.dat >> info.dat".format(protein_name))
+
+
+if(args.jan12):
+    folder_list1 = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
+    folder_list2 = ["T0792", "T0778", "T0782", "T0833", "T0844"]
+    # folder_list = ["T0792"]
+    folder_list = list(set(folder_list1) - set(folder_list2))
+    print(folder_list)
+    # exit()
+    os.system("mkdir -p aawsemJan12")
+    os.chdir("aawsemJan12")
+    for protein_name in folder_list:
+        os.system("mkdir -p "+protein_name)
+        os.chdir(protein_name)
+        os.system("cp -r ../../aawsemDec25/{0}/{0} .".format(protein_name))
+        os.chdir(protein_name)
+        os.system("cp ~/Research/CASP11/HA_Mem/{}/frag.mem ha_frag_old.mem".format(protein_name))
+        os.system("sed 's/\/work\/pw8\/mc70\/script/\/home\/wl45/g' ha_frag_old.mem > ha_frag.mem")
+        os.system("cp frag.mem ho_frag.mem")
+        protein_size = myPersonalFunctions.file_len("ssweight")
+        # print(protein_name, protein_size)
+        with open("info.dat", 'w') as info:
+            n = 0
+            nn = 0
+            with open('frag1.mem', 'w') as w:
+                with open('ha_frag.mem', 'r') as f:
+                    for i in range(4):
+                        w.write(next(f))
+                    ha_lines = f.readlines()
+                # print(ha_lines)
+                with open('ho_frag.mem', 'r') as f:
+                    for i in range(4):
+                        next(f)
+                    ho_lines = f.readlines()
+                for i in range(1, protein_size-7):
+                    fragGroup = []
+                    for line in ho_lines:
+                        _, loc, _, fragLens, _ = line.split(" ")
+                        locEnd = int(loc) + int(fragLens)
+                        # print(loc, fragLens, locEnd)
+                        if(i <= int(loc) and i+9 >= locEnd):
+                            fragGroup += [line]
+                    groupLens = len(fragGroup)
+                    if(groupLens != 0):
+                        nn += 1
+                        for j in range(20):
+                            w.write(fragGroup[j % groupLens])
+                    else:
+                        n += 1
+                        for j in range(20):
+                            try:
+                                w.write(ha_lines[(i-1)*20+j])
+                            except:
+                                print(i*20+j)
+                info.write("Use "+str(nn)+" HO and "+str(n)+" HA\n")
+        os.chdir("../..")
 if(args.jan11):
     folder_list = ["T0766"]
     # folder_list = ["T0792"]
@@ -81,34 +189,40 @@ if(args.jan07):
         os.system("cp frag.mem ho_frag.mem")
         protein_size = myPersonalFunctions.file_len("ssweight")
         # print(protein_name, protein_size)
-        with open('frag.mem', 'w') as w:
-            with open('ha_frag.mem', 'r') as f:
-                for i in range(4):
-                    w.write(next(f))
-                ha_lines = f.readlines()
-            # print(ha_lines)
-            with open('ho_frag.mem', 'r') as f:
-                for i in range(4):
-                    next(f)
-                ho_lines = f.readlines()
-            for i in range(1, protein_size-7):
-                fragGroup = []
-                for line in ho_lines:
-                    _, loc, _, fragLens, _ = line.split(" ")
-                    locEnd = int(loc) + int(fragLens)
-                    # print(loc, fragLens, locEnd)
-                    if(i <= int(loc) and i+9 >= locEnd):
-                        fragGroup += [line]
-                groupLens = len(fragGroup)
-                if(groupLens != 0):
-                    for j in range(20):
-                        w.write(fragGroup[j % groupLens])
-                else:
-                    for j in range(20):
-                        try:
-                            w.write(ha_lines[(i-1)*20+j])
-                        except:
-                            print(i*20+j)
+        with open("info.dat", 'w') as info:
+            n = 0
+            nn = 0
+            with open('frag1.mem', 'w') as w:
+                with open('ha_frag.mem', 'r') as f:
+                    for i in range(4):
+                        w.write(next(f))
+                    ha_lines = f.readlines()
+                # print(ha_lines)
+                with open('ho_frag.mem', 'r') as f:
+                    for i in range(4):
+                        next(f)
+                    ho_lines = f.readlines()
+                for i in range(1, protein_size-7):
+                    fragGroup = []
+                    for line in ho_lines:
+                        _, loc, _, fragLens, _ = line.split(" ")
+                        locEnd = int(loc) + int(fragLens)
+                        # print(loc, fragLens, locEnd)
+                        if(i <= int(loc) and i+9 >= locEnd):
+                            fragGroup += [line]
+                    groupLens = len(fragGroup)
+                    if(groupLens != 0):
+                        nn += 1
+                        for j in range(20):
+                            w.write(fragGroup[j % groupLens])
+                    else:
+                        n += 1
+                        for j in range(20):
+                            try:
+                                w.write(ha_lines[(i-1)*20+j])
+                            except:
+                                print(i*20+j)
+                info.write("Use "+str(nn)+" HO and "+str(n)+" HA\n")
         os.chdir("../..")
 
 if(args.jan03):
