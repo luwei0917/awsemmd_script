@@ -18,6 +18,7 @@ parser.add_argument("--qnqc2", help="for all calculate q of n terminal and q of 
 parser.add_argument("--pulling", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--gagb", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("-m", "--mode", type=int, default=1)
+parser.add_argument("--server", action="store_true", default=False)
 args = parser.parse_args()
 
 
@@ -73,12 +74,20 @@ if(args.pulling):
             temp = target.split("_")[1]
             x = target.split("_")[3]
             # print(temp)
-            if(args.mode == 1):
-                t1 = "/Users/weilu/Research/server/freeEnergy_2xov/pullingDistance/" + target + "/simulation/0/halfdata {} {} {}\n".format(temp, kconstant, x)
-                metadata.write(t1)
-            elif(args.mode == 2):
-                t2 = "/Users/weilu/Research/server/freeEnergy_2xov/pullingDistance/" + target + "/simulation/1/halfdata {} {} {}\n".format(temp, kconstant, x)
-                metadata.write(t2)
+            if(args.server):
+                if(args.mode == 1):
+                    t1 = "/scratch/wl45/freeEnergy_2xov/pullingDistance/" + target + "/simulation/0/halfdata {} {} {}\n".format(temp, kconstant, x)
+                    metadata.write(t1)
+                elif(args.mode == 2):
+                    t2 = "/scratch/wl45/freeEnergy_2xov/pullingDistance/" + target + "/simulation/1/halfdata {} {} {}\n".format(temp, kconstant, x)
+                    metadata.write(t2)
+            else:
+                if(args.mode == 1):
+                    t1 = "/Users/weilu/Research/server/freeEnergy_2xov/pullingDistance/" + target + "/simulation/0/halfdata {} {} {}\n".format(temp, kconstant, x)
+                    metadata.write(t1)
+                elif(args.mode == 2):
+                    t2 = "/Users/weilu/Research/server/freeEnergy_2xov/pullingDistance/" + target + "/simulation/1/halfdata {} {} {}\n".format(temp, kconstant, x)
+                    metadata.write(t2)
     metadata.close()
 
 
