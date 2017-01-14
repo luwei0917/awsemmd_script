@@ -34,14 +34,15 @@ parser.add_argument("--temperature", type=int, default=350,
                     help="temperature")
 parser.add_argument("-n", "--number", type=int, default=10,
                     help="number")
-parser.add_argument("-m", "--minor", type=int, default=1,
+parser.add_argument("--minor", type=int, default=1,
                     help="minor control")
 parser.add_argument("-s", "--save", action="store_true", default=False)
 parser.add_argument("-r", "--reproduce", action="store_true", default=False)
 parser.add_argument("-t", "--test", action="store_true", default=False)
-
+parser.add_argument("-m", "--mode", default="pulling")
 
 args = parser.parse_args()
+
 
 if(args.reproduce):
     print("Reproducing!")
@@ -55,6 +56,7 @@ if(args.test):
 if(args.save):
     # print(os.getcwd())
     # print(args)
+    print("Saving")
     with open("args", "wb") as f:
         pickle.dump(args, f)
     os.system("cp ~/opt/plot.py plot_local.py")
@@ -65,16 +67,26 @@ if(args.all_temp):
     output = args.outname
     temp = args.temperature
     ax = plt.subplot(1, 1, 1)
-
-    for temp in range(300,400,10):
+    temp_list = range(300,400,10)
+    temp_list = [350]
+    for temp in temp_list:
         name = 'pmf-'+str(temp)+'.dat'
         data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
-        print(data)
+        # print(data)
         data.plot(ax=ax, x='bin_center_1', y='f', label=str(temp))
-    ax.set_xlabel("Q of gb")
+    if(args.mode == "gagb"):
+        ax.set_xlabel("Q of gb")
+    if(args.mode == "pulling"):
+        ax.set_xlabel("Distance")
+    ax.set_ylabel("free energy is units of kT")
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.6))
+    plt.gcf().subplots_adjust(bottom=0.15)
+    plt.gcf().subplots_adjust(left=0.15)
+    plt.gcf().subplots_adjust(right=0.80)
     fig = plt.gcf()
     fig.savefig(output)
     os.system("open " + output)
+
 
 def gagb_compare():
     print("Hello World gagb_compare")
@@ -117,6 +129,7 @@ def gagb_compare():
     # data.show()
 if(args.gagb_compare):
     gagb_compare()
+
 
 def gagb():
     print("Hello World GaGb")
@@ -165,6 +178,8 @@ if(args.gagb):
 #     fig.savefig('figure.pdf')
 #     os.system("open figure.pdf")
 #     # data.show()
+
+
 def qnqc():
     print("Hello World")
     n = args.number
@@ -287,9 +302,6 @@ if(args.qnqc_pull):
 #     os.system("gnuplot qw.plt")
 #     os.system("mv qw.pdf ../../results/qw_{0}.pdf".format(str(i)))
 #     os.chdir("../..")
-
-
-
 # protein_name = args.template.strip('/')
 # os.system("cp ~/opt/plot_scripts/free_energy.plt .")
 # os.system("gnuplot free_energy.plt ")

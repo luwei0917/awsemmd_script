@@ -28,6 +28,7 @@ parser.add_argument("--gagb", help="Project gagb", action="store_true", default=
 parser.add_argument("-f", "--freeEnergy", help="free energy calculation", action="store_true", default=False)
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("--ga", action="store_true", default=False)
+parser.add_argument("--gb", action="store_true", default=False)
 args = parser.parse_args()
 
 
@@ -39,6 +40,20 @@ def test():
     # print(result)
 if(args.test):
     test()
+
+
+if(args.gb):
+    name_list = ["gb77", "gb88b", "gb91", "gb95", "gb", "ga","ga95", "ga91", "ga88", "ga77"]
+    for name in name_list:
+        os.chdir(name)
+        os.system("mkdir one_d_gb")
+        os.chdir("one_d_gb")
+        os.system("make_metadata.py --gagb")
+        os.system("python2 ~/opt/gagb-compute-pmf.py")
+        os.system("cp pmf-350.dat ~/Research/results/gb/{}-350.dat".format(name))
+        os.chdir("..")
+        os.chdir("..")
+
 
 def ga():
     name_list = ["gb77", "gb", "ga", "ga95", "ga77"]

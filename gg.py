@@ -32,7 +32,7 @@ parser.add_argument("--pull", help="pull ", action="store_true", default=False)
 parser.add_argument("--cpull", help="cpull ", action="store_true", default=False)
 parser.add_argument("--energy", help="energy ", action="store_true", default=False)
 parser.add_argument("--qnqc", help="calculate q of n terminal and q of c terminal ", action="store_true", default=False)
-parser.add_argument("--test", help="test ", action="store_true", default=False)
+parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("-n", "--number", type=int, default=10, help="number of run")
 args = parser.parse_args()
 
@@ -40,13 +40,23 @@ args = parser.parse_args()
 def test():
     print("don't show me")
     n = args.number
-    for i in range(n):
-        print(i)
-        os.chdir(str(i))
-        # os.system("gg.py --qnqc")
-        os.system("paste qn qc wham.dat | tail -n+2 > total")
-        os.system("head -n 5000 total | tail -n 3000 > halfdata")
-        os.chdir("..")
+    with open("my_folder_list", "w") as f:
+        folder_list = glob.glob("T_*")
+        print(len(folder_list))
+        for folder in folder_list:
+            f.write(folder+"  \n")
+            os.chdir(folder)
+            os.chdir("simulation")
+            for i in range(2):
+                os.chdir(str(i))
+                os.system("mv halfdata halfdata_back")
+                os.system("awk '$5=-$5' halfdata_back > halfdata")
+                os.chdir("..")
+            os.chdir("../..")
+            # for i in range(2):
+            #     address = folder + "/simulation/" + str(i)
+            #     f.write(address+"  \n")
+
 if(args.test):
     test()
 

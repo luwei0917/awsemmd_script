@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("--qnqc", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--qnqc2", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
-
+parser.add_argument("--pulling", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--gagb", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("-m", "--mode", type=int, default=1)
 args = parser.parse_args()
@@ -59,6 +59,29 @@ def qnqc():
     metadata.close()
 if(args.qnqc):
     qnqc()
+
+
+if(args.pulling):
+    print("2xov pulling")
+    # os.system("cp folder_list .")
+    kconstant = 0.01
+
+    metadata = open("metadatafile", "w")
+    with open('folder_list', 'r') as ins:
+        for line in ins:
+            target = line.strip('\n')
+            temp = target.split("_")[1]
+            x = target.split("_")[3]
+            # print(temp)
+            if(args.mode == 1):
+                t1 = "/Users/weilu/Research/server/freeEnergy_2xov/pullingDistance/" + target + "/simulation/0/halfdata {} {} {}\n".format(temp, kconstant, x)
+                metadata.write(t1)
+            elif(args.mode == 2):
+                t2 = "/Users/weilu/Research/server/freeEnergy_2xov/pullingDistance/" + target + "/simulation/1/halfdata {} {} {}\n".format(temp, kconstant, x)
+                metadata.write(t2)
+    metadata.close()
+
+
 
 def qnqc2():
     print("QnQc2")

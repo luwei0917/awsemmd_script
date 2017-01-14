@@ -43,7 +43,7 @@ energy_column = 4                  # column in the trajectory file that contains
 pmf_variable_column_1 = 5          # column in the trajectory file that contains the first pmf variable
 pmf_variable_column_2 = 2          # column in the trajectory file that contians the second pmf variable
 nbins1 = 30                        # number of bins for the first pmf variable
-nbins2 = 20                        # number of bins for the second pmf variable
+nbins2 = 30                        # number of bins for the second pmf variable
 start_temperature = 200            # temperature at which to start the free energy calculations
 end_temperature = 400              # temperature at which to stop the free energy calculations
 temperature_increment = 10         # how often (in degrees) to compute the free energy
@@ -479,7 +479,7 @@ if load_pickle == False:
             beta = 1.0 / kT           # inverse temperature
             u_kln[k,l,0:N] = beta * (U_kn[0][k,0:N])
             for i in range(nbiases):
-                U_bias = (biasing_strengths[i][l]/2.0) * (biasing_variable_kn[i][k,0:N] - biasing_values[i][l])**2 +(-biasing_variable_kn[i][k,0:N]-25.0)*0.7   # biasing potential for this sample
+                U_bias = (biasing_strengths[i][l]/2.0) * (biasing_variable_kn[i][k,0:N] - biasing_values[i][l])**2 +(biasing_variable_kn[i][k,0:N]-25.1)*0.7   # biasing potential for this sample
 
                 # print "------"
                 # print biasing_strengths[i][l]/2.0
