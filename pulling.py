@@ -43,15 +43,19 @@ def test():
         do = os.system
         cd = os.chdir
     folder = "T_300_D_130"
+    cd(folder)
     for i in range(2):
         my_from = "simulation/{0}".format(str(i))
-        my_to = "simulation/a206g_{0}".format(str(i))
-        cmd = "rsync -a --exclude='dump.lammpstrj' --exclude='slurm-*' --exclude='movie*' --exclude='q*' --exclude='x.*' {} {}".format(my_from, my_to)
+        my_to = "a206g"
+        cmd = "rsync -a --exclude='restart.*' --exclude='slurm-*' --exclude='movie*' --exclude='q*' --exclude='x.*' {} {}".format(my_from, my_to)
         do(cmd)
-        cd(my_to)
-        cmd = "a"
+        cd("a206g/{0}".format(str(i)))
+        do("cp ~/opt/pulling/2xov_pulling_rerun.in 2xov_rerun.in")
+        do("cp ~/opt/pulling/rerun.slurm .")
+        cmd = "sbatch rerun.slurm"
         do(cmd)
         cd("../..")
+    cd("..")
     # script = "tail -n+2 cv-200-400-10.dat | sort -r -k 2 | head -n1"
     # result = subprocess.check_output(script, shell=True).decode("utf-8").split()[0]
     # print(result)

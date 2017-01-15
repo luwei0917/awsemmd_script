@@ -136,6 +136,7 @@ def qnqc2():
         # os.system("paste etotal myx_half > halfdata")
         # os.system("paste qn_all qc_all qc2_all etotal_all myx_all > all_data")
         # os.system("paste qn_half qc_half qc2_half etotal myx_half > halfdata")
+        # uniq energy.log > test
         os.system("mv halfdata halfdata_back")
         os.system("awk '{print $0, $1-$2}' halfdata_back > halfdata")
         # os.system("pwd")
