@@ -70,7 +70,7 @@ if(args.pulling):
     metadata = open("metadatafile", "w")
     with open('folder_list', 'r') as ins:
         for line in ins:
-            target = line.strip('\n')
+            target = line.strip(' \n')
             temp = target.split("_")[1]
             x = target.split("_")[3]
             # print(temp)
