@@ -18,14 +18,14 @@ from scipy.interpolate import griddata
 from scipy.interpolate import interp2d
 
 parser = argparse.ArgumentParser(description='Plots pmf data.')
-parser.add_argument("filename", nargs='?', help="input filename", default="pmf-310.dat")
+parser.add_argument("filename", nargs='?', help="input filename", default="pmf-340.dat")
 parser.add_argument("outname", nargs='?', help="output filename", default="test.png")
 parser.add_argument("-dpi", default=150, type=int, help="figure dpi")
 parser.add_argument("-x", default=1, type=int, help="x column number in f")
 parser.add_argument("-xmin", default=0, type=float, help="x axis lower limit")
 parser.add_argument("-xmax", default=200, type=float, help="x axis upper limit")
 parser.add_argument("-y", default=2, type=int, help="y column number in f")
-parser.add_argument("-ymin", default=0, type=float, help="y axis lower limit")
+parser.add_argument("-ymin", default=-1, type=float, help="y axis lower limit")
 parser.add_argument("-ymax", default=1, type=float, help="y axis upper limit")
 parser.add_argument("-z", default=3, type=int, help="z column number in f")
 parser.add_argument("-zmin", default=0, type=float, help="z axis lower limit")
@@ -45,9 +45,11 @@ data = data[~(data[:,args.z] > args.zmax)] # remove rows of data for z not in [z
 data = data[~(data[:,args.z] < args.zmin)]
 
 xi = np.linspace(min(data[:,args.x]), max(data[:,args.x]), 50)
+# print(xi)
 yi = np.linspace(min(data[:,args.y]), max(data[:,args.y]), 50)
 zi = griddata((data[:,args.x], data[:,args.y]), data[:,args.z], (xi[None,:], yi[:,None]), method='linear')
-#plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
+# zi = data[:,args.z]
+# plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
 jet = cm = plt.get_cmap('jet')
 print(jet)
 plt.contourf(xi, yi, zi, 50, cmap='rainbow')

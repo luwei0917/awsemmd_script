@@ -29,6 +29,8 @@ parser.add_argument("-f", "--freeEnergy", help="free energy calculation", action
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("--ga", action="store_true", default=False)
 parser.add_argument("--gb", action="store_true", default=False)
+parser.add_argument("--pulling", action="store_true", default=False)
+parser.add_argument("-d", "--debug", action="store_true", default=False)
 args = parser.parse_args()
 
 
@@ -40,6 +42,26 @@ def test():
     # print(result)
 if(args.test):
     test()
+
+if(args.pulling):
+    print("Pulling Free energy batch compute")
+    force_list = range(0.5,3,0.1)
+    for i in range(1,3):
+        for force in force_list:
+            if(args.debug):
+                do = print
+            else:
+                do = os.system
+            folder = "wham_" + str(i) + "force_" + str(force)
+            do("mkdir -p "+folder)
+            os.chdir(folder)
+            do("cp ../folder_list .")
+            cmd = "make_metadata.py --pulling2 -m {}".format(i)
+            do(cmd)
+            do("cp ~/opt/pulling/freeEnergy.slurm .")
+            do("sbatch freeEnergy.slurm")
+            # cmd = "python2 ~/opt/pulling_compute-pmf.py -f {}".format(force)
+
 
 
 if(args.gb):

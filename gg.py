@@ -16,6 +16,7 @@ import glob
 # sed 1d
 # sort -u -k 3
 # sed -e 's/+T//'
+# awk '$5=-$5' data
 mypath = os.environ["PATH"]
 os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()

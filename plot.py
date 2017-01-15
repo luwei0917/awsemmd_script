@@ -63,27 +63,27 @@ if(args.save):
 
 
 if(args.all_temp):
-    print("Hello World GaGb")
+    print("Hello World GaGb1")
     output = args.outname
     temp = args.temperature
     ax = plt.subplot(1, 1, 1)
     temp_list = range(300,400,20)
-    temp_list = [340]
+    # temp_list = [340]
     # temp_list = range(300,330,10)
     for temp in temp_list:
         name = 'pmf-'+str(temp)+'.dat'
         data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
         # print(data)
-        data.plot(ax=ax, x='bin_center_1', y='f', linewidth=5.0)
-        # data.plot(ax=ax, x='bin_center_1', y='f', label="T= \n"+str(temp))
+        # data.plot(ax=ax, x='bin_center_1', y='f', linewidth=5.0)
+        data.plot(ax=ax, x='bin_center_1', y='f', label="T= \n"+str(temp))
     if(args.mode == "gagb"):
         ax.set_xlabel("Q of gb")
     if(args.mode == "pulling"):
         ax.set_xlabel("Distance(Å)")
     ax.set_ylabel("free energy(kT)")
-    ax.set_title("Force at 0.7 Kcal/mole-Angstrom")
+    # ax.set_title("Force at 0.7 Kcal/mole-Angstrom")
     ax.legend_.remove()
-    # ax.legend(loc='center left', bbox_to_anchor=(1, 0.6))
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.6))
     plt.gcf().subplots_adjust(bottom=0.15)
     plt.gcf().subplots_adjust(left=0.15)
     plt.gcf().subplots_adjust(right=0.80)
