@@ -10,6 +10,7 @@ from datetime import datetime
 import imp
 from myPersonalFunctions import *
 import glob
+import numpy
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -45,7 +46,7 @@ if(args.test):
 
 if(args.pulling):
     print("Pulling Free energy batch compute")
-    force_list = range(0.5,3,0.1)
+    force_list = numpy.linspace(0.5,3,26)
     for i in range(1,3):
         for force in force_list:
             if(args.debug):
@@ -59,6 +60,10 @@ if(args.pulling):
             cmd = "make_metadata.py --pulling2 -m {}".format(i)
             do(cmd)
             do("cp ~/opt/pulling/freeEnergy.slurm .")
+            do(
+                "sed -i.bak 's/FORCE/" +
+                str(force) +
+                "/g' freeEnergy.slurm")
             do("sbatch freeEnergy.slurm")
             # cmd = "python2 ~/opt/pulling_compute-pmf.py -f {}".format(force)
 

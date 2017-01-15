@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 # This script can be used to compute 1D and 2D PMFs, as well as the free energy and expectation
 # values of predefined clusters.
 # 1/30/14 Extending to be able to perform free energy perturbation calculations.
