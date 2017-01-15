@@ -51,11 +51,13 @@ if(args.pulling):
         for force in force_list:
             if(args.debug):
                 do = print
+                cd = print
             else:
                 do = os.system
-            folder = "wham_" + str(i) + "force_" + str(force)
+                cd = os.chdir
+            folder = "wham_" + str(i) + "_force_" + str(force)
             do("mkdir -p "+folder)
-            os.chdir(folder)
+            cd(folder)
             do("cp ../folder_list .")
             cmd = "make_metadata.py --pulling2 -m {}".format(i)
             do(cmd)
