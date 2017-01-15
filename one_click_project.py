@@ -67,6 +67,7 @@ if(args.pulling):
                 str(force) +
                 "/g' freeEnergy.slurm")
             do("sbatch freeEnergy.slurm")
+            cd("..")
             # cmd = "python2 ~/opt/pulling_compute-pmf.py -f {}".format(force)
 
 
