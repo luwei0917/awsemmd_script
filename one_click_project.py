@@ -59,7 +59,7 @@ if(args.pulling):
             do("mkdir -p "+folder)
             cd(folder)
             do("cp ../folder_list .")
-            cmd = "make_metadata.py --pulling2 -m {}".format(i)
+            cmd = "make_metadata.py --pulling2 --server -m {}".format(i)
             do(cmd)
             do("cp ~/opt/pulling/freeEnergy.slurm .")
             do(
