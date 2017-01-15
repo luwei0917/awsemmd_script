@@ -48,7 +48,7 @@ mol modrep 6 top
 
 mol addrep top
 mol color ColorID 11
-mol selection resid 159 to 181
+mol selection resid 158 to 181
 mol modrep 7 top
 mol addrep top
 
