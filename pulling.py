@@ -44,9 +44,13 @@ def test():
         cd = os.chdir
     folder = "T_300_D_130"
     for i in range(2):
+        my_from = "simulation/{0}".format(str(i))
+        my_to = "simulation/a206g_{0}".format(str(i))
         cmd = "rsync -a --exclude='dump.lammpstrj' --exclude='slurm-*' --exclude='movie*' --exclude='q*' --exclude='x.*' {} {}".format(my_from, my_to)
-        do("cp -r simulation/{0} simulation/a206g{0}")
-        cd(folder+"/simulation/")
+        do(cmd)
+        cd(my_to)
+        cmd = "a"
+        do(cmd)
         cd("../..")
     # script = "tail -n+2 cv-200-400-10.dat | sort -r -k 2 | head -n1"
     # result = subprocess.check_output(script, shell=True).decode("utf-8").split()[0]
