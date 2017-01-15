@@ -68,7 +68,7 @@ if(args.all_temp):
     temp = args.temperature
     ax = plt.subplot(1, 1, 1)
     temp_list = range(300,400,20)
-    temp_list = [360]
+    temp_list = [340]
     # temp_list = range(300,330,10)
     for temp in temp_list:
         name = 'pmf-'+str(temp)+'.dat'

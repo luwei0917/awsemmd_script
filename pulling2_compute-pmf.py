@@ -46,6 +46,7 @@ nbins1 = 40                        # number of bins for the first pmf variable
 nbins2 = 20                        # number of bins for the second pmf variable
 start_temperature = 200            # temperature at which to start the free energy calculations
 end_temperature = 400              # temperature at which to stop the free energy calculations
+force = 0.7
 temperature_increment = 10         # how often (in degrees) to compute the free energy
 N_samples = 2000                   # number of correlated samples per simulation
 expectation_columns = []           # an array of column numbers for which to compute expectation values
@@ -138,6 +139,8 @@ for arg in range(len(sys.argv)):
     start_temperature = int(sys.argv[arg+1])
   elif sys.argv[arg] == "-et":
     end_temperature = int(sys.argv[arg+1])
+  elif sys.argv[arg] == "-f":
+    force = float(sys.argv[arg+1])
   elif sys.argv[arg] == "-ti":
     temperature_increment = int(sys.argv[arg+1])
   elif sys.argv[arg] == "-nsamples":
@@ -175,7 +178,7 @@ for arg in range(len(sys.argv)):
   elif sys.argv[arg] == "-p":
       perturbation_columns.append(int(sys.argv[arg+1]))
   elif sys.argv[arg] == "-help":
-    print "Usage: $ python ./compute-pmf.py \\ \n -kb boltzmann_constant (default=%f)\\ \n -m metadatafile (default=%s)\\ \n -b biasing_variable_column (default=%d)\\ \n -e energy_column (default=%d)\\ \n -d pmf_dimension (default=%d)\\ \n -v1 pmf_variable_column_1 (default=%d)\\ \n -v1n pmf_variable_nbins_1 (default=%d)\\ \n -v2 pmf_variable_column_2 (default=%d)\\ \n -v2n pmf_variable_nbins_2 (default=%d)\\ \n -st start_temperature (default=%d)\\ \n -et end_temperature (default=%d)\\ \n -ti temperature_increment (default=%d)\\ \n -nsamples N_samples (default=%d)\\ \n -ev column_number_to_compute_expection_value (no default) \\ \n -pb compute_per_bin_quantities (default=%s)\\ \n -ss subsample_trajectories (default=%s)\\ \n -submit submit_to_cluster (default=%s)\\ \n -clustering cluster_binning (default=%s)\\ \n -p perturbation_column (default=None)\\ \n" % (kB, metadata_file, biasing_variable_column, energy_column, ndim, pmf_variable_column_1, nbins1, pmf_variable_column_2, nbins2, start_temperature, end_temperature, temperature_increment, N_samples, compute_per_bin_quantities, subsample_trajectories, submit_to_cluster, cluster_binning)
+    print "Usage: $ python ./compute-pmf.py \\ \n -kb boltzmann_constant (default=%f)\\ \n -m metadatafile (default=%s)\\ \n -b biasing_variable_column (default=%d)\\ \n -e energy_column (default=%d)\\ \n -d pmf_dimension (default=%d)\\ \n -v1 pmf_variable_column_1 (default=%d)\\ \n -v1n pmf_variable_nbins_1 (default=%d)\\ \n -v2 pmf_variable_column_2 (default=%d)\\ \n -v2n pmf_variable_nbins_2 (default=%d)\\ \n -st start_temperature (default=%d)\\ \n -et end_temperature (default=%d)\\ \n -f force (default=%f)\\ \n -ti temperature_increment (default=%d)\\ \n -nsamples N_samples (default=%d)\\ \n -ev column_number_to_compute_expection_value (no default) \\ \n -pb compute_per_bin_quantities (default=%s)\\ \n -ss subsample_trajectories (default=%s)\\ \n -submit submit_to_cluster (default=%s)\\ \n -clustering cluster_binning (default=%s)\\ \n -p perturbation_column (default=None)\\ \n" % (kB, metadata_file, biasing_variable_column, energy_column, ndim, pmf_variable_column_1, nbins1, pmf_variable_column_2, nbins2, start_temperature, end_temperature, force, temperature_increment, N_samples, compute_per_bin_quantities, subsample_trajectories, submit_to_cluster, cluster_binning)
     print "All command line arguments are optional and can be specified in an arbitrary order on a single line. To change the defaults, use a text editor to edit the script."
     sys.exit()
   else:
@@ -479,7 +482,7 @@ if load_pickle == False:
             beta = 1.0 / kT           # inverse temperature
             u_kln[k,l,0:N] = beta * (U_kn[0][k,0:N])
             for i in range(nbiases):
-                U_bias = (biasing_strengths[i][l]/2.0) * (biasing_variable_kn[i][k,0:N] - biasing_values[i][l])**2 + (biasing_variable_kn[i][k,0:N]-25.1)*2   # biasing potential for this sample
+                U_bias = (biasing_strengths[i][l]/2.0) * (biasing_variable_kn[i][k,0:N] - biasing_values[i][l])**2 +(biasing_variable_kn[i][k,0:N]-25.1)*force   # biasing potential for this sample
 
                 # print "------"
                 # print biasing_strengths[i][l]/2.0

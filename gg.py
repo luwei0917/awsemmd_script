@@ -74,7 +74,7 @@ def calQnQc():
     size1 = file_len("qn")
     size2 = file_len("qc")
     size3 = file_len("qc2")
-    os.system("paste qn qc > qnqc")
+    # os.system("paste qn qc > qnqc")
     if(size1 < 400 or size2 < 400 or size3 < 400):
         raise ValueError('file length too small')
     os.system("head -n 4000 qn > qn_all")
