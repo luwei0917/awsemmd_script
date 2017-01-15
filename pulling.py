@@ -61,7 +61,7 @@ def test():
                     cmd = "sbatch rerun.slurm"
                     do(cmd)
                     cd("../..")
-                cd("..")
+            cd("..")
     # script = "tail -n+2 cv-200-400-10.dat | sort -r -k 2 | head -n1"
     # result = subprocess.check_output(script, shell=True).decode("utf-8").split()[0]
     # print(result)
