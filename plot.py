@@ -37,29 +37,62 @@ parser.add_argument("-n", "--number", type=int, default=10,
 parser.add_argument("--minor", type=int, default=1,
                     help="minor control")
 parser.add_argument("-s", "--save", action="store_true", default=False)
-parser.add_argument("-r", "--reproduce", action="store_true", default=False)
+parser.add_argument("-r", "--reproduce", default=None)
 parser.add_argument("-t", "--test", action="store_true", default=False)
 parser.add_argument("-m", "--mode", default="pulling")
-
+parser.add_argument("-d", "--debug", action="store_true", default=False)
 args = parser.parse_args()
 
 
-if(args.reproduce):
+if(args.debug):
+    do = print
+    cd = print
+else:
+    do = os.system
+    cd = os.chdir
+
+
+if args.reproduce is not None:
     print("Reproducing!")
-    with open("args", "rb") as f:
+    with open(args.reproduce, "rb") as f:
         args = pickle.load(f)
         print(args)
+        args.save = False
 
 if(args.test):
     print("Hello Test World")
+    output = args.outname
+    temp = args.temperature
+    ax = plt.subplot(1, 1, 1)
+    force_list = np.linspace(0.5,3,26)
+    i = 2
+    for force in force_list[10:20:2]:
+        folder = "wham_" + str(i) + "_force_" + str(force)
+        name = folder + '/pmf-'+str(temp)+'.dat'
+        data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
+        # print(data)
+        # data.plot(ax=ax, x='bin_center_1', y='f', linewidth=5.0)
+        data.plot(ax=ax, x='bin_center_1', y='f',xlim=(0, 300), label="F= \n"+str(force))
+    ax.set_xlabel("Distance(Å)")
+    ax.set_ylabel("free energy(kT)")
+    # ax.set_title("Force at 0.7 Kcal/mole-Angstrom")
+    ax.legend_.remove()
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.6))
+    plt.gcf().subplots_adjust(bottom=0.15)
+    plt.gcf().subplots_adjust(left=0.15)
+    plt.gcf().subplots_adjust(right=0.80)
+    fig = plt.gcf()
+    fig.savefig(output)
+    os.system("open " + output)
 
 if(args.save):
     # print(os.getcwd())
     # print(args)
     print("Saving")
-    with open("args", "wb") as f:
+    # print(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    with open("args"+datetime.datetime.now().strftime("%Y%m%d-%H%M"), "wb") as f:
         pickle.dump(args, f)
-    os.system("cp ~/opt/plot.py plot_local.py")
+    os.system("cp ~/opt/plot.py plot_{}.py".format(datetime.datetime.now().strftime("%Y%m%d-%H%M")))
 
 
 if(args.all_temp > 0):
@@ -72,15 +105,22 @@ if(args.all_temp > 0):
     elif(args.all_temp == 2):
         temp_list = [temp]
     # temp_list = range(300,330,10)
-    for temp in temp_list:
-        name = 'pmf-'+str(temp)+'.dat'
-        data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
-        # print(data)
-        # data.plot(ax=ax, x='bin_center_1', y='f', linewidth=5.0)
-        data.plot(ax=ax, x='bin_center_1', y='f',xlim=(0, 1), label="T= \n"+str(temp))
+
     if(args.mode == "gagb"):
+        for temp in temp_list:
+            name = 'pmf-'+str(temp)+'.dat'
+            data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
+            # print(data)
+            # data.plot(ax=ax, x='bin_center_1', y='f', linewidth=5.0)
+            data.plot(ax=ax, x='bin_center_1', y='f',xlim=(0, 1), label="T= \n"+str(temp))
         ax.set_xlabel("Q of gb")
     if(args.mode == "pulling"):
+        for temp in temp_list:
+            name = 'pmf-'+str(temp)+'.dat'
+            data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
+            # print(data)
+            # data.plot(ax=ax, x='bin_center_1', y='f', linewidth=5.0)
+            data.plot(ax=ax, x='bin_center_1', y='f',xlim=(0, 400), label="T= \n"+str(temp))
         ax.set_xlabel("Distance(Å)")
     ax.set_ylabel("free energy(kT)")
     # ax.set_title("Force at 0.7 Kcal/mole-Angstrom")

@@ -35,13 +35,15 @@ parser.add_argument("-d", "--debug", action="store_true", default=False)
 args = parser.parse_args()
 
 
+if(args.debug):
+    do = print
+    cd = print
+else:
+    do = os.system
+    cd = os.chdir
+
+
 def test():
-    if(args.debug):
-        do = print
-        cd = print
-    else:
-        do = os.system
-        cd = os.chdir
     # folder = "T_300_D_130"
     with open("folder_list") as ins:
         for line in ins:

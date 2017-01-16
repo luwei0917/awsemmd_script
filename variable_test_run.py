@@ -20,8 +20,8 @@ args = parser.parse_args()
 protein_name = args.template.strip('/')
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 
-folder_list = open('folder_list', 'w')
-distance_list = np.arange(25, 350, 10)
+folder_list = open('folder_list_2', 'w')
+distance_list = np.arange(350, 500, 10)
 temp_list = np.arange(300, 400, 50)
 folder_name = ""
 for temp in temp_list:
