@@ -30,58 +30,22 @@ parser.add_argument("-f", "--freeEnergy", help="free energy calculation", action
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("--ga", action="store_true", default=False)
 parser.add_argument("--gb", action="store_true", default=False)
-parser.add_argument("--pulling", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 args = parser.parse_args()
 
+if(args.debug):
+    do = print
+    cd = print
+else:
+    do = os.system
+    cd = os.chdir
 
-def test():
-    if(args.debug):
-        do = print
-        cd = print
-    else:
-        do = os.system
-        cd = os.chdir
-    folder = "T_300_D_130"
-    for i in range(2):
-        cmd = "rsync -a --exclude='dump.lammpstrj' --exclude='slurm-*' --exclude='movie*' --exclude='q*' --exclude='x.*' {} {}".format(my_from, my_to)
-        do("cp -r simulation/{0} simulation/a206g{0}")
-        cd(folder+"/simulation/")
-        cd("../..")
-    # script = "tail -n+2 cv-200-400-10.dat | sort -r -k 2 | head -n1"
-    # result = subprocess.check_output(script, shell=True).decode("utf-8").split()[0]
-    # print(result)
 if(args.test):
-    test()
+    print("Welcome to test world")
 
-if(args.pulling):
-    print("Pulling Free energy batch compute")
-    force_list = numpy.linspace(0.5,3,26)
-    for i in range(1,3):
-        for force in force_list:
-            if(args.debug):
-                do = print
-                cd = print
-            else:
-                do = os.system
-                cd = os.chdir
-            folder = "wham_" + str(i) + "_force_" + str(force)
-            do("mkdir -p "+folder)
-            cd(folder)
-            do("cp ../folder_list .")
-            cmd = "make_metadata.py --pulling2 --server -m {}".format(i)
-            do(cmd)
-            do("cp ~/opt/pulling/freeEnergy.slurm .")
-            do(
-                "sed -i.bak 's/FORCE/" +
-                str(force) +
-                "/g' freeEnergy.slurm")
-            do("sbatch freeEnergy.slurm")
-            cd("..")
-            # cmd = "python2 ~/opt/pulling_compute-pmf.py -f {}".format(force)
 
 if(args.gb):
-    name_list = ["gb77", "gb88b", "gb91", "gb95", "gb", "ga","ga95", "ga91", "ga88", "ga77"]
+    name_list = ["gb77", "gb88b", "gb91", "gb95", "gb", "ga", "ga95", "ga91", "ga88", "ga77"]
     for name in name_list:
         os.chdir(name)
         os.system("mkdir one_d_gb")

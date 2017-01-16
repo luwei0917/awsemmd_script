@@ -28,7 +28,7 @@ parser.add_argument("--qnqc_pull", help="for all calculate q of n terminal and q
 # parser.add_argument("--qnqc2", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--gagb", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--gagb_compare", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
-parser.add_argument("--all_temp", action="store_true", default=False)
+parser.add_argument("--all_temp", type=int, default=0)
 parser.add_argument("outname", nargs='?', help="output filename", default="test.png")
 parser.add_argument("--temperature", type=int, default=350,
                     help="temperature")
@@ -62,20 +62,22 @@ if(args.save):
     os.system("cp ~/opt/plot.py plot_local.py")
 
 
-if(args.all_temp):
+if(args.all_temp > 0):
     print("Hello World GaGb1")
     output = args.outname
     temp = args.temperature
     ax = plt.subplot(1, 1, 1)
-    temp_list = range(300,400,20)
-    # temp_list = [340]
+    if(args.all_temp == 1):
+        temp_list = range(310,400,20)
+    elif(args.all_temp == 2):
+        temp_list = [temp]
     # temp_list = range(300,330,10)
     for temp in temp_list:
         name = 'pmf-'+str(temp)+'.dat'
         data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
         # print(data)
         # data.plot(ax=ax, x='bin_center_1', y='f', linewidth=5.0)
-        data.plot(ax=ax, x='bin_center_1', y='f', label="T= \n"+str(temp))
+        data.plot(ax=ax, x='bin_center_1', y='f',xlim=(0, 1), label="T= \n"+str(temp))
     if(args.mode == "gagb"):
         ax.set_xlabel("Q of gb")
     if(args.mode == "pulling"):
@@ -101,7 +103,8 @@ def gagb_compare():
     ax.set_title("gagb")
 
     # name = 'pmf-'+str(temp)+'.dat'
-    target_list = ["gb77", "gb", "ga", "ga95", "ga77"]
+    target_list = ["gb77", "gb88b", "gb91", "gb95", "gb", "ga", "ga95", "ga88", "ga77"]
+    # target_list = ["gb77", "gb88b", "gb91", "gb95", "gb"]
     for target in target_list:
         name = target+"-"+str(temp)+'.dat'
         data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
@@ -119,7 +122,7 @@ def gagb_compare():
     # ax.set_legend_bgcolor('white')
 
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.8), frameon=1)
-    ax.set_axis_bgcolor('white')
+    # ax.set_axis_bgcolor('white')
     # ax.legend.set_facecolor('white')
     # legend = plt.legend(frameon = 1)
     # frame = legend.get_frame()
