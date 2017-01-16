@@ -13,6 +13,7 @@ parser.add_argument("--jan07", help="Run code on Jan 07 ", action="store_true", 
 parser.add_argument("--jan10", help="Run code on Jan 10 ", action="store_true", default=False)
 parser.add_argument("--jan11", help="Run code on Jan 11 ", action="store_true", default=False)
 parser.add_argument("--jan12", action="store_true", default=False)
+parser.add_argument("--jan15", action="store_true", default=False)
 parser.add_argument("-t", "--test", help="Test run", action="store_true", default=False)
 args = parser.parse_args()
 
@@ -71,6 +72,57 @@ if(args.test):
         os.system("echo '"+protein_name+"' >> info.dat")
         os.system("cat {0}/{0}/info.dat >> info.dat".format(protein_name))
 
+if(args.jan15):
+    folder_list = ["T0766", "T0792", "T0778", "T0782", "T0833", "T0844"]
+    # folder_list = ["T0792"]
+    os.system("mkdir -p aawsemJan15")
+    os.chdir("aawsemJan15")
+    for protein_name in folder_list:
+        os.system("mkdir -p "+protein_name)
+        os.chdir(protein_name)
+        os.system("cp -r ../../aawsemDec25/{0}/{0} .".format(protein_name))
+        os.chdir(protein_name)
+        os.system("cp /scratch/wl45/HE_Mem/{}/frag.mem he_frag_old.mem".format(protein_name))
+        os.system("sed 's/\/work\/pw8\/mc70\/script/\/home\/wl45/g' he_frag_old.mem > he_frag.mem")
+        os.system("cp frag.mem ho_frag.mem")
+        protein_size = myPersonalFunctions.file_len("ssweight")
+        # print(protein_name, protein_size)
+        with open("info.dat", 'w') as info:
+            n = 0
+            nn = 0
+            with open('frag1.mem', 'w') as w:
+                with open('he_frag.mem', 'r') as f:
+                    for i in range(4):
+                        w.write(next(f))
+                    ha_lines = f.readlines()
+                # print(ha_lines)
+                with open('ho_frag.mem', 'r') as f:
+                    for i in range(4):
+                        next(f)
+                    ho_lines = f.readlines()
+                for i in range(1, protein_size-7):
+                    fragGroup = []
+                    for line in ho_lines:
+                        _, loc, _, fragLens, _ = line.split(" ")
+                        locEnd = int(loc) + int(fragLens)
+                        # print(loc, fragLens, locEnd)
+                        if(i <= int(loc) and i+9 >= locEnd):
+                            fragGroup += [line]
+                    groupLens = len(fragGroup)
+                    if(groupLens != 0):
+                        nn += 1
+                        for j in range(20):
+                            w.write(fragGroup[j % groupLens])
+                    else:
+                        n += 1
+                        for j in range(20):
+                            try:
+                                w.write(ha_lines[(i-1)*20+j])
+                            except:
+                                print(i*20+j)
+                info.write("Use "+str(nn)+" HO and "+str(n)+" HE\n")
+                print("Use "+str(nn)+" HO and "+str(n)+" HE\n")
+        os.chdir("../..")
 
 if(args.jan12):
     folder_list1 = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
