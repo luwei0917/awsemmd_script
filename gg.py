@@ -41,19 +41,11 @@ args = parser.parse_args()
 def test():
     print("don't show me")
     n = args.number
-    with open("my_folder_list", "w") as f:
-        folder_list = glob.glob("T_*")
-        print(len(folder_list))
-        for folder in folder_list:
-            f.write(folder+"  \n")
-            os.chdir(folder)
-            os.chdir("simulation")
-            for i in range(2):
-                os.chdir(str(i))
-                os.system("mv halfdata halfdata_back")
-                os.system("awk '$5=-$5' halfdata_back > halfdata")
-                os.chdir("..")
-            os.chdir("../..")
+    folder_list = sorted(glob.glob("wham*"))
+    for folder in folder_list:
+        print(folder)
+        os.system("tail -n+2 {}/cv-300-400-10.dat | sort -r -k 2 | head -n1".format(folder))
+
             # for i in range(2):
             #     address = folder + "/simulation/" + str(i)
             #     f.write(address+"  \n")
