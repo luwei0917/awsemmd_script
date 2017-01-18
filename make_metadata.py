@@ -78,10 +78,10 @@ if(args.pulling):
             # print(temp)
             if(args.server):
                 if(args.mode == 1):
-                    t1 = "/scratch/wl45/freeEnergy_2xov/pullingDistance/" + target + "/{}/0/halfdata {} {} {}\n".format(args.protein, temp, kconstant, x)
+                    t1 = "/scratch/wl45/freeEnergy_2xov/pullingDistance_v2/" + target + "/{}/0/halfdata {} {} {}\n".format(args.protein, temp, kconstant, x)
                     metadata.write(t1)
                 elif(args.mode == 2):
-                    t2 = "/scratch/wl45/freeEnergy_2xov/pullingDistance/" + target + "/{}/1/halfdata {} {} {}\n".format(args.protein, temp, kconstant, x)
+                    t2 = "/scratch/wl45/freeEnergy_2xov/pullingDistance_v2/" + target + "/{}/1/halfdata {} {} {}\n".format(args.protein, temp, kconstant, x)
                     metadata.write(t2)
             else:
                 if(args.mode == 1):
