@@ -199,7 +199,7 @@ if(args.pulling):
             do("cp ../../folder_list .")
             cmd = "make_metadata.py --pulling3 --server -m {}".format(i)
             do(cmd)
-            do("cp ~/opt/pulling/freeEnergy.slurm .")
+            do("cp ~/opt/pulling/freeEnergy2.slurm freeEnergy.slurm")
             do(
                 "sed -i.bak 's/FORCE/" +
                 str(force) +
