@@ -46,6 +46,7 @@ for i in range(n):
     record_time = 0
     with open('energy.log') as input_data:
         # Skips text before the beginning of the interesting block:
+        next(input_data)
         record_time = 0
         lowest_potential_energy = 0
         last_potential_energy = 0
@@ -55,7 +56,7 @@ for i in range(n):
 
             time = int(line.strip().split()[0])
             potenial_energy = float(line.strip().split()[-1])
-            print(time, potenial_energy)
+            # print(time, potenial_energy)
             if(potenial_energy < lowest_potential_energy):
                 record_time = time
                 lowest_potential_energy = potenial_energy
@@ -80,7 +81,7 @@ for i in range(n):
         "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
         lowest_energy.txt lowest_energy")
     os.chdir("../..")
-sys.stdout = open("analysis/list_of_lowest_potential_energy", "w")
+sys.stdout = open("list_of_lowest_potential_energy", "w")
 for idx, q in enumerate(list_of_lowest_potential_energy):
     print(q[0], q[1], q[2], idx)  # max q, timestep of max q, last q
 sys.stdout.close()
