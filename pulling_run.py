@@ -30,6 +30,7 @@ parser.add_argument("--pulling", action="store_true", default=False)
 parser.add_argument("--qnqc", action="store_true", default=False)
 parser.add_argument("--mutation", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
+parser.add_argument("--protein", default="2xov")
 args = parser.parse_args()
 
 
@@ -69,53 +70,77 @@ if(args.test):
     test()
 
 if(args.mutation):
-    array = []
-    cwd = os.getcwd()
-    print(cwd)
-    with open('folder_list', 'r') as ins:
-        for line in ins:
-            target = line.strip('\n')
-            t1 = target + "/a206g/0"
-            array.append(t1)
-            t1 = target + "/l155a/0"
-            array.append(t1)
-    for i in array:
-        os.chdir(i)
-        os.system("pwd")
-        # os.system("cp ~/opt/pulling/qnqc.slurm .")
-        # os.system("sbatch qnqc.slurm")
-        do("uniq energy.log > test")
-        do("cp ../../simulation/0/q* .")
-        do("tail -n+2 test > energy")
-        os.system("awk '{print $17}' energy_all > etotal_all")
-        os.system("tail -n 2000 energy_all > energy_half")
-        os.system("awk '{print $17}' energy_half > etotal")
-        os.system("paste qn_half qc_half qc2_half etotal myx_half > halfdata")
-        os.system("mv halfdata halfdata_back")
-        os.system("awk '{print $0, $1-$2}' halfdata_back > halfdata")
-        os.chdir(cwd)
-    with open('folder_list', 'r') as ins:
-        for line in ins:
-            target = line.strip('\n')
-            t1 = target + "/a206g/1"
-            array.append(t1)
-            t1 = target + "/l155a/1"
-            array.append(t1)
-    for i in array:
-        os.chdir(i)
-        os.system("pwd")
-        # os.system("cp ~/opt/pulling/qnqc.slurm .")
-        # os.system("sbatch qnqc.slurm")
-        do("uniq energy.log > test")
-        do("cp ../../simulation/1/q* .")
-        do("tail -n+2 test > energy")
-        os.system("awk '{print $17}' energy_all > etotal_all")
-        os.system("tail -n 2000 energy_all > energy_half")
-        os.system("awk '{print $17}' energy_half > etotal")
-        os.system("paste qn_half qc_half qc2_half etotal myx_half > halfdata")
-        os.system("mv halfdata halfdata_back")
-        os.system("awk '{print $0, $1-$2}' halfdata_back > halfdata")
-        os.chdir(cwd)
+    print("Pulling Free energy batch compute")
+    force_list = np.arange(1,2.5,0.1)
+    dimension = 1
+    mut_list = ["a206g", "l155a"]
+    for mut in mut_list:
+        for i in range(1,3):
+            for force in force_list:
+                folder = str(dimension) + "d_" + str(i) + "_force_" + str(force) + "_" + mut
+                do("mkdir -p "+folder)
+                cd(folder)
+                do("cp ../folder_list .")
+                cmd = "make_metadata.py --pulling --server -m {} --protein {}".format(i, mut)
+                do(cmd)
+                do("cp ~/opt/pulling/freeEnergy.slurm .")
+                do(
+                    "sed -i.bak 's/FORCE/" +
+                    str(force) +
+                    "/g' freeEnergy.slurm")
+                do(
+                    "sed -i.bak 's/DIMENSION/" +
+                    str(dimension) +
+                    "/g' freeEnergy.slurm")
+                do("sbatch freeEnergy.slurm")
+                cd("..")
+    # array = []
+    # cwd = os.getcwd()
+    # print(cwd)
+    # with open('folder_list', 'r') as ins:
+    #     for line in ins:
+    #         target = line.strip('\n')
+    #         t1 = target + "/a206g/0"
+    #         array.append(t1)
+    #         t1 = target + "/l155a/0"
+    #         array.append(t1)
+    # for i in array:
+    #     os.chdir(i)
+    #     os.system("pwd")
+    #     # os.system("cp ~/opt/pulling/qnqc.slurm .")
+    #     # os.system("sbatch qnqc.slurm")
+    #     do("uniq energy.log > test")
+    #     do("cp ../../simulation/0/q* .")
+    #     do("tail -n+2 test > energy")
+    #     os.system("awk '{print $17}' energy_all > etotal_all")
+    #     os.system("tail -n 2000 energy_all > energy_half")
+    #     os.system("awk '{print $17}' energy_half > etotal")
+    #     os.system("paste qn_half qc_half qc2_half etotal myx_half > halfdata")
+    #     os.system("mv halfdata halfdata_back")
+    #     os.system("awk '{print $0, $1-$2}' halfdata_back > halfdata")
+    #     os.chdir(cwd)
+    # with open('folder_list', 'r') as ins:
+    #     for line in ins:
+    #         target = line.strip('\n')
+    #         t1 = target + "/a206g/1"
+    #         array.append(t1)
+    #         t1 = target + "/l155a/1"
+    #         array.append(t1)
+    # for i in array:
+    #     os.chdir(i)
+    #     os.system("pwd")
+    #     # os.system("cp ~/opt/pulling/qnqc.slurm .")
+    #     # os.system("sbatch qnqc.slurm")
+    #     do("uniq energy.log > test")
+    #     do("cp ../../simulation/1/q* .")
+    #     do("tail -n+2 test > energy")
+    #     os.system("awk '{print $17}' energy_all > etotal_all")
+    #     os.system("tail -n 2000 energy_all > energy_half")
+    #     os.system("awk '{print $17}' energy_half > etotal")
+    #     os.system("paste qn_half qc_half qc2_half etotal myx_half > halfdata")
+    #     os.system("mv halfdata halfdata_back")
+    #     os.system("awk '{print $0, $1-$2}' halfdata_back > halfdata")
+    #     os.chdir(cwd)
 
 if(args.qnqc):
     array = []

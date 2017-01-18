@@ -30,7 +30,7 @@ parser.add_argument("--gagb", help="for all calculate q of n terminal and q of c
 parser.add_argument("--gagb_compare", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--all_temp", type=int, default=0)
 parser.add_argument("outname", nargs='?', help="output filename", default="test.png")
-parser.add_argument("--temperature", type=int, default=350,
+parser.add_argument("--temperature", type=int, default=340,
                     help="temperature")
 parser.add_argument("-n", "--number", type=int, default=10,
                     help="number")
