@@ -41,10 +41,10 @@ if(not args.offAuto):
     # sys.exit(0)
 
 for i in range(n):
-    os.chdir("analysis/"+str(i))
+    os.chdir("simulation/"+str(i))
     sys.stdout = open("lowest_energy.txt", "w")
     record_time = 0
-    with open('wham.dat') as input_data:
+    with open('energy.log') as input_data:
         # Skips text before the beginning of the interesting block:
         record_time = 0
         lowest_potential_energy = 0
@@ -54,7 +54,8 @@ for i in range(n):
             # time, q = line.strip().split()
 
             time = int(line.strip().split()[0])
-            potenial_energy = float(line.strip().split()[2])
+            potenial_energy = float(line.strip().split()[-1])
+            print(time, potenial_energy)
             if(potenial_energy < lowest_potential_energy):
                 record_time = time
                 lowest_potential_energy = potenial_energy
