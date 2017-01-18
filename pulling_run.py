@@ -71,7 +71,7 @@ if(args.test):
 
 if(args.mutation):
     print("Pulling Free energy batch compute")
-    force_list = np.arange(1,2.5,0.1)
+    force_list = numpy.arange(1,2.5,0.1)
     dimension = 1
     mut_list = ["a206g", "l155a"]
     do("mkdir -p one_d_mutation")
