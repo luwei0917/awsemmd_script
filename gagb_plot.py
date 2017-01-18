@@ -27,7 +27,7 @@ parser.add_argument("--qnqc_pull", help="for all calculate q of n terminal and q
 
 # parser.add_argument("--qnqc2", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--gagb", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
-parser.add_argument("--gagb_compare", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
+parser.add_argument("--compare", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--all_temp", type=int, default=0)
 parser.add_argument("outname", nargs='?', help="output filename", default="test.png")
 parser.add_argument("--temperature", type=int, default=350,
@@ -39,7 +39,7 @@ parser.add_argument("--minor", type=int, default=1,
 parser.add_argument("-s", "--save", action="store_true", default=False)
 parser.add_argument("-r", "--reproduce", default=None)
 parser.add_argument("-t", "--test", action="store_true", default=False)
-parser.add_argument("-m", "--mode", default="pulling")
+parser.add_argument("-m", "--mode", default="gagb")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 args = parser.parse_args()
 
@@ -64,19 +64,18 @@ if(args.test):
     output = args.outname
     temp = args.temperature
     ax = plt.subplot(1, 1, 1)
-    force_list = np.linspace(0.5,3,26)
-    i = 2
-    for force in force_list[10:16:1]:
-        folder = "wham_" + str(i) + "_force_" + str(force)
-        name = folder + '/pmf-'+str(temp)+'.dat'
+    name_list = ["gb77", "gb88b", "gb91", "gb95", "gb", "ga", "ga95", "ga91", "ga88", "ga77"]
+    # temp_list = range(300,330,10)
+    for gagb in name_list:
+        name = gagb+'-'+str(temp)+'.dat'
         data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
         # print(data)
         # data.plot(ax=ax, x='bin_center_1', y='f', linewidth=5.0)
-        data.plot(ax=ax, x='bin_center_1', y='f',xlim=(0, 150), label="F= \n"+str(force))
-    ax.set_xlabel("Distance(Å)")
+        data.plot(ax=ax, x='bin_center_1', y='f',xlim=(0, 1), label="T= \n"+str(temp))
+    ax.set_xlabel("Q of gb")
     ax.set_ylabel("free energy(kT)")
     # ax.set_title("Force at 0.7 Kcal/mole-Angstrom")
-    # ax.legend.remove()
+    ax.legend_.remove()
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.6))
     plt.gcf().subplots_adjust(bottom=0.15)
     plt.gcf().subplots_adjust(left=0.15)
@@ -92,7 +91,7 @@ if(args.save):
     # print(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     with open("args"+datetime.datetime.now().strftime("%Y%m%d-%H%M"), "wb") as f:
         pickle.dump(args, f)
-    os.system("cp ~/opt/plot.py plot_{}.py".format(datetime.datetime.now().strftime("%Y%m%d-%H%M")))
+    os.system("cp ~/opt/gagb_plot.py plot_{}.py".format(datetime.datetime.now().strftime("%Y%m%d-%H%M")))
 
 
 if(args.all_temp > 0):
@@ -134,7 +133,7 @@ if(args.all_temp > 0):
     os.system("open " + output)
 
 
-def gagb_compare():
+if(args.compare):
     print("Hello World gagb_compare")
     output = args.outname
     temp = args.temperature
@@ -143,16 +142,35 @@ def gagb_compare():
     ax.set_title("gagb")
 
     # name = 'pmf-'+str(temp)+'.dat'
-    target_list = ["gb77", "gb88b", "gb91", "gb95", "gb", "ga", "ga95", "ga88", "ga77"]
-    # target_list = ["gb77", "gb88b", "gb91", "gb95", "gb"]
+    # target_list = ["gb77", "gb88b", "gb91", "gb95", "gb", "ga", "ga95", "ga88", "ga77"]
+    target_list = ["gb77", "gb88b", "gb91", "gb95", "gb"]
     for target in target_list:
         name = target+"-"+str(temp)+'.dat'
-        data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
-        print(data["f"].iloc[-1])
-        data["f"] = data["f"] - data["f"].iloc[-8]
-        if(target == "ga95"):
-            print(data["f"])
-        data.plot(ax=ax, x='bin_center_1', y='f', label=target, linewidth=3.0)
+        with open(name) as f:
+            x = []
+            y = []
+            next(f)
+            first = next(f)
+            norm = 0
+            for line in f:
+                # print(line.split())
+                bin_num, bin_center, freeEnergy, *rest = line.split()
+                print(bin_num, bin_center, freeEnergy)
+                x += [float(bin_center)]
+                y += [float(freeEnergy)]
+                if(bin_num == '15'):
+                    norm = float(freeEnergy)
+            for i in range(len(y)):
+                y[i] -= norm
+            plt.plot(x,y, label=target)
+        # data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
+        # print(data["f"].iloc[-1])
+        # print("!!")
+        # print(data[data["bin_center_1"]==0.582])
+        # # data["f"] = data["f"] - data[data['bin_center_1'] == "0.582"]["f"]
+        # # if(target == "ga95"):
+        # #     print(data["f"])
+        # data.plot(ax=ax, x='bin_center_1', y='f', label=target, linewidth=3.0)
     # name = 'gb-'+str(temp)+'.dat'
     # data2 = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
     # data2.plot(ax=ax, x='bin_center_1', y='f', label="gb")
@@ -161,21 +179,20 @@ def gagb_compare():
 
     # ax.set_legend_bgcolor('white')
 
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.8), frameon=1)
-    # ax.set_axis_bgcolor('white')
-    # ax.legend.set_facecolor('white')
-    # legend = plt.legend(frameon = 1)
-    # frame = legend.get_frame()
-    # frame.set_facecolor('green')
+    ax.legend(loc='center left', bbox_to_anchor=(0.97, 0.8))
+    # # ax.set_axis_bgcolor('white')
+    # # ax.legend.set_facecolor('white')
+    # # legend = plt.legend(frameon = 1)
+    # # frame = legend.get_frame()
+    # # frame.set_facecolor('green')
     plt.gcf().subplots_adjust(bottom=0.15)
     plt.gcf().subplots_adjust(left=0.15)
     plt.gcf().subplots_adjust(right=0.80)
     fig = plt.gcf()
-    fig.savefig(output, transparent=True)
+    fig.savefig(output)
+    # fig.savefig(output, transparent=True)
     os.system("open " + output)
     # data.show()
-if(args.gagb_compare):
-    gagb_compare()
 
 
 def gagb():

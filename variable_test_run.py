@@ -19,6 +19,7 @@ parser.add_argument("template", help="the name of template file")
 args = parser.parse_args()
 protein_name = args.template.strip('/')
 # protein_name = args.template.split('_', 1)[-1].strip('/')
+os.system("cp ~/opt/variable_test_run.py .")
 
 folder_list = open('folder_list_jan16', 'w')
 distance_list = np.arange(20, 300, 10)

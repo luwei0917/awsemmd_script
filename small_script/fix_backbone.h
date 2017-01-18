@@ -120,6 +120,14 @@ public:
   char fm_gamma_file[100];
   double fm_sigma_exp;
 
+  // Tertiary Frustratometer parameters
+  double tert_frust_cutoff;
+  int tert_frust_ndecoys, tert_frust_output_freq;
+  char tert_frust_mode[100];
+  double *tert_frust_decoy_energies;
+  double *decoy_ixn_stats;
+  bool already_computed_configurational_decoys;
+
   // Table Fragment Memory parameters
   TBV **fm_table;
   int tb_size, tb_nbrs;
@@ -183,6 +191,7 @@ public:
   bool frag_mem_tb_flag, vec_frag_mem_flag, vec_frag_mem_tb_flag;
   bool memb_flag;
   bool partial_flag;
+  bool tert_frust_flag;
 
   enum Atoms{CA0 = 0, CA1, CA2, O0, O1, nAtoms};
   enum Angles{PHI = 0, PSI, nAngles};
@@ -224,6 +233,24 @@ public:
   void table_vector_fragment_memory(int i, int j);
   void compute_membrane_potential(int i);
 
+  // Tertiary Frustratometer Functions
+  void compute_tert_frust();
+  double compute_native_ixn(double rij, int i_resno, int j_resno, int ires_type, int jres_type, double rho_i, double rho_j);
+  void compute_decoy_ixns(int i_resno_orig, int j_resno_orig, double rij_orig, double rho_i_orig, double rho_j_orig);
+  double compute_water_energy(double rij, int i_resno, int j_resno, int ires_type, int jres_type, double rho_i, double rho_j);
+  double compute_burial_energy(int i_resno, int ires_type, double rho_i);
+  double compute_electrostatic_energy(double rij, int i_resno, int j_resno, int ires_type, int jres_type);
+  int get_random_residue_index();
+  double get_residue_distance(int i_resno, int j_resno);
+  double get_residue_density(int i);
+  int get_residue_type(int i);
+  double compute_frustration_index(double native_energy, double *decoy_stats);
+  double compute_array_mean(double *array, int arraysize);
+  double compute_array_std(double *array, int arraysize);
+  void compute_tert_frust_singleresidue();
+  double compute_singleresidue_native_ixn(int i_resno, int ires_type, double rho_i, int i_chno, double cutoff, bool nmercalc);
+  void compute_singleresidue_decoy_ixns(int i_resno, double rho_i, int i_chno);
+  
   void allocate();
   inline void Construct_Computational_Arrays();
   int Tag(int index);

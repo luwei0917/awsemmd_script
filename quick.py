@@ -119,8 +119,8 @@ def qnqc2():
     for i in array:
         os.chdir(i)
         os.system("pwd")
-        # os.system("cp ~/opt/pulling/qnqc.slurm .")
-        # os.system("sbatch qnqc.slurm")
+        os.system("cp ~/opt/pulling/qnqc.slurm .")
+        os.system("sbatch qnqc.slurm")
         # folder_name = os.getcwd()
         # os.system("tail -n+3 energy.log > energy")
         # os.system("head -n 4000 energy > energy_all")
@@ -137,8 +137,8 @@ def qnqc2():
         # os.system("paste qn_all qc_all qc2_all etotal_all myx_all > all_data")
         # os.system("paste qn_half qc_half qc2_half etotal myx_half > halfdata")
         # uniq energy.log > test
-        os.system("mv halfdata halfdata_back")
-        os.system("awk '{print $0, $1-$2}' halfdata_back > halfdata")
+        # os.system("mv halfdata halfdata_back")
+        # os.system("awk '{print $0, $1-$2}' halfdata_back > halfdata")
         # os.system("pwd")
         os.chdir(cwd)
 

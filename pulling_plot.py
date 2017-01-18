@@ -65,7 +65,7 @@ if(args.test):
     temp = args.temperature
     ax = plt.subplot(1, 1, 1)
     force_list = np.linspace(0.5,3,26)
-    i = 2
+    i = 1
     for force in force_list[10:16:1]:
         folder = "wham_" + str(i) + "_force_" + str(force)
         name = folder + '/pmf-'+str(temp)+'.dat'
