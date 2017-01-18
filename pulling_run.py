@@ -28,6 +28,7 @@ parser = argparse.ArgumentParser(description="This is my playground for current 
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("--pulling", action="store_true", default=False)
 parser.add_argument("--qnqc", action="store_true", default=False)
+parser.add_argument("--mutation", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 args = parser.parse_args()
 
@@ -66,6 +67,36 @@ def test():
     # print(result)
 if(args.test):
     test()
+
+if(args.mutation):
+    array = []
+    cwd = os.getcwd()
+    print(cwd)
+    with open('folder_list', 'r') as ins:
+        for line in ins:
+            target = line.strip('\n')
+            t1 = target + "/a206g/0"
+            array.append(t1)
+            t1 = target + "/l155a/0"
+            array.append(t1)
+            t1 = target + "/a206g/1"
+            array.append(t1)
+            t1 = target + "/l155a/1"
+            array.append(t1)
+    for i in array:
+        os.chdir(i)
+        os.system("pwd")
+        # os.system("cp ~/opt/pulling/qnqc.slurm .")
+        # os.system("sbatch qnqc.slurm")
+        do("uniq energy.log > test")
+        do("tail -n+2 test > energy")
+        os.system("awk '{print $17}' energy_all > etotal_all")
+        os.system("tail -n 2000 energy_all > energy_half")
+        os.system("awk '{print $17}' energy_half > etotal")
+        os.system("paste qn_half qc_half qc2_half etotal myx_half > halfdata")
+        os.system("mv halfdata halfdata_back")
+        os.system("awk '{print $0, $1-$2}' halfdata_back > halfdata")
+        os.chdir(cwd)
 
 if(args.qnqc):
     array = []
