@@ -15,8 +15,18 @@ parser.add_argument("--jan11", help="Run code on Jan 11 ", action="store_true", 
 parser.add_argument("--jan12", action="store_true", default=False)
 parser.add_argument("--jan15", action="store_true", default=False)
 parser.add_argument("-t", "--test", help="Test run", action="store_true", default=False)
+parser.add_argument("--fix", action="store_true", default=False)
 args = parser.parse_args()
 
+if(args.fix):
+    folder_list = ["T0766", "T0792", "T0778", "T0782", "T0833", "T0844"]
+    os.chdir("aawsemJan15")
+    for protein_name in folder_list:
+        os.chdir(protein_name)
+        os.system("cp {0}/frag1.mem {0}/frag.mem".format(protein_name))
+        os.system("rm -r simulation")
+        os.system("run.py -n 20 -o "+protein_name+"\/")
+        os.chdir("..")
 
 if(args.test):
     # folder_list = ["T0792", "T0778", "T0782", "T0833", "T0844"]
