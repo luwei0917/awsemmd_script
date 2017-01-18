@@ -74,13 +74,15 @@ if(args.mutation):
     force_list = np.arange(1,2.5,0.1)
     dimension = 1
     mut_list = ["a206g", "l155a"]
+    do("mkdir -p one_d_mutation")
+    cd("one_d_mutation")
     for mut in mut_list:
         for i in range(1,3):
             for force in force_list:
-                folder = str(dimension) + "d_" + str(i) + "_force_" + str(force) + "_" + mut
+                folder = str(i) + "_force_" + str(force) + "_" + mut
                 do("mkdir -p "+folder)
                 cd(folder)
-                do("cp ../folder_list .")
+                do("cp ../../folder_list .")
                 cmd = "make_metadata.py --pulling --server -m {} --protein {}".format(i, mut)
                 do(cmd)
                 do("cp ~/opt/pulling/freeEnergy.slurm .")
@@ -94,6 +96,7 @@ if(args.mutation):
                     "/g' freeEnergy.slurm")
                 do("sbatch freeEnergy.slurm")
                 cd("..")
+    cd("..")
     # array = []
     # cwd = os.getcwd()
     # print(cwd)
