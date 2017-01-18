@@ -86,6 +86,7 @@ if(args.qnqc):
 if(args.pulling):
     print("Pulling Free energy batch compute")
     force_list = numpy.linspace(0.5,3,26)
+    dimension = 2
     for i in range(1,3):
         for force in force_list:
             folder = "wham_" + str(i) + "_force_" + str(force)
@@ -98,6 +99,10 @@ if(args.pulling):
             do(
                 "sed -i.bak 's/FORCE/" +
                 str(force) +
+                "/g' freeEnergy.slurm")
+            do(
+                "sed -i.bak 's/DIMENSION/" +
+                str(dimension) +
                 "/g' freeEnergy.slurm")
             do("sbatch freeEnergy.slurm")
             cd("..")

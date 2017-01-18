@@ -18,7 +18,7 @@ from scipy.interpolate import griddata
 from scipy.interpolate import interp2d
 
 parser = argparse.ArgumentParser(description='Plots pmf data.')
-parser.add_argument("filename", nargs='?', help="input filename", default="pmf-340.dat")
+parser.add_argument("filename", nargs='?', help="input filename", default="pmf-350.dat")
 parser.add_argument("outname", nargs='?', help="output filename", default="test.png")
 parser.add_argument("-dpi", default=150, type=int, help="figure dpi")
 parser.add_argument("-x", default=1, type=int, help="x column number in f")
