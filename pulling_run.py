@@ -89,7 +89,7 @@ if(args.pulling):
     dimension = 2
     for i in range(1,3):
         for force in force_list:
-            folder = "wham_" + str(i) + "_force_" + str(force)
+            folder = str(dimension) + "d_" + str(i) + "_force_" + str(force)
             do("mkdir -p "+folder)
             cd(folder)
             do("cp ../folder_list .")
