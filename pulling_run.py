@@ -27,6 +27,7 @@ parser = argparse.ArgumentParser(description="This is my playground for current 
 # parser.add_argument("template", help="the name of template file")
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("--pulling", action="store_true", default=False)
+parser.add_argument("--pulling2", action="store_true", default=False)
 parser.add_argument("--qnqc", action="store_true", default=False)
 parser.add_argument("--mutation", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
@@ -192,6 +193,34 @@ if(args.pulling):
     do("mkdir -p one_d")
     cd("one_d")
     for i in range(1,3):
+        for force in force_list:
+            folder = str(dimension) + "d_" + str(i) + "_force_" + str(force)
+            do("mkdir -p "+folder)
+            cd(folder)
+            do("cp ../../folder_list .")
+            cmd = "make_metadata.py --pulling3 --server -m {}".format(i)
+            do(cmd)
+            do("cp ~/opt/pulling/freeEnergy2.slurm freeEnergy.slurm")
+            do(
+                "sed -i.bak 's/FORCE/" +
+                str(force) +
+                "/g' freeEnergy.slurm")
+            do(
+                "sed -i.bak 's/DIMENSION/" +
+                str(dimension) +
+                "/g' freeEnergy.slurm")
+            do("sbatch freeEnergy.slurm")
+            cd("..")
+            # cmd = "python2 ~/opt/pulling_compute-pmf.py -f {}".format(force)
+    cd("..")
+
+if(args.pulling2):
+    print("Pulling Free energy batch compute")
+    force_list = numpy.arange(1,2.5,0.1)
+    dimension = args.dimension
+    do("mkdir -p one_d")
+    cd("one_d")
+    for i in range(1,2):
         for force in force_list:
             folder = str(dimension) + "d_" + str(i) + "_force_" + str(force)
             do("mkdir -p "+folder)

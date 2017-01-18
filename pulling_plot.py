@@ -61,29 +61,39 @@ if args.reproduce is not None:
 
 if(args.test):
     print("Hello Test World")
-    output = args.outname
-    temp = args.temperature
-    ax = plt.subplot(1, 1, 1)
-    force_list = np.linspace(0.5,3,26)
-    i = 1
-    for force in force_list[10:16:1]:
-        folder = "wham_" + str(i) + "_force_" + str(force)
-        name = folder + '/pmf-'+str(temp)+'.dat'
-        data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
-        # print(data)
-        # data.plot(ax=ax, x='bin_center_1', y='f', linewidth=5.0)
-        data.plot(ax=ax, x='bin_center_1', y='f',xlim=(0, 150), label="F= \n"+str(force))
-    ax.set_xlabel("Distance(Å)")
-    ax.set_ylabel("free energy(kT)")
-    # ax.set_title("Force at 0.7 Kcal/mole-Angstrom")
-    # ax.legend.remove()
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.6))
-    plt.gcf().subplots_adjust(bottom=0.15)
-    plt.gcf().subplots_adjust(left=0.15)
-    plt.gcf().subplots_adjust(right=0.80)
-    fig = plt.gcf()
-    fig.savefig(output)
-    os.system("open " + output)
+    force_list = np.arange(1,2.5,0.1)
+    array = []
+    cwd = os.getcwd()
+    print(cwd)
+    for force in force_list:
+        folder = "2d_2_force_" + str(force)
+        cd(folder)
+        do("pulling_plotcontour.py")
+        do("cp test.png ../results/{}.png".format(force))
+        cd(cwd)
+    # output = args.outname
+    # temp = args.temperature
+    # ax = plt.subplot(1, 1, 1)
+    # force_list = np.linspace(0.5,3,26)
+    # i = 1
+    # for force in force_list[10:16:1]:
+    #     folder = "wham_" + str(i) + "_force_" + str(force)
+    #     name = folder + '/pmf-'+str(temp)+'.dat'
+    #     data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
+    #     # print(data)
+    #     # data.plot(ax=ax, x='bin_center_1', y='f', linewidth=5.0)
+    #     data.plot(ax=ax, x='bin_center_1', y='f',xlim=(0, 150), label="F= \n"+str(force))
+    # ax.set_xlabel("Distance(Å)")
+    # ax.set_ylabel("free energy(kT)")
+    # # ax.set_title("Force at 0.7 Kcal/mole-Angstrom")
+    # # ax.legend.remove()
+    # ax.legend(loc='center left', bbox_to_anchor=(1, 0.6))
+    # plt.gcf().subplots_adjust(bottom=0.15)
+    # plt.gcf().subplots_adjust(left=0.15)
+    # plt.gcf().subplots_adjust(right=0.80)
+    # fig = plt.gcf()
+    # fig.savefig(output)
+    # os.system("open " + output)
 
 if(args.save):
     # print(os.getcwd())
