@@ -67,7 +67,7 @@ if(args.qnqc):
 if(args.pulling):
     print("2xov pulling")
     # os.system("cp folder_list .")
-    kconstant = 0.01
+    kconstant = 0.02
 
     metadata = open("metadatafile", "w")
     with open('folder_list', 'r') as ins:
@@ -82,13 +82,6 @@ if(args.pulling):
                     metadata.write(t1)
                 elif(args.mode == 2):
                     t2 = "/scratch/wl45/freeEnergy_2xov/pullingDistance_v2/" + target + "/{}/1/halfdata {} {} {}\n".format(args.protein, temp, kconstant, x)
-                    metadata.write(t2)
-            else:
-                if(args.mode == 1):
-                    t1 = "/Users/weilu/Research/server/freeEnergy_2xov/pullingDistance/" + target + "/{}/0/halfdata {} {} {}\n".format(args.protein, temp, kconstant, x)
-                    metadata.write(t1)
-                elif(args.mode == 2):
-                    t2 = "/Users/weilu/Research/server/freeEnergy_2xov/pullingDistance/" + target + "/{}/1/halfdata {} {} {}\n".format(args.protein, temp, kconstant, x)
                     metadata.write(t2)
     metadata.close()
 
