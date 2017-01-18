@@ -31,6 +31,7 @@ parser.add_argument("--qnqc", action="store_true", default=False)
 parser.add_argument("--mutation", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--protein", default="2xov")
+parser.add_argument("--dimension", type=int, default=1)
 args = parser.parse_args()
 
 
@@ -186,15 +187,17 @@ if(args.qnqc):
 
 if(args.pulling):
     print("Pulling Free energy batch compute")
-    force_list = numpy.linspace(0.5,3,26)
-    dimension = 2
+    force_list = numpy.arange(1,2.5,0.1)
+    dimension = args.dimension
+    do("mkdir -p one_d")
+    cd("one_d")
     for i in range(1,3):
         for force in force_list:
             folder = str(dimension) + "d_" + str(i) + "_force_" + str(force)
             do("mkdir -p "+folder)
             cd(folder)
-            do("cp ../folder_list .")
-            cmd = "make_metadata.py --pulling2 --server -m {}".format(i)
+            do("cp ../../folder_list .")
+            cmd = "make_metadata.py --pulling3 --server -m {}".format(i)
             do(cmd)
             do("cp ~/opt/pulling/freeEnergy.slurm .")
             do(
@@ -208,3 +211,4 @@ if(args.pulling):
             do("sbatch freeEnergy.slurm")
             cd("..")
             # cmd = "python2 ~/opt/pulling_compute-pmf.py -f {}".format(force)
+    cd("..")
