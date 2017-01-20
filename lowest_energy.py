@@ -93,4 +93,4 @@ for idx, q in enumerate(list_of_lowest_potential_energy):
         energy_temp = q[0]
         global_min_idx = idx
 sys.stdout.close()
-os.system("cp simulation/{}/lowest_energy.pdb global_lowest_energy.pdb".format(global_min_idx))
+os.system("cp simulation_iteration_1/{}/lowest_energy.pdb global_lowest_energy.pdb".format(global_min_idx))
