@@ -16,7 +16,32 @@ parser.add_argument("--jan12", action="store_true", default=False)
 parser.add_argument("--jan15", action="store_true", default=False)
 parser.add_argument("-t", "--test", help="Test run", action="store_true", default=False)
 parser.add_argument("--fix", action="store_true", default=False)
+parser.add_argument("--move", action="store_true", default=False)
+parser.add_argument("-d", "--debug", action="store_true", default=False)
 args = parser.parse_args()
+
+if(args.debug):
+    do = print
+    cd = print
+else:
+    do = os.system
+    cd = os.chdir
+
+if(args.move):
+    # folder_list = ["T0766", "T0792", "T0778", "T0782", "T0833", "T0844"]
+    folder_list = ["T0766"]
+    cd("aawsemJan15")
+    for protein_name in folder_list:
+        cd(protein_name)
+        do("lowest_energy.py {}".format(protein_name))
+        do("cp {0} {0}_v1".format(protein_name))
+        do("mv simulation simulation_iteration_1")
+        do("~/opt/script/PdbCoords2Lammps.sh global_lowest_energy v1")
+        do("cp data.v1 {0}/data.{0}".format(protein_name))
+        do("mv list_of_lowest_potential_energy list_of_lowest_potential_energy_v1")
+        do("run.py -n 20 -o "+protein_name+"\/")
+        cd("..")
+    cd("..")
 
 if(args.fix):
     folder_list = ["T0766", "T0792", "T0778", "T0782", "T0833", "T0844"]

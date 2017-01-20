@@ -34,7 +34,7 @@ def gagb():
     metadata = open("metadatafile", "w")
     for i in range(40):
         q = q0 + i*0.02
-        target = "../simulation/350/" + str(i) + "/halfdata.dat {} {} {:.2f}\n".format(temp, kconstant, q)
+        target = "../simulation/350/" + str(i) + "/halfdata {} {} {:.2f}\n".format(temp, kconstant, q)
         metadata.write(target)
     metadata.close()
 

@@ -11,12 +11,7 @@ import imp
 from myPersonalFunctions import *
 import glob
 import numpy
-# Useful codes
-# os.system("awk '{print $NF}' all_wham.dat > e_total")
-# tr " " "\n"
-# sed 1d
-# sort -u -k 3
-# sed -e 's/+T//'
+
 mypath = os.environ["PATH"]
 os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
@@ -31,6 +26,7 @@ parser.add_argument("-t", "--test", help="test ", action="store_true", default=F
 parser.add_argument("--ga", action="store_true", default=False)
 parser.add_argument("--gb", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
+parser.add_argument("--data", action="store_true", default=False)
 args = parser.parse_args()
 
 if(args.debug):
@@ -43,16 +39,33 @@ else:
 if(args.test):
     print("Welcome to test world")
 
+if(args.data):
+    name_list = ["gb77", "gb88b", "gb91", "gb95", "gb", "ga", "ga95", "ga91", "ga88", "ga77"]
+
+    for name in name_list:
+        temp_list = [350]
+        n = 40
+        cd(name+"/simulation")
+        for temp in temp_list:
+            os.chdir(str(temp))
+            for i in range(n):
+                os.chdir(str(i))
+                os.system("tail -n +2 wham.dat > data.dat")
+                os.system("tail -n 4000 data.dat > halfdata_back.dat")
+                os.system("awk '{print $0, $2-$3}' halfdata_back.dat > halfdata")
+                cd("..")
+            cd("..")
+        cd("../..")
 
 if(args.gb):
     name_list = ["gb77", "gb88b", "gb91", "gb95", "gb", "ga", "ga95", "ga91", "ga88", "ga77"]
     for name in name_list:
         os.chdir(name)
-        os.system("mkdir one_d_gb_n30")
-        os.chdir("one_d_gb_n30")
+        os.system("mkdir one_d_gb_v18")
+        os.chdir("one_d_gb_v18")
         os.system("make_metadata.py --gagb")
-        os.system("python2 ~/opt/gagb-compute-pmf.py")
-        os.system("cp pmf-350.dat ~/Research/results/gb/{}-350.dat".format(name))
+        os.system("python2 ~/opt/gagb-compute-pmf.py -v1 8")
+        os.system("cp pmf-350.dat ~/Research/results/gagb_diff/{}-350.dat".format(name))
         os.chdir("..")
         os.chdir("..")
 

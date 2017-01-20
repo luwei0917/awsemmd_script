@@ -10,6 +10,8 @@ parser = argparse.ArgumentParser(
         description="This is a python3 script to\
         find the lowest energy frame and cooresponding pdb")
 
+
+parser.add_argument("protein", help="The name of the protein")
 # parser.add_argument("template", help="the name of template file")
 # parser.add_argument("-n", "--number", type=int, default=20,
 #                     help="Number of simulation run")
@@ -25,7 +27,7 @@ parser.add_argument("-o", "--offAuto", help="turn off from Read from \
 args = parser.parse_args()
 
 list_of_lowest_potential_energy = []
-
+protein_name = args.protein.split('.')[0]
 # n = args.number
 # steps = args.steps*1000*1000
 # if args.steps == -1:
@@ -78,10 +80,17 @@ for i in range(n):
             print(line.strip())
     sys.stdout.close()
     os.system(
-        "python2 ~/opt/script/BuildAllAtomsFromLammps.py \
-        lowest_energy.txt lowest_energy")
+        "python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py \
+        lowest_energy.txt lowest_energy "+protein_name+".seq")
     os.chdir("../..")
 sys.stdout = open("list_of_lowest_potential_energy", "w")
+# store the globally loweest energy frame
+global_min_idx = -1
+energy_temp = 0
 for idx, q in enumerate(list_of_lowest_potential_energy):
     print(q[0], q[1], q[2], idx)  # max q, timestep of max q, last q
+    if(q[0] < energy_temp):
+        energy_temp = q[0]
+        global_min_idx = idx
 sys.stdout.close()
+os.system("cp simulation/{}/lowest_energy.pdb global_lowest_energy.pdb".format(global_min_idx))
