@@ -43,7 +43,7 @@ if(not args.offAuto):
     # sys.exit(0)
 
 for i in range(n):
-    os.chdir("simulation/"+str(i))
+    os.chdir("simulation_iteration_1/"+str(i))
     sys.stdout = open("lowest_energy.txt", "w")
     record_time = 0
     with open('energy.log') as input_data:
