@@ -156,6 +156,7 @@ if output_fn!="" and not splite:
 ichain = 0
 s = p.get_structure(struct_id, filename)
 chains = s[0].get_list()
+print "-------------_!!!!_------------------"
 for ch in chains:
     sequance = []
     atoms = []
@@ -171,9 +172,9 @@ for ch in chains:
     else:
         print "Chain:", ch.get_id()
     for res in ch:
-        # print res
+        print res
         is_regular_res = res.has_id('N') and res.has_id('CA') and res.has_id('C')
-        # is_regular_res = True
+        is_regular_res = True
         # print is_regular_res
         # print res.has_id('N')
         # print res.has_id('CA')
