@@ -43,7 +43,7 @@ if(not args.offAuto):
     # sys.exit(0)
 
 for i in range(n):
-    os.chdir("simulation_iteration_1/"+str(i))
+    os.chdir("simulation/"+str(i))
     sys.stdout = open("lowest_energy.txt", "w")
     record_time = 0
     with open('energy.log') as input_data:
@@ -93,4 +93,4 @@ for idx, q in enumerate(list_of_lowest_potential_energy):
         energy_temp = q[0]
         global_min_idx = idx
 sys.stdout.close()
-os.system("cp simulation_iteration_1/{}/lowest_energy.pdb global_lowest_energy.pdb".format(global_min_idx))
+os.system("cp simulation/{}/lowest_energy.pdb global_lowest_energy.pdb".format(global_min_idx))
