@@ -130,32 +130,35 @@ if(args.qnqc):
 
 if(args.pulling):
     print("Pulling Free energy batch compute")
-    # force_list = numpy.arange(1,2.5,0.1)
-    force_list = numpy.arange(1,1.2,0.1)
+    force_list = numpy.arange(1.5,2.5,0.1)
+    # force_list = numpy.arange(1,1.2,0.1)
     dimension = args.dimension
-    do("mkdir -p n_term")
-    cd("n_term")
-    for i in range(1,3):
-        for force in force_list:
-            folder = str(i) + "_force_" + str(force)
-            do("mkdir -p "+folder)
-            cd(folder)
-            do("cp ../../folder_list complete_folder_list")
-            cmd = "make_metadata.py --pulling4 --server -m {}".format(i)
-            do(cmd)
-            do("cp ~/opt/pulling/n_term.slurm freeEnergy.slurm")
-            do(
-                "sed -i.bak 's/FORCE/" +
-                str(force) +
-                "/g' freeEnergy.slurm")
-            do(
-                "sed -i.bak 's/DIMENSION/" +
-                str(dimension) +
-                "/g' freeEnergy.slurm")
-            do("sbatch freeEnergy.slurm")
-            cd("..")
-            # cmd = "python2 ~/opt/pulling_compute-pmf.py -f {}".format(force)
-    cd("..")
+
+    side_list = ["n_term", "c_term"]
+    for side in side_list:
+        do("mkdir -p "+side)
+        cd(side)
+        for i in range(1,3):
+            for force in force_list:
+                folder = str(i) + "_force_" + str(force)
+                do("mkdir -p "+folder)
+                cd(folder)
+                do("cp ../../folder_list complete_folder_list")
+                cmd = "make_metadata.py --pulling4 --server -m {}".format(i)
+                do(cmd)
+                do("cp ~/opt/pulling/{0}.slurm freeEnergy.slurm".format(side))
+                do(
+                    "sed -i.bak 's/FORCE/" +
+                    str(force) +
+                    "/g' freeEnergy.slurm")
+                do(
+                    "sed -i.bak 's/DIMENSION/" +
+                    str(dimension) +
+                    "/g' freeEnergy.slurm")
+                do("sbatch freeEnergy.slurm")
+                cd("..")
+                # cmd = "python2 ~/opt/pulling_compute-pmf.py -f {}".format(force)
+        cd("..")
 # if(args.pulling):
 #     print("Pulling Free energy batch compute")
 #     force_list = numpy.arange(1,2.5,0.1)
