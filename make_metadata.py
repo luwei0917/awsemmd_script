@@ -18,6 +18,7 @@ parser.add_argument("--qnqc2", help="for all calculate q of n terminal and q of 
 parser.add_argument("--pulling", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--pulling2", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--pulling3", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
+parser.add_argument("--pulling4", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("--gagb", help="for all calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("-m", "--mode", type=int, default=1)
 parser.add_argument("--server", action="store_true", default=False)
