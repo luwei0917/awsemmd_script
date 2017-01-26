@@ -140,7 +140,7 @@ if(args.pulling):
             folder = str(i) + "_force_" + str(force)
             do("mkdir -p "+folder)
             cd(folder)
-            do("cp ../../complete_folder_list .")
+            do("cp ../../folder_list complete_folder_list")
             cmd = "make_metadata.py --pulling4 --server -m {}".format(i)
             do(cmd)
             do("cp ~/opt/pulling/n_term.slurm freeEnergy.slurm")
