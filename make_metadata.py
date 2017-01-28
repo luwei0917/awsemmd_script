@@ -146,7 +146,6 @@ if(args.pulling3):
     print("2xov pulling")
     # os.system("cp folder_list .")
     kconstant = 0.04
-
     metadata = open("metadatafile", "w")
     with open('folder_list', 'r') as ins:
         for line in ins:
@@ -154,13 +153,15 @@ if(args.pulling3):
             temp = target.split("_")[1]
             x = target.split("_")[3]
             # print(temp)
+            folder_name = "pullingDistance_v3"
+            loc = "/scratch/wl45/freeEnergy_2xov/{}/simulation/".format(folder_name)
+            local_loc = "/Users/weilu/Research/server/freeEnergy_2xov/{}/simulation/".format(folder_name)
             if(args.server):
-                if(args.mode == 1):
-                    t1 = "/scratch/wl45/freeEnergy_2xov/pullingDistance_v3/" + target + "/{}/0/halfdata {} {} {}\n".format(args.protein, temp, kconstant, x)
-                    metadata.write(t1)
-                elif(args.mode == 2):
-                    t2 = "/scratch/wl45/freeEnergy_2xov/pullingDistance_v3/" + target + "/{}/1/halfdata {} {} {}\n".format(args.protein, temp, kconstant, x)
-                    metadata.write(t2)
+                t1 = loc + target + "/simulation/0/halfdata {} {} {}\n".format(temp, kconstant, x)
+                metadata.write(t1)
+            else:
+                t1 = local_loc + target + "/simulation/0/halfdata {} {} {}\n".format(temp, kconstant, x)
+                metadata.write(t1)
     metadata.close()
 
 
