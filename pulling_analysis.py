@@ -138,13 +138,13 @@ if(args.pulling):
     for side in side_list:
         do("mkdir -p "+side)
         cd(side)
-        for i in range(1,3):
+        for i in range(1,2):
             for force in force_list:
                 folder = str(i) + "_force_" + str(force)
                 do("mkdir -p "+folder)
                 cd(folder)
                 do("cp ../../folder_list complete_folder_list")
-                cmd = "make_metadata.py --pulling4 --server -m {}".format(i)
+                cmd = "make_metadata.py --pulling3 --server -m {}".format(i)
                 do(cmd)
                 do("cp ~/opt/pulling/{0}.slurm freeEnergy.slurm".format(side))
                 do(
