@@ -60,10 +60,10 @@ for temp in temp_list:
             "sed -i.bak 's/Q0/'" +
             str(q0) +
             "'/g' fix_qbias_coeff.data")
-        os.system(  # replace TEMPERATURE with specific steps
-            "sed -i.bak 's/Q0/'" +
-            str(q0) +
-            "'/g' fix_qbias_coeff1.data")
+        # os.system(  # replace TEMPERATURE with specific steps
+        #     "sed -i.bak 's/Q0/'" +
+        #     str(q0) +
+        #     "'/g' fix_qbias_coeff1.data")
         os.system(  # replace TEMPERATURE with specific steps
             "sed -i.bak 's/TEMPERATURE/'" +
             str(temp) +
@@ -81,13 +81,13 @@ for temp in temp_list:
             str(warm_up_steps) +
             "'/g' "+protein_name+".in")
         os.system(  # replace RANDOM with a radnom number
-                "sed -i.bak 's/RANDOM/'" +
-                str(randint(1, 10**6)) +
-                "'/g' "+protein_name+".in")
+            "sed -i.bak 's/RANDOM/'" +
+            str(randint(1, 10**6)) +
+            "'/g' "+protein_name+".in")
         os.system(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/SIMULATION_STEPS/'" +
-                str(simulation_steps) +
-                "'/g' "+protein_name+".in")
+            "sed -i.bak 's/SIMULATION_STEPS/'" +
+            str(simulation_steps) +
+            "'/g' "+protein_name+".in")
         if(platform.system() == 'Darwin'):
             os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
             < "+protein_name+".in")

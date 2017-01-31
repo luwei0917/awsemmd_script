@@ -489,7 +489,11 @@ if load_pickle == False:
                 # print biasing_strengths[i][l]/2.0
                 # print biasing_values[i][l]
                 # print biasing_variable_kn[i][k,0:10]
+                # print N
                 # print biasing_variable_kn[i][k,0:10] - biasing_values[i][l]
+                # print (biasing_strengths[i][l]/2.0) * (biasing_variable_kn[i][k,0:10] - biasing_values[i][l])**2
+                # print "------"
+                # print (biasing_variable_kn[i][k,0:10]-25.1)*force
                 # print "------"
 
                 u_kln[k,l,0:N] += beta * (U_bias)
