@@ -21,9 +21,9 @@ protein_name = args.template.strip('/')
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 os.system("cp ~/opt/variable_test_run.py .")
 
-folder_list = open('folder_list_jan16', 'w')
-distance_list = np.arange(20, 300, 10)
-temp_list = np.arange(300, 400, 50)
+folder_list = open('folder_list_jan30', 'w')
+distance_list = np.arange(20, 350, 10)
+temp_list = np.arange(300, 450, 50)
 folder_name = ""
 for temp in temp_list:
     pre_folder_name = "T_"+str(temp)
@@ -47,7 +47,7 @@ for temp in temp_list:
         #     str(MGamma) +
         #     "'/g' fix_backbone_coeff.data")
         os.chdir("..")
-        os.system("run.py " + protein_name + "/ -o -n 1 -s 6")
+        os.system("run.py " + protein_name + "/ -o -n 2 -s 4")
         os.chdir("..")
 # n = 5
 # membrane_k = [1, 2, 3]
