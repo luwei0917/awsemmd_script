@@ -22,7 +22,7 @@ protein_name = args.template.strip('/')
 os.system("cp ~/opt/variable_test_run.py .")
 
 folder_list = open('folder_list_jan30', 'w')
-distance_list = np.arange(20, 350, 10)
+distance_list = np.arange(20, 350, 5)
 temp_list = np.arange(300, 450, 50)
 folder_name = ""
 for temp in temp_list:
