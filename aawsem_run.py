@@ -37,8 +37,9 @@ def lowestEnergy(protein_name):
 if(args.jan16):
     # folder_list = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
     # speical notes, T0782 is not run second run yet.
-    folder_list = ["T0792"]
-    cd("aawsemJan16")
+    # folder_list = ["T0792"]
+    folder_list = ["T0766"]
+    # cd("aawsemJan16")
     for protein_name in folder_list:
         cd(protein_name)
         lowestEnergy(protein_name=protein_name)
