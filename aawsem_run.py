@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import argparse
 import sys
@@ -41,9 +42,9 @@ if(args.jan16):
     folder_list = ["T0766"]
     # cd("aawsemJan16")
     for protein_name in folder_list:
-        cd(protein_name)
-        lowestEnergy(protein_name=protein_name)
-        move(protein_name=protein_name)
+        # cd(protein_name)
+        # lowestEnergy(protein_name=protein_name)
+        # move(protein_name=protein_name)
         do("run.py -n 20 -o "+protein_name+"\/")
         cd("..")
     cd("..")

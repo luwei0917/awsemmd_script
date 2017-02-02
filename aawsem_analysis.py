@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import argparse
 import sys
@@ -22,15 +23,28 @@ else:
     cd = os.chdir
 
 if(args.test):
-    name = "frag.mem"
-    name = "test"
-    with open(name) as f:
-        for i in range(4):
-            next(f)
-        for line in f:
-            # print(line)
-            pos, start, target_start, length, weight = line.split()
-            print(pos, start, target_start, length)
+    n = 20
+    # protein_name = "T0766"
+    protein_name = "T0778"
+    # os.chdir("simulation_iteration_1")
+    for i in range(n):
+        os.chdir(str(i))
+        os.system("cp ~/opt/AASEM/aawsem.slurm .")
+        os.system(
+            "sed -i.bak 's/PROTEIN/'" +
+            protein_name +
+            "'/g' aawsem.slurm")
+        os.system("sbatch aawsem.slurm")
+        os.chdir("..")
+    # name = "frag.mem"
+    # name = "test"
+    # with open(name) as f:
+    #     for i in range(4):
+    #         next(f)
+    #     for line in f:
+    #         # print(line)
+    #         pos, start, target_start, length, weight = line.split()
+    #         print(pos, start, target_start, length)
 
 
 if(args.move):
