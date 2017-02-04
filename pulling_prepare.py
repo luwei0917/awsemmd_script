@@ -22,6 +22,8 @@ parser.add_argument("-t", "--test", help="test ", action="store_true", default=F
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--distance", action="store_true", default=False)
 parser.add_argument("--replace", action="store_true", default=False)
+parser.add_argument("--make_metadata", action="store_true", default=False)
+parser.add_argument("-m", "--mode", type=int, default=1)
 args = parser.parse_args()
 
 
@@ -58,8 +60,22 @@ if(args.test):
     for i in range(40):
         print(i)
         cd(str(i))
-        extract_data()
+        do("cp ~/pulling/qo.slurm .")
+        do("sbatch qo.slurm")
+        # extract_data()
         cd("..")
+
+if(args.make_metadata):
+    kconstant = 1000   # double the k constant
+    temp = 350
+    q0 = 0.12
+    metadata = open("metadatafile", "w")
+    for i in range(40):
+        q = q0 + i*0.02
+        # target = "../simulation/350/" + str(i) + "/halfdata {} {} {:.2f}\n".format(temp, kconstant, q)
+        target = "../simulation/350/" + str(i) + "/data {} {} {:.2f}\n".format(temp, kconstant, q)
+        metadata.write(target)
+    metadata.close()
 
 if(args.replace):
     target = "2xov.in"
