@@ -31,12 +31,19 @@ else:
     cd = os.chdir
 
 if(args.test):
+    for i in range(20):
+        cd(str(i))
+        do("tail -n+3 energy.log | awk '{print $NF}' > etotal")
+        do("paste etotal qw > qw_etotal")
+        cd("..")
     with open("data", "w") as out:
-        out.write("step, qw, run\n")
+        out.write("step, qw, run, energy\n")
         for i in range(20):
-            with open(str(i)+"/qw") as f:
-                n = 0
+            print(i)
+            with open(str(i)+"/qw_etotal") as f:
+                step = 0
                 for line in f:
-                    n += 1
-                    data = line.strip()
-                    out.write(str(n)+", "+data+", run_"+str(i)+"\n")
+                    step += 1
+                    energy, qw = line.split()
+                    out.write("{}, {}, run_{}, {}\n".format(step, qw, i, energy))
+                    # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n")
