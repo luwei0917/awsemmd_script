@@ -5,12 +5,19 @@ library(gridExtra)
 # data <- read_csv("../../T0766/simulation_iteration_1/data")
 # data <- read_csv("../../T0778_single/simulation/data")
 # data <- read_csv("../../T0778/simulation_iteration_1/data")
-data <- read_csv("../../T0778/simulation/data")
+# data <- read_csv("../../T0778/simulation/data")
+data <- read_csv("/Users/weilu/Research/server/aawsem/aawsemJan16/T0766_single/simulation/data")
 ggplot(data) +
   aes(run, qw) +
   geom_boxplot()
 
 data_end <- data %>% filter(step > 7000)
+ggplot(data_end) +
+  aes(reorder(run, qw, FUN = median), qw) +
+  geom_boxplot() +
+  coord_flip()
+
+
 ggplot(data_end) +
   aes(reorder(run, qw, FUN = median), qw) +
   geom_boxplot() +
