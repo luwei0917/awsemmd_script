@@ -23,7 +23,7 @@ parser.add_argument("outname", nargs='?', help="output filename", default="test.
 parser.add_argument("-dpi", default=150, type=int, help="figure dpi")
 parser.add_argument("-x", default=1, type=int, help="x column number in f")
 parser.add_argument("-xmin", default=0, type=float, help="x axis lower limit")
-parser.add_argument("-xmax", default=250, type=float, help="x axis upper limit")
+parser.add_argument("-xmax", default=1, type=float, help="x axis upper limit")
 parser.add_argument("-y", default=2, type=int, help="y column number in f")
 parser.add_argument("-ymin", default=0, type=float, help="y axis lower limit")
 parser.add_argument("-ymax", default=1, type=float, help="y axis upper limit")

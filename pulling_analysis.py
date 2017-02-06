@@ -83,6 +83,8 @@ if(args.freeEnergy):
         arg = "-b 3 -e 4 -d 2 -v1 1 -v1n 30 -v2 2 -v2n 30 -f 1.7 -nsamples 2000"
     if(args.mode == 2):
         arg = "-b 3 -e 4 -d 2 -v1 1 -v1n 20 -v2 2 -v2n 20 -f 1.7 -nsamples 4000"
+    if(args.mode == 3):
+        arg = "-b 3 -e 4 -d 2 -v1 1 -v1n 20 -v2 2 -v2n 20 -f 0 -nsamples 4000"
     with open("freeEnergy.slurm", "w") as f:
         f.write(freeEnergy.format(arg))
 
