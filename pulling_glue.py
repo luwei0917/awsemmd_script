@@ -26,10 +26,7 @@ parser = argparse.ArgumentParser(description="This is my playground for current 
 # parser.add_argument("protein", help="the name of protein")
 # parser.add_argument("template", help="the name of template file")
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
-parser.add_argument("--pulling", action="store_true", default=False)
-parser.add_argument("--pulling2", action="store_true", default=False)
-parser.add_argument("--qnqc", action="store_true", default=False)
-parser.add_argument("--mutation", action="store_true", default=False)
+parser.add_argument("--plot", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--protein", default="2xov")
 parser.add_argument("--dimension", type=int, default=1)
@@ -42,3 +39,7 @@ if(args.debug):
 else:
     do = os.system
     cd = os.chdir
+
+
+if(args.plot):
+    do("plotcontour.py pmf-400.dat -xmax 1")

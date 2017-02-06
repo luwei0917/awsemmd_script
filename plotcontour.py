@@ -5,7 +5,7 @@ Generates contour plot from 3 columns of data.
 
 import sys
 import argparse
-
+import os
 import numpy as np
 from numpy.random import uniform
 
@@ -18,8 +18,8 @@ from scipy.interpolate import griddata
 from scipy.interpolate import interp2d
 
 parser = argparse.ArgumentParser(description='Plots pmf data.')
-parser.add_argument("filename", help="input filename")
-parser.add_argument("outname", help="output filename")
+parser.add_argument("filename", nargs='?', help="input filename", default="pmf-350.dat")
+parser.add_argument("outname", nargs='?', help="output filename", default="test.png")
 parser.add_argument("-dpi", default=150, type=int, help="figure dpi")
 parser.add_argument("-x", default=1, type=int, help="x column number in f")
 parser.add_argument("-xmin", default=0, type=float, help="x axis lower limit")
@@ -65,3 +65,4 @@ plt.title(args.title, y=1.02, fontsize = args.titlefontsize)
 #plt.axes().set_aspect('equal')
 #plt.axes().set_aspect('scaled')
 plt.savefig(args.outname, dpi=args.dpi, bbox_inches='tight')
+os.system("open " + args.outname)
