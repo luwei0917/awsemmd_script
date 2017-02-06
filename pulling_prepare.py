@@ -87,18 +87,30 @@ if(args.test):
         cd("..")
 
 if(args.summary):
-    with open("data", "w") as out:
-        out.write("step, qw, run, energy\n")
-        for i in range(40):
-            print(i)
-            with open(str(i)+"/halfdata") as f:
-                step = 0
-                for line in f:
-                    step += 1
-                    qn, qc, qw, energy = line.split()
-                    out.write("{}, {}, run_{}, {}\n".format(step, qw, i, energy))
-                    # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
-
+    if(args.mode == 1):
+        with open("data", "w") as out:
+            out.write("step, qw, run, energy\n")
+            for i in range(40):
+                print(i)
+                with open(str(i)+"/halfdata") as f:
+                    step = 0
+                    for line in f:
+                        step += 1
+                        qn, qc, qw, energy = line.split()
+                        out.write("{}, {}, run_{}, {}\n".format(step, qw, i, energy))
+                        # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
+    if(args.mode == 2):
+        with open("data", "w") as out:
+            out.write("step, qw, run, energy\n")
+            for i in range(40):
+                print(i)
+                with open(str(i)+"/halfdata") as f:
+                    step = 0
+                    for line in f:
+                        step += 1
+                        qn, qc, energy, qw = line.split()
+                        out.write("{}, {}, run_{}, {}\n".format(step, qw, i, energy))
+                        # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
 if(args.qnqc):
     if(args.mode == 1):
         n = 40
