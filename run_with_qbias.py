@@ -29,10 +29,11 @@ protein_name = args.template.strip('/')
 
 
 warm_up_steps = 2*10**6
-simulation_steps = 8*10**6
+simulation_steps = 6*10**6
 
 # temp_list = [400, 500]
-temp_list = [350]
+# temp_list = [350]
+temp_list = [300]
 n = 40
 
 config = open('config.py', 'w')

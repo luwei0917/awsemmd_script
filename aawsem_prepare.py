@@ -33,7 +33,8 @@ else:
 if(args.test):
     for i in range(20):
         cd(str(i))
-        do("tail -n+3 energy.log | awk '{print $NF}' > etotal")
+        # do("tail -n+3 energy.log | awk '{print $NF - $13}' > etotal")
+        do("tail -n+3 energy.log | awk '{print $13}' > etotal")
         do("paste etotal qw > qw_etotal")
         cd("..")
     with open("data", "w") as out:

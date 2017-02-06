@@ -24,8 +24,8 @@ else:
 
 if(args.test):
     n = 20
-    # protein_name = "T0766"
-    protein_name = "T0778"
+    protein_name = "T0766"
+    # protein_name = "T0778"
     # os.chdir("simulation_iteration_1")
     for i in range(n):
         os.chdir(str(i))
