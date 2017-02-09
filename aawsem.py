@@ -377,14 +377,15 @@ if(args.jan03):
 if(args.dec25):
     folder_list = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
     # folder_list = ["T0815", "T0778"]
-    os.system("mkdir -p aawsemDec25")
-    os.chdir("aawsemDec25")
+    name = "aawsemFeb09"
+    os.system("mkdir -p{}".format(name))
+    os.chdir("{}".format(name))
     for protein_name in folder_list:
         os.system("mkdir -p "+protein_name)
         os.chdir(protein_name)
         os.system("mkdir -p "+protein_name)
         os.chdir(protein_name)
-        os.system("cp ~/Research/project_AAWSEM/aasem/_output/"+protein_name+".fasta .")
+        os.system("cp ~/opt/AAWSEM/"+protein_name+".fasta .")
         os.system("create_project.py " + protein_name)
         os.chdir("../..")
 

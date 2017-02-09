@@ -79,12 +79,28 @@ srun python2 ~/opt/pulling_compute-pmf.py {}
 """
 
 if(args.freeEnergy):
+    arg = ""
     if(args.mode == 1):
         arg = "-b 3 -e 4 -d 2 -v1 1 -v1n 30 -v2 2 -v2n 30 -f 1.7 -nsamples 2000"
     if(args.mode == 2):
         arg = "-b 3 -e 4 -d 2 -v1 1 -v1n 20 -v2 2 -v2n 20 -f 1.7 -nsamples 4000"
     if(args.mode == 3):
         arg = "-b 3 -e 4 -d 2 -v1 1 -v1n 20 -v2 2 -v2n 20 -f 0 -nsamples 4000"
+    if(args.mode == 4):
+        folder_name = "wham"
+        cd(folder_name)
+        do("rm all_wham.dat")
+        for i in range(40):
+            do("cat ../{}/halfdata >> all_wham.dat".format(i))
+        os.system("awk '{print $3}' all_wham.dat > Qw_total")
+        os.system("awk '{print $3}' all_wham.dat > p_total")
+        os.system("awk '{print $1}' all_wham.dat > qn_total")
+        os.system("awk '{print $2}' all_wham.dat > qc_total")
+        os.system("awk '{print $4}' all_wham.dat > e_total")
+        os.system("cp ~/opt/wham_analysis/*.m .")
+        cd("..")
+        # os.system("~/opt/script/wham/fused_calc_cv.sc {} top7 50 400 350 450 5 50 100 0 0.98".format(folder_name))
+
     with open("freeEnergy.slurm", "w") as f:
         f.write(freeEnergy.format(arg))
 
