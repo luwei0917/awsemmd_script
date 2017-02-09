@@ -18,3 +18,11 @@ ggplot(data) +
 ggplot(data) +
   aes(x) +
   geom_histogram()
+
+ggplot(data) +
+  aes(qc) +
+  geom_histogram()
+
+ggplot(data) +
+  aes(1:224000,x) +
+  geom_point()
