@@ -1,11 +1,11 @@
 %pdb_array= {'Abeta42_2' 'Abeta420' 'Abeta40_2'
-pdb_array= {'2xov'};
+pdb_array= {'q30'};
 %sim_labels = [4 4 4];
 sim_labels = [12];
 
 % what data to load
-q_name={  'qn_total' ,'qc_total'};
-T=250;
+q_name={  'qw_ga_total' ,'qw_total'};
+T=300;
 %xy_limit=1; % whose range to use for plotting, 1 or 2?
 
 n_contour=20; % # of contour lines
@@ -36,7 +36,7 @@ for i_label=1:length(sim_labels)
     %load pmf file and calculate pi_sample
     T_i=T; T=T_i;
     filename = sprintf('%s/p_total',path); q = load(filename);
-    filename=sprintf('%s/2xov_%d_pmf.dat',path, T_i);
+    filename=sprintf('%s/2lhd_%d_pmf.dat',path, T_i);
     FF=load(filename); qx=FF(:,1);  Fy = FF(:,2); nbin=length(qx);
     dq=qx(2)-qx(1); qmin=qx(1)-dq/2; qmax= qx(nbin)+dq/2;
     Py=exp(-Fy/(0.001987*T_i)); P_norm = sum(Py); Py=Py/P_norm;
