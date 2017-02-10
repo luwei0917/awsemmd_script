@@ -111,19 +111,45 @@ if(args.summary):
                         qn, qc, energy, qw = line.split()
                         out.write("{}, {}, run_{}, {}\n".format(step, qw, i, energy))
                         # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
+    if(args.mode == 3):
+        cd("simulation")
+        with open("data", "w") as out:
+            out.write("step, qw, run\n")
+            for i in range(20):
+                print(i)
+                with open(str(i)+"/wham.dat") as f:
+                    next(f)
+                    for line in f:
+                        step, qw, *rest = line.split()
+                        out.write("{}, {}, run_{}\n".format(step, qw, i))
+                        # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
+    if(args.mode == 4):
+        with open("data", "w") as out:
+            out.write("step, qw, run, energy\n")
+            for i in range(20):
+                print(i)
+                cd(str(i))
+                do("paste qn qc wham.dat | tail -n+2 > data")
+                cd("..")
+                with open(str(i)+"/data") as f:
+                    for line in f:
+                        qn, qc, step, qw, *rest, energy = line.split()
+                        out.write("{}, {}, {}, {}, run_{}, {}\n".format(step, qn, qc, qw, i, energy))
+                        # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
 if(args.qnqc):
     if(args.mode == 1):
         n = 40
-        temp = 350
+        temp_list = [300,350]
         cwd = os.getcwd()
-        for i in range(n):
-            cd("simulation/{}/{}".format(temp, i))
-            do("cp ~/opt/pulling/qnqc.slurm .")
-            do("sbatch qnqc.slurm")
-            # with open("server_run.slurm", "w") as f:
-            #     f.write(server_run.format("read_dump_file.py"))
-            # do("sbatch server_run.slurm")
-            cd(cwd)
+        for temp in temp_list:
+            for i in range(n):
+                cd("simulation/{}/{}".format(temp, i))
+                do("cp ~/opt/pulling/qnqc.slurm .")
+                do("sbatch qnqc.slurm")
+                # with open("server_run.slurm", "w") as f:
+                #     f.write(server_run.format("read_dump_file.py"))
+                # do("sbatch server_run.slurm")
+                cd(cwd)
     if(args.mode == 2):
         array = []
         cwd = os.getcwd()
@@ -141,7 +167,17 @@ if(args.qnqc):
             os.system("cp ~/opt/pulling/qnqc.slurm .")
             os.system("sbatch qnqc.slurm")
             os.chdir(cwd)
-
+    if(args.mode == 3):
+        n = 20
+        cwd = os.getcwd()
+        for i in range(n):
+            cd("simulation/{}".format(i))
+            do("cp ~/opt/pulling/qnqc.slurm .")
+            do("sbatch qnqc.slurm")
+            # with open("server_run.slurm", "w") as f:
+            #     f.write(server_run.format("read_dump_file.py"))
+            # do("sbatch server_run.slurm")
+            cd(cwd)
 if(args.data):
     if(args.mode == 4):
         n = 40

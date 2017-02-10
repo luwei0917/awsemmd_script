@@ -43,3 +43,18 @@ else:
 
 if(args.plot):
     do("plotcontour.py pmf-400.dat -xmax 1")
+
+
+if(args.test):
+    force_list = [1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5]
+    for force in force_list:
+        do("mkdir {}".format(force))
+        cd("{}".format(force))
+        do("cp ../freeEnergy.slurm .")
+        do("cp ../metadatafile .")
+        do(
+            "sed -i.bak 's/FORCE/" +
+            str(force) +
+            "/g' freeEnergy.slurm")
+        do("sbatch freeEnergy.slurm")
+        cd("..")
