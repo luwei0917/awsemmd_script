@@ -1,0 +1,11 @@
+--2017-02-12 20:29:19--  http://www.compbio.dundee.ac.uk/jpred4/results/jp_Ow0ZI7r/jp_Ow0ZI7r.jnet
+Resolving www.compbio.dundee.ac.uk... 134.36.67.203
+Connecting to www.compbio.dundee.ac.uk|134.36.67.203|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 5146 (5.0K) [text/plain]
+Saving to: ‘jp_Ow0ZI7r.jnet’
+
+     0K .....                                                 100% 1.25M=0.004s
+
+2017-02-12 20:29:19 (1.25 MB/s) - ‘jp_Ow0ZI7r.jnet’ saved [5146/5146]
+

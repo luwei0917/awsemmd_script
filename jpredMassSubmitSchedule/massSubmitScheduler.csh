@@ -45,7 +45,7 @@ echo "NOTE: multiple controlled individual sequence submission through\nthe JPre
 echo "${BLACK}"
 echo "${NC}"
 
-set maxNJobs=3 # IMPORTANT: for tests - use maxNJobs between 3 and
+set maxNJobs=10 # IMPORTANT: for tests - use maxNJobs between 3 and
 	       # 10. This would allow you to check all the
 	       # functionality, you will see if there are any errors,
 	       # etc. Once tested, use maxNJobs between 10 and 30 for
