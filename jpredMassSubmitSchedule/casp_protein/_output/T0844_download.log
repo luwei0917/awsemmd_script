@@ -1,0 +1,11 @@
+--2017-02-12 20:31:36--  http://www.compbio.dundee.ac.uk/jpred4/results/jp_AXM4ybp/jp_AXM4ybp.jnet
+Resolving www.compbio.dundee.ac.uk... 134.36.67.203
+Connecting to www.compbio.dundee.ac.uk|134.36.67.203|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 5479 (5.4K) [text/plain]
+Saving to: ‘jp_AXM4ybp.jnet’
+
+     0K .....                                                 100% 17.5M=0s
+
+2017-02-12 20:31:36 (17.5 MB/s) - ‘jp_AXM4ybp.jnet’ saved [5479/5479]
+

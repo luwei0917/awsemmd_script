@@ -1,0 +1,11 @@
+--2017-02-12 20:31:38--  http://www.compbio.dundee.ac.uk/jpred4/results/jp_ltmj_Z2/jp_ltmj_Z2.jnet
+Resolving www.compbio.dundee.ac.uk... 134.36.67.203
+Connecting to www.compbio.dundee.ac.uk|134.36.67.203|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 5516 (5.4K) [text/plain]
+Saving to: ‘jp_ltmj_Z2.jnet’
+
+     0K .....                                                 100% 27.5K=0.2s
+
+2017-02-12 20:31:39 (27.5 KB/s) - ‘jp_ltmj_Z2.jnet’ saved [5516/5516]
+

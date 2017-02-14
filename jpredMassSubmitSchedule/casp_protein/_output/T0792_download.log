@@ -1,0 +1,11 @@
+--2017-02-12 20:23:29--  http://www.compbio.dundee.ac.uk/jpred4/results/jp_LICev4g/jp_LICev4g.jnet
+Resolving www.compbio.dundee.ac.uk... 134.36.67.203
+Connecting to www.compbio.dundee.ac.uk|134.36.67.203|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 3074 (3.0K) [text/plain]
+Saving to: ‘jp_LICev4g.jnet’
+
+     0K ...                                                   100% 1.49M=0.002s
+
+2017-02-12 20:23:29 (1.49 MB/s) - ‘jp_LICev4g.jnet’ saved [3074/3074]
+

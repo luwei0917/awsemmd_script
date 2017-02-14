@@ -1,0 +1,11 @@
+--2017-02-12 20:23:24--  http://www.compbio.dundee.ac.uk/jpred4/results/jp_NPxGiDM/jp_NPxGiDM.jnet
+Resolving www.compbio.dundee.ac.uk... 134.36.67.203
+Connecting to www.compbio.dundee.ac.uk|134.36.67.203|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 5109 (5.0K) [text/plain]
+Saving to: ‘jp_NPxGiDM.jnet’
+
+     0K ....                                                  100%  521K=0.01s
+
+2017-02-12 20:23:24 (521 KB/s) - ‘jp_NPxGiDM.jnet’ saved [5109/5109]
+
