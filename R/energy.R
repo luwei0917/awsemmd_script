@@ -59,9 +59,17 @@ ggplot(d2) +
   ylim(-1000, -500)
 
 
+ggplot(d2%>% filter(Step > 7000)) +
+  aes(energy, x = "1") +
+  geom_boxplot() +
+  geom_boxplot(data = d10 %>% filter(Step > 7000), aes(energy, x = "1"), color = "Red", alpha = 0.1) +
+  facet_wrap(~part, scales="free") + 
+  xlab("Red is run 10, black is run 13")
+
+ggsave("~/Desktop/aawsem/each_energy.png")
 ggplot(d2) +
   aes(y=energy) +
-  geom_boxplot(y = energy) +
-  geom_boxplot(data = d10, aes(y=energy, x= part), color = "Red", alpha = 0.1) +
+  geom_boxplot() +
+  geom_boxplot(data = d10, aes(y = energy), color = "Red", alpha = 0.1) +
   coord_flip() +
   facet_wrap(~part)
