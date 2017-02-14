@@ -125,16 +125,17 @@ if(args.summary):
                         # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
     if(args.mode == 4):
         with open("data", "w") as out:
-            out.write("step, qw, run, energy\n")
+            out.write("step, qn, qc, dis, qw, run, energy\n")
             for i in range(20):
                 print(i)
                 cd(str(i))
-                do("paste qn qc wham.dat | tail -n+2 > data")
+                do("awk '{print $2}' addforce.dat > dis")
+                do("paste qn qc dis wham.dat| tail -n+2 > data")
                 cd("..")
                 with open(str(i)+"/data") as f:
                     for line in f:
-                        qn, qc, step, qw, *rest, energy = line.split()
-                        out.write("{}, {}, {}, {}, run_{}, {}\n".format(step, qn, qc, qw, i, energy))
+                        qn, qc, dis, step, qw, *rest, energy = line.split()
+                        out.write("{}, {}, {}, {}, {}, run_{}, {}\n".format(step, qn, qc, dis, qw, i, energy))
                         # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
 if(args.qnqc):
     if(args.mode == 1):
@@ -184,9 +185,9 @@ if(args.data):
         cwd = os.getcwd()
         for i in range(n):
             print(str(i))
-            cd("simulation/300/{}".format(i))
+            cd("simulation/350/{}".format(i))
             do("awk '{print $2}' wham.dat > qw")
-            do("awk '{print $6}' wham.dat > energy")
+            do("awk '{print $5}' wham.dat > energy")
             do("paste qn qc qw energy | tail -n 4000 > halfdata")
             cd(cwd)
     if(args.mode == 3):
@@ -239,13 +240,16 @@ if(args.data):
 if(args.make_metadata):
     if(args.mode == 4):
         kconstant = 400   # double the k constant
-        temp = 350
+
         q0 = 0.12
         metadata = open("metadatafile", "w")
         for i in range(40):
             q = q0 + i*0.02
+            temp = 300
             target = "../simulation/300/" + str(i) + "/halfdata {} {} {:.2f}\n".format(temp, kconstant, q)
-            # target = "../simulation/350/" + str(i) + "/data {} {} {:.2f}\n".format(temp, kconstant, q)
+            # metadata.write(target)
+            temp = 350
+            target = "../simulation/350/" + str(i) + "/halfdata {} {} {:.2f}\n".format(temp, kconstant, q)
             metadata.write(target)
         metadata.close()
     if(args.mode == 1):
