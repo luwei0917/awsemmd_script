@@ -16,24 +16,35 @@ parser = argparse.ArgumentParser(
     run simulation")
 
 parser.add_argument("template", help="the name of template file")
+parser.add_argument("-d", "--debug", action="store_true", default=False)
 args = parser.parse_args()
 protein_name = args.template.strip('/')
+
+if(args.debug):
+    do = print
+    cd = print
+else:
+    do = os.system
+    cd = os.chdir
+
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 os.system("cp ~/opt/variable_test_run.py .")
 
-folder_list = open('folder_list_jan30', 'w')
+folder_list = open('folder_list_feb14', 'w')
 distance_list = np.arange(20, 350, 5)
-temp_list = np.arange(300, 450, 50)
+temp_list = np.arange(250, 400, 50)
 folder_name = ""
+cwd = os.getcwd()
+os.system("mkdir -p simulation")
 for temp in temp_list:
     pre_folder_name = "T_"+str(temp)
     for distance in distance_list:
         folder_name = pre_folder_name + "_D_"+str(distance)
         folder_list.write(folder_name+"\n")
-        os.system("mkdir -p " + folder_name)
-        os.system("cp -r "+protein_name+" "+folder_name+"/")
+        os.system("mkdir -p simulation/" + folder_name)
+        os.system("cp -r "+protein_name+"/* simulation/"+folder_name+"/")
+        os.chdir("simulation")
         os.chdir(folder_name)
-        os.chdir(protein_name)
         os.system(
             "sed -i.bak 's/TEMPERATURE/'" +
             str(temp) +
@@ -46,9 +57,10 @@ for temp in temp_list:
         #     "sed -i.bak 's/MGamma/'" +
         #     str(MGamma) +
         #     "'/g' fix_backbone_coeff.data")
-        os.chdir("..")
-        os.system("run.py " + protein_name + "/ -o -n 2 -s 4")
-        os.chdir("..")
+        do("run.py " + protein_name + " -o -s 6 -i")
+        # os.system("run.py " + protein_name + "/ -o -n 1 -s 6 -i")
+        cd(cwd)
+
 # n = 5
 # membrane_k = [1, 2, 3]
 # rg_cylindrical_spring_constants = [1, 0.1]

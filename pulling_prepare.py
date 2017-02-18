@@ -26,6 +26,7 @@ parser.add_argument("--summary", action="store_true", default=False)
 parser.add_argument("--make_metadata", action="store_true", default=False)
 parser.add_argument("--qnqc", action="store_true", default=False)
 parser.add_argument("--data", action="store_true", default=False)
+parser.add_argument("--continue_run", action="store_true", default=False)
 parser.add_argument("-m", "--mode", type=int, default=1)
 parser.add_argument("-s", "--switch", type=int, default=1)
 args = parser.parse_args()
@@ -69,7 +70,7 @@ server_run = """\
 #SBATCH --partition=ctbp-common
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=1G
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --mail-user=luwei0917@gmail.com
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
@@ -81,9 +82,10 @@ if(args.test):
     for i in range(40):
         print(i)
         cd(str(i))
+        do("paste qw energy | tail -n 4000 > q_e")
         # do("cp ~/opt/pulling/qo.slurm .")
         # do("sbatch qo.slurm")
-        extract_data()
+        # extract_data()
         cd("..")
 
 if(args.summary):
@@ -130,17 +132,35 @@ if(args.summary):
                 print(i)
                 cd(str(i))
                 do("awk '{print $2}' addforce.dat > dis")
-                do("paste qn qc dis wham.dat| tail -n+2 > data")
+                do("paste qn qc dis wham.dat| tail -n+2 | head -n 6000 > data")
+                # do("paste qn qc dis wham.dat| tail -n+2 > data")
                 cd("..")
                 with open(str(i)+"/data") as f:
                     for line in f:
                         qn, qc, dis, step, qw, *rest, energy = line.split()
                         out.write("{}, {}, {}, {}, {}, run_{}, {}\n".format(step, qn, qc, dis, qw, i, energy))
                         # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
+    if(args.mode == 5):
+        with open("data", "w") as out:
+            out.write("i, step, qw, target, run, energy\n")
+            q = 0.1
+
+            for i in range(40):
+                print(i)
+                q += 0.02
+                count = i*6000
+                with open(str(i)+"/wham.dat") as f:
+                    next(f)
+                    for line in f:
+                        count += 1
+                        step, qw, *rest, energy = line.split()
+                        out.write("{}, {}, {}, {}, {}, {}\n".format(count, step, qw, q, i, energy))
+                        # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
 if(args.qnqc):
     if(args.mode == 1):
         n = 40
-        temp_list = [300,350]
+        # temp_list = [300,350]
+        temp_list = [250,275, 325]
         cwd = os.getcwd()
         for temp in temp_list:
             for i in range(n):
@@ -158,7 +178,7 @@ if(args.qnqc):
         with open('folder_list', 'r') as ins:
             for line in ins:
                 target = line.strip('\n')
-                t1 = "simulation/" + target + "/simulation/0"
+                t1 = "simulation/" + target + "/"
                 array.append(t1)
                 # t2 = "simulation/" + target + "/simulation/1"
                 # array.append(t2)
@@ -172,7 +192,8 @@ if(args.qnqc):
         n = 20
         cwd = os.getcwd()
         for i in range(n):
-            cd("simulation/{}".format(i))
+            # cd("simulation/{}".format(i))
+            cd("{}".format(i))
             do("cp ~/opt/pulling/qnqc.slurm .")
             do("sbatch qnqc.slurm")
             # with open("server_run.slurm", "w") as f:
@@ -192,19 +213,21 @@ if(args.data):
             cd(cwd)
     if(args.mode == 3):
         n = 40
-        temp = 350
+        temp_list = [250, 275, 300, 325, 350]
         cwd = os.getcwd()
-        for i in range(n):
-            print(str(i))
-            cd("simulation/{}/{}".format(temp, i))
-            do("head -n 5800 wham.dat | tail -n 4000 | awk '{print $2}' > qw")
-            do("head -n 5800 wham.dat | tail -n 4000 | awk '{print $5}' > e")
-            do("head -n 5800 qn | tail -n 4000 > qn_half")
-            do("head -n 5800 qc | tail -n 4000 > qc_half")
-            # do("paste qn qc | head -n 5800 | tail -n 4000 > qnqc")
-
-            do("paste qn_half qc_half qw e > halfdata")
-            cd(cwd)
+        for temp in temp_list:
+            for i in range(n):
+                print(str(i))
+                cd("simulation/{}/{}".format(temp, i))
+                do("awk '{print $2}' wham.dat > qw")
+                do("awk '{print $5}' wham.dat > energy")
+                do("paste qn qc qw energy | tail -n 4000 > halfdata")
+                # do("head -n 5800 wham.dat | tail -n 4000 | awk '{print $2}' > qw")
+                # do("head -n 5800 wham.dat | tail -n 4000 | awk '{print $5}' > e")
+                # do("head -n 5800 qn | tail -n 4000 > qn_half")
+                # do("head -n 5800 qc | tail -n 4000 > qc_half")
+                # do("paste qn qc | head -n 5800 | tail -n 4000 > qnqc")
+                cd(cwd)
     if(args.mode == 1):
         n = 40
         cwd = os.getcwd()
@@ -220,17 +243,19 @@ if(args.data):
         with open('folder_list', 'r') as ins:
             for line in ins:
                 target = line.strip('\n')
-                t1 = "simulation/" + target + "/simulation/0"
+                t1 = "simulation/" + target + "/"
                 array.append(t1)
                 # t2 = "simulation/" + target + "/simulation/1"
                 # array.append(t2)
         for i in array:
             os.chdir(i)
             os.system("pwd")
-            # do("tail -n+3 energy.log | awk '{print $NF}' > energy")
-            do("sed '/^#/ d' x.colvars.traj | awk 'NR % 10 == 1'  | awk '{print $2}' > x")
-            do("paste qn qc x energy | tail -n 4000 > halfdata")
-            do("paste qn qc x energy -d ',' | tail -n 4000 > test_data")
+            do("tail -n+3 energy.log | awk '{print $NF}' > energy")
+            do("sed '/^#/ d' x.colvars.traj | awk '{print $2}' > x")
+            do("awk '{print $2}' wham.dat > qw")
+            # do("sed '/^#/ d' x.colvars.traj | awk 'NR % 10 == 1'  | awk '{print $2}' > x")
+            do("paste qn qc x energy qw| tail -n 4000 > halfdata")
+            do("paste qn qc x energy qw -d ',' | tail -n 4000 > test_data")
             # do("sed -i '1iqn,qc,x,energy' test_data")
 
             os.chdir(cwd)
@@ -239,7 +264,7 @@ if(args.data):
 
 if(args.make_metadata):
     if(args.mode == 4):
-        kconstant = 400   # double the k constant
+        kconstant = 800   # double the k constant
 
         q0 = 0.12
         metadata = open("metadatafile", "w")
@@ -247,7 +272,7 @@ if(args.make_metadata):
             q = q0 + i*0.02
             temp = 300
             target = "../simulation/300/" + str(i) + "/halfdata {} {} {:.2f}\n".format(temp, kconstant, q)
-            # metadata.write(target)
+            metadata.write(target)
             temp = 350
             target = "../simulation/350/" + str(i) + "/halfdata {} {} {:.2f}\n".format(temp, kconstant, q)
             metadata.write(target)
@@ -272,7 +297,8 @@ if(args.make_metadata):
                     temp = target.split("_")[1]
                     x = target.split("_")[3]
                     # print(temp)
-                    t1 = "/scratch/wl45/project/freeEnergy_2xov/pullingDistance/simulation/" + target + "/simulation/0/halfdata {} {} {}\n".format(temp, kconstant, x)
+                    t1 = "/scratch/wl45/project/freeEnergy_2xov/pullingDistance/complete0.02/simulation/" + target + "/halfdata {} {} {}\n".format(temp, kconstant, x)
+                    # t1 = "/scratch/wl45/project/freeEnergy_2xov/pullingDistance/simulation/" + target + "/simulation/0/halfdata {} {} {}\n".format(temp, kconstant, x)
                     metadata.write(t1)
                     # elif(args.mode == 2):
                     # t2 = "/scratch/wl45/freeEnergy_2xov/pullingDistance/simulation/" + target + "/simulation/1/halfdata {} {} {}\n".format(temp, kconstant, x)
@@ -301,3 +327,33 @@ if(args.replace):
 
 if(args.distance):
     do("read_dump_file.py")
+
+
+if(args.continue_run):
+    folder_name = "continue_simulation_2"
+    do("mkdir {}".format(folder_name))
+    # do("mkdir continue_simulation")
+    cd(folder_name)
+    n = 20
+    simulation_steps = 6*1000*1000
+    protein_name = "2xov"
+    for i in range(n):
+        do("mkdir {}".format(i))
+        cd(str(i))
+        do("cp -r ../../2xov/* .")
+        do("cp ../../continue_simulation/{0}/restart.12000000 .".format(i))
+        do("cp ~/opt/pulling/2xov_continue_run.in 2xov.in")
+        do(
+            "sed -i.bak 's/START_FROM/'" +
+            "12000000" +
+            "'/g' "+protein_name+".in")
+        seed(datetime.now())
+        do(  # replace RANDOM with a radnom number
+            "sed -i.bak 's/RANDOM/'" +
+            str(randint(1, 10**6)) +
+            "'/g' "+protein_name+".in")
+        do(  # replace SIMULATION_STEPS with specific steps
+            "sed -i.bak 's/SIMULATION_STEPS/'" +
+            str(simulation_steps) +
+            "'/g' "+protein_name+".in")
+        cd("..")

@@ -12,6 +12,7 @@ parser.add_argument("--jan08", help="Run code on Jan 08 ", action="store_true", 
 parser.add_argument("--jan12", action="store_true", default=False)
 parser.add_argument("--jan15", action="store_true", default=False)
 parser.add_argument("--jan16", action="store_true", default=False)
+parser.add_argument("--feb15", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 args = parser.parse_args()
 
@@ -34,6 +35,20 @@ def lowestEnergy(protein_name):
     do("lowest_energy.py {}".format(protein_name))
     do("python2 ~/opt/LammpsPDBToCoordinates.py global_lowest_energy v1")
     do("python2 ~/opt/script/CoordinatesToWorkLammpsDataFile.py v1.coord data.v1 -b")
+
+
+if(args.feb15):
+    # folder_list = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
+    # speical notes, T0782 is not run second run yet.
+    # folder_list = ["T0792"]
+    folder_list = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
+    cd("aawsemFeb15")
+    for protein_name in folder_list:
+        cd(protein_name)
+        do("run.py -n 20 -o "+protein_name+"\/")
+        cd("..")
+    cd("..")
+
 
 if(args.jan16):
     # folder_list = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]

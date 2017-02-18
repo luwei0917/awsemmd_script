@@ -32,9 +32,17 @@ warm_up_steps = 2*10**6
 simulation_steps = 6*10**6
 
 # temp_list = [400, 500]
-temp_list = [350]
+temp_list = [250, 275, 325]
 # temp_list = [300]
 n = 40
+
+if(platform.system() == 'Darwin'):
+    print("Are you sure?")
+    exit()
+elif(platform.system() == 'Linux'):
+    pass
+else:
+    print("system unkown")
 
 config = open('config.py', 'w')
 config.write("protein_name = '%s'\nnumber_of_run = %d\nsimulation_steps = %d\n\

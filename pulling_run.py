@@ -43,30 +43,35 @@ else:
     do = os.system
     cd = os.chdir
 
-
-def test():
-    # folder = "T_300_D_130"
-    with open("folder_list") as ins:
-        for line in ins:
-            target = line.strip('\n')
-            cd(target)
-            name_list = ["a206g", "l155a"]
-            for name in name_list:
-                for i in range(2):
-                    my_from = "simulation/{0}".format(str(i))
-                    my_to = name
-                    cmd = "rsync -a --exclude='restart.*' --exclude='slurm-*' --exclude='movie*' --exclude='q*' --exclude='x.*' {} {}".format(my_from, my_to)
-                    do(cmd)
-                    cd(name+"/{0}".format(str(i)))
-                    do("cp ~/opt/pulling/2xov_{}_rerun.in 2xov_rerun.in".format(name))
-                    do("cp ~/opt/pulling/2xov_{}.seq .".format(name))
-                    do("cp ~/opt/pulling/rerun.slurm .")
-                    cmd = "sbatch rerun.slurm"
-                    do(cmd)
-                    cd("../..")
-            cd("..")
-    # script = "tail -n+2 cv-200-400-10.dat | sort -r -k 2 | head -n1"
-    # result = subprocess.check_output(script, shell=True).decode("utf-8").split()[0]
-    # print(result)
 if(args.test):
-    test()
+    n = 20
+    for i in range(n):
+        cd(str(i))
+        do("run.py -i 2xov -o")
+        cd("..")
+# def test():
+#     # folder = "T_300_D_130"
+#     with open("folder_list") as ins:
+#         for line in ins:
+#             target = line.strip('\n')
+#             cd(target)
+#             name_list = ["a206g", "l155a"]
+#             for name in name_list:
+#                 for i in range(2):
+#                     my_from = "simulation/{0}".format(str(i))
+#                     my_to = name
+#                     cmd = "rsync -a --exclude='restart.*' --exclude='slurm-*' --exclude='movie*' --exclude='q*' --exclude='x.*' {} {}".format(my_from, my_to)
+#                     do(cmd)
+#                     cd(name+"/{0}".format(str(i)))
+#                     do("cp ~/opt/pulling/2xov_{}_rerun.in 2xov_rerun.in".format(name))
+#                     do("cp ~/opt/pulling/2xov_{}.seq .".format(name))
+#                     do("cp ~/opt/pulling/rerun.slurm .")
+#                     cmd = "sbatch rerun.slurm"
+#                     do(cmd)
+#                     cd("../..")
+#             cd("..")
+#     # script = "tail -n+2 cv-200-400-10.dat | sort -r -k 2 | head -n1"
+#     # result = subprocess.check_output(script, shell=True).decode("utf-8").split()[0]
+#     # print(result)
+# if(args.test):
+#     test()
