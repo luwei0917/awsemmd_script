@@ -100,7 +100,8 @@ if(args.freeEnergy):
         os.system("cp ~/opt/wham_analysis/*.m .")
         cd("..")
         # os.system("~/opt/script/wham/fused_calc_cv.sc {} top7 50 400 350 450 5 50 100 0 0.98".format(folder_name))
-
+    if(args.mode == 5):
+        arg = "-b 3 -e 4 -d 1 -v1 3 -v1n 30 -f FORCE -nsamples 4000"
     with open("freeEnergy.slurm", "w") as f:
         f.write(freeEnergy.format(arg))
 

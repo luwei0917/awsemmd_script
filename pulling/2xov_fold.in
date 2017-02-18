@@ -22,7 +22,7 @@ bond_style harmonic
 
 pair_style vexcluded 2 3.5 3.5
 
-read_restart restart.START_FROM
+read_restart restart.7000000
 
 pair_coeff * * 0.0
 pair_coeff 1 1 20.0 3.5 4.5
@@ -46,20 +46,15 @@ group		c_end id 541 542 543
 
 
 thermo 1000
-velocity	all create 300.0 RANDOM
+velocity	all create 600.0 RANDOM
 
 fix               1 all nve
-fix               2 all langevin 300 300 1000.0 RANDOM
+fix               2 all langevin 600 300 1000.0 RANDOM
 fix     radialconstraint all spring/rg/cylindrical 0.01 0.0# NULL means use the starting configuration to define the radius, otherwise specify in Angstroms
 fix		  4 alpha_carbons backbone beta_atoms oxygens fix_backbone_coeff.data 2xov.seq
 
 
 variable    step equal step
-variable F_c_end_added equal step*-1e-7
-variable F_n_end_added equal step*1e-7
-
-fix 5 c_end addforce v_F_c_end_added 0 0
-fix 7 n_end addforce v_F_n_end_added 0 0
 
 
 ###################################################################
@@ -102,15 +97,6 @@ variable E_total equal v_E_P+v_E_K
 
 
 
-variable F_energy equal f_5
-variable F_x equal f_5[1]
-variable F_y equal f_5[2]
-variable F_z equal f_5[3]
-variable dis equal x[2]-x[542]
-
-fix pulloneside all print 1000 "${step} ${dis} ${F_c_end_added}  ${F_x} ${F_y} ${F_z} " file addforce.dat screen no title "Steps Distance addedFroce ForceX ForceY ForceZ"
-
-
 
 dump		1 all atom 1000 dump.lammpstrj
 dump_modify	1 sort id
@@ -118,5 +104,6 @@ dump_modify	1 sort id
 fix energy all print 1000 "${step} ${E_chain} ${E_shake} ${E_chi} ${E_rama} ${E_excluded} ${E_dssp} ${E_pap} ${E_water} ${E_burial} ${E_helix} ${E_amhgo} ${E_fmem} ${E_vecFM} ${E_membrane} ${E_ssb}  ${E_P} ${E_bond} ${E_excl}" file energy.dat screen no title "Step    Chain           Shake           Chi             Rama            Excluded        DSSP            P_AP            Water           Burial          Helix           AMH-Go       Frag_Mem        Vec_FM          Membrane        SSB          VTotal      Ebond     Epair"
 fix         	wham all print 1000 "${step}  ${qw} ${rg}  ${tc} ${E_P}" file wham.dat screen no title "# timestep	qw       rg      tc    energy"
 
+reset_timestep  0
 restart         200000 restart
 run		SIMULATION_STEPS

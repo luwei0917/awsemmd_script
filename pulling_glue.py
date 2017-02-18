@@ -42,11 +42,12 @@ else:
 
 
 if(args.plot):
-    do("plotcontour.py pmf-400.dat -xmax 1")
+    do("plotcontour.py pmf-200 -xmax 0.8")
 
 
 if(args.test):
-    force_list = [1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5]
+    # force_list = [1.0, 1.2, 1.4, 1.6, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5]
+    force_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     for force in force_list:
         do("mkdir {}".format(force))
         cd("{}".format(force))
