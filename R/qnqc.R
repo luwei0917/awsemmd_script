@@ -3,6 +3,8 @@ library(gridExtra)
 library(stringr)
 ggsave("~/Desktop/feb14/force_dis_all.png")
 ggsave("~/Desktop/feb14/force_dis.png", width = 20, height = 10)
+ggsave("~/Desktop/feb14/force_dis_all.png", width = 20, height = 10)
+ggsave("~/Desktop/feb19/unfolded.png")
 # setwd("/Users/weilu/Research/server/project/freeEnergy_2xov/qValue_v2/simulation/350")
 # setwd("/Users/weilu/Research/server/project/freeEnergy_2xov/pullingDistance/simulation")
 read_table("data")
@@ -14,8 +16,40 @@ data <- read_csv("data")
 data_c <- read_csv("data_cont")
 
 data <- rbind(data, data_c)
-data <- data %>% mutate(force = step * 1e-7)
-data_c <- data_c %>% mutate(force = step * 1e-7)
+data <- data %>% mutate(force = step * 1e-7* 69.477)  # force in units of pN
+
+unfolded_fraction <- function(data, f) {
+  a <- data %>% filter(dis < 150 & between(force, f-1, f+1)) %>% group_by(run) %>% 
+    summarise(n())
+  dim(a)[[1]]/20.0
+}
+unfolded_fraction(data, 80)
+
+f <- seq(20,60,2)
+output <- vector("double", 0)
+for (i in seq_along(f)) {
+  output <- c(output, unfolded_fraction(data,f[[i]]))
+}
+result <- tibble(x = f, y = output)
+
+m <- nls(y ~ exp(-a/b*(exp(x*b) -1 )), result, start=list(a=0.0001,b=0.17))
+m
+result <- result %>% mutate(re = predict(m))
+ggplot(result)+
+  aes(x,1-y)+
+  geom_point(size = 5)+
+  geom_line(aes(x,1-re), color = "blue") +
+  xlab("Force (pN)") +
+  ylab("Unfolded fraction") +
+  theme(axis.text=element_text(size=20)) +
+  theme(axis.title.x=element_text(size=30)) + 
+  theme(axis.title.y=element_text(size=30))
+
+data %>% group_by(force, run) %>% summarise(dis)
+data %>% filter(dis < 120) %>%  
+  ggplot() +
+  aes(force) +
+  geom_histogram()
 
 data %>% 
   ggplot() +
@@ -28,7 +62,16 @@ data %>%
   theme(axis.title.x=element_text(size=30)) + 
   theme(axis.title.y=element_text(size=30))
 
-
+data %>% 
+  ggplot() +
+  aes(dis, force) +
+  geom_line() +
+  facet_wrap(~run) + 
+  xlab("Distance (Angstrom)") +
+  ylab("Force (Kcal/mole-Angstrom)") +
+  theme(axis.text=element_text(size=20)) +
+  theme(axis.title.x=element_text(size=30)) + 
+  theme(axis.title.y=element_text(size=30))
 
 data <- data %>% mutate(step = step / 1000000)
 ggplot(data) +

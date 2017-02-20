@@ -1,7 +1,8 @@
+#!/usr/bin/env python2
 import os, sys, re
 
 # Scripts and programs
-python_exec = 'python'
+python_exec = 'python2'
 build_pdb_script = '~/opt/script/BuildAllAtomsFromLammps.py'
 
 # Auxillary functions
@@ -36,10 +37,10 @@ output_directory = os.path.abspath(sys.argv[2])
 
 if len(sys.argv) > 3:
     for j in range(3,len(sys.argv)):
-        if "gt" in sys.argv[j]: 
+        if "gt" in sys.argv[j]:
             condition_signs.append("+")
             condition = sys.argv[j].split("gt")
-        if "lt" in sys.argv[j]: 
+        if "lt" in sys.argv[j]:
             condition_signs.append("-")
             condition = sys.argv[j].split("lt")
         conditions.append(condition)
@@ -67,7 +68,7 @@ os.chdir(output_directory)
 output_file = open(output_file_name, "w")
 structure_output_file = open(structure_output_file_name, "w")
 vmd_out = open("vmd.tcl", "w")
-                
+
 for data_file in files_array:
     path_name, data_file_name = os.path.split(data_file)
     file_index = files_array.index(data_file)
@@ -84,6 +85,7 @@ for data_file in files_array:
                 print "Bad condition argument."
                 sys.exit()
         if not bad_condition:
+            print int(data_array[file_index].index(data_point)+1), found_pdb_index
             found_pdb_index += 1
             dump_file = data_file.replace(data_file_name,dump_file_name)
             output_file.write("%d %s %s\n" % (structure_index, dump_file, str(data_point).replace(',','').replace('[','').replace(']','')))
