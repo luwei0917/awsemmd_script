@@ -14,50 +14,43 @@ parser = argparse.ArgumentParser(
         description="This is a python3 script to\
         automatically prepare for wham analysis")
 
-parser.add_argument("protein", help="the name of protein")
+# parser.add_argument("protein", help="the name of protein")
+parser.add_argument("--nick", action="store_true", default=False)
+parser.add_argument("--zheng", action="store_true", default=False)
+parser.add_argument("-m", "--mode", type=int, default=1)
+parser.add_argument("-d", "--debug", action="store_true", default=False)
+parser.add_argument("--run", action="store_true", default=False)
 args = parser.parse_args()
 
-exec (open("config.py").read())
-n = number_of_run
-steps = simulation_steps
+# protein_name = args.protein.strip('/')
 
-protein_name = args.protein.strip('/')
 
-temp = 400
-folder_name = "{}_t{}_q100".format(protein_name, str(temp))
-print("all going to "+folder_name)
-os.system("mkdir -p "+folder_name)
-os.system("rm -f "+folder_name + "/*")
-command = 'sed 1d simulation/{}/%d/wham.dat \
->> {}/all_wham.dat'.format(temp, folder_name)
-# cal rmsd
-# os.system("paste q_ga.dat q_ga_part.dat q_gb.dat p.dat > data.dat")
-os.chdir("simulation/"+str(temp))
-for i in range(n):
-    os.chdir(str(i))
-    os.system("cat q_ga.dat >> ../../../"+folder_name+"/p_total")
-    os.system("cat q_ga_part.dat >> ../../../"+folder_name+"/q_ga_part_total")
-    os.system("cat q_gb.dat >> ../../../"+folder_name+"/q_gb_total")
-    os.system("cat p.dat >> ../../../"+folder_name+"/e_total")
-    os.chdir("..")
-# os.chdir("simulation/"+str(temp))
-# for i in range(n):
-#     os.chdir(str(i))
-#     os.system("python2 ~/opt/script/CalcRMSD.py top7 dump.lammpstrj rmsd_temp")
-#     os.system('cat rmsd_temp | tr " " "\n" |sed 1d > rmsd')
-#     os.system("cat rmsd >> ../../../"+folder_name+"/rmsd_total")
-#     os.chdir("..")
-# os.chdir("../..")
-# for i in range(n):
-#     cmd = command % i
-#     os.system(cmd)
-# os.chdir(folder_name)
-# os.system("awk '{print $2}' all_wham.dat > Qw_total")
-# os.system("awk '{print $3}' all_wham.dat > rg_total")
-# os.system("awk '{print $4}' all_wham.dat > p_total")
-# os.system("awk '{print $5}' all_wham.dat > tc_total")
-# os.system("awk '{print $NF}' all_wham.dat > e_total")
-# os.system("cp ~/opt/wham_analysis/*.m .")
-# os.chdir("..")
+if(args.debug):
+    do = print
+    cd = print
+else:
+    do = os.system
+    cd = os.chdir
 
-# os.system("~/opt/script/wham/fused_calc_cv.sc top_he_t400_q100/ top7 50 400 350 450 5 50 100 0 0.98")
+if(args.run):
+    with open("run.sh", "w") as f:
+        f.write("~/opt/script/wham/fused_calc_cv.sc . 2xov 40 300 150 250 10 30 200 0.12 0.9\n")
+if(args.zheng):
+    # do("mkdir wham")
+    # cd("wham")
+    kconstant = 400   # double the k constant
+    q0 = 0.12
+    metadata = open("metadatafile", "w")
+    for i in range(40):
+        q = q0 + i*0.02
+        temp_list = [300]
+        for temp in temp_list:
+            target = "../data/" + str(i) + "/tinydata {} {} {:.2f}\n".format(temp, kconstant, q)
+            metadata.write(target)
+    metadata.close()
+
+# cmd = "~/opt/script/wham/fused_calc_cv.sc {} {} 40 300 100 200 10 50 200 0.12 0.90"
+# location = "test"
+# cmd = cmd.format(location, protein_name)
+# # os.system("~/opt/script/wham/fused_calc_cv.sc top_he_t400_q100/ top7 50 400 350 450 5 50 100 0 0.98")
+# os.system(cmd)

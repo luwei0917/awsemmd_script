@@ -160,7 +160,8 @@ if(args.qnqc):
     if(args.mode == 1):
         n = 40
         # temp_list = [300,350]
-        temp_list = [250,275, 325]
+        # temp_list = [250,275, 325]
+        temp_list = [200]
         cwd = os.getcwd()
         for temp in temp_list:
             for i in range(n):
@@ -203,24 +204,36 @@ if(args.qnqc):
 if(args.data):
     if(args.mode == 4):
         n = 40
+        temp_list = [250, 275, 300, 325, 350]
         cwd = os.getcwd()
-        for i in range(n):
-            print(str(i))
-            cd("simulation/350/{}".format(i))
-            do("awk '{print $2}' wham.dat > qw")
-            do("awk '{print $5}' wham.dat > energy")
-            do("paste qn qc qw energy | tail -n 4000 > halfdata")
+        target = "multi_temp"
+        for temp in temp_list:
+            cd("simulation/{}".format(temp))
+            do("ls */halfdata | sort -g | xargs cat > data")
+            do("awk '{print $1}' data > ../../%s/qn_t%i" % (target, temp))
+            do("awk '{print $2}' data > ../../%s/qc_t%i" % (target, temp))
+            do("awk '{print $3}' data > ../../%s/q_t%i" % (target, temp))
+            do("awk '{print $4}' data > ../../%s/energy_t%i" % (target, temp))
             cd(cwd)
+        # cd(target)
+        # with open("sim_list", "w") as f:
+        #     for temp in temp_list:
+        #         f.write("t{}\n".format(temp))
+        # with open("T_list", "w") as f:
+        #     for temp in temp_list:
+        #         f.write("{}\n".format(temp))
+        # cd(cwd)
     if(args.mode == 3):
         n = 40
-        temp_list = [250, 275, 300, 325, 350]
+        # temp_list = [250, 275, 300, 325, 350]
+        temp_list = [200]
         cwd = os.getcwd()
         for temp in temp_list:
             for i in range(n):
                 print(str(i))
                 cd("simulation/{}/{}".format(temp, i))
                 do("awk '{print $2}' wham.dat > qw")
-                do("awk '{print $5}' wham.dat > energy")
+                do("awk '{print $6}' wham.dat > energy")
                 do("paste qn qc qw energy | tail -n 4000 > halfdata")
                 # do("head -n 5800 wham.dat | tail -n 4000 | awk '{print $2}' > qw")
                 # do("head -n 5800 wham.dat | tail -n 4000 | awk '{print $5}' > e")
@@ -270,12 +283,10 @@ if(args.make_metadata):
         metadata = open("metadatafile", "w")
         for i in range(40):
             q = q0 + i*0.02
-            temp = 300
-            target = "../simulation/300/" + str(i) + "/halfdata {} {} {:.2f}\n".format(temp, kconstant, q)
-            metadata.write(target)
-            temp = 350
-            target = "../simulation/350/" + str(i) + "/halfdata {} {} {:.2f}\n".format(temp, kconstant, q)
-            metadata.write(target)
+            temp_list = [250, 275, 300, 325, 350]
+            for temp in temp_list:
+                target = "../simulation/300/" + str(i) + "/halfdata {} {} {:.2f}\n".format(temp, kconstant, q)
+                metadata.write(target)
         metadata.close()
     if(args.mode == 1):
         kconstant = 2000   # double the k constant

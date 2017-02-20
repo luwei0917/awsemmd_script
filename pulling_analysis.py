@@ -43,6 +43,7 @@ parser.add_argument("--protein", default="2xov")
 parser.add_argument("--dimension", type=int, default=2)
 parser.add_argument("-f", "--freeEnergy", action="store_true", default=False)
 parser.add_argument("-m", "--mode", type=int, default=1)
+parser.add_argument("--rate", action="store_true", default=False)
 args = parser.parse_args()
 
 
@@ -61,6 +62,11 @@ if(args.test):
         for i in folder_list:
             f.write(i+"\n")
 
+if(args.rate):
+    file_name = "test"
+    with open("data") as f:
+        names = next(f)
+        for line in f:
 
 
 freeEnergy = """\
@@ -80,6 +86,8 @@ srun python2 ~/opt/pulling_compute-pmf.py {}
 
 if(args.freeEnergy):
     arg = ""
+    if(args.mode == 6):
+        arg = "-b 3 -e 4 -d 1 -v1 3 -v1n 30 -f 0 -nsamples 4000"
     if(args.mode == 1):
         arg = "-b 3 -e 4 -d 2 -v1 1 -v1n 30 -v2 2 -v2n 30 -f 1.7 -nsamples 2000"
     if(args.mode == 2):

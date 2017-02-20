@@ -32,8 +32,9 @@ warm_up_steps = 2*10**6
 simulation_steps = 6*10**6
 
 # temp_list = [400, 500]
-temp_list = [250, 275, 325]
+# temp_list = [250, 275, 325]
 # temp_list = [300]
+temp_list = [200]
 n = 40
 
 if(platform.system() == 'Darwin'):
@@ -63,7 +64,7 @@ for temp in temp_list:
     for i in range(n):
         q0 += q_bias_step
         os.system("mkdir -p "+str(i))
-        os.system("cp -r ../../"+args.template+"* "+str(i))
+        os.system("cp -r ../../"+args.template+"/* "+str(i))
         os.chdir(str(i))
         os.system(  # replace TEMPERATURE with specific steps
             "sed -i.bak 's/Q0/'" +
