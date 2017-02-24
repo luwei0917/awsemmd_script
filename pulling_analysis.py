@@ -19,6 +19,8 @@ import imp
 from myPersonalFunctions import *
 import glob
 import numpy
+import datetime
+import pickle
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -44,8 +46,23 @@ parser.add_argument("--dimension", type=int, default=2)
 parser.add_argument("-f", "--freeEnergy", action="store_true", default=False)
 parser.add_argument("-m", "--mode", type=int, default=1)
 parser.add_argument("--rate", action="store_true", default=False)
+parser.add_argument("-s", "--save", action="store_true", default=False)
+parser.add_argument("-r", "--reproduce", default=None)
 args = parser.parse_args()
 
+if(args.reproduce):
+    print("Reproducing!")
+    with open(args.reproduce, "rb") as f:
+        args = pickle.load(f)
+        print(args)
+
+
+if(args.save):
+    print(os.getcwd())
+    print("Saving")
+    args.save = False
+    with open("args"+datetime.datetime.now().strftime("%m%d-%H%M"), "wb") as f:
+        pickle.dump(args, f)
 
 if(args.debug):
     do = print
@@ -57,16 +74,39 @@ else:
 
 
 if(args.test):
-    folder_list = glob.glob("T_*")
-    with open("complete_folder_list","w") as f:
-        for i in folder_list:
-            f.write(i+"\n")
+    # temp_list = [135, 160, 185, 210]
+    # for temp in temp_list:
+    #     for i in range(20):
+    #         do("cat t_{1}/small_{0} >> small_data_t_{1}".format(i,temp))
+    #         do("cat t_{1}/{0} >> data_t_{1}".format(i, temp))
+    kconstant = 150   # double the k constant
+
+    q0 = 0.0
+    metadata = open("metadatafile", "w")
+    for i in range(20):
+        q = q0 + i*0.05
+        # temp_list = [135, 160, 185, 210]
+        temp_list = [160]
+        for temp in temp_list:
+            target = "../data/t_{}/small_".format(temp) + str(i) + " {} {} {:.2f}\n".format(temp, kconstant, q)
+            metadata.write(target)
+    metadata.close()
+
+    # for temp in temp_list:
+    #     do("mkdir -p data/t_{}".format(temp))
+    #     for i in range(n):
+    #         print(str(i))
+    #         # do("cp simulation/{0}/{1}/data data/t_{0}/{1}".format(temp, i))
+    #         do("cp simulation/{0}/{1}/small_data data/t_{0}/small_{1}".format(temp, i))
+    # folder_list = glob.glob("T_*")
+    # with open("complete_folder_list","w") as f:
+    #     for i in folder_list:
+    #         f.write(i+"\n")
 
 if(args.rate):
     file_name = "test"
     with open("data") as f:
         names = next(f)
-        for line in f:
 
 
 freeEnergy = """\
@@ -86,6 +126,9 @@ srun python2 ~/opt/pulling_compute-pmf.py {}
 
 if(args.freeEnergy):
     arg = ""
+    nsample = 2000
+    force = 0
+    temp_arg = "-f {} -nsamples {}".format(force, nsample)
     if(args.mode == 6):
         arg = "-b 3 -e 4 -d 1 -v1 3 -v1n 30 -f 0 -nsamples 4000"
     if(args.mode == 1):

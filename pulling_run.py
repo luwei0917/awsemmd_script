@@ -44,7 +44,7 @@ else:
     cd = os.chdir
 
 if(args.test):
-    n = 20
+    n = 40
     for i in range(n):
         cd(str(i))
         do("run.py -i 2xov -o")

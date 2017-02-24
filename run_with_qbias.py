@@ -34,8 +34,8 @@ simulation_steps = 6*10**6
 # temp_list = [400, 500]
 # temp_list = [250, 275, 325]
 # temp_list = [300]
-temp_list = [200]
-n = 40
+temp_list = [135, 160, 185, 210]
+n = 20
 
 if(platform.system() == 'Darwin'):
     print("Are you sure?")
@@ -59,8 +59,8 @@ for temp in temp_list:
     seed(datetime.now())
     os.system("mkdir -p simulation/"+str(temp))
     os.chdir("simulation/"+str(temp))
-    q_bias_step = 0.02
-    q0 = 0.1
+    q_bias_step = 0.05
+    q0 = 0.0
     for i in range(n):
         q0 += q_bias_step
         os.system("mkdir -p "+str(i))
