@@ -24,7 +24,7 @@ else:
 
 if(args.mode == 1):
     protein_name,file_type = args.protein.split('.')
-    do("pdb2fasta.sh crystal_structure.pdb > {0}.fasta".format(protein_name))
+    do("~/opt/script/pdb2fasta.sh crystal_structure.pdb > {0}.fasta".format(protein_name))
     do("stride crystal_structure.pdb > ssweight.stride")
     do("python2 ~/opt/script/stride2ssweight.py > ssweight")
     do("python2 ~/opt/script/GetCACADistancesFile.py crystal_structure native.dat")
