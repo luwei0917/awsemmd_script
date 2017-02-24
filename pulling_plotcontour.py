@@ -1,70 +1,45 @@
 #!/usr/bin/env python3
-'''
-Generates contour plot from 3 columns of data.
-'''
-
-import sys
-import argparse
 import os
-import numpy as np
-from numpy.random import uniform
+import sys
+import random
+import time
+from random import seed, randint
+import argparse
+import platform
+from datetime import datetime
+import imp
+from myPersonalFunctions import *
+import glob
+import numpy
+# Useful codes
+# os.system("awk '{print $NF}' all_wham.dat > e_total")
+# tr " " "\n"
+# sed 1d
+# sort -u -k 3
+# sed -e 's/+T//'
+mypath = os.environ["PATH"]
+os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
+my_env = os.environ.copy()
 
-#from matplotlib import rc
-#rc('text', usetex=True)
+parser = argparse.ArgumentParser(description="This is my playground for current project")
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from scipy.interpolate import griddata
-from scipy.interpolate import interp2d
-
-parser = argparse.ArgumentParser(description='Plots pmf data.')
-parser.add_argument("filename", nargs='?', help="input filename", default="pmf-340.dat")
-parser.add_argument("outname", nargs='?', help="output filename", default="test.png")
-parser.add_argument("-dpi", default=150, type=int, help="figure dpi")
-parser.add_argument("-x", default=1, type=int, help="x column number in f")
-parser.add_argument("-xmin", default=0, type=float, help="x axis lower limit")
-parser.add_argument("-xmax", default=1, type=float, help="x axis upper limit")
-parser.add_argument("-y", default=2, type=int, help="y column number in f")
-parser.add_argument("-ymin", default=0, type=float, help="y axis lower limit")
-parser.add_argument("-ymax", default=1, type=float, help="y axis upper limit")
-parser.add_argument("-z", default=3, type=int, help="z column number in f")
-parser.add_argument("-zmin", default=0, type=float, help="z axis lower limit")
-parser.add_argument("-zmax", default=30, type=float, help="z axis upper limit")
-parser.add_argument("-title", default='', help="title")
-parser.add_argument("-xlabel", default='', help="xlabel")
-parser.add_argument("-ylabel", default='', help="ylabel")
-parser.add_argument("-axisfontsize", default=18, type=float, help="font size of xlabel, ylabel")
-parser.add_argument("-titlefontsize", default=28, type=float, help="font size of title")
+# parser.add_argument("protein", help="the name of protein")
+# parser.add_argument("template", help="the name of template file")
+parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
+parser.add_argument("--plot", action="store_true", default=False)
+parser.add_argument("-d", "--debug", action="store_true", default=False)
+parser.add_argument("--protein", default="2xov")
+parser.add_argument("--dimension", type=int, default=1)
 args = parser.parse_args()
 
-mpl.rcParams.update({'font.size': args.axisfontsize})
 
-data = np.loadtxt(args.filename)
-data = data[~np.isnan(data).any(axis=1)] # remove rows with nan
-data = data[~(data[:,args.z] > args.zmax)] # remove rows of data for z not in [zmin zmax]
-data = data[~(data[:,args.z] < args.zmin)]
+if(args.debug):
+    do = print
+    cd = print
+else:
+    do = os.system
+    cd = os.chdir
 
-xi = np.linspace(min(data[:,args.x]), max(data[:,args.x]), 50)
-# print(xi)
-yi = np.linspace(min(data[:,args.y]), max(data[:,args.y]), 50)
-zi = griddata((data[:,args.x], data[:,args.y]), data[:,args.z], (xi[None,:], yi[:,None]), method='linear')
-# zi = data[:,args.z]
-# plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
-jet = cm = plt.get_cmap('jet')
-print(jet)
-plt.contourf(xi, yi, zi, 50, cmap='rainbow')
 
-plt.xlim(args.xmin, args.xmax)
-plt.ylim(args.ymin, args.ymax)
-plt.clim(args.zmin, args.zmax)
-plt.colorbar()
-
-plt.xlabel(args.xlabel)
-plt.ylabel(args.ylabel)
-plt.title(args.title, y=1.02, fontsize = args.titlefontsize)
-#plt.tight_layout()
-#plt.axis('equal')
-#plt.axes().set_aspect('equal')
-#plt.axes().set_aspect('scaled')
-plt.savefig(args.outname, dpi=args.dpi, bbox_inches='tight')
-os.system("open " + args.outname)
+if(args.plot):
+    do("plotcontour.py pmf-200.dat -xmax 200 -xmin 0 -ymin 0.2 -ymax 0.8")

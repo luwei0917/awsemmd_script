@@ -10,7 +10,7 @@
 # ----------------------------------------------------------------------
 
 import sys
-
+import os
 #from Bio.PDB.PDBParser import PDBParser
 
 atom_type = {'1' : 'C', '2' : 'N', '3' : 'O', '4' : 'C', '5' : 'H', '6' : 'C'}
@@ -132,6 +132,7 @@ snapshot = -1
 if len(sys.argv)>3: snapshot = int(sys.argv[3])
 
 if seq_file!="":
+	# os.system("pwd")
 	fseq = open(seq_file)
 	seq_txt = fseq.read().strip().replace("\n","")
 	sequance = One2ThreeLetters(seq_txt)

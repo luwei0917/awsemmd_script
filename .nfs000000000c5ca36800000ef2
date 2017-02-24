@@ -53,7 +53,7 @@ if(args.freeEnergy):
     do("mult_calc_cv.sc . '{}' 66 '{}' 200 400 10 30 0.02 25 345 2xov q".format(sim_list, temp_list))
 
 if(args.plot):
-    do("plotcontour.py pmf-200.dat -xmax 0.8 -xmin 0.2 -ymin 0.2 -ymax 0.8")
+    do("plotcontour.py pmf-200 -xmax 0.8")
 
 # ls */halfdata | sort -g | xargs cat > all_halfdata
 # ls */tinydata | sort -g | xargs cat > all_tinydata
