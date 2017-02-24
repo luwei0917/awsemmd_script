@@ -15,21 +15,24 @@ protein_name = args.protein.split('.')[0]
 
 
 with open(protein_name+".fasta") as input_data:
+    data = ""
     for line in input_data:
         if(line[0] == ">"):
             print(line)
         elif(line == "\n"):
             pass
         else:
-            data = line.strip("\n")
-            print(len(data))
-            out = open(protein_name+".pml", 'w')
-            out.write("sequence = \""+data+"\"\n")
-            out.write("for aa in sequence: cmd._alt(string.lower(aa))\n")
-            out.write("save "+protein_name+".pdb\n")
-            out.write("quit\n")
-            out.close()
-            os.system("pymol "+protein_name+".pml")
+            data += line.strip("\n")
+    print(len(data))
+    print(data)
+    out = open(protein_name+".pml", 'w')
+    out.write("sequence = \""+data+"\"\n")
+    out.write("for aa in sequence: cmd._alt(string.lower(aa))\n")
+    out.write("alter (all), resi=str(int(resi)-1)\n")
+    out.write("save "+protein_name+".pdb\n")
+    out.write("quit\n")
+    out.close()
+    os.system("pymol "+protein_name+".pml")
 
 # os.system("cp ~/opt/parameter/* .")
 # os.system("python2 ~/opt/script/Pdb2Gro.py %s.pdb %s.gro" % (protein_name, protein_name))
