@@ -42,7 +42,7 @@ if(args.mode == 1):
 
 if(args.mode == 2):
     protein_name = args.protein.split('.')[0]
-    do("fasta2pdb.py "+protein_name)
+    do("~/opt/fasta2pdb.py "+protein_name)
     os.system("~/opt/script/PdbCoords2Lammps.sh "+protein_name+" "+protein_name)
     os.system("echo '>%s' > %s.fasta " % (protein_name.upper(), protein_name))
     os.system("cat %s.seq >> %s.fasta" % (protein_name, protein_name))
