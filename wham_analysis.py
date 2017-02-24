@@ -14,15 +14,24 @@ parser = argparse.ArgumentParser(
         description="This is a python3 script to\
         automatically prepare for wham analysis")
 
-# parser.add_argument("protein", help="the name of protein")
+parser.add_argument("target", nargs="?", help="the name of protein")
 parser.add_argument("--nick", action="store_true", default=False)
 parser.add_argument("--zheng", action="store_true", default=False)
 parser.add_argument("-m", "--mode", type=int, default=1)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--run", action="store_true", default=False)
+parser.add_argument("--seperate", action="store_true", default=False)
 args = parser.parse_args()
 
-# protein_name = args.protein.strip('/')
+
+def only_name(a):
+    try:
+        return a.strip('/')
+    except:
+        return ""
+
+
+target_name = only_name(args.target)
 
 
 if(args.debug):
@@ -32,9 +41,19 @@ else:
     do = os.system
     cd = os.chdir
 
+if(args.seperate):
+    target = target_name
+    do("awk '{print $1}' %s > qn" % (target))
+    do("awk '{print $2}' %s > qc" % (target))
+    do("awk '{print $3}' %s > p_total" % (target))
+    do("awk '{print $4}' %s > e_total" % (target))
 if(args.run):
-    with open("run.sh", "w") as f:
-        f.write("~/opt/script/wham/fused_calc_cv.sc . 2xov 40 300 150 250 10 30 200 0.12 0.9\n")
+    if(args.mode == 1):
+        with open("run.sh", "w") as f:
+            f.write("~/opt/script/wham/fused_calc_cv.sc . 2xov 40 300 150 250 10 30 200 0.12 0.9\n")
+    if(args.mode == 2):
+        with open("run.sh", "w") as f:
+            f.write("~/opt/script/wham/fused_calc_cv.sc . 2xov 66 300 200 400 10 30 0.02 25 345\n")
 if(args.zheng):
     # do("mkdir wham")
     # cd("wham")

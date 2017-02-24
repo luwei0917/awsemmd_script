@@ -126,9 +126,10 @@ if(args.summary):
                         out.write("{}, {}, run_{}\n".format(step, qw, i))
                         # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
     if(args.mode == 4):
+        n = 40
         with open("data", "w") as out:
             out.write("step, qn, qc, dis, qw, run, energy\n")
-            for i in range(20):
+            for i in range(n):
                 print(i)
                 cd(str(i))
                 do("awk '{print $2}' addforce.dat > dis")
@@ -158,10 +159,11 @@ if(args.summary):
                         # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
 if(args.qnqc):
     if(args.mode == 1):
-        n = 40
+        n = 20
         # temp_list = [300,350]
         # temp_list = [250,275, 325]
-        temp_list = [200]
+        # temp_list = [200]
+        temp_list = [135, 160, 185, 210]
         cwd = os.getcwd()
         for temp in temp_list:
             for i in range(n):
@@ -190,7 +192,7 @@ if(args.qnqc):
             os.system("sbatch qnqc.slurm")
             os.chdir(cwd)
     if(args.mode == 3):
-        n = 20
+        n = 40
         cwd = os.getcwd()
         for i in range(n):
             # cd("simulation/{}".format(i))
@@ -202,6 +204,30 @@ if(args.qnqc):
             # do("sbatch server_run.slurm")
             cd(cwd)
 if(args.data):
+    if(args.mode == 6):
+        n = 20
+        temp_list = [135, 160, 185, 210]
+        cwd = os.getcwd()
+        for temp in temp_list:
+            for i in range(n):
+                print(str(i))
+                cd("simulation/{}/{}".format(temp, i))
+                do("awk '{print $2}' wham.dat > qw")
+                do("awk '{print $6}' wham.dat > energy")
+                do("paste qn qc qw energy | tail -n 10000 > data")
+                do("tail -n 2000 data > small_data")
+                # do("head -n 5800 wham.dat | tail -n 4000 | awk '{print $2}' > qw")
+                # do("head -n 5800 wham.dat | tail -n 4000 | awk '{print $5}' > e")
+                # do("head -n 5800 qn | tail -n 4000 > qn_half")
+                # do("head -n 5800 qc | tail -n 4000 > qc_half")
+                # do("paste qn qc | head -n 5800 | tail -n 4000 > qnqc")
+                cd(cwd)
+    if(args.mode == 5):
+        target = "all_halfdata"
+        do("awk '{print $1}' %s > qn" % (target))
+        do("awk '{print $2}' %s > qc" % (target))
+        do("awk '{print $3}' %s > p_total" % (target))
+        do("awk '{print $4}' %s > e_total" % (target))
     if(args.mode == 4):
         n = 40
         temp_list = [250, 275, 300, 325, 350]
@@ -227,6 +253,7 @@ if(args.data):
         n = 40
         # temp_list = [250, 275, 300, 325, 350]
         temp_list = [200]
+        temp_list = [135, 160, 185, 210]
         cwd = os.getcwd()
         for temp in temp_list:
             for i in range(n):
@@ -276,6 +303,19 @@ if(args.data):
 
 
 if(args.make_metadata):
+    if(args.mode == 5):
+        kconstant = 300   # double the k constant
+
+        q0 = 0.0
+        metadata = open("metadatafile", "w")
+        for i in range(20):
+            q = q0 + i*0.05
+            # temp_list = [135, 160, 185, 210]
+            temp_list = [160]
+            for temp in temp_list:
+                target = "../simulation/{}/".format(temp) + str(i) + "/small_data {} {} {:.2f}\n".format(temp, kconstant, q)
+                metadata.write(target)
+        metadata.close()
     if(args.mode == 4):
         kconstant = 800   # double the k constant
 
@@ -342,21 +382,27 @@ if(args.distance):
 
 if(args.continue_run):
     folder_name = "continue_simulation_2"
+    folder_name = "continue_simulation"
     do("mkdir {}".format(folder_name))
     # do("mkdir continue_simulation")
     cd(folder_name)
-    n = 20
+    n = 40
     simulation_steps = 6*1000*1000
     protein_name = "2xov"
     for i in range(n):
         do("mkdir {}".format(i))
         cd(str(i))
         do("cp -r ../../2xov/* .")
-        do("cp ../../continue_simulation/{0}/restart.12000000 .".format(i))
+        # do("cp ../../continue_simulation/{0}/restart.12000000 .".format(i))
+        do("cp ../../simulation/{0}/restart.6000000 .".format(i))
         do("cp ~/opt/pulling/2xov_continue_run.in 2xov.in")
+        # do(
+        #     "sed -i.bak 's/START_FROM/'" +
+        #     "12000000" +
+        #     "'/g' "+protein_name+".in")
         do(
             "sed -i.bak 's/START_FROM/'" +
-            "12000000" +
+            "6000000" +
             "'/g' "+protein_name+".in")
         seed(datetime.now())
         do(  # replace RANDOM with a radnom number
