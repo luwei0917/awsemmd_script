@@ -3,10 +3,8 @@ ggsave("~/Desktop/feb19/rate_force.png")
 pre <- "/Users/weilu/Research/data/pulling/"
 target <- str_c(pre, "p_v2")
 target2 <- str_c(pre, "p2_v1")
-data <- read_csv(target)
-p2_v1 <- read_csv(target2)
 data2 <- data %>% mutate(run = str_c(run , "_2"))
-d_total <- rbind(data, data2)
+
 
 load_and_transform <- function(name, rate){
   pre <- "/Users/weilu/Research/data/pulling/"
@@ -27,9 +25,7 @@ dis_force <- function(data) {
     theme(axis.title.y=element_text(size=30))
 }
 p2_v1 <- load_and_transform("p2_v1", 2e-7)
-
 dis_force(p2_v1)
-
 
 binf <- p2_v1 %>%  filter(step %% 100000 == 0 & dis < 280 ) %>% group_by(run) %>% mutate(jump = c(0,diff(dis))) %>% 
   filter(jump > 25) %>% summarise(m = first(force))

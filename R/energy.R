@@ -1,7 +1,9 @@
 library(tidyverse)
 library(gridExtra)
 library(stringr)
-
+library(xml2)
+data <- read_csv("~/Downloads/Awards.csv")
+data <- read_xml("~/Downloads/2016/1600011.xml")
 setwd("~/Desktop/feb19/")
 ## Example
 # we generate some random plot
@@ -16,8 +18,8 @@ png("seqLogo1.png", width=400, height=400)
 seqLogo(pwm)
 dev.off()
 ## totally unrelated
-png("plot1.png", width=400, height=400)
-plot(density(rnorm(1000)))
+png("plot2.png", width=400, height=400)
+plot(density(2*rnorm(1000)))
 dev.off()
 
 

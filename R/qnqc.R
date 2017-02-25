@@ -1,7 +1,7 @@
 library(tidyverse)
 library(gridExtra)
 library(stringr)
-ggsave("~/Desktop/feb14/force_dis_all.png")
+ggsave("~/Desktop/feb19/force_dis_all.png")
 ggsave("~/Desktop/feb14/force_dis.png", width = 20, height = 10)
 ggsave("~/Desktop/feb14/force_dis_all.png", width = 20, height = 10)
 ggsave("~/Desktop/feb19/unfolded.png")
