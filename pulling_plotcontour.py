@@ -42,4 +42,4 @@ else:
 
 
 if(args.plot):
-    do("plotcontour.py pmf-200.dat -xmax 200 -xmin 0 -ymin 0.2 -ymax 0.8")
+    do("plotcontour.py pmf-200.dat -xmax 1 -xmin 0 -ymin 0 -ymax 1")

@@ -35,16 +35,38 @@ parser.add_argument("--energy", help="energy ", action="store_true", default=Fal
 parser.add_argument("--qnqc", help="calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("-n", "--number", type=int, default=10, help="number of run")
+parser.add_argument("-d", "--debug", action="store_true", default=False)
 args = parser.parse_args()
 
+if(args.debug):
+    do = print
+    cd = print
+else:
+    do = os.system
+    cd = os.chdir
 
+# convert \( 0.0.png 0.2.png 0.4.png  +append \) \( 0.6.png  0.8.png    1.0.png +append \) -background none -append final.png
 def test():
     print("don't show me")
-    n = args.number
-    folder_list = sorted(glob.glob("wham*"))
-    for folder in folder_list:
-        print(folder)
-        os.system("tail -n+2 {}/cv-300-400-10.dat | sort -r -k 2 | head -n1".format(folder))
+    # force_list = [round(i*0.1,2) for i in range(20)]
+    # for force in force_list:
+    #     cd("{}".format(force))
+    #     do("plotcontour.py pmf-300.dat")
+    #     do("cp test.png ../result/{}.png".format(force))
+    #     cd("..")
+
+    with open("metadata", "w") as f:
+        temp_list = [325, 350]
+        i_range = range(40)
+        for temp in temp_list:
+            for i in i_range:
+                f.write("/Users/weilu/Research/server/project/freeEnergy_2xov/qValue_v4/simulation/{}/{}/halfdata\n".format(temp, i))
+
+    # n = args.number
+    # folder_list = sorted(glob.glob("wham*"))
+    # for folder in folder_list:
+    #     print(folder)
+    #     os.system("tail -n+2 {}/cv-300-400-10.dat | sort -r -k 2 | head -n1".format(folder))
 
             # for i in range(2):
             #     address = folder + "/simulation/" + str(i)
@@ -56,8 +78,8 @@ if(args.test):
 
 def calQnQc():
     qn_start = 0
-    qn_end = 81
-    qc_start = 81
+    qn_end = 80
+    qc_start = 80
     qc_end = 181
     qc2_start = 130
     qc2_end = 181

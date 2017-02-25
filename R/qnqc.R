@@ -17,7 +17,54 @@ data_c <- read_csv("data_cont")
 
 data <- rbind(data, data_c)
 data <- data %>% mutate(force = step * 1e-7* 69.477)  # force in units of pN
+data %>% filter() %>% 
+  ggplot() +
+  aes(dis, force) +
+  geom_point(color = "grey70") +
+  geom_line(data = data %>% filter(run == "run_0"), aes(dis, force), color = "blue")+
+  xlab("Distance (Angstrom)") +
+  ylab("Force (pN)") +
+  theme(axis.text=element_text(size=20)) +
+  theme(axis.title.x=element_text(size=30)) + 
+  theme(axis.title.y=element_text(size=30))
 
+data %>% filter(step %% 100000 == 0) %>% mutate(jump = c(0,diff(dis))) %>% 
+  filter(jump > 25) %>% 
+  ggplot() +
+  geom_point(data = data  ,aes(dis, force) ,color = "grey70") +
+  geom_point(aes(dis, force, size = jump) ) 
+
+data %>% filter(step %% 100000 == 0) %>% group_by(run)%>% mutate(jump = c(0,diff(dis))) %>% 
+  filter(jump > 25 & dis < 250) %>%
+  ggplot() +
+  geom_point(data = data  %>% filter(step %% 100000 == 0)  ,aes(dis, force) ,color = "grey70") +
+  geom_point(aes(dis, force, size = jump, color = run) ) 
+
+options(tibble.print_max = 20, tibble.print_min = 100)
+data %>% filter(step %% 100000 == 0) %>% group_by(run) %>% mutate(jump = c(0,diff(dis))) %>% 
+  ungroup(run)
+
+data %>% filter(step %% 100000 == 0 & dis < 280 ) %>% group_by(run) %>% mutate(jump = c(0,diff(dis))) %>% 
+  filter(jump > 20) %>% ungroup(run) %>% 
+  ggplot() +
+  aes(force) +
+  geom_histogram(bins = 10)
+
+data %>% filter(step %% 100000 == 0 & dis < 280 ) %>% group_by(run) %>% mutate(jump = c(0,diff(dis))) %>% 
+  filter(jump > 20) %>% summarise(m = first(force)) %>% 
+  ggplot() +
+  aes(m) +
+  geom_histogram(bins = 10)
+
+data %>% filter(step %% 100000 == 0 & dis < 280 ) %>% group_by(run) %>% mutate(jump = c(0,diff(dis))) %>% 
+  filter(jump > 25) %>% summarise(m = first(force))
+
+data %>% filter(step %% 100000 == 0 & dis < 280 ) %>% group_by(run) %>% mutate(jump = c(0,diff(dis))) %>% 
+  filter(jump > 20) %>% ungroup(run) %>%
+  ggplot() +
+  geom_point(data = data  %>% filter(step %% 100000 == 0)  ,aes(dis, force) ,color = "grey70") +
+  geom_point(aes(dis, force, size = jump, color = run) ) 
+# --------------bowie's method--------------------------
 unfolded_fraction <- function(data, f) {
   a <- data %>% filter(dis < 150 & between(force, f-1, f+1)) %>% group_by(run) %>% 
     summarise(n())
@@ -32,7 +79,7 @@ for (i in seq_along(f)) {
 }
 result <- tibble(x = f, y = output)
 
-m <- nls(y ~ exp(-a/b*(exp(x*b) -1 )), result, start=list(a=0.0001,b=0.17))
+m <- nls(y ~ exp(-a/b*(exp(x*b) -1 )), result, start=list(a=1000,b=1000))
 m
 result <- result %>% mutate(re = predict(m))
 ggplot(result)+
@@ -51,6 +98,7 @@ data %>% filter(dis < 120) %>%
   aes(force) +
   geom_histogram()
 
+# --------------bowie's method end--------------------------
 data %>% 
   ggplot() +
   aes(dis, force) +
@@ -83,9 +131,6 @@ ggplot(data) +
   theme(axis.text=element_text(size=20)) +
   theme(axis.title.x=element_text(size=30)) + 
   theme(axis.title.y=element_text(size=30))
-
-ggsave("~/Desktop/feb14/step_qnqc.png", width = 25, height  = 15)
-ggsave("~/Desktop/feb14/step_qnqc.png", width = 7.9, height = 8.42)
 
 
 # ggtitle("Red is Qc, black is Qn")  +

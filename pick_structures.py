@@ -8,6 +8,7 @@ build_pdb_script = '~/opt/script/BuildAllAtomsFromLammps.py'
 # Auxillary functions
 def build_pdb(dump_file, snapshot_index, structure_index):
     path, file_name = os.path.split(dump_file)
+    print path
     print "%s %s %s structure%s %s -seq %s/*.seq" % (python_exec, build_pdb_script, dump_file, structure_index, snapshot_index, path)
     os.system("%s %s %s structure%s %s -seq %s/*.seq" % (python_exec, build_pdb_script, dump_file, structure_index, snapshot_index, path))
 
@@ -22,8 +23,8 @@ dump_file_name = "dump.lammpstrj"
 output_file_name = "pick_structures_all.dat"
 structure_output_file_name = "pick_structures.dat"
 structure_index = 1
-structure_stride = 1105
-max_pdbs_to_build = 10
+structure_stride = 305
+max_pdbs_to_build = 20
 pdb_index = 0
 found_pdb_index = 0
 
@@ -85,7 +86,7 @@ for data_file in files_array:
                 print "Bad condition argument."
                 sys.exit()
         if not bad_condition:
-            print int(data_array[file_index].index(data_point)+1), found_pdb_index
+            # print int(data_array[file_index].index(data_point)+1), found_pdb_index
             found_pdb_index += 1
             dump_file = data_file.replace(data_file_name,dump_file_name)
             output_file.write("%d %s %s\n" % (structure_index, dump_file, str(data_point).replace(',','').replace('[','').replace(']','')))
@@ -97,7 +98,9 @@ for data_file in files_array:
                 vmd_out.write("mol modstyle 0 [molinfo top] NewCartoon 0.300000 10.000000 4.100000 0\n")
                 pdb_index += 1
             structure_index += 1
+
         data_index += 1
 
 output_file.close()
+vmd_out.write("color Display Background white\n")
 vmd_out.close()

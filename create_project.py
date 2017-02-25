@@ -10,23 +10,53 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("protein", help="The name of the protein")
 parser.add_argument("--jan03", help="Run code on Jan 03 ", action="store_true", default=False)
+parser.add_argument("-m", "--mode", type=int, default=1)
+parser.add_argument("-d", "--debug", action="store_true", default=False)
 args = parser.parse_args()
-protein_name = args.protein.split('.')[0]
-os.system("fasta2pdb.py "+protein_name)
-os.system("~/opt/script/PdbCoords2Lammps.sh "+protein_name+" "+protein_name)
-os.system("echo '>%s' > %s.fasta " % (protein_name.upper(), protein_name))
-os.system("cat %s.seq >> %s.fasta" % (protein_name, protein_name))
-os.system("cp ~/opt/jpredMassSubmitSchedule/casp_protein/_data/"+protein_name+" ssweight")
-os.system("cp ~/opt/AAWSEM/HO_Mem/"+protein_name+"/frag.mem frag.mem_old")
-os.system("sed 's/\/work\/pw8\/mc70\/script/\/home\/wl45/g' frag.mem_old > frag.mem")
-# os.system("stride %s.pdb > ssweight.stride" % protein_name)
-# os.system("python2 ~/opt/script/stride2ssweight.py > ssweight")
-# os.system("python2 ~/opt/script/GetCACADistancesFile.py %s native.dat" % protein_name)
-# os.system("python2 ~/opt/script/GetCACoordinatesFromPDB.py %s nativecoords.dat" % protein_name)
-# os.system("cp ~/opt/database/* .")
-# os.system("python2 ~/opt/script/prepFragsLAMW_index.py \
-#     cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 0" % protein_name)
-os.system("cp ~/opt/AAWSEM/parameter/* .")
+
+if(args.debug):
+    do = print
+    cd = print
+else:
+    do = os.system
+    cd = os.chdir
+
+
+if(args.mode == 1):
+    protein_name,file_type = args.protein.split('.')
+    do("~/opt/script/pdb2fasta.sh crystal_structure.pdb > {0}.fasta".format(protein_name))
+    do("stride crystal_structure.pdb > ssweight.stride")
+    do("python2 ~/opt/script/stride2ssweight.py > ssweight")
+    do("python2 ~/opt/script/GetCACADistancesFile.py crystal_structure native.dat")
+    do("cp native.dat rnative.dat")  # q bias need rnative
+    do("python2 ~/opt/script/GetCACoordinatesFromPDB.py crystal_structure nativecoords.dat")
+
+    do("fasta2pdb.py " + protein_name)
+    os.system("~/opt/script/PdbCoords2Lammps.sh "+protein_name+" "+protein_name)
+    os.system("echo '>%s' > %s.fasta " % (protein_name.upper(), protein_name))
+    os.system("cat %s.seq >> %s.fasta" % (protein_name, protein_name))
+    os.system("cp ~/opt/database/* .")
+    os.system("python2 ~/opt/script/prepFragsLAMW_index.py \
+        cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 0" % protein_name)
+    os.system("cp ~/opt/AAWSEM/parameter/* .")
+
+if(args.mode == 2):
+    protein_name = args.protein.split('.')[0]
+    do("~/opt/fasta2pdb.py "+protein_name)
+    os.system("~/opt/script/PdbCoords2Lammps.sh "+protein_name+" "+protein_name)
+    os.system("echo '>%s' > %s.fasta " % (protein_name.upper(), protein_name))
+    os.system("cat %s.seq >> %s.fasta" % (protein_name, protein_name))
+    os.system("cp ~/opt/jpredMassSubmitSchedule/casp_protein/_data/"+protein_name+" ssweight")
+    os.system("cp ~/opt/AAWSEM/HO_Mem/"+protein_name+"/frag.mem frag.mem_old")
+    os.system("sed 's/\/work\/pw8\/mc70\/script/\/home\/wl45/g' frag.mem_old > frag.mem")
+    # os.system("stride %s.pdb > ssweight.stride" % protein_name)
+    # os.system("python2 ~/opt/script/stride2ssweight.py > ssweight")
+    # os.system("python2 ~/opt/script/GetCACADistancesFile.py %s native.dat" % protein_name)
+    # os.system("python2 ~/opt/script/GetCACoordinatesFromPDB.py %s nativecoords.dat" % protein_name)
+    # os.system("cp ~/opt/database/* .")
+    # os.system("python2 ~/opt/script/prepFragsLAMW_index.py \
+    #     cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 0" % protein_name)
+    os.system("cp ~/opt/AAWSEM/parameter/* .")
 # os.system("cp ~/opt/parameter/* .")
 # os.system("python2 ~/opt/script/Pdb2Gro.py %s.pdb %s.gro" % (protein_name, protein_name))
 # os.system("cp ~/opt/variables.dat .")

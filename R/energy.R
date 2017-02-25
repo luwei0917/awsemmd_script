@@ -1,6 +1,26 @@
 library(tidyverse)
 library(gridExtra)
 library(stringr)
+
+setwd("~/Desktop/feb19/")
+## Example
+# we generate some random plot
+require(seqLog)
+## the first plot is taken from the seqLogo help ( ?seqLogo )
+## I selected this example on purpose because the seqLogo function is based on the grid graphics
+## and is coded in such a way that doesn't allow the use of the par() function
+mFile <- system.file("Exfiles/pwm1", package="seqLogo")
+m <- read.table(mFile)
+pwm <- makePWM(m)
+png("seqLogo1.png", width=400, height=400)
+seqLogo(pwm)
+dev.off()
+## totally unrelated
+png("plot1.png", width=400, height=400)
+plot(density(rnorm(1000)))
+dev.off()
+
+
 place <- "/Users/weilu/Research/server/project/aawsem/aawsemJan16/T0766_single/simulation_iteration_1/0"
 pre <- "/Users/weilu/Research/server/project/aawsem/aawsemJan16/T0766_single/simulation_iteration_1/"
 place <- str_c(pre, "13")

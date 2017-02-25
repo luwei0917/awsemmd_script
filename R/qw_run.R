@@ -1,6 +1,18 @@
 library(tidyverse)
 library(gridExtra)
 library(stringr)
+pre <- "/Users/weilu/Research/server/project/freeEnergy_2xov/2xov_go_model_folding_temperature/simulation/"
+target <- str_c(pre, "data")
+data <- read_csv(target)
+ggplot(data)+
+  aes(x=step, qw) +
+  geom_point(aes(color = run))+
+  geom_smooth()+
+  theme_bw() +
+  theme(axis.text=element_text(size=20)) +
+  theme(axis.title.x=element_text(size=30)) + 
+  theme(axis.title.y=element_text(size=30))
+
 # data <- read_csv("../../T0766/simulation_v2/data")
 # data <- read_csv("../../T0766/simulation_iteration_1/data")
 # data <- read_csv("../../T0766_single/simulation_iteration_1/data")
