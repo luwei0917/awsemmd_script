@@ -33,10 +33,10 @@ if len(sys.argv) == 1:
 
 # Set default command line arguments
 submit_to_cluster = True          # flag for submitting calculation to a cluster (eliminates interactivity)
-precision_threshold = 10e-13       # threshold to determine whether or not to attempt to compute expectation values
+precision_threshold = 10e-15       # threshold to determine whether or not to attempt to compute expectation values
 subsample_trajectories = False      # flag for using pymbar's built-in subsampling features
-compute_per_bin_quantities = False # flag for computing per-bin expectation values
-kB = 1.381e-23 * 6.022e23 / 4184.0 # Boltzmann constant in kcal/mol/K
+compute_per_bin_quantities = False  # flag for computing per-bin expectation values
+kB = 1.381e-23 * 6.022e23 / 4184.0  # Boltzmann constant in kcal/mol/K
 ndim = 2                           # dimension of the pmf, can be 1 or 2
 metadata_file = 'metadatafile'         # name of the metadata file
 biasing_variable_column = 5        # column in the trajectory file that contains the biasing variable information
@@ -681,9 +681,10 @@ for perturbation_index in range(nperturbations+1):
             bin_expectation[i] = mbar.computePerturbedExpectation(u_kn[perturbation_index], in_this_bin[i], compute_uncertainty=False)[0]
             if bin_expectation[i] > precision_threshold:
                 f_i[i] = -numpy.log(bin_expectation[i])
+                # print bin_expectation[i]
             else:
                 f_i[i] = numpy.nan
-                print bin_expectation[i]
+                # print bin_expectation[i]
             df_i[i] = 0.0
         for i in range(nreduced_bins):
             f_i[i] -= numpy.nanmin(f_i)

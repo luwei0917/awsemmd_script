@@ -79,16 +79,18 @@ if(args.test):
     #     for i in range(20):
     #         do("cat t_{1}/small_{0} >> small_data_t_{1}".format(i,temp))
     #         do("cat t_{1}/{0} >> data_t_{1}".format(i, temp))
-    kconstant = 150   # double the k constant
+    kconstant = 300   # double the k constant
 
     q0 = 0.0
     metadata = open("metadatafile", "w")
     for i in range(20):
         q = q0 + i*0.05
-        # temp_list = [135, 160, 185, 210]
+        temp_list = [135, 160, 185, 210]
         temp_list = [160]
+        temp_list = [210]
         for temp in temp_list:
-            target = "../data/t_{}/small_".format(temp) + str(i) + " {} {} {:.2f}\n".format(temp, kconstant, q)
+            # target = "../data/t_{}/small_".format(temp) + str(i) + " {} {} {:.2f}\n".format(temp, kconstant, q)
+            target = "../data/t_{}/".format(temp) + str(i) + " {} {} {:.2f}\n".format(temp, kconstant, q)
             metadata.write(target)
     metadata.close()
 
