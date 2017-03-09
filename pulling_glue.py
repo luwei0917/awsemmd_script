@@ -21,7 +21,8 @@ mypath = os.environ["PATH"]
 os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
 
-parser = argparse.ArgumentParser(description="This is my playground for current project")
+parser = argparse.ArgumentParser(description="Glue is for code needs constant changes to meet various needs\
+                                    of each task")
 
 # parser.add_argument("protein", help="the name of protein")
 # parser.add_argument("template", help="the name of template file")
@@ -59,7 +60,23 @@ if(args.plot):
 # ls */tinydata | sort -g | xargs cat > all_tinydata
 # awk '{print $3}' all_halfdata > p_total
 # awk '{print $4}' all_halfdata > e_total
+# ls [0-9]* |sort -g | xargs cat > data
 if(args.move):
+    if(args.mode == 4):
+        n = 20
+        temp_list = [135, 160, 185, 210]
+        # temp_list = ['300', '200', '250']
+        cwd = os.getcwd()
+        do("mkdir -p analysis")
+        for temp in temp_list:
+            do("mkdir -p analysis/{}".format(temp))
+            for i in range(n):
+                print(str(i))
+                do("cp simulation/{0}/{1}/data analysis/{0}/{1}".format(temp, i))
+                # do("cp simulation/{0}/{1}/small_data analysis/{0}/first_2000_{1}".format(temp, i))
+        cd("analysis")
+        do("mkdir data")
+        do("mv * data/")
     if(args.mode == 1):
         n = 40
         # temp_list = [250, 275, 300, 325, 350]
