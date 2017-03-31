@@ -35,6 +35,7 @@ simulation_steps = 6*10**6
 # temp_list = [250, 275, 325]
 # temp_list = [300]
 temp_list = [135, 160, 185, 210]
+# temp_list = [200, 250, 300]
 n = 20
 
 if(platform.system() == 'Darwin'):
@@ -102,11 +103,11 @@ for temp in temp_list:
             os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
             < "+protein_name+".in")
         elif(platform.system() == 'Linux'):
-            os.system("cp ~/opt/run.slurm .")
+            os.system("cp ~/opt/run_tmp.slurm run.slurm")
             os.system(  # replace PROTEIN with pdb name
-                    "sed -i.bak 's/PROTEIN/'" +
-                    protein_name +
-                    "'/g' run.slurm")
+                "sed -i.bak 's/PROTEIN/'" +
+                protein_name +
+                "'/g' run.slurm")
             os.system("sbatch run.slurm")
         else:
             print("system unkown")

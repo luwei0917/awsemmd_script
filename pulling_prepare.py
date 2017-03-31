@@ -79,14 +79,17 @@ srun {}
 """
 
 if(args.test):
-    for i in range(40):
-        print(i)
-        cd(str(i))
-        do("paste qw energy | tail -n 4000 > q_e")
-        # do("cp ~/opt/pulling/qo.slurm .")
-        # do("sbatch qo.slurm")
-        # extract_data()
-        cd("..")
+    cd("simulation")
+    a = glob.glob("*")
+    print(a)
+    # for i in range(40):
+    #     print(i)
+    #     cd(str(i))
+    #     do("paste qw energy | tail -n 4000 > q_e")
+    #     # do("cp ~/opt/pulling/qo.slurm .")
+    #     # do("sbatch qo.slurm")
+    #     # extract_data()
+    #     cd("..")
 
 if(args.summary):
     if(args.mode == 1):
@@ -164,10 +167,12 @@ if(args.qnqc):
         # temp_list = [250,275, 325]
         # temp_list = [200]
         temp_list = [135, 160, 185, 210]
+        # temp_list = ['300', '200', '250']
         cwd = os.getcwd()
         for temp in temp_list:
             for i in range(n):
                 cd("simulation/{}/{}".format(temp, i))
+                do("cp 2xov_translocon.pdb 2xov.pdb")
                 do("cp ~/opt/pulling/qnqc.slurm .")
                 do("sbatch qnqc.slurm")
                 # with open("server_run.slurm", "w") as f:
@@ -204,6 +209,24 @@ if(args.qnqc):
             # do("sbatch server_run.slurm")
             cd(cwd)
 if(args.data):
+    if(args.mode == 7):
+        n = 20
+        temp_list = ['300', '200', '250']
+        cwd = os.getcwd()
+        for temp in temp_list:
+            for i in range(n):
+                print(str(i))
+                cd("simulation/{}/{}".format(temp, i))
+                do("awk '{print $2}' wham.dat > qw")
+                do("awk '{print $6}' wham.dat > energy")
+                do("paste qn qc qw energy | tail -n 2000 > data")
+                # do("tail -n 2000 data > small_data")
+                # do("head -n 5800 wham.dat | tail -n 4000 | awk '{print $2}' > qw")
+                # do("head -n 5800 wham.dat | tail -n 4000 | awk '{print $5}' > e")
+                # do("head -n 5800 qn | tail -n 4000 > qn_half")
+                # do("head -n 5800 qc | tail -n 4000 > qc_half")
+                # do("paste qn qc | head -n 5800 | tail -n 4000 > qnqc")
+                cd(cwd)
     if(args.mode == 6):
         n = 20
         temp_list = [135, 160, 185, 210]

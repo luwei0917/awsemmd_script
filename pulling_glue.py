@@ -21,7 +21,8 @@ mypath = os.environ["PATH"]
 os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
 
-parser = argparse.ArgumentParser(description="This is my playground for current project")
+parser = argparse.ArgumentParser(description="Glue is for code needs constant changes to meet various needs\
+                                    of each task")
 
 # parser.add_argument("protein", help="the name of protein")
 # parser.add_argument("template", help="the name of template file")
@@ -59,7 +60,117 @@ if(args.plot):
 # ls */tinydata | sort -g | xargs cat > all_tinydata
 # awk '{print $3}' all_halfdata > p_total
 # awk '{print $4}' all_halfdata > e_total
+# ls [0-9]* |sort -g | xargs cat > data
+
+
+def move_data_to_wham(temp_list):
+    for temp in temp_list:
+        do("cp ../data/{}/data data".format(temp))
+        do("awk '{print $1}' data > qn_t%i" % (temp))
+        do("awk '{print $2}' data > qc_t%i" % (temp))
+        do("awk '{print $3}' data > q_t%i" % (temp))
+        do("awk '{print $4}' data > energy_t%i" % (temp))
+
+
+def write_simulation_list(temp_list):
+    with open("T_list", "w") as f:
+        for temp in temp_list:
+            f.write(str(temp)+"\n")
+    with open("sim_list", "w") as f:
+        for temp in temp_list:
+            f.write("t"+str(temp)+"\n")
+
+
+def get_total_x(temp_list):
+    x_list = ["q", "qn", "qc", "energy"]
+    for x in x_list:
+        for temp in temp_list:
+            do("cat {0}_t{1} >> {0}_total".format(x, temp))
+
+
+def replace_random(file_name):
+    do(  # replace RANDOM with a radnom number
+        "sed -i.bak 's/RANDOM/'" +
+        str(randint(1, 10**6)) +
+        "'/g' {}".format(file_name))
+
+
+
 if(args.move):
+    if(args.mode == 14):
+        n = 40
+        do("mkdir -p analysis/data")
+        for j in [0, 1]:
+            for i in range(n):
+                do("cp simulation/{0}/{1}/addforce.dat analysis/data/{0}_{1}.dat".format(i, j))
+    if(args.mode == 13):
+        replace_random("*.in")
+    if(args.mode == 12):
+        seed(datetime.now())
+        n = 40
+        cwd = os.getcwd()
+        # do("cp -r simulation back_up")
+        for i in range(n):
+            cd("simulation/" + str(i))
+            do("cp -r ~/continue_run_addon/* .")
+            replace_random("2xov_1.in")
+            # do("cp 2xov_a206g.seq 2xov.seq")
+            do("cp 2xov_l155a.seq 2xov.seq")
+            do("mv addforce.dat energy.dat dump.lammpstrj wham.dat 0/")
+            do("sbatch run_1.slurm")
+            cd(cwd)
+    if(args.mode == 11):
+        n = 40
+        do("mkdir -p analysis/data")
+        for i in range(n):
+            do("cp simulation/{0}/addforce.dat analysis/data/{0}.dat".format(i))
+    if(args.mode == 10):
+        folder_name = "multi_temp_2"
+        do("mkdir "+folder_name)
+        cd(folder_name)
+        temp_list = [135, 160, 185, 210]
+        move_data_to_wham(temp_list)
+        write_simulation_list(temp_list)
+        get_total_x(temp_list)
+        sim_list = 't135 t160 t185 t210'
+        temp_list = '135 160 185 210'
+        do("mult_calc_cv.sc . '{}' 20 '{}' 150 350 10 30 200 0 0.95 2xov q".format(sim_list, temp_list))
+        cd("..")
+    if(args.mode == 9):
+        do("mult_calc_cv.sc . 't135 t160 t185 t210' 20 '135 160 185 210' 150 350 10 30 200 0 0.95 2xov q")
+    if(args.mode == 8):
+        x_list = ["q", "qn", "qc", "energy"]
+        temp_list = [135, 160, 185, 210]
+        for x in x_list:
+            for temp in temp_list:
+                do("cat {0}_t{1} >> {0}_total".format(x, temp))
+    if(args.mode == 7):
+        temp_list = [135, 160, 185, 210]
+        write_simulation_list(temp_list)
+    if(args.mode == 6):
+        temp_list = [135, 160, 185, 210]
+        move_data_to_wham(temp_list)
+    if(args.mode == 5):
+        temp_list = [135, 160, 185, 210]
+        for temp in temp_list:
+            cd(str(temp))
+            do("ls [0-9]* |sort -g | xargs cat > data")
+            cd("..")
+    if(args.mode == 4):
+        n = 20
+        temp_list = [135, 160, 185, 210]
+        # temp_list = ['300', '200', '250']
+        cwd = os.getcwd()
+        do("mkdir -p analysis")
+        for temp in temp_list:
+            do("mkdir -p analysis/{}".format(temp))
+            for i in range(n):
+                print(str(i))
+                do("cp simulation/{0}/{1}/data analysis/{0}/{1}".format(temp, i))
+                # do("cp simulation/{0}/{1}/small_data analysis/{0}/first_2000_{1}".format(temp, i))
+        cd("analysis")
+        do("mkdir data")
+        do("mv * data/")
     if(args.mode == 1):
         n = 40
         # temp_list = [250, 275, 300, 325, 350]
@@ -96,19 +207,20 @@ if(args.move):
             do("awk '{print $2}' data > qc_t%i" % (temp))
             do("awk '{print $3}' data > q_t%i" % (temp))
             do("awk '{print $4}' data > energy_t%i" % (temp))
-if(args.test):
+# if(args.test):
     # force_list = [1.0, 1.2, 1.4, 1.6, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5]
     # force_list = [round(i*0.1,2) for i in range(10)]
-    force_list = [round(i*0.1,2) for i in range(20)]
-    # force_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    for force in force_list:
-        do("mkdir {}".format(force))
-        cd("{}".format(force))
-        do("cp ../freeEnergy.slurm .")
-        do("cp ../metadatafile .")
-        do(
-            "sed -i.bak 's/FORCE/" +
-            str(force) +
-            "/g' freeEnergy.slurm")
-        do("sbatch freeEnergy.slurm")
-        cd("..")
+    # force_list = [round(i*0.1,2) for i in range(20)]
+    # # force_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+
+    # for force in force_list:
+    #     do("mkdir {}".format(force))
+    #     cd("{}".format(force))
+    #     do("cp ../freeEnergy.slurm .")
+    #     do("cp ../metadatafile .")
+    #     do(
+    #         "sed -i.bak 's/FORCE/" +
+    #         str(force) +
+    #         "/g' freeEnergy.slurm")
+    #     do("sbatch freeEnergy.slurm")
+    #     cd("..")

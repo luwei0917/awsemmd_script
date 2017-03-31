@@ -31,7 +31,7 @@ mypath = os.environ["PATH"]
 os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
 
-parser = argparse.ArgumentParser(description="This is my playground for current project")
+parser = argparse.ArgumentParser(description="Analysis code, need run multiple times")
 
 # parser.add_argument("protein", help="the name of protein")
 # parser.add_argument("template", help="the name of template file")
@@ -74,41 +74,38 @@ else:
 
 
 if(args.test):
-    # temp_list = [135, 160, 185, 210]
-    # for temp in temp_list:
-    #     for i in range(20):
-    #         do("cat t_{1}/small_{0} >> small_data_t_{1}".format(i,temp))
-    #         do("cat t_{1}/{0} >> data_t_{1}".format(i, temp))
-    kconstant = 300   # double the k constant
-
-    q0 = 0.0
-    metadata = open("metadatafile", "w")
-    for i in range(20):
-        q = q0 + i*0.05
-        temp_list = [135, 160, 185, 210]
-        temp_list = [160]
-        temp_list = [210]
-        for temp in temp_list:
-            # target = "../data/t_{}/small_".format(temp) + str(i) + " {} {} {:.2f}\n".format(temp, kconstant, q)
-            target = "../data/t_{}/".format(temp) + str(i) + " {} {} {:.2f}\n".format(temp, kconstant, q)
-            metadata.write(target)
-    metadata.close()
-
-    # for temp in temp_list:
-    #     do("mkdir -p data/t_{}".format(temp))
-    #     for i in range(n):
-    #         print(str(i))
-    #         # do("cp simulation/{0}/{1}/data data/t_{0}/{1}".format(temp, i))
-    #         do("cp simulation/{0}/{1}/small_data data/t_{0}/small_{1}".format(temp, i))
-    # folder_list = glob.glob("T_*")
-    # with open("complete_folder_list","w") as f:
-    #     for i in folder_list:
-    #         f.write(i+"\n")
+    print("hello world")
 
 if(args.rate):
     file_name = "test"
     with open("data") as f:
         names = next(f)
+
+
+def move_data_to_wham(temp_list):
+    for temp in temp_list:
+        do("cp ../data/{}/data data".format(temp))
+        do("awk '{print $1}' data > qn_t%i" % (temp))
+        do("awk '{print $2}' data > qc_t%i" % (temp))
+        do("awk '{print $3}' data > q_t%i" % (temp))
+        do("awk '{print $4}' data > energy_t%i" % (temp))
+
+
+def write_simulation_list(temp_list):
+    with open("T_list", "w") as f:
+        for temp in temp_list:
+            f.write(str(temp)+"\n")
+    with open("sim_list", "w") as f:
+        for temp in temp_list:
+            f.write("t"+str(temp)+"\n")
+
+
+def get_total_x(temp_list):
+    x_list = ["q", "qn", "qc", "energy"]
+    for x in x_list:
+        for temp in temp_list:
+            do("cat {0}_t{1} >> {0}_total".format(x, temp))
+
 
 
 freeEnergy = """\
@@ -131,6 +128,22 @@ if(args.freeEnergy):
     nsample = 2000
     force = 0
     temp_arg = "-f {} -nsamples {}".format(force, nsample)
+    if(args.mode == 9):
+        folder_name = "multi_temp_2"
+        do("mkdir "+folder_name)
+        cd(folder_name)
+        temp_list = [135, 160, 185, 210]
+        move_data_to_wham(temp_list)
+        write_simulation_list(temp_list)
+        get_total_x(temp_list)
+        sim_list = 't135 t160 t185 t210'
+        temp_list = '135 160 185 210'
+        do("mult_calc_cv.sc . '{}' 20 '{}' 150 350 10 30 200 0 0.95 2xov q".format(sim_list, temp_list))
+        cd("..")
+    if(args.mode == 8):
+        arg = "-b 3 -e 4 -d 2 -v1 1 -v1n 20 -v2 2 -v2n 20 -f 0 -nsamples 10000"
+    if(args.mode == 7):
+        arg = "-b 3 -e 4 -d 1 -v1 3 -v1n 30 -f 0 -nsamples 10000"
     if(args.mode == 6):
         arg = "-b 3 -e 4 -d 1 -v1 3 -v1n 30 -f 0 -nsamples 4000"
     if(args.mode == 1):

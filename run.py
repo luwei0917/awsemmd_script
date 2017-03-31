@@ -36,6 +36,9 @@ parser.add_argument("-o", "--offAuto", help="turn off from Read from \
                     config file", action="store_true", default=False)
 parser.add_argument("-i", "--inplace", help="change in this folder",
                     action="store_true", default=False)
+parser.add_argument("-m", "--mode",
+                    help="mode 2 is dependence run",
+                    type=int, default=1)
 args = parser.parse_args()
 # TODO:
 # add clean command.
@@ -98,6 +101,42 @@ def set_up():
                 "'/g' "+protein_name+".in")
 
 
+
+def set_up2():
+    seed(datetime.now())
+    os.system(  # replace SIMULATION_STEPS with specific steps
+        "sed -i.bak 's/WARM_UP_STEPS/'" +
+        str(warm_up_steps) +
+        "'/g' *.in")
+    os.system(  # replace RANDOM with a radnom number
+        "sed -i.bak 's/RANDOM/'" +
+        str(randint(1, 10**6)) +
+        "'/g' *.in")
+    os.system(  # replace SIMULATION_STEPS with specific steps
+        "sed -i.bak 's/SIMULATION_STEPS/'" +
+        str(simulation_steps) +
+        "'/g' *.in")
+    if args.steps == -1:
+        os.system(  # replace TEMPERATURE with specific steps
+            "sed -i.bak 's/Q0/'" +
+            str(0.5) +
+            "'/g' fix_qbias_coeff.data")
+        os.system(  # replace TEMPERATURE with specific steps
+            "sed -i.bak 's/TEMPERATURE/'" +
+            str(350) +
+            "'/g' "+protein_name+".in")
+    if(not args.offAuto):
+            os.system(  # replace SIMULATION_STEPS with specific steps
+                "sed -i.bak 's/TSTART/'" +
+                str(TSTART) +
+                "'/g' "+protein_name+".in")
+            os.system(  # replace SIMULATION_STEPS with specific steps
+                "sed -i.bak 's/TEND/'" +
+                str(TEND) +
+                "'/g' "+protein_name+".in")
+
+
+
 def batch_run():
     if(platform.system() == 'Darwin'):
         os.system("/Users/weilu/bin/lmp_serial < "+protein_name+".in")
@@ -115,6 +154,19 @@ def batch_run():
         print("system unkown")
 
 
+
+def batch_run2():
+    if(platform.system() == 'Darwin'):
+        os.system("/Users/weilu/bin/lmp_serial < "+protein_name+".in")
+        # os.system("/Users/weilu/Research/Build/lammps-9Oct12_modified/src/lmp_serial \
+        # < "+protein_name+".in")
+    elif(platform.system() == 'Linux'):
+        os.system("bash loopsubmit.bash")
+        sleep(0.2)  # Time in seconds.
+    else:
+        print("system unkown")
+
+
 if(args.inplace):
     set_up()
     batch_run()
@@ -124,8 +176,13 @@ else:
         os.system("mkdir -p simulation/"+str(i))
         os.system("cp -r "+protein_name+"/* simulation/"+str(i))
         os.chdir("simulation/"+str(i))
-        set_up()
-        batch_run()
-        os.chdir("../..")
+        if(args.mode == 2):
+            set_up2()
+            batch_run2()
+            os.chdir("../..")
+        else:
+            set_up()
+            batch_run()
+            os.chdir("../..")
 
 # print("hello world")
