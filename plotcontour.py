@@ -44,14 +44,14 @@ data = data[~np.isnan(data).any(axis=1)] # remove rows with nan
 data = data[~(data[:,args.z] > args.zmax)] # remove rows of data for z not in [zmin zmax]
 data = data[~(data[:,args.z] < args.zmin)]
 
-xi = np.linspace(min(data[:,args.x]), max(data[:,args.x]), 50)
-yi = np.linspace(min(data[:,args.y]), max(data[:,args.y]), 50)
+xi = np.linspace(min(data[:,args.x]), max(data[:,args.x]), 20)
+yi = np.linspace(min(data[:,args.y]), max(data[:,args.y]), 20)
 zi = griddata((data[:,args.x], data[:,args.y]), data[:,args.z], (xi[None,:], yi[:,None]), method='linear')
-#plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
+# plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
 jet = cm = plt.get_cmap('jet')
 print(jet)
-plt.contourf(xi, yi, zi, 50, cmap='rainbow')
-
+# plt.contourf(xi, yi, zi, 20, cmap='rainbow')
+plt.contourf(xi, yi, zi, 30, cmap='jet')
 plt.xlim(args.xmin, args.xmax)
 plt.ylim(args.ymin, args.ymax)
 plt.clim(args.zmin, args.zmax)
