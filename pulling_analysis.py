@@ -82,6 +82,32 @@ if(args.rate):
         names = next(f)
 
 
+def move_data_to_wham(temp_list):
+    for temp in temp_list:
+        do("cp ../data/{}/data data".format(temp))
+        do("awk '{print $1}' data > qn_t%i" % (temp))
+        do("awk '{print $2}' data > qc_t%i" % (temp))
+        do("awk '{print $3}' data > q_t%i" % (temp))
+        do("awk '{print $4}' data > energy_t%i" % (temp))
+
+
+def write_simulation_list(temp_list):
+    with open("T_list", "w") as f:
+        for temp in temp_list:
+            f.write(str(temp)+"\n")
+    with open("sim_list", "w") as f:
+        for temp in temp_list:
+            f.write("t"+str(temp)+"\n")
+
+
+def get_total_x(temp_list):
+    x_list = ["q", "qn", "qc", "energy"]
+    for x in x_list:
+        for temp in temp_list:
+            do("cat {0}_t{1} >> {0}_total".format(x, temp))
+
+
+
 freeEnergy = """\
 #!/bin/bash
 #SBATCH --job-name=CTBP_WL
@@ -102,6 +128,18 @@ if(args.freeEnergy):
     nsample = 2000
     force = 0
     temp_arg = "-f {} -nsamples {}".format(force, nsample)
+    if(args.mode == 9):
+        folder_name = "multi_temp_2"
+        do("mkdir "+folder_name)
+        cd(folder_name)
+        temp_list = [135, 160, 185, 210]
+        move_data_to_wham(temp_list)
+        write_simulation_list(temp_list)
+        get_total_x(temp_list)
+        sim_list = 't135 t160 t185 t210'
+        temp_list = '135 160 185 210'
+        do("mult_calc_cv.sc . '{}' 20 '{}' 150 350 10 30 200 0 0.95 2xov q".format(sim_list, temp_list))
+        cd("..")
     if(args.mode == 8):
         arg = "-b 3 -e 4 -d 2 -v1 1 -v1n 20 -v2 2 -v2n 20 -f 0 -nsamples 10000"
     if(args.mode == 7):

@@ -33,7 +33,7 @@ if len(sys.argv) == 1:
 
 # Set default command line arguments
 submit_to_cluster = True          # flag for submitting calculation to a cluster (eliminates interactivity)
-precision_threshold = 10e-15       # threshold to determine whether or not to attempt to compute expectation values
+precision_threshold = 10e-18       # threshold to determine whether or not to attempt to compute expectation values
 subsample_trajectories = False      # flag for using pymbar's built-in subsampling features
 compute_per_bin_quantities = False  # flag for computing per-bin expectation values
 kB = 1.381e-23 * 6.022e23 / 4184.0  # Boltzmann constant in kcal/mol/K

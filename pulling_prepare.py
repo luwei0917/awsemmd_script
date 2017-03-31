@@ -172,7 +172,7 @@ if(args.qnqc):
         for temp in temp_list:
             for i in range(n):
                 cd("simulation/{}/{}".format(temp, i))
-		do("cp 2xov_translocon.pdb 2xov.pdb")
+                do("cp 2xov_translocon.pdb 2xov.pdb")
                 do("cp ~/opt/pulling/qnqc.slurm .")
                 do("sbatch qnqc.slurm")
                 # with open("server_run.slurm", "w") as f:

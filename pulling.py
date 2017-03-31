@@ -69,6 +69,8 @@ if(args.save):
     os.system("cp ~/opt/plot.py plot_{}.py".format(datetime.datetime.now().strftime("%Y%m%d-%H%M")))
 
 if(args.mode == 1):
+    do("pulling_prepare.py --data -m 6")
+    do("pulling_glue.py --move -m 4")
     folder = "wham"
     do("mkdir " + folder)
     cd(folder)

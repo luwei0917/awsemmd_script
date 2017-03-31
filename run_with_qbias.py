@@ -105,9 +105,9 @@ for temp in temp_list:
         elif(platform.system() == 'Linux'):
             os.system("cp ~/opt/run_tmp.slurm run.slurm")
             os.system(  # replace PROTEIN with pdb name
-                    "sed -i.bak 's/PROTEIN/'" +
-                    protein_name +
-                    "'/g' run.slurm")
+                "sed -i.bak 's/PROTEIN/'" +
+                protein_name +
+                "'/g' run.slurm")
             os.system("sbatch run.slurm")
         else:
             print("system unkown")

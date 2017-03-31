@@ -56,6 +56,7 @@ if(args.test):
     if(args.mode == 1):
         qStep = 0.05
         temp_list = [135, 160, 185, 210]
+        # temp_list = [160]
         # temp_list = ['300', '200', '250']
         if(args.additionalMode == 1):
             pre_fix = "first_2000_"
@@ -65,7 +66,8 @@ if(args.test):
         q = q0 + i * qStep
         name = pre_fix + str(i)
         for temp in temp_list:
-            # target = "../data/t_{}/small_".format(temp) + str(i) + " {} {} {:.2f}\n".format(temp, kconstant, q)
             target = "../data/{}/".format(temp) + name + " {} {} {:.2f}\n".format(temp, kconstant, q)
+            # target = "../data/t_{}/small_".format(temp) + str(i) + " {} {} {:.2f}\n".format(temp, kconstant, q)
+            # target = "../data/{}/".format(temp) + name + " {} {} {:.2f}\n".format(temp, kconstant, q)
             metadata.write(target)
     metadata.close()
