@@ -19,7 +19,7 @@ parser.add_argument("-n", "--number", type=int, default=20)
 
 parser.add_argument("-m", "--mode", type=int, default=1)
 parser.add_argument("-a", "--additionalMode", type=int, default=1)
-
+parser.add_argument("-p", "--pick", type=int, default=0)
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("-s", "--save", action="store_true", default=False)
@@ -71,3 +71,17 @@ if(args.test):
             # target = "../data/{}/".format(temp) + name + " {} {} {:.2f}\n".format(temp, kconstant, q)
             metadata.write(target)
     metadata.close()
+
+
+if(args.pick):
+    metadata = open("metadatafile", "w")
+    # folder_list = [4, 23, 27, 29, 30, 35, 36, 37, 38]
+    folder_list = [41, 42, 45, 91, 95, 7, 33]
+    for i in folder_list:
+        for j in [0, 1]:
+            if(i > 39):
+                ii = i - 40
+                target = "/scratch/wl45/april_2017/pulling/force_0.5/wt_2/simulation/{0}/{1}/data\n".format(ii, j)
+            else:
+                target = "/scratch/wl45/april_2017/pulling/force_0.5/wt/simulation/{0}/{1}/data\n".format(i, j)
+            metadata.write(target)

@@ -30,9 +30,10 @@ else:
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 os.system("cp ~/opt/variable_test_run.py .")
 
-folder_list = open('folder_list_feb14', 'w')
+folder_list = open('folder_list', 'w')
 distance_list = np.arange(20, 350, 5)
-temp_list = np.arange(250, 400, 50)
+# temp_list = np.arange(250, 400, 50)
+temp_list = [300]
 folder_name = ""
 cwd = os.getcwd()
 os.system("mkdir -p simulation")
@@ -57,7 +58,7 @@ for temp in temp_list:
         #     "sed -i.bak 's/MGamma/'" +
         #     str(MGamma) +
         #     "'/g' fix_backbone_coeff.data")
-        do("run.py " + protein_name + " -o -s 6 -i")
+        do("run.py " + protein_name + " -o -s 5 -i")
         # os.system("run.py " + protein_name + "/ -o -n 1 -s 6 -i")
         cd(cwd)
 

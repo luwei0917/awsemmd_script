@@ -69,7 +69,7 @@ display resetview
 
 animate speed 0.168831
 
-label add Bonds 0/3 0/902 
+label add Bonds 0/3 0/902
 color Labels Bonds red
 #animate forward
 #animate goto 450

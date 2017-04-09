@@ -161,6 +161,24 @@ if(args.summary):
                         out.write("{}, {}, {}, {}, {}, {}\n".format(count, step, qw, q, i, energy))
                         # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
 if(args.qnqc):
+    if(args.mode == 4):
+        n = 80
+        # temp_list = [300,350]
+        # temp_list = [250,275, 325]
+        # temp_list = [200]
+        temp_list = [0, 1]
+        # temp_list = ['300', '200', '250']
+        cwd = os.getcwd()
+        for temp in temp_list:
+            for i in range(n):
+                cd("simulation/{}/{}".format(i, temp))
+                do("cp ../2xov.pdb .")
+                do("cp ~/opt/pulling/qnqc.slurm .")
+                do("sbatch qnqc.slurm")
+                # with open("server_run.slurm", "w") as f:
+                #     f.write(server_run.format("read_dump_file.py"))
+                # do("sbatch server_run.slurm")
+                cd(cwd)
     if(args.mode == 1):
         n = 20
         # temp_list = [300,350]
@@ -209,6 +227,25 @@ if(args.qnqc):
             # do("sbatch server_run.slurm")
             cd(cwd)
 if(args.data):
+    if(args.mode == 8):
+        n = 80
+        # temp_list = [300,350]
+        # temp_list = [250,275, 325]
+        # temp_list = [200]
+        run_list = [0, 1]
+        # temp_list = ['300', '200', '250']
+        cwd = os.getcwd()
+        for run in run_list:
+            for i in range(n):
+                cd("simulation/{}/{}".format(i, run))
+                do("awk '{print $1}' addforce.dat > steps")
+                do("awk '{print $2}' addforce.dat > distance")
+                do("awk '{print $17}' energy.dat > energy")
+                do("paste -d, steps distance qn qc energy > data")
+                cd(cwd)
+                # with open("server_run.slurm", "w") as f:
+                #     f.write(server_run.format("read_dump_file.py"))
+                # do("sbatch server_run.slurm")
     if(args.mode == 7):
         n = 20
         temp_list = ['300', '200', '250']

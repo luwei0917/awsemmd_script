@@ -9,9 +9,9 @@ build_pdb_script = '~/opt/script/BuildAllAtomsFromLammps.py'
 def build_pdb(dump_file, snapshot_index, structure_index):
     path, file_name = os.path.split(dump_file)
     print path
-    print "%s %s %s structure%s %s -seq %s/../2xov.seq" % (python_exec, build_pdb_script, dump_file, structure_index, snapshot_index, path)
-    os.system("%s %s %s structure%s %s -seq ~/opt/pulling/2xov.seq" % (python_exec, build_pdb_script, dump_file, structure_index, snapshot_index))
-# render Tachyon select.dat "'/Applications/VMD 1.9.2.app/Contents/vmd/tachyon_MACOSXX86'" -aasamples 12 %s -format TARGA -o select.tga -res 2000 2000
+    print "%s %s %s structure%s %s -seq %s/*.seq" % (python_exec, build_pdb_script, dump_file, structure_index, snapshot_index, path)
+    os.system("%s %s %s structure%s %s -seq %s/*.seq" % (python_exec, build_pdb_script, dump_file, structure_index, snapshot_index, path))
+
 # Lists
 data_array = []
 files_array = []
@@ -23,8 +23,8 @@ dump_file_name = "dump.lammpstrj"
 output_file_name = "pick_structures_all.dat"
 structure_output_file_name = "pick_structures.dat"
 structure_index = 1
-structure_stride = 1050
-max_pdbs_to_build = 30
+structure_stride = 305
+max_pdbs_to_build = 20
 pdb_index = 0
 found_pdb_index = 0
 
@@ -46,7 +46,6 @@ if len(sys.argv) > 3:
             condition = sys.argv[j].split("lt")
         conditions.append(condition)
 
-# print(conditions)
 # Load all data into array
 for line in open(metadata_file, "r"):
     line = line.split()
@@ -56,15 +55,13 @@ for line in open(metadata_file, "r"):
     data_array.append([])
     line_index = 0
     for data in open(file_name, "r"):
-        data = data.strip("\n").split(",")
-        # print(data)
+        data = data.split()
         if data[0] == "#timestep": continue
-        if data[0] == "Steps": continue
         data_array[files_array.index(file_name)].append([])
         for i in range(len(data)):
             data_array[files_array.index(file_name)][line_index].append(float(data[i]))
         line_index += 1
-    # print(len(data_array))
+
 # loop over data and output those points that satisfy all conditions
 if not os.path.exists(output_directory):
     os.mkdir(output_directory)

@@ -24,6 +24,7 @@ else:
 
 protein_name = args.protein.split('.')[0]
 if(args.number == -1):
+    do("cp ~/opt/pulling/2xov.seq .")
     if(not args.plot):
         os.system("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie "+protein_name+".seq")
         # os.system(

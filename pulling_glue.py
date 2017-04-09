@@ -98,11 +98,11 @@ def replace_random(file_name):
 
 if(args.move):
     if(args.mode == 14):
-        n = 40
+        n = 80
         do("mkdir -p analysis/data")
         for j in [0, 1]:
             for i in range(n):
-                do("cp simulation/{0}/{1}/addforce.dat analysis/data/{0}_{1}.dat".format(i, j))
+                do("cp simulation/{0}/{1}/data analysis/data/{0}_{1}.dat".format(i, j))
     if(args.mode == 13):
         replace_random("*.in")
     if(args.mode == 12):
