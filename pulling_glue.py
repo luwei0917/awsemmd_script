@@ -100,7 +100,7 @@ if(args.move):
     if(args.mode == 14):
         n = 80
         do("mkdir -p analysis/data")
-        for j in [0, 1]:
+        for j in [0, 1, 2]:
             for i in range(n):
                 do("cp simulation/{0}/{1}/data analysis/data/{0}_{1}.dat".format(i, j))
     if(args.mode == 13):

@@ -19,7 +19,7 @@ parser.add_argument("-n", "--number", type=int, default=20)
 
 parser.add_argument("-m", "--mode", type=int, default=1)
 parser.add_argument("-a", "--additionalMode", type=int, default=1)
-parser.add_argument("-p", "--pick", type=int, default=0)
+parser.add_argument("-p", "--pick", default=None)
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("-s", "--save", action="store_true", default=False)
@@ -74,14 +74,25 @@ if(args.test):
 
 
 if(args.pick):
+    # print("Hello")
     metadata = open("metadatafile", "w")
     # folder_list = [4, 23, 27, 29, 30, 35, 36, 37, 38]
-    folder_list = [41, 42, 45, 91, 95, 7, 33]
+    # folder_list = [41, 42, 45, 91, 95, 7, 33]
+    # force 0.3, dis 55-65
+    # folder_list = [0, 2, 4, 6, 7, 9, 12, 13, 16, 17, 18, 25, 27, 30, 32, 33, 39]
+    # force 0.3, dis 45-55
+    # folder_list = [13, 17, 23, 24, 6, 8]
+    # dis 170-185, force 0.3
+    folder_list = args.pick.split(",")
+    folder_list = [int(i) for i in folder_list]
+    print(folder_list)
+    cwd = os.getcwd()
+    print(cwd)
     for i in folder_list:
         for j in [0, 1]:
             if(i > 39):
                 ii = i - 40
-                target = "/scratch/wl45/april_2017/pulling/force_0.5/wt_2/simulation/{0}/{1}/data\n".format(ii, j)
+                target = cwd + "/../wt_2/simulation/{0}/{1}/data\n".format(ii, j)
             else:
-                target = "/scratch/wl45/april_2017/pulling/force_0.5/wt/simulation/{0}/{1}/data\n".format(i, j)
+                target = cwd + "/../wt/simulation/{0}/{1}/data\n".format(i, j)
             metadata.write(target)

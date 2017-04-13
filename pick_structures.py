@@ -23,8 +23,8 @@ dump_file_name = "dump.lammpstrj"
 output_file_name = "pick_structures_all.dat"
 structure_output_file_name = "pick_structures.dat"
 structure_index = 1
-structure_stride = 1050
-max_pdbs_to_build = 30
+structure_stride = 3050
+max_pdbs_to_build = 20
 pdb_index = 0
 found_pdb_index = 0
 
@@ -74,6 +74,7 @@ structure_output_file = open(structure_output_file_name, "w")
 vmd_out = open("vmd.tcl", "w")
 
 for data_file in files_array:
+    new_traj = True
     path_name, data_file_name = os.path.split(data_file)
     file_index = files_array.index(data_file)
     data_index = 0
@@ -93,6 +94,7 @@ for data_file in files_array:
             found_pdb_index += 1
             dump_file = data_file.replace(data_file_name,dump_file_name)
             output_file.write("%d %s %s\n" % (structure_index, dump_file, str(data_point).replace(',','').replace('[','').replace(']','')))
+            # if pdb_index < max_pdbs_to_build and (found_pdb_index % structure_stride == 0 or new_traj is True):
             if pdb_index < max_pdbs_to_build and found_pdb_index % structure_stride == 0:
                 structure_output_file.write("%d %s %s\n" % (structure_index, dump_file, str(data_point).replace(',','').replace('[','').replace(']','')))
                 build_pdb(dump_file, int(data_array[file_index].index(data_point)+1), structure_index)
@@ -100,6 +102,7 @@ for data_file in files_array:
                 vmd_out.write("mol modcolor 0 [molinfo top] Index\n")
                 vmd_out.write("mol modstyle 0 [molinfo top] NewCartoon 0.300000 10.000000 4.100000 0\n")
                 pdb_index += 1
+                new_traj = False
             structure_index += 1
 
         data_index += 1

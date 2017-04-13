@@ -9,7 +9,7 @@
 # Last Update: 03/04/2011
 # ----------------------------------------------------------------------
 
-from pylab import *
+from maplotlib.pyplot import *
 
 import sys
 from VectorAlgebra import *
