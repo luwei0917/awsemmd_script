@@ -88,11 +88,18 @@ if(args.pick):
     print(folder_list)
     cwd = os.getcwd()
     print(cwd)
-    for i in folder_list:
-        for j in [0, 1]:
-            if(i > 39):
-                ii = i - 40
-                target = cwd + "/../wt_2/simulation/{0}/{1}/data\n".format(ii, j)
-            else:
-                target = cwd + "/../wt/simulation/{0}/{1}/data\n".format(i, j)
-            metadata.write(target)
+    if(args.mode == 1):
+        for i in folder_list:
+            for j in range(0, 7):
+                target = cwd + "/../wt_2/simulation/{0}/{1}/data\n".format(i, j)
+                metadata.write(target)
+
+    if(args.mode == 2):
+        for i in folder_list:
+            for j in [0, 1]:
+                if(i > 39):
+                    ii = i - 40
+                    target = cwd + "/../wt_2/simulation/{0}/{1}/data\n".format(ii, j)
+                else:
+                    target = cwd + "/../wt/simulation/{0}/{1}/data\n".format(i, j)
+                metadata.write(target)

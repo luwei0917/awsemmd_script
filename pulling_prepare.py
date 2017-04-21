@@ -166,7 +166,11 @@ if(args.qnqc):
         # temp_list = [300,350]
         # temp_list = [250,275, 325]
         # temp_list = [200]
-        temp_list = [0, 1, 2]
+        # temp_list = [0, 1, 2]
+        # temp_list = [3]
+        # temp_list = [4, 5]
+        temp_list = [6]
+        temp_list = [7]
         # temp_list = ['300', '200', '250']
         cwd = os.getcwd()
         for temp in temp_list:
@@ -232,7 +236,10 @@ if(args.data):
         # temp_list = [300,350]
         # temp_list = [250,275, 325]
         # temp_list = [200]
-        run_list = [0, 1, 2]
+        # run_list = [0, 1, 2]
+        # run_list = [3]
+        # run_list = [4, 5]
+        run_list = [6]
         # temp_list = ['300', '200', '250']
         cwd = os.getcwd()
         for run in run_list:
