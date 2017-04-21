@@ -55,7 +55,7 @@ mol addrep top
 axes location off
 display projection orthographic
 display cuedensity 0
-color Display Background white
+#color Display Background white
 
 mol delrep 0 0
 user add key q {rotate x by 90}

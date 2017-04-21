@@ -2,7 +2,7 @@
 
 units real
 
-timestep 5
+timestep 2
 
 dimension	3
 
@@ -85,4 +85,4 @@ dump_modify	1 sort id
 
 reset_timestep	0
 restart         200000 restart
-run		8000000
+run		6000000
