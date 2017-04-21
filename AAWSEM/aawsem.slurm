@@ -9,4 +9,4 @@
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
 echo $SLURM_NODELIST
-srun ~/opt/AASEM/aawsem_cal.py  PROTEIN
+srun ~/opt/AAWSEM/aawsem_cal.py  PROTEIN

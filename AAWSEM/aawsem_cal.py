@@ -12,7 +12,7 @@ protein_name = args.template.strip('/')
 n = 20
 cal = "~/opt/myCalcQValue_multi.py"
 
-os.system("cp ~/opt/AASEM/"+protein_name+".pdb .")
+os.system("cp ~/opt/AAWSEM/"+protein_name+".pdb .")
 os.system("python2 "+cal+" "+protein_name+".pdb dump.lammpstrj qw 0")
 os.system("python2 "+cal+" "+protein_name+".pdb dump.lammpstrj qo 1")
 os.system("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie "+protein_name+".seq")

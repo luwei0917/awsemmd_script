@@ -22,20 +22,20 @@ else:
     do = os.system
     cd = os.chdir
 
-if(args.test):
-    n = 20
-    protein_name = "T0766"
-    # protein_name = "T0778"
-    # os.chdir("simulation_iteration_1")
-    for i in range(n):
-        os.chdir(str(i))
-        os.system("cp ~/opt/AASEM/aawsem.slurm .")
-        os.system(
-            "sed -i.bak 's/PROTEIN/'" +
-            protein_name +
-            "'/g' aawsem.slurm")
-        os.system("sbatch aawsem.slurm")
-        os.chdir("..")
+# if(args.test):
+#     n = 20
+#     protein_name = "T0766"
+#     # protein_name = "T0778"
+#     # os.chdir("simulation_iteration_1")
+#     for i in range(n):
+#         os.chdir(str(i))
+#         os.system("cp ~/opt/AASEM/aawsem.slurm .")
+#         os.system(
+#             "sed -i.bak 's/PROTEIN/'" +
+#             protein_name +
+#             "'/g' aawsem.slurm")
+#         os.system("sbatch aawsem.slurm")
+#         os.chdir("..")
     # name = "frag.mem"
     # name = "test"
     # with open(name) as f:
@@ -46,6 +46,26 @@ if(args.test):
     #         pos, start, target_start, length, weight = line.split()
     #         print(pos, start, target_start, length)
 
+if(args.test):
+    # folder_list = ["T0766", "T0778", "T0782", "T0792", "T0815", "T0833", "T0844", "T0842", "T0846", "T0803"]
+    # folder_list = ["T0792", "T0778", "T0782", "T0833", "T0844"]
+    # folder_list = ["T0792"]
+    folder_list = ["T0766", "T0778", "T0782", "T0792"]
+    for protein_name in folder_list:
+        os.chdir(protein_name)
+        n = 20
+        os.chdir("simulation")
+        for i in range(n):
+            os.chdir(str(i))
+            os.system("cp ~/opt/AAWSEM/aawsem.slurm .")
+            os.system(
+                "sed -i.bak 's/PROTEIN/'" +
+                protein_name +
+                "'/g' aawsem.slurm")
+            os.system("sbatch aawsem.slurm")
+            os.chdir("..")
+        # os.system("run.py -n 20 -o "+protein_name+"\/")
+        os.chdir("../..")
 
 if(args.move):
     do("mkdir -p frag_Hybrid")
@@ -131,7 +151,7 @@ if(args.jan03):
         os.chdir("../..")
 if(args.dec25):
     os.chdir("aawsemDec25")
-    folder_list = ["T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
+    folder_list = ["T0766", "T0778", "T0782", "T0792", "T0815", "T0833", "T0844", "T0842", "T0846", "T0803"]
     # folder_list = ["T0792", "T0778", "T0782", "T0833", "T0844"]
     # folder_list = ["T0792"]
     for protein_name in folder_list:
