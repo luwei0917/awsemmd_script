@@ -23,6 +23,7 @@ else:
 
 
 if(args.mode == 1):
+    # start from the crystal structure of the target protein
     protein_name,file_type = args.protein.split('.')
     do("~/opt/script/pdb2fasta.sh crystal_structure.pdb > {0}.fasta".format(protein_name))
     do("stride crystal_structure.pdb > ssweight.stride")
@@ -38,17 +39,24 @@ if(args.mode == 1):
     os.system("cp ~/opt/database/* .")
     os.system("python2 ~/opt/script/prepFragsLAMW_index.py \
         cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 0" % protein_name)
-    os.system("cp ~/opt/AAWSEM/parameter/* .")
+    # os.system("cp ~/opt/AAWSEM/parameter/* .")
 
 if(args.mode == 2):
+    # start from the fasta of the target protein
     protein_name = args.protein.split('.')[0]
     do("~/opt/fasta2pdb.py "+protein_name)
     os.system("~/opt/script/PdbCoords2Lammps.sh "+protein_name+" "+protein_name)
     os.system("echo '>%s' > %s.fasta " % (protein_name.upper(), protein_name))
     os.system("cat %s.seq >> %s.fasta" % (protein_name, protein_name))
-    os.system("cp ~/opt/jpredMassSubmitSchedule/casp_protein/_data/"+protein_name+" ssweight")
-    os.system("cp ~/opt/AAWSEM/HO_Mem/"+protein_name+"/frag.mem frag.mem_old")
-    os.system("sed 's/\/work\/pw8\/mc70\/script/\/home\/wl45/g' frag.mem_old > frag.mem")
+    aawsem = False
+    if(aawsem is True):
+        os.system("cp ~/opt/jpredMassSubmitSchedule/casp_protein/_data/"+protein_name+" ssweight")
+        os.system("cp ~/opt/AAWSEM/HO_Mem/"+protein_name+"/frag.mem frag.mem_old")
+        os.system("sed 's/\/work\/pw8\/mc70\/script/\/home\/wl45/g' frag.mem_old > frag.mem")
+    else:
+        os.system("cp ~/opt/database/* .")
+        os.system("python2 ~/opt/script/prepFragsLAMW_index.py \
+            cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 0" % protein_name)
     # os.system("stride %s.pdb > ssweight.stride" % protein_name)
     # os.system("python2 ~/opt/script/stride2ssweight.py > ssweight")
     # os.system("python2 ~/opt/script/GetCACADistancesFile.py %s native.dat" % protein_name)
@@ -56,8 +64,11 @@ if(args.mode == 2):
     # os.system("cp ~/opt/database/* .")
     # os.system("python2 ~/opt/script/prepFragsLAMW_index.py \
     #     cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 0" % protein_name)
-    os.system("cp ~/opt/AAWSEM/parameter/* .")
-# os.system("cp ~/opt/parameter/* .")
+    # os.system("cp ~/opt/AAWSEM/parameter/* .")
+
+os.system("cp ~/opt/parameter/* .")
+# os.system("cp ~/opt/AAWSEM/parameter/* .")
+
 # os.system("python2 ~/opt/script/Pdb2Gro.py %s.pdb %s.gro" % (protein_name, protein_name))
 # os.system("cp ~/opt/variables.dat .")
 # print("You need zim")

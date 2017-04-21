@@ -8,8 +8,8 @@
 
 # Last Update: 03/04/2011
 # ----------------------------------------------------------------------
-
-from maplotlib.pyplot import *
+import matplotlib
+from pylab import *
 
 import sys
 from VectorAlgebra import *
