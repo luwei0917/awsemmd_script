@@ -52,10 +52,18 @@ mol selection resid 158 to 181
 mol modrep 7 top
 mol addrep top
 
+mol smoothrep 0 0 40
+mol smoothrep 0 1 40
+mol smoothrep 0 2 40
+mol smoothrep 0 3 40
+mol smoothrep 0 4 40
+mol smoothrep 0 5 40
+mol smoothrep 0 6 40
+mol smoothrep 0 7 40
 axes location off
 display projection orthographic
 display cuedensity 0
-#color Display Background white
+color Display Background white
 
 mol delrep 0 0
 user add key q {rotate x by 90}

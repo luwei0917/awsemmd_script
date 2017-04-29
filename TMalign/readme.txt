@@ -1,16 +1,16 @@
 ===============================================================================
-   This is a re-implementation of TM-align algorithm in C/C++. The code was 
-   is written by Jianyi Yang and later updated by Jianjie Wu at The Yang Zhang 
-   lab, Department of Computational Medicine and Bioinformatics, University of 
-   Michigan, 100 Washtenaw Avenue, Ann Arbor, MI 48109-2218. Please report bugs 
+   This is a re-implementation of TM-align algorithm in C/C++. The code was
+   is written by Jianyi Yang and later updated by Jianjie Wu at The Yang Zhang
+   lab, Department of Computational Medicine and Bioinformatics, University of
+   Michigan, 100 Washtenaw Avenue, Ann Arbor, MI 48109-2218. Please report bugs
    and questions to jianjiew@umich.edu or zhng@umich.edu
 
    DISCLAIMER:
-     Permission to use, copy, modify, and distribute this program for 
+     Permission to use, copy, modify, and distribute this program for
      any purpose, with or without fee, is hereby granted, provided that
      the notices on the head, the reference information, and this
-     copyright notice appear in all copies or substantial portions of 
-     the Software. It is provided "as is" without express or implied 
+     copyright notice appear in all copies or substantial portions of
+     the Software. It is provided "as is" without express or implied
      warranty.
 
    *************** updating history ********************************
@@ -34,6 +34,10 @@ or
 
  g++ -static -O3 -ffast-math -lm -o TMalign TMalign.cpp
 
+For Mac(added by wei)
+ g++ -O3 -ffast-math -lm -o TMalign TMalign.cpp
+
+ 
 =====================
  How to use TM-align
 =====================
@@ -48,10 +52,10 @@ you can run the program without arguments to obtain a brief instruction
    Yang Zhang lab
    And it is updated by Jianjie Wu at
    Yang Zhang lab
-   Department of Computational Medicine and Bioinformatics 
-   University of Michigan 
-   100 Washtenaw Avenue, Ann Arbor, MI 48109-2218 
-           
+   Department of Computational Medicine and Bioinformatics
+   University of Michigan
+   100 Washtenaw Avenue, Ann Arbor, MI 48109-2218
+
    Please report bugs and questions to jianjiew@umich.edu or zhng@umich.edu
 
 ===================

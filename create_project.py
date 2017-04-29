@@ -10,8 +10,11 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("protein", help="The name of the protein")
 parser.add_argument("--jan03", help="Run code on Jan 03 ", action="store_true", default=False)
-parser.add_argument("-m", "--mode", type=int, default=1)
+parser.add_argument("-m", "--mode", type=int, default=-1)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
+parser.add_argument("--crystal", help="start with a pdb, find it's energy in awsem",
+                        action="store_true", default=False)
+parser.add_argument("--frag", help="generate fragent memory", action="store_true", default=False)
 args = parser.parse_args()
 
 if(args.debug):
@@ -21,6 +24,28 @@ else:
     do = os.system
     cd = os.chdir
 
+
+if(args.frag):
+    if(args.mode == 1):             # HA
+        do("python2 ~/opt/script/prepFragsLAMW_index.py \
+        ")
+    if(args.mode == 2):             # Do frag memory
+        do("cp ~/opt/database/* .")
+        do("python2 ~/opt/script/prepFragsLAMW_index.py \
+        cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 0" % protein_name)
+if(args.crystal):
+    protein_name,file_type = args.protein.split('.')
+    do("~/opt/script/pdb2fasta.sh crystal_structure.pdb > {0}.fasta".format(protein_name))
+    do("stride crystal_structure.pdb > ssweight.stride")
+    do("python2 ~/opt/script/stride2ssweight.py > ssweight")
+    do("python2 ~/opt/script/GetCACADistancesFile.py crystal_structure native.dat")
+    do("python2 ~/opt/script/GetCACoordinatesFromPDB.py crystal_structure nativecoords.dat")
+    do("cp native.dat rnative.dat")  # q bias need rnative
+    do("cp crystal_structure.pdb "+protein_name+".pdb")
+    do("~/opt/energy_PdbCoords2Lammps.sh "+protein_name+" "+protein_name)
+
+    do("cp ~/opt/AAWSEM/parameter/* .")
+    do("cp fragsLAMW.mem frag.mem")
 
 if(args.mode == 1):
     # start from the crystal structure of the target protein
@@ -66,7 +91,7 @@ if(args.mode == 2):
     #     cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 0" % protein_name)
     # os.system("cp ~/opt/AAWSEM/parameter/* .")
 
-os.system("cp ~/opt/parameter/* .")
+    os.system("cp ~/opt/parameter/* .")
 # os.system("cp ~/opt/AAWSEM/parameter/* .")
 
 # os.system("python2 ~/opt/script/Pdb2Gro.py %s.pdb %s.gro" % (protein_name, protein_name))

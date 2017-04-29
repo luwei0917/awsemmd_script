@@ -13,7 +13,17 @@ parser.add_argument("--jan16", help="Run code on Dec 25", action="store_true", d
 parser.add_argument("--fix", action="store_true", default=False)
 parser.add_argument("--move", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
+parser.add_argument("-c", "--casp", action="store_true", default=False)
+parser.add_argument("protein", help="the name of protein file")
 args = parser.parse_args()
+
+try:
+    protein_name,_ = args.protein.split('.')
+except:
+    try:
+        protein_name,_ = args.protein.split('/')
+    except:
+        protein_name = args.protein
 
 if(args.debug):
     do = print
@@ -45,7 +55,14 @@ else:
     #         # print(line)
     #         pos, start, target_start, length, weight = line.split()
     #         print(pos, start, target_start, length)
-
+if(args.casp):
+    cwd = os.getcwd()
+    cd("simulation")
+    for i in range(20):
+        cd(str(i))
+        do("aawsem_show.py --casp {}".format(protein_name))
+        do("cat tmscore.dat >> ../../{}_last_frame_tmscore.dat".format(protein_name))
+        cd("..")
 if(args.test):
     # folder_list = ["T0766", "T0778", "T0782", "T0792", "T0815", "T0833", "T0844", "T0842", "T0846", "T0803"]
     # folder_list = ["T0792", "T0778", "T0782", "T0833", "T0844"]
