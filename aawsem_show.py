@@ -34,7 +34,7 @@ else:
     cd = os.chdir
 
 if(args.test):
-    do("BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq 4000".format(protein_name))
+    do("BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq 8000".format(protein_name))
     do("~/opt/TMalign/TMalign awsem.pdb {}.pdb -o result".format(protein_name))
     do("grep 'TM-score=' result > tmscore.dat")
     # Seq_ID=n_identical/n_aligned
@@ -70,15 +70,15 @@ if(args.casp):
         if(args.plot):
             do("pymol ~/opt/plot_scripts/tmalign_all.pml")
     if(args.mode == 2):                 # Compute for dump structure every stride number
-        stride = 100
+        stride = 1000
         start = 0
         tmp = start
         end = 8000
         do("rm tmscore_all_tmp.dat")
         do("rm -r aligned_structures")
         do("mkdir aligned_structures")
-        while tmp <= 8000:
-            do("BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq {}".format(protein_name, tmp))
+        while tmp <= end:
+            do("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq {}".format(protein_name, tmp))
             do("~/opt/TMalign/TMalign awsem.pdb ~/opt/AAWSEM/casp11/targets/{}.pdb -o result".format(protein_name))
             do("grep 'TM-score=' result >> tmscore_all_tmp.dat")
             do("cp result_all_atm aligned_structures/{}_{}".format(protein_name, tmp))
