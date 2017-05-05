@@ -31,6 +31,8 @@ else:
 if(args.may04):
     do("mkdir tertiary_T0782")
     do("cp ~/opt/AAWSEM/T0782.fasta .")
+    do("casp_create_project.py --casp T0782.fasta")
+    
 if(args.move):
     folder_list = ["T0766", "T0792", "T0778", "T0782", "T0833", "T0844"]
     # folder_list = ["T0766"]
