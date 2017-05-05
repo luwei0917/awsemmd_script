@@ -17,7 +17,6 @@ parser.add_argument("--jan15", action="store_true", default=False)
 parser.add_argument("-t", "--test", help="Test run", action="store_true", default=False)
 parser.add_argument("--fix", action="store_true", default=False)
 parser.add_argument("--move", action="store_true", default=False)
-parser.add_argument("-d", "--debug", action="store_true", default=False)
 args = parser.parse_args()
 
 if(args.debug):
@@ -26,6 +25,7 @@ if(args.debug):
 else:
     do = os.system
     cd = os.chdir
+
 
 
 if(args.move):
