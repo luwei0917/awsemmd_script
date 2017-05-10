@@ -16,6 +16,7 @@ parser.add_argument("-p", "--plot", action="store_true", default=False, help="Pl
 parser.add_argument("--casp", action="store_true", default=False)
 parser.add_argument("--step", type=int, default=8000,
                     help="Which step to show")
+parser.add_argument("--tmalign", action="store_true", default=False)
 args = parser.parse_args()
 
 try:
@@ -32,6 +33,11 @@ if(args.debug):
 else:
     do = os.system
     cd = os.chdir
+
+
+if(args.tmalign):
+    do("")
+
 
 if(args.test):
     do("BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq 8000".format(protein_name))
