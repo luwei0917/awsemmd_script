@@ -19,6 +19,7 @@ parser.add_argument("--fix", action="store_true", default=False)
 parser.add_argument("--move", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--may04", action="store_true", default=False)
+
 args = parser.parse_args()
 
 if(args.debug):
@@ -31,6 +32,8 @@ else:
 if(args.may04):
     do("mkdir tertiary_T0782")
     do("cp ~/opt/AAWSEM/T0782.fasta .")
+    do("casp_create_project.py --casp T0782.fasta")
+    
 if(args.move):
     folder_list = ["T0766", "T0792", "T0778", "T0782", "T0833", "T0844"]
     # folder_list = ["T0766"]

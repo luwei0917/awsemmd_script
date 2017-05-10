@@ -50,32 +50,28 @@ def download(pdbfull):
 
 
 class Lammps(Select):
-    def accept_atom(self, atom):
-        if atom.get_name() == 'CA':
-            return 1
-        else:
+    # def accept_atom(self, atom):
+    #     if atom.get_name() == 'CA':
+    #         return 1
+    #     else:
+    #         return 0
+
+    def accept_residue(self, residue):
+        # print(residue.get_id())[1]
+        # return 0
+        if residue.get_id()[1] == -1:
             return 0
+        else:
+            return 1
 
-    # def accept_residue(self, residue, subject_seq_list):
-    #     subject_start = residue.id[1]
-    #     inside = False
-    #     for seq in subject_seq_list:
-    #         if subject_start >= seq.start and subject_start <= seq.end:
-    #             residue.id = (' ', subject_start - seq.start + seq.query_start, ' ')
-    #             inside = True
-    #             # print(residue.id)
-    #             return 1
-    #     return 0
-
-
+database = "~/opt/database/cullpdb_pc95_res3.0_R0.3_d170428_chains35871"
 # database = "cullpdb_pc80_res3.0_R1.0_d160504_chains29712"
 # # database = "cullpdb_pc90_res3.0_R1.0_d170427_chains34250"
 #
 #
-# exeline = "psiblast -num_iterations 5 -comp_based_stats 0 -word_size 2 -evalue 10000"
-# #exeline+=" -outfmt '6 sseqid qstart qend sstart send qseq sseq length gaps bitscore evalue' -matrix PAM30 -threshold 9 -window_size 0"
-# exeline += " -outfmt '6 sseqid qstart qend sstart send qseq sseq length gaps bitscore evalue' -matrix BLOSUM62 -threshold 9 -window_size 0"
-# exeline += " -db " + database + " -query T0803.fasta"
+exeline = "psiblast -num_iterations 5 -comp_based_stats 0 -word_size 2 -evalue 10000"
+exeline += " -outfmt '6 sseqid qstart qend sstart send qseq sseq length gaps bitscore evalue' -matrix BLOSUM62 -threshold 9 -window_size 0"
+exeline += " -db " + database + " -query T0766.fasta"
 
 
 
@@ -142,31 +138,33 @@ if(args.extract):
     for model in structure:
         for chain in model:
             for residue in chain:
-                # is_regular_res = residue.has_id('CA')
+                is_regular_res = residue.has_id('CA')
                 id = residue.id
-                print(residue)
-                # if id[0] != ' ' and is_regular_res:
-                #     chain.detach_child(id)
-                chain.detach_child(id)
-                # else:
-                #     subject_start = id[1]
-                #     # print(subject_start)
-                #     inside = False
-                #     # for seq in subject_seq_list:
-                #     #     if subject_start >= seq.start and subject_start <= seq.end:
-                #     #         # residue.id = (' ', subject_start - seq.start + seq.query_start, ' ')
-                #     #         inside = True
-                #     #         # print(residue.id)
-                #     #         break
-                #     if not inside:
-                #         chain.detach_child(id)
+                # print(residue, is_regular_res)
+                if id[0] != ' ' or not is_regular_res:
+                    residue.id = (' ', -1, ' ')
+                    # chain.detach_child(id)
+                # chain.detach_child(id)
+                else:
+                    subject_start = id[1]
+                    # print(subject_start)
+                    inside = False
+                    for seq in subject_seq_list:
+                        if subject_start >= seq.start and subject_start <= seq.end:
+                            residue.id = (' ', subject_start - seq.start + seq.query_start, ' ')
+                            inside = True
+                            # print(residue.id)
+                            break
+                    if not inside:
+                        residue.id = (' ', -1, ' ')
+                        # chain.detach_child(id)
             # if len(chain) == 0:
             #     model.detach_child(chain.id)
     #
     io = PDBIO()
     io.set_structure(structure)
-    # io.save('ca_only.pdb', Lammps(subject_seq_list))
-    io.save('ca_only.pdb')
+    io.save('ca_only.pdb', Lammps())
+    # io.save('ca_only.pdb')
 
 if(args.test):
     # folder_list = ["T0766", "T0778", "T0782", "T0792", "T0815", "T0833", "T0844", "T0842", "T0846", "T0803"]
