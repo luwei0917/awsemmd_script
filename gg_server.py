@@ -21,13 +21,27 @@ os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
 
 parser = argparse.ArgumentParser(description="This is my playground for current project")
-parser.add_argument("--fix", help="fix ", action="store_true", default=False)
-parser.add_argument("--rerun", help="rerun ", action="store_true", default=False)
-parser.add_argument("--go", help="continue_run ", action="store_true", default=False)
-parser.add_argument("-n", "--number", type=int, default=10, help="number of run")
+parser.add_argument("-r", "--run", help="test mode",
+                    action="store_true")
+parser.add_argument("-s", "--see", help="test mode",
+                    action="store_true")
+parser.add_argument("-d", "--debug", action="store_true", default=False)
+
 args = parser.parse_args()
+if(args.debug):
+    do = print
+    cd = print
+else:
+    do = os.system
+    cd = os.chdir
+if(args.run):
+    do("rm -r test")
+    do("cp -r 2xov test")
+    cd("test")
+    do("test_run.py test.in")
 
-
+if(args.see):
+    do("head test/0/addforce.dat")
 def fix_error_run():
     n = args.number
     for i in range(n):
@@ -54,8 +68,8 @@ def fix_error_run():
     #     os.chdir(cwd)
 
     # os.system("cut -d'/' -f2 list >")
-if(args.fix):
-    fix_error_run()
+# if(args.fix):
+#     fix_error_run()
 
 
 def rerun():
@@ -72,8 +86,8 @@ def rerun():
         os.system("rm slurm*")
         os.system("sbatch run.slurm")
         os.chdir("..")
-if(args.rerun):
-    rerun()
+# if(args.rerun):
+#     rerun()
 
 
 def continue_run():
@@ -95,8 +109,8 @@ def continue_run():
             "'/g' 2xov.in")
         os.system("sbatch run.slurm")
         os.chdir("..")
-if(args.go):
-    continue_run()
+# if(args.go):
+#     continue_run()
 # parser = argparse.ArgumentParser(
 #         description="This is my playground for current project")
 # parser.add_argument("protein", help="the name of protein")

@@ -231,8 +231,8 @@ def batch_run():
         # os.system("/Users/weilu/Research/Build/lammps-9Oct12_modified/src/lmp_serial \
         # < "+protein_name+".in")
     elif(platform.system() == 'Linux'):
-        #os.system("cp ~/opt/run.slurm run.slurm")
-        os.system("cp ~/opt/run_tertiary.slurm run.slurm")
+        os.system("cp ~/opt/run.slurm run.slurm")
+        # os.system("cp ~/opt/run_tertiary.slurm run.slurm")
         os.system(  # replace PROTEIN with pdb name
             "sed -i.bak 's/PROTEIN/'" +
             protein_name +

@@ -162,15 +162,18 @@ if(args.summary):
                         # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
 if(args.qnqc):
     if(args.mode == 4):
-        n = 80
+        n = 40
         # temp_list = [300,350]
         # temp_list = [250,275, 325]
         # temp_list = [200]
         # temp_list = [0, 1, 2]
         # temp_list = [3]
         # temp_list = [4, 5]
-        temp_list = [6]
-        temp_list = [7]
+        # temp_list = [6]
+        # temp_list = [7]
+        # temp_list = [8, 9]
+        temp_list = [2]
+        temp_list = [0]
         # temp_list = ['300', '200', '250']
         cwd = os.getcwd()
         for temp in temp_list:
@@ -232,14 +235,17 @@ if(args.qnqc):
             cd(cwd)
 if(args.data):
     if(args.mode == 8):
-        n = 80
+        n = 40
         # temp_list = [300,350]
         # temp_list = [250,275, 325]
         # temp_list = [200]
         # run_list = [0, 1, 2]
         # run_list = [3]
         # run_list = [4, 5]
-        run_list = [6]
+        # run_list = [6]
+        run_list = [7, 8, 9]
+        run_list = [0, 1, 2]
+        run_list = [0]
         # temp_list = ['300', '200', '250']
         cwd = os.getcwd()
         for run in run_list:
@@ -249,6 +255,7 @@ if(args.data):
                 do("awk '{print $2}' addforce.dat > distance")
                 do("awk '{print $17}' energy.dat > energy")
                 do("paste -d, steps distance qn qc energy > data")
+                # do("paste -d, steps distance distance distance energy > data")
                 cd(cwd)
                 # with open("server_run.slurm", "w") as f:
                 #     f.write(server_run.format("read_dump_file.py"))

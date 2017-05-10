@@ -16,9 +16,9 @@ parser = argparse.ArgumentParser(
     automatic copy the template file, \
     run simulation and analysis")
 
-parser.add_argument("-n", "--number", type=int, default=80,
+parser.add_argument("-n", "--number", type=int, default=40,
                     help="Number of simulation run")
-parser.add_argument("--restart", type=int, default=8,
+parser.add_argument("--restart", type=int, default=1,
                     help="restart from")
 parser.add_argument("--runs", type=int, default=2,
                     help="then do how many runs?")
@@ -70,7 +70,8 @@ def set_up():
             else:
                 dependency = ""
             f.write("jobid=`sbatch "+dependency+" run_{}.slurm".format(i) + " | tail -n 1 | awk '{print $4}'`\necho $jobid\n")
-            os.system("cp 2xov_multi.in 2xov_{}.in".format(i))
+
+            os.system("cp ../../2xov_multi.in 2xov_{}.in".format(i))
             os.system(  # replace SIMULATION_STEPS with specific steps
                 "sed -i.bak 's/START_FROM_N/'" +
                 str(int(steps*i)) +
@@ -80,10 +81,10 @@ def set_up():
                 str(int(i)) +
                 "'/g' 2xov_{}.in".format(i))
             os.system("mkdir -p {}".format(i))
-    # os.system(  # replace RANDOM with a radnom number
-    #     "sed -i.bak 's/RANDOM/'" +
-    #     str(randint(1, 10**6)) +
-    #     "'/g' *.in")
+            os.system(  # replace RANDOM with a radnom number
+                "sed -i.bak 's/RANDOM/'" +
+                str(randint(1, 10**6)) +
+                "'/g' *.in")
 
 
 
