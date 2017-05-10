@@ -51,7 +51,7 @@ if(args.test):
     # folder_list = ["T0792", "T0778", "T0782", "T0833", "T0844"]
     # folder_list = ["T0792"]
     # folder_list = ["T0766", "T0778", "T0782", "T0792"]
-    folder_list = ["T0766"]
+    folder_list = ["T0792"]
     for protein_name in folder_list:
         # os.chdir(protein_name)
         n = 20

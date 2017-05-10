@@ -34,6 +34,8 @@ parser.add_argument("--dimension", type=int, default=1)
 parser.add_argument("-f", "--freeEnergy", action="store_true", default=False)
 parser.add_argument("--move", action="store_true", default=False)
 parser.add_argument("-m", "--mode", type=int, default=1)
+parser.add_argument("-n", "--number", type=int, default=40,
+                    help="Number of simulation run")
 args = parser.parse_args()
 
 
@@ -98,10 +100,13 @@ def replace_random(file_name):
 
 if(args.move):
     if(args.mode == 14):
-        n = 80
+        n = 40
         do("mkdir -p analysis/data")
         run_list = [0, 1, 2, 3, 4, 5]
         run_list = [6]
+        run_list = [7, 8, 9]
+        run_list = [0, 1, 2]
+        run_list = [0]
         for j in run_list:
             for i in range(n):
                 do("cp simulation/{0}/{1}/data analysis/data/{0}_{1}.dat".format(i, j))
@@ -109,7 +114,7 @@ if(args.move):
         replace_random("*.in")
     if(args.mode == 12):
         seed(datetime.now())
-        n = 40
+        n = args.number     # default is 40
         cwd = os.getcwd()
         # do("cp -r simulation back_up")
         for i in range(n):

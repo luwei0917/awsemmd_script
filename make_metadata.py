@@ -96,7 +96,7 @@ if(args.pick):
 
     if(args.mode == 2):
         for i in folder_list:
-            for j in [0, 1]:
+            for j in [0, 1, 2]:
                 if(i > 39):
                     ii = i - 40
                     target = cwd + "/../wt_2/simulation/{0}/{1}/data\n".format(ii, j)
