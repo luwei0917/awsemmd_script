@@ -14,6 +14,7 @@ parser.add_argument("-p", "--plot", help="only plot mode",
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("-l", "--last", action="store_true", default=False)
 args = parser.parse_args()
+# render Tachyon frame450.dat '/Applications/VMD 1.9.2.app/Contents/vmd/tachyon_MACOSXX86' -aasamples 12 %s -format TARGA -o frame450.tga -res 2000 2000
 
 if(args.debug):
     do = print

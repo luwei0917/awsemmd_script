@@ -62,16 +62,31 @@ if(args.test):
             pre_fix = "first_2000_"
         else:
             pre_fix = ""
-    for i in range(args.number):
-        q = q0 + i * qStep
-        name = pre_fix + str(i)
-        for temp in temp_list:
-            target = "../data/{}/".format(temp) + name + " {} {} {:.2f}\n".format(temp, kconstant, q)
-            # target = "../data/t_{}/small_".format(temp) + str(i) + " {} {} {:.2f}\n".format(temp, kconstant, q)
-            # target = "../data/{}/".format(temp) + name + " {} {} {:.2f}\n".format(temp, kconstant, q)
-            metadata.write(target)
-    metadata.close()
-
+        for i in range(args.number):
+            q = q0 + i * qStep
+            name = pre_fix + str(i)
+            for temp in temp_list:
+                target = "../data/{}/".format(temp) + name + " {} {} {:.2f}\n".format(temp, kconstant, q)
+                # target = "../data/t_{}/small_".format(temp) + str(i) + " {} {} {:.2f}\n".format(temp, kconstant, q)
+                # target = "../data/{}/".format(temp) + name + " {} {} {:.2f}\n".format(temp, kconstant, q)
+                metadata.write(target)
+        metadata.close()
+    # See pulling prepare
+    # if(args.mode == 2):
+    #     print("2xov pulling")
+    #     # os.system("cp folder_list .")
+    #     kconstant = 0.04
+    #     metadata = open("metadatafile", "w")
+    #     with open('../folder_list', 'r') as ins:
+    #         for line in ins:
+    #             target = line.strip(' \n')
+    #             temp = target.split("_")[1]
+    #             x = target.split("_")[3]
+    #             # print(temp)
+    #             cwd = os.getcwd()
+    #             t1 = cwd + "../" + target + "/halfdata {} {} {}\n".format(temp, kconstant, x)
+    #             metadata.write(t1)
+    #     metadata.close()
 
 if(args.pick):
     # print("Hello")
