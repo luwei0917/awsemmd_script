@@ -1,5 +1,5 @@
 [Chain]
-60.0 60.0 60.0 
+60.0 60.0 60.0
 2.459108 2.519591 2.466597
 
 [Chi]
@@ -90,7 +90,7 @@
 2
 0.15
 2.0
-rnative.dat
+rnative_tertiary.dat
 
 [Fragment_Memory_Table]
 0.05
@@ -104,7 +104,7 @@ seq.gamma
 [DebyeHuckel]-
 10.0 10.0 10.0
 1.0
-10.0 
+10.0
 1
 
 [Tertiary_Frustratometer]-

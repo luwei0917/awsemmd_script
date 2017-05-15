@@ -32,7 +32,7 @@ def file_width(fname):
     result, err = p.communicate()
     if p.returncode != 0:
         raise IOError(err)
-    return int(result.strip().split()[0])
+    return int(result.strip().split()[0])-1
 
 
 def hybrid(protein_name):

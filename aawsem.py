@@ -29,11 +29,30 @@ else:
     do = os.system
     cd = os.chdir
 
+def file_width(fname):
+    p = subprocess.Popen(['wc', '-c', fname], stdout=subprocess.PIPE,
+                                              stderr=subprocess.PIPE)
+    result, err = p.communicate()
+    if p.returncode != 0:
+        raise IOError(err)
+    return int(result.strip().split()[0])-1
+
 if(args.may04):
-    do("mkdir tertiary_T0782")
-    do("cp ~/opt/AAWSEM/T0782.fasta .")
-    do("casp_create_project.py --casp T0782.fasta")
-    
+    protein = "T0792"
+    do("mkdir tertiary_"+protein)
+    cd("tertiary_"+protein)
+    do("mkdir "+protein)
+    cd(protein)
+    do("cp ~/opt/AAWSEM/{}.fasta .".format(protein))
+    do("casp_create_project.py --casp {}.fasta".format(protein))
+    do("cp ~/opt/AAWSEM/tertiary_parameter/* .")
+    do("cp ~/opt/AAWSEM/HO_Mem/{}/* .".format(protein))
+    do("aawsem_tertiary_info.py -t")
+    do("cp ../../{0}/{0}/frag.mem .".format(protein))
+    size = file_width(protein+".seq")
+    do("python2 ~/opt/longRangeInteraction.py ca_only rnative_tertiary {}".format(size))
+
+
 if(args.move):
     folder_list = ["T0766", "T0792", "T0778", "T0782", "T0833", "T0844"]
     # folder_list = ["T0766"]
