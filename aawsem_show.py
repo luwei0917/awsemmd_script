@@ -59,7 +59,10 @@ if(args.test):
 
 if(args.casp):
     if(args.mode == 1):         # Only calculate the last frame
-        do("BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq 8000".format(protein_name))
+        cmd = "grep 'ITEM: TIMESTEP' dump.lammpstrj -A1 | tail -n 1"
+        last_frame = int(int(os.popen(cmd).read())/1000)
+        print("Last Frame is :", last_frame)
+        do("BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq {}".format(protein_name, last_frame))
         do("~/opt/TMalign/TMalign awsem.pdb ~/opt/AAWSEM/casp11/targets/{}.pdb -o result".format(protein_name))
         do("grep 'TM-score=' result > tmscore.dat")
         # Seq_ID=n_identical/n_aligned
@@ -103,10 +106,11 @@ if(args.casp):
                     out.write("{}, {}, {}, {}, {}\n".format(tmp, aligned_length, rmsd, tmscore, seqid))
                     tmp += stride
 
-if(args.plot):
-    do("cp ~/opt/plot_scripts/tmalign_all_tmp.pml .")
-    do(  # replace NAME with target file name
-        "sed -i.bak 's/NAME/" +
-        str(args.protein) +
-        "/g' tmalign_all_tmp.pml")
-    do("pymol tmalign_all_tmp.pml")
+if not args.test and not args.casp:
+    if(args.plot):
+        do("cp ~/opt/plot_scripts/tmalign_all_tmp.pml .")
+        do(  # replace NAME with target file name
+            "sed -i.bak 's/NAME/" +
+            str(args.protein) +
+            "/g' tmalign_all_tmp.pml")
+        do("pymol tmalign_all_tmp.pml")

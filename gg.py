@@ -73,7 +73,10 @@ def test():
             #     f.write(address+"  \n")
 
 if(args.test):
-    test()
+    for i in range(0, 20):
+        cd(str(i))
+        do("python3 ~/opt/aawsem_show.py --casp -m 2 T0782.")
+        cd("..")
 
 
 def calQnQc():

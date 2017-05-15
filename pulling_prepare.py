@@ -438,6 +438,7 @@ if(args.make_metadata):
                     temp = target.split("_")[1]
                     x = target.split("_")[3]
                     # print(temp)
+                    cwd = os.getcwd()
                     t1 = "/scratch/wl45/project/freeEnergy_2xov/pullingDistance_v3/simulation/" + target + "/simulation/0/halfdata {} {} {}\n".format(temp, kconstant, x)
                     metadata.write(t1)
                     # elif(args.mode == 2):

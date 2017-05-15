@@ -30,7 +30,7 @@ if(args.casp):
     protein_name = args.protein.split('.')[0]
     do("cp ~/opt/jpredMassSubmitSchedule/casp_protein/_data/"+protein_name+" ssweight")
     do("~/opt/fasta2pdb.py "+protein_name)
-    do("~/opt/casp_PdbCoords2Lammps.sh "+protein_name+" "+protein_name)
+    do("~/opt/energy_PdbCoords2Lammps.sh "+protein_name+" "+protein_name)
 
 if(args.frag):
     if(args.mode == 1):             # HA
