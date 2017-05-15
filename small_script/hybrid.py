@@ -6,7 +6,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("protein", help="the name of protein")
 parser.add_argument("-m", "--mode", help="choose mode", type=int, default=1)
 args = parser.parse_args()
-
+# sed -i.bak 's/\/work\/pw8\/mc70\/script/\/home\/wl45/g' frag_HE.mem
 try:
     protein_name, _ = args.protein.split('.')
 except:

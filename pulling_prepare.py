@@ -174,6 +174,7 @@ if(args.qnqc):
         # temp_list = [8, 9]
         temp_list = [2]
         temp_list = [0]
+        temp_list = [1]
         # temp_list = ['300', '200', '250']
         cwd = os.getcwd()
         for temp in temp_list:
@@ -246,6 +247,7 @@ if(args.data):
         run_list = [7, 8, 9]
         run_list = [0, 1, 2]
         run_list = [0]
+        run_list = [0, 1]
         # temp_list = ['300', '200', '250']
         cwd = os.getcwd()
         for run in run_list:
@@ -432,13 +434,13 @@ if(args.make_metadata):
     elif(args.mode == 3):
             kconstant = 0.04   # double the k constant
             metadata = open("metadatafile", "w")
-            with open('folder_list', 'r') as ins:
+            with open('../folder_list', 'r') as ins:
                 for line in ins:
                     target = line.strip(' \n')
                     temp = target.split("_")[1]
                     x = target.split("_")[3]
-                    # print(temp)
-                    t1 = "/scratch/wl45/project/freeEnergy_2xov/pullingDistance_v3/simulation/" + target + "/simulation/0/halfdata {} {} {}\n".format(temp, kconstant, x)
+                    cwd = os.getcwd()
+                    t1 = cwd + "/../simulation/" + target + "/halfdata {} {} {}\n".format(temp, kconstant, x)
                     metadata.write(t1)
                     # elif(args.mode == 2):
                     # t2 = "/scratch/wl45/freeEnergy_2xov/pullingDistance/simulation/" + target + "/simulation/1/halfdata {} {} {}\n".format(temp, kconstant, x)

@@ -18,9 +18,9 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("-n", "--number", type=int, default=40,
                     help="Number of simulation run")
-parser.add_argument("--restart", type=int, default=1,
+parser.add_argument("--restart", type=int, default=2,
                     help="restart from")
-parser.add_argument("--runs", type=int, default=2,
+parser.add_argument("--runs", type=int, default=1,
                     help="then do how many runs?")
 parser.add_argument("-s", "--steps", type=int, default=5,
                     help="How many steps in unit of million,\

@@ -107,6 +107,7 @@ if(args.move):
         run_list = [7, 8, 9]
         run_list = [0, 1, 2]
         run_list = [0]
+        run_list = [0, 1]
         for j in run_list:
             for i in range(n):
                 do("cp simulation/{0}/{1}/data analysis/data/{0}_{1}.dat".format(i, j))
