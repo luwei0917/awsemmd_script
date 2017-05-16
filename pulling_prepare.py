@@ -162,7 +162,7 @@ if(args.summary):
                         # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
 if(args.qnqc):
     if(args.mode == 4):
-        n = 40
+        n = 80
         # temp_list = [300,350]
         # temp_list = [250,275, 325]
         # temp_list = [200]
@@ -175,9 +175,10 @@ if(args.qnqc):
         temp_list = [2]
         temp_list = [0]
         temp_list = [1]
+        run_list = [10, 11, 12, 13]
         # temp_list = ['300', '200', '250']
         cwd = os.getcwd()
-        for temp in temp_list:
+        for temp in run_list:
             for i in range(n):
                 cd("simulation/{}/{}".format(i, temp))
                 do("cp ../2xov.pdb .")
@@ -236,7 +237,7 @@ if(args.qnqc):
             cd(cwd)
 if(args.data):
     if(args.mode == 8):
-        n = 40
+        n = 80
         # temp_list = [300,350]
         # temp_list = [250,275, 325]
         # temp_list = [200]
@@ -248,6 +249,7 @@ if(args.data):
         run_list = [0, 1, 2]
         run_list = [0]
         run_list = [0, 1]
+        run_list = [10, 11, 12, 13]
         # temp_list = ['300', '200', '250']
         cwd = os.getcwd()
         for run in run_list:
