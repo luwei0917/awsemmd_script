@@ -162,7 +162,7 @@ if(args.summary):
                         # out.write(str(n)+", "+qw+", run_"+str(i)+", "+energy+"\n"
 if(args.qnqc):
     if(args.mode == 4):
-        n = 80
+        n = 20
         # temp_list = [300,350]
         # temp_list = [250,275, 325]
         # temp_list = [200]
@@ -173,9 +173,12 @@ if(args.qnqc):
         # temp_list = [7]
         # temp_list = [8, 9]
         temp_list = [2]
-        temp_list = [0]
-        temp_list = [1]
-        run_list = [10, 11, 12, 13]
+        run_list = [0]
+        # run_list = [0, 1]
+        # temp_list = [1]
+        # run_list = [10, 11, 12, 13]
+        # # run_list = [2]
+        # run_list = [3, 4, 5]
         # temp_list = ['300', '200', '250']
         cwd = os.getcwd()
         for temp in run_list:
@@ -237,7 +240,7 @@ if(args.qnqc):
             cd(cwd)
 if(args.data):
     if(args.mode == 8):
-        n = 80
+        n = 20
         # temp_list = [300,350]
         # temp_list = [250,275, 325]
         # temp_list = [200]
@@ -248,8 +251,10 @@ if(args.data):
         run_list = [7, 8, 9]
         run_list = [0, 1, 2]
         run_list = [0]
-        run_list = [0, 1]
-        run_list = [10, 11, 12, 13]
+        # run_list = [0, 1]
+        # run_list = [10, 11, 12, 13]
+        # run_list = [2]
+        # run_list = [3, 4, 5]
         # temp_list = ['300', '200', '250']
         cwd = os.getcwd()
         for run in run_list:
@@ -420,14 +425,14 @@ if(args.make_metadata):
     elif(args.mode == 2):
             kconstant = 0.02   # double the k constant
             metadata = open("metadatafile", "w")
-            with open('folder_list', 'r') as ins:
+            with open('../folder_list', 'r') as ins:
                 for line in ins:
                     target = line.strip(' \n')
                     temp = target.split("_")[1]
                     x = target.split("_")[3]
                     # print(temp)
-                    t1 = "/scratch/wl45/project/freeEnergy_2xov/pullingDistance/complete0.02/simulation/" + target + "/halfdata {} {} {}\n".format(temp, kconstant, x)
-                    # t1 = "/scratch/wl45/project/freeEnergy_2xov/pullingDistance/simulation/" + target + "/simulation/0/halfdata {} {} {}\n".format(temp, kconstant, x)
+                    cwd = os.getcwd()
+                    t1 = cwd + "/../simulation/" + target + "/halfdata {} {} {}\n".format(temp, kconstant, x)
                     metadata.write(t1)
                     # elif(args.mode == 2):
                     # t2 = "/scratch/wl45/freeEnergy_2xov/pullingDistance/simulation/" + target + "/simulation/1/halfdata {} {} {}\n".format(temp, kconstant, x)

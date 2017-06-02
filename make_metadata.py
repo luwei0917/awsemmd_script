@@ -105,7 +105,7 @@ if(args.pick):
     print(cwd)
     if(args.mode == 1):
         for i in folder_list:
-            for j in range(0, 7):
+            for j in range(0, 13):
                 target = cwd + "/../wt_2/simulation/{0}/{1}/data\n".format(i, j)
                 metadata.write(target)
 

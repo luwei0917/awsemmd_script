@@ -10,6 +10,7 @@ from datetime import datetime
 import imp
 import glob
 from time import sleep
+import fileinput
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -35,10 +36,36 @@ else:
     do = os.system
     cd = os.chdir
 if(args.run):
-    do("rm -r test")
-    do("cp -r 2xov test")
-    cd("test")
-    do("test_run.py test.in")
+    print("Hello World")
+    for i in range(1, 6):
+        do("mkdir job.{}".format(i))
+        do("cp myjob_nots.slurm job.{}".format(i))
+        do("cp loopsubmit.bash job.{}".format(i))
+        do("cp -r runpackage job.{}".format(i))
+        do("cp run.{0}.tpr job.{0}/runpackage/run.tpr".format(i))
+    for i in range(1, 6):
+        cd("job.{}".format(i))
+        fileName = "myjob_nots.slurm"
+        name = "T0833"
+        with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+            for line in file:
+                print(line.replace("T0766", name), end='')
+        do("bash loopsubmit.bash")
+        cd("..")
+
+    # force_list = [0.3, 0.5, 0.7, 0.9, 1.1, 1.3]
+    # for force in force_list:
+    #     folder = "1d_force_" + str(force)
+    #     do("mkdir -p " + folder)
+    #     cd(folder)
+    #     do("cp ../metadatafile .")
+    #     do("~/bin/python3/bin/python3 ~/opt/pulling_analysis.py -f -m 5 --force {}".format(force))
+    #     do("sbatch freeEnergy.slurm")
+    #     cd("..")
+    # do("rm -r test")
+    # do("cp -r 2xov test")
+    # cd("test")
+    # do("test_run.py test.in")
 
 if(args.see):
     do("head test/0/addforce.dat")

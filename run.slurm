@@ -9,4 +9,4 @@
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
 echo $SLURM_NODELIST
-srun ~/bin/lmp_serial -in PROTEIN.in
+srun ~/build/brian/adjustable_z_dependence/lmp_serial -in PROTEIN.in

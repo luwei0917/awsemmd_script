@@ -9,6 +9,7 @@ import platform
 from datetime import datetime
 import imp
 import numpy as np
+import fileinput
 # from run_parameter import *
 parser = argparse.ArgumentParser(
     description="This is a python3 script to\
@@ -28,39 +29,136 @@ else:
     cd = os.chdir
 
 # protein_name = args.template.split('_', 1)[-1].strip('/')
-os.system("cp ~/opt/variable_test_run.py .")
+# os.system("cp ~/opt/variable_test_run.py .")
 
-folder_list = open('folder_list', 'w')
-distance_list = np.arange(20, 350, 5)
-# temp_list = np.arange(250, 400, 50)
-temp_list = [300]
-folder_name = ""
-cwd = os.getcwd()
-os.system("mkdir -p simulation")
-for temp in temp_list:
-    pre_folder_name = "T_"+str(temp)
-    for distance in distance_list:
-        folder_name = pre_folder_name + "_D_"+str(distance)
-        folder_list.write(folder_name+"\n")
-        os.system("mkdir -p simulation/" + folder_name)
-        os.system("cp -r "+protein_name+"/* simulation/"+folder_name+"/")
-        os.chdir("simulation")
-        os.chdir(folder_name)
-        os.system(
-            "sed -i.bak 's/TEMPERATURE/'" +
-            str(temp) +
-            "'/g' "+protein_name+".in")
-        os.system(
-            "sed -i.bak 's/DISTANCE/'" +
-            str(distance) +
-            "'/g' colvars.x")
-        # os.system(
-        #     "sed -i.bak 's/MGamma/'" +
-        #     str(MGamma) +
-        #     "'/g' fix_backbone_coeff.data")
-        do("run.py " + protein_name + " -o -s 5 -i")
-        # os.system("run.py " + protein_name + "/ -o -n 1 -s 6 -i")
-        cd(cwd)
+# run_slurm = '''\
+# #!/bin/bash
+# #SBATCH --job-name=CTBP_WL
+# #SBATCH --account=ctbp-common
+# #SBATCH --partition=ctbp-common
+# #SBATCH --ntasks=1
+# #SBATCH --mem-per-cpu=1G
+# #SBATCH --time=1-00:00:00
+# #SBATCH --mail-user=luwei0917@gmail.com
+# #SBATCH --mail-type=FAIL
+# echo "My job ran on:"
+# echo $SLURM_NODELIST
+# srun ~/build/brian/adjustable_z_dependence/lmp_serial -in 2xov_{}.in
+# '''
+
+run_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=1-00:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun ~/build/brian/adjustable_z_dependence/lmp_serial -in 2xov_{}.in
+'''
+
+fileName = "2xov_multi.in"
+start_from = "read_data data.2xov"
+# rg_list = [0, 1, 5, 10]
+# force_list = [2.0]
+# memb_k_list = [0, 1, 5, 10]
+
+# rg_list = [0, 1, 2, 5]
+# force_list = [0.0, 1.0, 2.0, 3.0]
+# memb_k_list = [0, 1, 2, 5]
+
+# rg_list = [0, 1, 2, 5]
+# force_list = [0.0, 3.0]
+# memb_k_list = [0, 1, 2, 5]
+
+# rg_list = [0, 0.1, 1, 5, 10]
+# force_list = [0.0, 3.0]
+# memb_k_list = [0, 0.1, 1, 5, 10]
+
+# rg_list = [0, 0.1, 1]
+# force_list = ["ramp"]
+# memb_k_list = [0, 0.1, 1]
+
+# rg_list = [0, 0.1, 0.5, 1, 2]
+# rg_list = [3, 4]
+# force_list = ["ramp"]
+# memb_k_list = [0, 0.1, 1, 2, 5, 10]
+
+rg_list = [1.5, 2, 2.5, 3, 3.5]
+force_list = ["ramp"]
+memb_k_list = [1.5, 2, 2.5, 3, 3.5, 4]
+
+# rg_list = [0.01]
+for memb_k in memb_k_list:
+    for force in force_list:
+        for rg in rg_list:
+            i = 0
+            folder_name = "memb_{}_force_{}_rg_{}".format(memb_k, force, rg)
+            do("cp -r 2xov " + folder_name)
+            cd(folder_name)
+            # fixFile = "fix_backbone_coeff_go.data"
+            fixFile = "fix_backbone_coeff_single.data"
+            with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
+                for line in file:
+                    print(line.replace("MY_MEMB_K", str(memb_k)), end='')
+            with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+                for line in file:
+                    print(line.replace("MY_FORCE", str(force)), end='')
+            with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+                for line in file:
+                    print(line.replace("MY_RG", str(rg)), end='')
+            with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+                for line in file:
+                    print(line.replace("START_FROM", start_from), end='')
+            do("cp 2xov_multi.in 2xov_{}.in".format(i))
+            do(  # replace SIMULATION_STEPS with specific steps
+                "sed -i.bak 's/NUMBER/'" +
+                str(int(i)) +
+                "'/g' 2xov_{}.in".format(i))
+            do("mkdir -p {}".format(i))
+            do(  # replace RANDOM with a radnom number
+                "sed -i.bak 's/RANDOM/'" +
+                str(randint(1, 10**6)) +
+                "'/g' *.in")
+            with open("run_{}.slurm".format(i), "w") as r:
+                r.write(run_slurm.format(i))
+            do("sbatch run_0.slurm")
+            cd("..")
+# folder_list = open('folder_list', 'w')
+# distance_list = np.arange(20, 350, 5)
+# # temp_list = np.arange(250, 400, 50)
+# temp_list = [300]
+# folder_name = ""
+# cwd = os.getcwd()
+# os.system("mkdir -p simulation")
+# for temp in temp_list:
+#     pre_folder_name = "T_"+str(temp)
+#     for distance in distance_list:
+#         folder_name = pre_folder_name + "_D_"+str(distance)
+#         folder_list.write(folder_name+"\n")
+#         os.system("mkdir -p simulation/" + folder_name)
+#         os.system("cp -r "+protein_name+"/* simulation/"+folder_name+"/")
+#         os.chdir("simulation")
+#         os.chdir(folder_name)
+#         os.system(
+#             "sed -i.bak 's/TEMPERATURE/'" +
+#             str(temp) +
+#             "'/g' "+protein_name+".in")
+#         os.system(
+#             "sed -i.bak 's/DISTANCE/'" +
+#             str(distance) +
+#             "'/g' colvars.x")
+#         # os.system(
+#         #     "sed -i.bak 's/MGamma/'" +
+#         #     str(MGamma) +
+#         #     "'/g' fix_backbone_coeff.data")
+#         do("run.py " + protein_name + " -o -s 5 -i")
+#         # os.system("run.py " + protein_name + "/ -o -n 1 -s 6 -i")
+#         cd(cwd)
 
 # n = 5
 # membrane_k = [1, 2, 3]
@@ -119,5 +217,5 @@ for temp in temp_list:
 #                     print("system unkown")
 #                 os.chdir("..")
 
-folder_list.close()
+# folder_list.close()
 # print("hello world")
