@@ -36,6 +36,8 @@ parser.add_argument("--qnqc", help="calculate q of n terminal and q of c termina
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("-n", "--number", type=int, default=10, help="number of run")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
+parser.add_argument("-m", "--mode",
+                    type=int, default=0)
 args = parser.parse_args()
 
 if(args.debug):
@@ -73,10 +75,24 @@ def test():
             #     f.write(address+"  \n")
 
 if(args.test):
-    for i in range(0, 20):
-        cd(str(i))
-        do("python3 ~/opt/aawsem_show.py --casp -m 2 T0782.")
-        cd("..")
+    if(args.mode == 0):
+        run = 2
+        cd(str(run))
+        cd("0")
+        do("movie.py 2xov")
+        do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
+    if(args.mode == 1):
+        folder = "memb_1.5_force_ramp_rg_1.5"
+        cd(folder)
+        cd("0")
+        do("tail wham.dat")
+        do("movie.py 2xov")
+        do("/Applications/VMD\ 1.9.2.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
+
+    # for i in range(0, 20):
+    #     cd(str(i))
+    #     do("python3 ~/opt/aawsem_show.py --casp -m 2 T0782.")
+    #     cd("..")
 
 
 def calQnQc():

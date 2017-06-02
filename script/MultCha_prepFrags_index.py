@@ -37,9 +37,9 @@ cutoff_identical = 90   # Consider >90% identity as itself, < 90% as homologs.
 
 # set up directories
 myhome = os.environ.get("HOME")
-pdbDir = "~/opt/script/PDBs/"
-indexDir = "~/opt/script/indices/"
-fLibDir = "~/opt/script/fraglib/"
+pdbDir = myhome + "/opt/script/PDBs/"
+indexDir = myhome + "/opt/script/Indices/"
+fLibDir = "fraglib/"
 pdbSeqres = "/Users/weilu/opt/script/pdb_seqres.txt"
 if not os.path.exists(indexDir):
     os.makedirs(indexDir)
@@ -199,7 +199,7 @@ for record in SeqIO.parse(handle, "fasta"):
             failed_pdb[pdbID] = 1
             print ":::Cannot build PDB for PDB ID, failed to download:" + pdbID.upper()
 
-        exit()
+        # exit()
 
     # blast the whole sequence to identify homologs Evalue 0.005
     exeline = "psiblast -num_iterations 1 -word_size 3 -evalue 0.005"

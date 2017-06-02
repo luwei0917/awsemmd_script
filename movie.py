@@ -26,6 +26,7 @@ else:
 protein_name = args.protein.split('.')[0]
 
 if not args.last:
+    do("cp ../2xov.seq .")
     do("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie "+protein_name+".seq")
     do("cp ~/opt/plot_scripts/2xov_movie_bicelle.tcl .")
 else:

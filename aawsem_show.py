@@ -17,6 +17,8 @@ parser.add_argument("--casp", action="store_true", default=False)
 parser.add_argument("--step", type=int, default=8000,
                     help="Which step to show")
 parser.add_argument("--tmalign", action="store_true", default=False)
+parser.add_argument("-f", "--frame",
+                    type=int, default=-1)
 args = parser.parse_args()
 
 try:
@@ -40,7 +42,7 @@ if(args.tmalign):
 
 
 if(args.test):
-    do("BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq 8000".format(protein_name))
+    do("BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq 5000".format(protein_name))
     do("~/opt/TMalign/TMalign awsem.pdb {}.pdb -o result".format(protein_name))
     do("grep 'TM-score=' result > tmscore.dat")
     # Seq_ID=n_identical/n_aligned
@@ -56,6 +58,27 @@ if(args.test):
             print(aligned_length, rmsd, tmscore, seqid)
     if(args.plot):
         do("pymol ~/opt/plot_scripts/tmalign_all.pml")
+
+
+if(args.frame >= 0):
+    do("BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq {}".format(protein_name, args.frame))
+    do("~/opt/TMalign/TMalign awsem.pdb {}.pdb -o result".format(protein_name))
+    do("grep 'TM-score=' result > tmscore.dat")
+    # Seq_ID=n_identical/n_aligned
+    do("cat tmscore.dat")
+    with open("tmscore.dat", "r") as f:
+        for line in f:
+            aligned_length,rmsd,tmscore,seqid = line.split(",")
+            aligned_length = int(aligned_length.split("=")[1])
+            rmsd = float(rmsd.split("=")[1])
+            tmscore = float(tmscore.split("=")[1])
+            seqid = float(seqid.split("=")[1])
+            print("aligned_length, rmsd, tmscore, seqid")
+            print(aligned_length, rmsd, tmscore, seqid)
+    # do("cp result_all_atm.pdb {}.pdb".format(protein_name))
+    if(args.plot):
+        do("pymol ~/opt/plot_scripts/tmalign_all.pml")
+
 
 if(args.casp):
     if(args.mode == 1):         # Only calculate the last frame
@@ -106,11 +129,11 @@ if(args.casp):
                     out.write("{}, {}, {}, {}, {}\n".format(tmp, aligned_length, rmsd, tmscore, seqid))
                     tmp += stride
 
-if not args.test and not args.casp:
-    if(args.plot):
-        do("cp ~/opt/plot_scripts/tmalign_all_tmp.pml .")
-        do(  # replace NAME with target file name
-            "sed -i.bak 's/NAME/" +
-            str(args.protein) +
-            "/g' tmalign_all_tmp.pml")
-        do("pymol tmalign_all_tmp.pml")
+# if not args.test and not args.casp:
+#     if(args.plot):
+#         do("cp ~/opt/plot_scripts/tmalign_all_tmp.pml .")
+#         do(  # replace NAME with target file name
+#             "sed -i.bak 's/NAME/" +
+#             str(args.protein) +
+#             "/g' tmalign_all_tmp.pml")
+#         do("pymol tmalign_all_tmp.pml")
