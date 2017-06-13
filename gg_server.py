@@ -37,21 +37,31 @@ else:
     cd = os.chdir
 if(args.run):
     print("Hello World")
-    for i in range(1, 6):
-        do("mkdir job.{}".format(i))
-        do("cp myjob_nots.slurm job.{}".format(i))
-        do("cp loopsubmit.bash job.{}".format(i))
-        do("cp -r runpackage job.{}".format(i))
-        do("cp run.{0}.tpr job.{0}/runpackage/run.tpr".format(i))
-    for i in range(1, 6):
+    name = "T0833"
+    # cd(name)
+    for i in range(1,6):
+        do("cp {0}/run.{2}.tpr {1}/job.{2}/runpackage/run.tpr".format(name.lower(), name, i))
+        do("cp {0}/plumed_Qnative.dat {1}/job.{2}/runpackage/".format(name.lower(), name, i))
+        do("rm {0}/job.{1}/{0}.*".format(name, i))
+        cd(name)
         cd("job.{}".format(i))
-        fileName = "myjob_nots.slurm"
-        name = "T0833"
-        with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
-            for line in file:
-                print(line.replace("T0766", name), end='')
         do("bash loopsubmit.bash")
-        cd("..")
+        cd("../..")
+    # for i in range(1, 6):
+    #     do("mkdir job.{}".format(i))
+    #     do("cp myjob_nots.slurm job.{}".format(i))
+    #     do("cp loopsubmit.bash job.{}".format(i))
+    #     do("cp -r runpackage job.{}".format(i))
+    #     do("cp run.{0}.tpr job.{0}/runpackage/run.tpr".format(i))
+    # for i in range(1, 6):
+    #     cd("job.{}".format(i))
+    #     fileName = "myjob_nots.slurm"
+    #     name = "T0833"
+    #     with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+    #         for line in file:
+    #             print(line.replace("T0766", name), end='')
+    #     do("bash loopsubmit.bash")
+    #     cd("..")
 
     # force_list = [0.3, 0.5, 0.7, 0.9, 1.1, 1.3]
     # for force in force_list:

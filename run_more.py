@@ -70,7 +70,7 @@ elif args.mode == 1:
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
 echo $SLURM_NODELIST
-srun ~/build/brian/adjustable_z_dependence/lmp_serial -in 2xov_{}.in
+srun ~/build/brian/bug_fix_jun04/lmp_serial -in 2xov_{}.in
     '''
 
 def set_up():
@@ -92,8 +92,12 @@ def set_up():
                 start_from = "read_data data.2xov"
             else:
                 start_from = "read_restart restart." + str(int(steps*i))
+            with fileinput.FileInput("2xov_multi.in", inplace=True, backup='.bak') as file:
+                for line in file:
+                    print(line.replace("reset_timestep", "# reset_timestep"), end='')
             do("cp 2xov_multi.in 2xov_{}.in".format(i))
             fileName = "2xov_{}.in".format(i)
+
             with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
                 for line in file:
                     print(line.replace("START_FROM", start_from), end='')
