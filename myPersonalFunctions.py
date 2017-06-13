@@ -1,6 +1,22 @@
 import subprocess
 
 
+def length_from_fasta(fasta):
+    length = -1
+    with open(fasta) as input_data:
+        data = ""
+        for line in input_data:
+            if(line[0] == ">"):
+                pass
+            elif(line == "\n"):
+                pass
+            else:
+                data += line.strip("\n")
+        length = len(data)
+    return length
+
+
+
 def file_len(fname):
     p = subprocess.Popen(['wc', '-l', fname], stdout=subprocess.PIPE,
                                               stderr=subprocess.PIPE)

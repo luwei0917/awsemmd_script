@@ -26,9 +26,10 @@ else:
 protein_name = args.protein.split('.')[0]
 
 if not args.last:
-    do("cp ../2xov.seq .")
+    do("cp ../{}.seq .".format(protein_name))
     do("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie "+protein_name+".seq")
     do("cp ~/opt/plot_scripts/2xov_movie_bicelle.tcl .")
+    do("cp ~/opt/plot_scripts/movie_bicelle_no_smooth.tcl .")
 else:
     x = os.listdir()
     y = [int(int(f.split(".")[1])/1000) for f in os.listdir() if f.startswith("restart.")]

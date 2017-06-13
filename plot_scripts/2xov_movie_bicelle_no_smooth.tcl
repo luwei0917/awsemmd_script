@@ -3,10 +3,10 @@
 
 mol load pdb movie.pdb
 
-graphics 0 line {-1000 15 14.4} {1000 15 14.4} width 2
-graphics 0 line {-1000 15 -14.4} {1000 15 -14.4} width 2
-graphics 0 line {-1000 -15 14.4} {1000 -15 14.4} width 2
-graphics 0 line {-1000 -15 -14.4} {1000 -15 -14.4} width 2
+graphics 0 line {-1000 15 14.4} {1000 15 15} width 2
+graphics 0 line {-1000 15 -14.4} {1000 15 -15} width 2
+graphics 0 line {-1000 -15 14.4} {1000 -15 15} width 2
+graphics 0 line {-1000 -15 -14.4} {1000 -15 -15} width 2
 
 
 while {[molinfo top get numreps] > 0} {mol delrep 0 top}
@@ -59,7 +59,7 @@ mol addrep top
 axes location off
 display projection orthographic
 display cuedensity 0
-#color Display Background white
+color Display Background white
 
 mol delrep 0 0
 user add key q {rotate x by 90}
@@ -70,8 +70,11 @@ puts "ahora anda lindo todo!!!"
 animate style Once
 animate goto 0
 display resetview
+rotate x by 90.000000
+scale by 1.200000
 
-animate speed 0.168831
+animate speed 1.000000
+#animate speed 0.168831
 #animate forward
 #animate goto 450
 #source "~/Downloads/take_picture.tcl"

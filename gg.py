@@ -76,18 +76,18 @@ def test():
 
 if(args.test):
     if(args.mode == 0):
-        run = 2
+        run = 0
         cd(str(run))
         cd("0")
         do("movie.py 2xov")
         do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
     if(args.mode == 1):
-        folder = "memb_1.5_force_ramp_rg_1.5"
+        folder = "memb_0_force_ramp_rg_4"
         cd(folder)
         cd("0")
         do("tail wham.dat")
         do("movie.py 2xov")
-        do("/Applications/VMD\ 1.9.2.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
+        do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
 
     # for i in range(0, 20):
     #     cd(str(i))

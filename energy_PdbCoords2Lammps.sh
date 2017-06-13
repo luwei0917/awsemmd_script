@@ -17,4 +17,4 @@ echo $pdb_file
 echo $output_file
 
 python2.7 $s/script/PDBToCoordinates.py $pdb_file $output_file".coord"
-python2.7 $s/create_project_helper.py $output_file".coord" "data."$output_file -b
+python2.7 $s/small_script/coord2data.py $output_file".coord" "data."$output_file -b

@@ -42,7 +42,7 @@ if(args.tmalign):
 
 
 if(args.test):
-    do("BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq 5000".format(protein_name))
+    do("BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq 2".format(protein_name))
     do("~/opt/TMalign/TMalign awsem.pdb {}.pdb -o result".format(protein_name))
     do("grep 'TM-score=' result > tmscore.dat")
     # Seq_ID=n_identical/n_aligned
