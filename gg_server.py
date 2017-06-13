@@ -37,6 +37,7 @@ else:
     cd = os.chdir
 if(args.run):
     print("Hello World")
+
     name = "T0766"
     n = 1
     for i in range(1, n):
@@ -51,8 +52,24 @@ if(args.run):
         with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
             for line in file:
                 print(line.replace("T0766", name), end='')
+
         do("bash loopsubmit.bash")
-        cd("..")
+        cd("../..")
+    # for i in range(1, 6):
+    #     do("mkdir job.{}".format(i))
+    #     do("cp myjob_nots.slurm job.{}".format(i))
+    #     do("cp loopsubmit.bash job.{}".format(i))
+    #     do("cp -r runpackage job.{}".format(i))
+    #     do("cp run.{0}.tpr job.{0}/runpackage/run.tpr".format(i))
+    # for i in range(1, 6):
+    #     cd("job.{}".format(i))
+    #     fileName = "myjob_nots.slurm"
+    #     name = "T0833"
+    #     with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+    #         for line in file:
+    #             print(line.replace("T0766", name), end='')
+    #     do("bash loopsubmit.bash")
+    #     cd("..")
 
     # force_list = [0.3, 0.5, 0.7, 0.9, 1.1, 1.3]
     # for force in force_list:

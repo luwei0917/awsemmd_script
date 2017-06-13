@@ -18,6 +18,8 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("template", help="the name of template file")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
+parser.add_argument("-m", "--mode",
+                    type=int, default=0)
 args = parser.parse_args()
 protein_name = args.template.strip('/')
 
@@ -58,11 +60,14 @@ run_slurm = '''\
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
 echo $SLURM_NODELIST
-srun ~/build/brian/adjustable_z_dependence/lmp_serial -in 2xov_{}.in
+srun ~/build/brian/bug_fix_jun04/lmp_serial -in 2xov_{}.in
 '''
 
 fileName = "2xov_multi.in"
-start_from = "read_data data.2xov"
+if args.mode == 0:
+    start_from = "read_data data.2xov"
+if args.mode == 1:
+    start_from = "read_restart restart.2000000"
 # rg_list = [0, 1, 5, 10]
 # force_list = [2.0]
 # memb_k_list = [0, 1, 5, 10]
@@ -88,9 +93,9 @@ start_from = "read_data data.2xov"
 # force_list = ["ramp"]
 # memb_k_list = [0, 0.1, 1, 2, 5, 10]
 
-rg_list = [1.5, 2, 2.5, 3, 3.5]
+rg_list = [0, 1, 1.5, 2, 3, 5, 10]
 force_list = ["ramp"]
-memb_k_list = [1.5, 2, 2.5, 3, 3.5, 4]
+memb_k_list = [0, 1, 2, 3, 4, 5, 10]
 
 # rg_list = [0.01]
 for memb_k in memb_k_list:
@@ -111,10 +116,11 @@ for memb_k in memb_k_list:
             with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
                 for line in file:
                     print(line.replace("MY_RG", str(rg)), end='')
-            with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+
+            do("cp 2xov_multi.in 2xov_{}.in".format(i))
+            with fileinput.FileInput("2xov_{}.in".format(i), inplace=True, backup='.bak') as file:
                 for line in file:
                     print(line.replace("START_FROM", start_from), end='')
-            do("cp 2xov_multi.in 2xov_{}.in".format(i))
             do(  # replace SIMULATION_STEPS with specific steps
                 "sed -i.bak 's/NUMBER/'" +
                 str(int(i)) +

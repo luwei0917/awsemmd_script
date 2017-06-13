@@ -9,6 +9,7 @@ import platform
 from datetime import datetime
 import imp
 from time import sleep
+import fileinput
 
 # from run_parameter import *
 parser = argparse.ArgumentParser(
@@ -16,127 +17,30 @@ parser = argparse.ArgumentParser(
     automatic copy the template file, \
     run simulation and analysis")
 
-parser.add_argument("template", help="the name of template file")
-parser.add_argument("-n", "--number", type=int, default=20,
-                    help="Number of simulation run")
-parser.add_argument("-s", "--steps", type=int, default=8,
-                    help="Simulation steps in unit of million,\
-                    default is 8 million, -1 means test run")
-parser.add_argument("-r", "--read", help="Read from config file",
-                    action="store_true")
-parser.add_argument("-ws", "--warmSteps", type=int, default=20,
-                    help="Warmup Simulation steps in unit of hundred thousand,\
-                    default is 2 million")
-parser.add_argument("-t", "--test", help="test mode",
-                    action="store_true")
-parser.add_argument("-c", "--copy",
-                    help="copy the restart file before run",
-                    action="store_true")
-parser.add_argument("-o", "--offAuto", help="turn off from Read from \
-                    config file", action="store_true", default=False)
-parser.add_argument("-i", "--inplace", help="change in this folder",
-                    action="store_true", default=False)
-parser.add_argument("-m", "--mode",
-                    help="mode 2 is dependence run",
-                    type=int, default=1)
+parser.add_argument("protein", help="The name of the protein")
+parser.add_argument("-n", "--number", type=int, default=1,
+                    help="# of simulation run, default: 1")
+parser.add_argument("--restart", type=int, default=0,
+                    help="start from? default: 0")
+parser.add_argument("--runs", type=int, default=1,
+                    help="then do how many runs?, default: 1")
+parser.add_argument("-s", "--steps", type=int, default=5,
+                    help="How many steps in unit of million,\
+                    per run, default: 5")
+parser.add_argument("-d", "--debug", action="store_true", default=False)
+parser.add_argument("-m", "--mode", type=int, default=0)
+parser.add_argument("-i", "--inplace", type=int, default=0)
 args = parser.parse_args()
-# TODO:
-# add clean command.
-# test analysis, and fullfill missing anaylsis.
 
-# protein_name = args.template.split('_', 1)[-1].strip('/')
-n = args.number
-protein_name = args.template.strip('/')
-if args.steps == -1:  # smallest run for debug.
-    simulation_steps = 10**4
-    warm_up_steps = 10**4
-    n = 1  # also set
-elif args.test:  # test run
-    simulation_steps = 50 * 10**3
-    warm_up_steps = 50 * 10**3
+if(args.debug):
+    do = print
+    cd = print
 else:
-    simulation_steps = args.steps * 10**6
-    warm_up_steps = args.warmSteps * 10**5
+    do = os.system
+    cd = os.chdir
 
-config = open('config.py', 'w')
-config.write("protein_name = '%s'\nnumber_of_run = %d\nsimulation_steps = %d\n\
-warm_up_steps = %d\n" % (protein_name, n, simulation_steps, warm_up_steps))
-config.close()
-if(not args.offAuto):
-    exec(open("variables.dat").read())
-    print(TSTART, TEND)
-
-
-def set_up():
-    seed(datetime.now())
-    os.system(  # replace SIMULATION_STEPS with specific steps
-        "sed -i.bak 's/WARM_UP_STEPS/'" +
-        str(warm_up_steps) +
-        "'/g' "+protein_name+".in")
-    os.system(  # replace RANDOM with a radnom number
-        "sed -i.bak 's/RANDOM/'" +
-        str(randint(1, 10**6)) +
-        "'/g' "+protein_name+".in")
-    os.system(  # replace SIMULATION_STEPS with specific steps
-        "sed -i.bak 's/SIMULATION_STEPS/'" +
-        str(simulation_steps) +
-        "'/g' "+protein_name+".in")
-    if args.steps == -1:
-        os.system(  # replace TEMPERATURE with specific steps
-            "sed -i.bak 's/Q0/'" +
-            str(0.5) +
-            "'/g' fix_qbias_coeff.data")
-        os.system(  # replace TEMPERATURE with specific steps
-            "sed -i.bak 's/TEMPERATURE/'" +
-            str(350) +
-            "'/g' "+protein_name+".in")
-    if(not args.offAuto):
-            os.system(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/TSTART/'" +
-                str(TSTART) +
-                "'/g' "+protein_name+".in")
-            os.system(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/TEND/'" +
-                str(TEND) +
-                "'/g' "+protein_name+".in")
-
-
-
-def set_up2():
-    seed(datetime.now())
-    os.system(  # replace SIMULATION_STEPS with specific steps
-        "sed -i.bak 's/WARM_UP_STEPS/'" +
-        str(warm_up_steps) +
-        "'/g' *.in")
-    os.system(  # replace RANDOM with a radnom number
-        "sed -i.bak 's/RANDOM/'" +
-        str(randint(1, 10**6)) +
-        "'/g' *.in")
-    os.system(  # replace SIMULATION_STEPS with specific steps
-        "sed -i.bak 's/SIMULATION_STEPS/'" +
-        str(simulation_steps) +
-        "'/g' *.in")
-    if args.steps == -1:
-        os.system(  # replace TEMPERATURE with specific steps
-            "sed -i.bak 's/Q0/'" +
-            str(0.5) +
-            "'/g' fix_qbias_coeff.data")
-        os.system(  # replace TEMPERATURE with specific steps
-            "sed -i.bak 's/TEMPERATURE/'" +
-            str(350) +
-            "'/g' "+protein_name+".in")
-    if(not args.offAuto):
-            os.system(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/TSTART/'" +
-                str(TSTART) +
-                "'/g' "+protein_name+".in")
-            os.system(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/TEND/'" +
-                str(TEND) +
-                "'/g' "+protein_name+".in")
-
-
-run_slurm = '''\
+if args.mode == 0:
+    run_slurm = '''\
 #!/bin/bash
 #SBATCH --job-name=CTBP_WL
 #SBATCH --account=ctbp-common
@@ -148,115 +52,47 @@ run_slurm = '''\
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
 echo $SLURM_NODELIST
-srun ~/build/brian/adjustable_z_dependence/lmp_serial -in 2xov_{}.in
-'''
+srun ~/build/brian/z_dependence/lmp_serial -in {}_{}.in
+    '''
 
-def set_up3():
+proteinName = args.protein.strip("/.")
+def set_up():
     seed(datetime.now())
     with open("my_loop_submit.bash", "w") as f:
-
-        for i in range(2,4):
+        steps = args.steps*1e6
+        runs = args.runs
+        restart = args.restart
+        for ii in range(runs):
+            i = ii + restart
             with open("run_{}.slurm".format(i), "w") as r:
-                r.write(run_slurm.format(i))
-            if(i != 2):
+                r.write(run_slurm.format(proteinName, i))
+            if(i != restart):
                 dependency = "--dependency=afterany:$jobid"
             else:
                 dependency = ""
             f.write("jobid=`sbatch "+dependency+" run_{}.slurm".format(i) + " | tail -n 1 | awk '{print $4}'`\necho $jobid\n")
-            os.system("cp 2xov_multi.in 2xov_{}.in".format(i))
-            os.system(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/START_FROM_N/'" +
-                str(int(5e6*(i))) +
-                "'/g' 2xov_{}.in".format(i))
+            if i == 0:
+                start_from = "read_data data.{}".format(proteinName)
+            else:
+                start_from = "read_restart restart." + str(int(steps*i))
+            do("cp {0}_multi.in {0}_{1}.in".format(proteinName, i))
+            fileName = "{0}_{1}.in".format(proteinName, i)
+            with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+                for line in file:
+                    print(line.replace("START_FROM", start_from), end='')
             os.system(  # replace SIMULATION_STEPS with specific steps
                 "sed -i.bak 's/NUMBER/'" +
                 str(int(i)) +
-                "'/g' 2xov_{}.in".format(i))
+                "'/g' {}_{}.in".format(proteinName, i))
             os.system("mkdir -p {}".format(i))
-    os.system(  # replace RANDOM with a radnom number
-        "sed -i.bak 's/RANDOM/'" +
-        str(randint(1, 10**6)) +
-        "'/g' *.in")
-    if(not args.offAuto):
-            os.system(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/TSTART/'" +
-                str(TSTART) +
-                "'/g' "+protein_name+".in")
-            os.system(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/TEND/'" +
-                str(TEND) +
-                "'/g' "+protein_name+".in")
+            os.system(  # replace RANDOM with a radnom number
+                "sed -i.bak 's/RANDOM/'" +
+                str(randint(1, 10**6)) +
+                "'/g' *.in")
 
-
-def set_up3_real():
-    seed(datetime.now())
-    with open("my_loop_submit.bash", "w") as f:
-        with open("run_0.slurm", "w") as r:
-            r.write(run_slurm.format(0))
-        f.write("jobid=`sbatch run_0.slurm | tail -n 1 | awk '{print $4}'`\necho $jobid\n")
-        os.system("mkdir 0")
-        for i in range(1,4):
-            with open("run_{}.slurm".format(i), "w") as r:
-                r.write(run_slurm.format(i))
-            f.write("jobid=`sbatch --dependency=afterany:$jobid run_{}.slurm".format(i) + " | tail -n 1 | awk '{print $4}'`\necho $jobid\n")
-            os.system("cp 2xov_multi.in 2xov_{}.in".format(i))
-            os.system(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/START_FROM_N/'" +
-                str(int(5e6*(i))) +
-                "'/g' 2xov_{}.in".format(i))
-            os.system(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/NUMBER/'" +
-                str(int(i)) +
-                "'/g' 2xov_{}.in".format(i))
-            os.system("mkdir {}".format(i))
-    os.system(  # replace RANDOM with a radnom number
-        "sed -i.bak 's/RANDOM/'" +
-        str(randint(1, 10**6)) +
-        "'/g' *.in")
-    if(not args.offAuto):
-            os.system(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/TSTART/'" +
-                str(TSTART) +
-                "'/g' "+protein_name+".in")
-            os.system(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/TEND/'" +
-                str(TEND) +
-                "'/g' "+protein_name+".in")
 
 
 def batch_run():
-    if(platform.system() == 'Darwin'):
-        os.system("/Users/weilu/bin/lmp_serial < "+protein_name+".in")
-        # os.system("/Users/weilu/build/mingcheng/src/lmp_serial < "+protein_name+".in")
-        # os.system("/Users/weilu/Research/Build/lammps-9Oct12_modified/src/lmp_serial \
-        # < "+protein_name+".in")
-    elif(platform.system() == 'Linux'):
-        os.system("cp ~/opt/run.slurm run.slurm")
-        # os.system("cp ~/opt/run_tertiary.slurm run.slurm")
-        os.system(  # replace PROTEIN with pdb name
-            "sed -i.bak 's/PROTEIN/'" +
-            protein_name +
-            "'/g' run.slurm")
-        os.system("sbatch run.slurm")
-        sleep(0.2)  # Time in seconds.
-    else:
-        print("system unkown")
-
-
-
-def batch_run2():
-    if(platform.system() == 'Darwin'):
-        os.system("/Users/weilu/bin/lmp_serial < "+protein_name+".in")
-        # os.system("/Users/weilu/Research/Build/lammps-9Oct12_modified/src/lmp_serial \
-        # < "+protein_name+".in")
-    elif(platform.system() == 'Linux'):
-        os.system("bash loopsubmit.bash")
-        sleep(0.2)  # Time in seconds.
-    else:
-        print("system unkown")
-
-
-def batch_run3():
     if(platform.system() == 'Darwin'):
         os.system("/Users/weilu/bin/lmp_serial < "+protein_name+".in")
         # os.system("/Users/weilu/Research/Build/lammps-9Oct12_modified/src/lmp_serial \
@@ -267,27 +103,20 @@ def batch_run3():
     else:
         print("system unkown")
 
-
 if(args.inplace):
+    print("inplace")
     set_up()
     batch_run()
 else:
+    n = args.number
+    cwd = os.getcwd()
     for i in range(n):
-        # simulation set up
-        os.system("mkdir -p simulation/"+str(i))
-        os.system("cp -r "+protein_name+"/* simulation/"+str(i))
-        os.chdir("simulation/"+str(i))
-        if(args.mode == 3):
-            set_up3()
-            batch_run3()
-            os.chdir("../..")
-        elif(args.mode == 2):
-            set_up2()
-            batch_run2()
-            os.chdir("../..")
-        else:
-            set_up()
-            batch_run()
-            os.chdir("../..")
+        if args.restart == 0:
+            do("mkdir -p simulation")
+            do("cp -r {} simulation/{}".format(proteinName, i))
+        cd("simulation/"+str(i))
+        set_up()
+        batch_run()
+        cd(cwd)
 
 # print("hello world")
