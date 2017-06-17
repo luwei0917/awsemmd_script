@@ -54,13 +54,14 @@ run_slurm = '''\
 #SBATCH --account=ctbp-common
 #SBATCH --partition=ctbp-common
 #SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
 #SBATCH --mem-per-cpu=1G
 #SBATCH --time=1-00:00:00
 #SBATCH --mail-user=luwei0917@gmail.com
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
 echo $SLURM_NODELIST
-srun ~/build/brian/bug_fix_jun04/lmp_serial -in 2xov_{}.in
+srun ~/build/brian/z_dependence/lmp_serial -in 2xov_{}.in
 '''
 
 fileName = "2xov_multi.in"
@@ -93,11 +94,10 @@ if args.mode == 1:
 # force_list = ["ramp"]
 # memb_k_list = [0, 0.1, 1, 2, 5, 10]
 
-rg_list = [0, 1, 1.5, 2, 3, 5, 10]
+rg_list = [0.5, 1, 1.5, 2, 3]
 force_list = ["ramp"]
-memb_k_list = [0, 1, 2, 3, 4, 5, 10]
+memb_k_list = [0.5, 1, 2, 2.5, 3, 4]
 
-# rg_list = [0.01]
 for memb_k in memb_k_list:
     for force in force_list:
         for rg in rg_list:
@@ -134,6 +134,51 @@ for memb_k in memb_k_list:
                 r.write(run_slurm.format(i))
             do("sbatch run_0.slurm")
             cd("..")
+
+
+
+
+# force_list = ["ramp"]
+# memb_k_list = [0, 0.5, 1, 2, 3, 5]
+#
+# for memb_k in memb_k_list:
+#     for force in force_list:
+#         rg = memb_k
+#         i = 0
+#         folder_name = "memb_{}_force_{}_rg_{}".format(memb_k, force, rg)
+#         do("cp -r 2xov " + folder_name)
+#         cd(folder_name)
+#         # fixFile = "fix_backbone_coeff_go.data"
+#         fixFile = "fix_backbone_coeff_single.data"
+#         with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
+#             for line in file:
+#                 print(line.replace("MY_MEMB_K", str(memb_k)), end='')
+#         with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+#             for line in file:
+#                 print(line.replace("MY_FORCE", str(force)), end='')
+#         with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+#             for line in file:
+#                 print(line.replace("MY_RG", str(rg)), end='')
+#
+#         do("cp 2xov_multi.in 2xov_{}.in".format(i))
+#         with fileinput.FileInput("2xov_{}.in".format(i), inplace=True, backup='.bak') as file:
+#             for line in file:
+#                 print(line.replace("START_FROM", start_from), end='')
+#         do(  # replace SIMULATION_STEPS with specific steps
+#             "sed -i.bak 's/NUMBER/'" +
+#             str(int(i)) +
+#             "'/g' 2xov_{}.in".format(i))
+#         do("mkdir -p {}".format(i))
+#         do(  # replace RANDOM with a radnom number
+#             "sed -i.bak 's/RANDOM/'" +
+#             str(randint(1, 10**6)) +
+#             "'/g' *.in")
+#         with open("run_{}.slurm".format(i), "w") as r:
+#             r.write(run_slurm.format(i))
+#         do("sbatch run_0.slurm")
+#         cd("..")
+
+
 # folder_list = open('folder_list', 'w')
 # distance_list = np.arange(20, 350, 5)
 # # temp_list = np.arange(250, 400, 50)

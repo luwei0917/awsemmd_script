@@ -46,6 +46,7 @@ if args.mode == 0:
 #SBATCH --account=ctbp-common
 #SBATCH --partition=ctbp-common
 #SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
 #SBATCH --mem-per-cpu=1G
 #SBATCH --time=1-00:00:00
 #SBATCH --mail-user=luwei0917@gmail.com

@@ -38,13 +38,15 @@ else:
 if(args.run):
     print("Hello World")
 
-    name = "T0766"
-    n = 1
+    name = "T0833"
+    n = 21
+    do("mkdir "+name)
+    cd(name)
     for i in range(1, n):
-        do("mkdir job.{}".format(i))
+        do("mkdir -p job.{}".format(i))
         do("cp ../preparation_files/myjob_nots.slurm job.{}".format(i))
         do("cp ../preparation_files/loopsubmit.bash job.{}".format(i))
-        do("cp -r ../preparation_files/{0}_runpackage job.{1}/".format(name, i))
+        do("cp -r ../preparation_files/{0}_runpackage job.{1}/runpackage".format(name, i))
         do("cp ../preparation_files/{1}_tpr/run.{0}.tpr job.{0}/runpackage/run.tpr".format(i, name))
     for i in range(1, n):
         cd("job.{}".format(i))
@@ -54,7 +56,8 @@ if(args.run):
                 print(line.replace("T0766", name), end='')
 
         do("bash loopsubmit.bash")
-        cd("../..")
+        cd("..")
+
     # for i in range(1, 6):
     #     do("mkdir job.{}".format(i))
     #     do("cp myjob_nots.slurm job.{}".format(i))
