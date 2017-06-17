@@ -41,7 +41,7 @@ do("python2 ~/opt/Pdb2Gro.py {0}.pdb amh-go.gro".format(proteinName))
 do("stride crystal_structure.pdb > ssweight.stride")
 do("python2 ~/opt/script/stride2ssweight.py > ssweight")
 do("grep -E 'CB|CA  GLY' crystal_structure.pdb > cbs.data")
-do("""awk '{if($8>15) print "1"; else if($8<-15) print "3";else print "2" }'  cbs.data  > zim""")
+do("""awk '{if($9>15) print "1"; else if($9<-15) print "3";else print "2" }'  cbs.data  > zim""")
 # create "in" file
 
 alpha_carbons = " ".join([str(i) for i in list(range(1, size*3+1, 3))])
@@ -62,12 +62,15 @@ with fileinput.FileInput("{}_multi.in".format(proteinName), inplace=True, backup
 # create coord and data file
 
 ## start with crystal structure
-if args.crystal:
-    do("python2 ~/opt/script/PDBToCoordinates.py crystal_structure {0}.coord".format(proteinName))
-## start with man made long string
-if not args.crystal:
-    do("python2 ~/opt/script/PDBToCoordinates.py {0} {0}.coord".format(proteinName))
+do("python2 ~/opt/script/PDBToCoordinates.py crystal_structure crystal.coord")
+do("python2 ~/opt/small_script/coord2data.py crystal.coord data.crystal -b")
+do("python2 ~/opt/script/PDBToCoordinates.py {0} {0}.coord".format(proteinName))
 do("python2 ~/opt/small_script/coord2data.py {0}.coord data.{0} -b".format(proteinName))
+# if args.crystal:
+#
+# ## start with man made long string
+# if not args.crystal:
+
 
 # copy parameters
 

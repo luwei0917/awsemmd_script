@@ -30,6 +30,7 @@ if not args.last:
     do("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie "+protein_name+".seq")
     do("cp ~/opt/plot_scripts/2xov_movie_bicelle.tcl .")
     do("cp ~/opt/plot_scripts/movie_bicelle_no_smooth.tcl .")
+    do("cp ~/opt/plot_scripts/movie.tcl .")
 else:
     x = os.listdir()
     y = [int(int(f.split(".")[1])/1000) for f in os.listdir() if f.startswith("restart.")]
