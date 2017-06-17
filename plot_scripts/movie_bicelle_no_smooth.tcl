@@ -31,6 +31,8 @@ animate style Once
 animate goto 0
 display resetview
 rotate x by 90.000000
+rotate x by 90.000000
+rotate x by 90.000000
 scale by 1.200000
 
 animate speed 1.000000
