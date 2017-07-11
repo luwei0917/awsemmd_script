@@ -41,7 +41,7 @@ do("python2 ~/opt/Pdb2Gro.py {0}.pdb amh-go.gro".format(proteinName))
 do("stride crystal_structure.pdb > ssweight.stride")
 do("python2 ~/opt/script/stride2ssweight.py > ssweight")
 do("grep -E 'CB|CA  GLY' crystal_structure.pdb > cbs.data")
-do("""awk '{if($9>15) print "1"; else if($9<-15) print "3";else print "2" }'  cbs.data  > zim""")
+do("""awk '{if($9>15) print "1"; else if($9<-15) print "3"; else print "2"}'  cbs.data  > zim""")
 # create "in" file
 
 alpha_carbons = " ".join([str(i) for i in list(range(1, size*3+1, 3))])
