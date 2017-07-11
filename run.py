@@ -18,6 +18,7 @@ parser = argparse.ArgumentParser(
     run simulation and analysis")
 
 parser.add_argument("protein", help="The name of the protein")
+parser.add_argument("--name", default="simulation", help="Name of the simulation")
 parser.add_argument("-n", "--number", type=int, default=1,
                     help="# of simulation run, default: 1")
 parser.add_argument("--restart", type=int, default=0,
@@ -78,9 +79,13 @@ def set_up():
                 start_from = "read_restart restart." + str(int(steps*i))
             do("cp {0}_multi.in {0}_{1}.in".format(proteinName, i))
             fileName = "{0}_{1}.in".format(proteinName, i)
+            backbone_file = "fix_backbone_coeff_{}.data".format(args.name)
             with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
                 for line in file:
-                    print(line.replace("START_FROM", start_from), end='')
+                    tmp = line.replace("START_FROM", start_from)
+                    # tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
+                    print(tmp, end='')
+
             os.system(  # replace SIMULATION_STEPS with specific steps
                 "sed -i.bak 's/NUMBER/'" +
                 str(int(i)) +
@@ -113,9 +118,9 @@ else:
     cwd = os.getcwd()
     for i in range(n):
         if args.restart == 0:
-            do("mkdir -p simulation")
-            do("cp -r {} simulation/{}".format(proteinName, i))
-        cd("simulation/"+str(i))
+            do("mkdir -p " + args.name)
+            do("cp -r {} {}/{}".format(proteinName, args.name, i))
+        cd(args.name + "/"+str(i))
         set_up()
         batch_run()
         cd(cwd)

@@ -94,9 +94,9 @@ if args.mode == 1:
 # force_list = ["ramp"]
 # memb_k_list = [0, 0.1, 1, 2, 5, 10]
 
-rg_list = [0.5, 1, 1.5, 2, 3]
+rg_list = [0, 0.5, 1, 1.5, 2, 3]
 force_list = ["ramp"]
-memb_k_list = [0.5, 1, 2, 2.5, 3, 4]
+memb_k_list = [0, 0.5, 1, 2, 2.5, 3, 4]
 
 for memb_k in memb_k_list:
     for force in force_list:
