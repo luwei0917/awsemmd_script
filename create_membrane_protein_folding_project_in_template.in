@@ -42,15 +42,17 @@ group		beta_atoms id BETA_ATOMS
 group		oxygens id OXYGENS
 
 group		n_end id 1 2 3
-group		c_end id 541 542 543
+group		c_end id LAST
 
 
 thermo 4000
-
+fix               1 all nve
+fix               2 all langevin 100 100 10000.0 RANDOM
 fix		  4 alpha_carbons backbone beta_atoms oxygens unfold_fixbackbone.data PROTEIN.seq
 
-variable F_c_end_added equal -1.0
-variable F_n_end_added equal 1.0
+variable F_c_end_added equal -0.5
+variable F_n_end_added equal 0.5
+
 fix 5 c_end addforce v_F_c_end_added 0 0
 fix 7 n_end addforce v_F_n_end_added 0 0
 variable    step equal step
@@ -110,6 +112,8 @@ fix         	wham all print 4000 "${step}, ${qw}, ${rg}, ${tc}, ${E_P}" file NUM
 restart         100000 restart
 run		100000
 
+unfix 1
+unfix 2
 unfix 4
 unfix 5
 unfix 7

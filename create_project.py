@@ -48,6 +48,7 @@ do("""awk '{if($9>15) print "1"; else if($9<-15) print "3"; else print "2"}'  cb
 alpha_carbons = " ".join([str(i) for i in list(range(1, size*3+1, 3))])
 beta_atoms = " ".join([str(i) for i in list(range(3, size*3+1, 3))])
 oxygens = " ".join([str(i) for i in list(range(2, size*3+1, 3))])
+last = " ".join(str(i) for i in [size*3-2, size*3-1, size*3])
 if args.crystal:
     do("cp ~/opt/create_project_in_crystal_template.in {}_multi.in".format(proteinName))
 else:
@@ -61,6 +62,7 @@ with fileinput.FileInput("{}_multi.in".format(proteinName), inplace=True, backup
         tmp = tmp.replace("BETA_ATOMS", beta_atoms)
         tmp = tmp.replace("OXYGENS", oxygens)
         tmp = tmp.replace("PROTEIN", proteinName)
+        tmp = tmp.replace("LAST", last)
         # tmp = BETA_ATOMS
         print(tmp, end='')
 
