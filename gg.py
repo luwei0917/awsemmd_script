@@ -17,6 +17,7 @@ import glob
 # sort -u -k 3
 # sed -e 's/+T//'
 # awk '$5=-$5' data
+# awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat
 mypath = os.environ["PATH"]
 os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
@@ -75,6 +76,9 @@ def test():
             #     f.write(address+"  \n")
 
 if(args.test):
+    if(args.mode == 3):
+        do("cp ../2xov.pdb .")
+        do("python2 ~/opt/script/CalcLocalQTrajectory.py 2xov dump.lammpstrj localQ_trajectory")
     if(args.mode == 0):
         run = 4
         cd(str(run))

@@ -14,6 +14,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument("protein", help="The name of the protein")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--frag", action="store_true", default=False)
+parser.add_argument("--crystal", action="store_true", default=False)
+parser.add_argument("--membrane", action="store_true", default=False)
 args = parser.parse_args()
 
 if(args.debug):
@@ -46,8 +48,13 @@ do("""awk '{if($9>15) print "1"; else if($9<-15) print "3"; else print "2"}'  cb
 alpha_carbons = " ".join([str(i) for i in list(range(1, size*3+1, 3))])
 beta_atoms = " ".join([str(i) for i in list(range(3, size*3+1, 3))])
 oxygens = " ".join([str(i) for i in list(range(2, size*3+1, 3))])
-
-do("cp ~/opt/create_project_in_template.in {}_multi.in".format(proteinName))
+if args.crystal:
+    do("cp ~/opt/create_project_in_crystal_template.in {}_multi.in".format(proteinName))
+else:
+    if args.membrane:
+        do("cp ~/opt/create_membrane_protein_folding_project_in_template.in {}_multi.in".format(proteinName))
+    else:
+        do("cp ~/opt/create_project_in_template.in {}_multi.in".format(proteinName))
 with fileinput.FileInput("{}_multi.in".format(proteinName), inplace=True, backup='.bak') as file:
     for line in file:
         tmp = line.replace("ALPHA_CARBONS", alpha_carbons)
