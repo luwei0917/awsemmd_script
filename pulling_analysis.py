@@ -127,7 +127,7 @@ srun python2 ~/opt/pulling_compute-pmf.py {}
 
 if(args.mode == 1):
     nsample = 600
-    force_list = np.linespace(0.5, 2, 0.1)
+    force_list = np.linspace(0.5, 2, 0.1)
     for force in force_list:
         # force = 1
         temp_arg = "-f {} -nsamples {}".format(force, nsample)
