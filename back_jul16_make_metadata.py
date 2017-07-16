@@ -8,13 +8,12 @@ import argparse
 import platform
 from datetime import datetime
 import imp
-import glob
 # from run_parameter import *
 parser = argparse.ArgumentParser(
     description="This is a python3 script to\
     make metadata")
 
-parser.add_argument("-k", "--kconstant", type=float, default=0.01)
+parser.add_argument("-k", "--kconstant", type=int, default=600)
 parser.add_argument("-q", "--qStart", type=float, default=0.0)
 parser.add_argument("-n", "--number", type=int, default=20)
 
@@ -49,12 +48,6 @@ else:
     cd = os.chdir
 
 
-if args.mode == 1:
-    print("Distance biased 1D Free Energy")
-    files = glob.glob("../simulation")
-    print(files)
-    # with open("metadatafile", "w") as out:
-    #     target = "../data/{}/".format(temp) + name + " {} {} {}\n".format(temp, kconstant, q)
 
 if(args.test):
     kconstant = args.kconstant * 2   # double the k constant

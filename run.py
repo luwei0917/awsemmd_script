@@ -30,7 +30,8 @@ parser.add_argument("-s", "--steps", type=int, default=5,
                     per run, default: 5")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("-m", "--mode", type=int, default=0)
-parser.add_argument("-i", "--inplace", type=int, default=0)
+parser.add_argument("-i", "--inplace", action="store_true", default=False)
+parser.add_argument("-f", "--force", type=float, default=1.0)
 args = parser.parse_args()
 
 if(args.debug):
@@ -83,7 +84,8 @@ def set_up():
             with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
                 for line in file:
                     tmp = line.replace("START_FROM", start_from)
-                    # tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
+                    tmp = tmp.replace("MY_FORCE", str(args.force))
+                    tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
                     print(tmp, end='')
 
             os.system(  # replace SIMULATION_STEPS with specific steps
@@ -112,7 +114,8 @@ def batch_run():
 if(args.inplace):
     print("inplace")
     set_up()
-    batch_run()
+    # batch_run()
+    do("~/build/brian/z_dependence/lmp_serial -in {}_multi.in".format(proteinName))
 else:
     n = args.number
     cwd = os.getcwd()

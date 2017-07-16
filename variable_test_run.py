@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("template", help="the name of template file")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
-parser.add_argument("-m", "--mode",
+parser.add_argument("--rerun",
                     type=int, default=0)
 args = parser.parse_args()
 protein_name = args.template.strip('/')
@@ -65,10 +65,10 @@ srun ~/build/brian/z_dependence/lmp_serial -in 2xov_{}.in
 '''
 
 fileName = "2xov_multi.in"
-if args.mode == 0:
+if args.rerun == 0:
     start_from = "read_data data.2xov"
-if args.mode == 1:
-    start_from = "read_restart restart.2000000"
+if args.rerun == 1:
+    start_from = "read_restart restart.5000000"
 # rg_list = [0, 1, 5, 10]
 # force_list = [2.0]
 # memb_k_list = [0, 1, 5, 10]
@@ -97,16 +97,15 @@ if args.mode == 1:
 rg_list = [0, 0.5, 1, 1.5, 2, 3]
 force_list = ["ramp"]
 memb_k_list = [0, 0.5, 1, 2, 2.5, 3, 4]
-
+i = args.rerun
 for memb_k in memb_k_list:
     for force in force_list:
         for rg in rg_list:
-            i = 0
             folder_name = "memb_{}_force_{}_rg_{}".format(memb_k, force, rg)
             do("cp -r 2xov " + folder_name)
             cd(folder_name)
-            # fixFile = "fix_backbone_coeff_go.data"
-            fixFile = "fix_backbone_coeff_single.data"
+            fixFile = "fix_backbone_coeff_go.data"
+            # fixFile = "fix_backbone_coeff_single.data"
             with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
                 for line in file:
                     print(line.replace("MY_MEMB_K", str(memb_k)), end='')
@@ -132,7 +131,7 @@ for memb_k in memb_k_list:
                 "'/g' *.in")
             with open("run_{}.slurm".format(i), "w") as r:
                 r.write(run_slurm.format(i))
-            do("sbatch run_0.slurm")
+            do("sbatch " + "run_{}.slurm".format(i))
             cd("..")
 
 
