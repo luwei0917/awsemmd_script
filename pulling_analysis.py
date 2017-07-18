@@ -127,14 +127,15 @@ srun python2 ~/opt/pulling_compute-pmf.py {}
 
 if(args.mode == 1):
     nsample = 600
-    force_list = np.arange(0.5, 2, 0.1)
+    force_list = np.arange(0.5, 3, 0.1)
     for force in force_list:
         # force = 1
         temp_arg = "-f {} -nsamples {}".format(force, nsample)
         folder_name = "force_{}".format(force)
         do("mkdir "+folder_name)
         cd(folder_name)
-        do("make_metadata.py -m 1")
+        # do("make_metadata.py -m 1")
+        do("cp ../metadatafile .")
         arg = "-b 2 -e 1 -d 1 -v1 2 -v1n 30 " + temp_arg
         with open("freeEnergy.slurm", "w") as f:
             f.write(freeEnergy.format(arg))
