@@ -27,7 +27,7 @@ parser.add_argument("-r", "--run", help="test mode",
 parser.add_argument("-s", "--see", help="test mode",
                     action="store_true")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
-
+parser.add_argument("-m", "--mode", type=int, default=0)
 args = parser.parse_args()
 if(args.debug):
     do = print
@@ -35,6 +35,10 @@ if(args.debug):
 else:
     do = os.system
     cd = os.chdir
+
+if args.mode == 1:
+    for i in range(20):
+        do("mv half_contact_force_0.8_memb1_rg1_2/{} half_contact_force_0.8_memb1_rg1/{}".format(i, i+20))
 if(args.run):
     print("Hello World")
 

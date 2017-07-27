@@ -51,15 +51,16 @@ else:
 
 if args.mode == 1:
     print("Distance biased 1D Free Energy")
-    files = glob.glob("../../simulation/*")
+    files = glob.glob("../simulation/*")
     # print(files)
-    temp = 100
+    temp = 200
     kconstant = args.kconstant
     with open("metadatafile", "w") as out:
         for oneFile in files:
             q = oneFile.split("_")[-1]
-            target = oneFile + "/0/data {} {} {}\n".format(temp, kconstant, q)
+            target = "../" + oneFile + "/0/data {} {} {}\n".format(temp, kconstant, q)
             out.write(target)
+
 if(args.test):
     kconstant = args.kconstant * 2   # double the k constant
     q0 = args.qStart
