@@ -22,21 +22,23 @@ import argparse
 import pandas as pd
 import tensorflow as tf
 
-parser = argparse.ArgumentParser(description="This is my TensorFlow program")
-parser.add_argument("protein", help="The name of the protein")
-args = parser.parse_args()
-tf.logging.set_verbosity(tf.logging.INFO)
-
+# parser = argparse.ArgumentParser(description="This is my TensorFlow program")
+# parser.add_argument("protein", help="The name of the protein")
+# args = parser.parse_args()
+# tf.logging.set_verbosity(tf.logging.INFO)
+tf.logging.set_verbosity(tf.logging.ERROR)
 # COLUMNS = ["crim", "zn", "indus", "nox", "rm", "age",
         #    "dis", "tax", "ptratio", "medv"]
-FEATURES = ["Rama", "DSSP", "P_AP", "Water", "Burial",
+FEATURES = ["Rama", "Chain", "Chi", "DSSP", "P_AP", "Water", "Burial",
             "Helix", "Frag_Mem", "QGO", "VTotal", "Rw"]
+
+# FEATURES = ["VTotal", "Rw"]
 LABEL = "Qw"
 
 
 def input_fn(data_set):
-    feature_cols = {k: tf.constant(data_set[k].values, shape=[data_set[k].size,1]) for k in FEATURES}
-    labels = tf.constant(data_set[LABEL].values, shape=[data_set[LABEL].size,1])
+    feature_cols = {k: tf.constant(data_set[k].values, shape=[data_set[k].size, 1]) for k in FEATURES}
+    labels = tf.constant(data_set[LABEL].values, shape=[data_set[LABEL].size, 1])
     return feature_cols, labels
 
 
@@ -46,12 +48,12 @@ def main(unused_argv):
     test_set = pd.read_csv("~/Research/data/tensorFlow/test.csv", skipinitialspace=True)
 
     # Set of 6 examples for which to predict median house values
-    name = args.protein
-    prediction_set = pd.read_csv("~/Research/data/tensorFlow/{}.csv".format(name), skipinitialspace=True)
+    # name = args.protein
+
     # prediction_set = pd.read_csv("~/Research/data/tensorFlow/test.csv", skipinitialspace=True)
     # Feature cols
     feature_cols = [tf.contrib.layers.real_valued_column(k)
-                  for k in FEATURES]
+                    for k in FEATURES]
 
     # Build 2 layer fully connected DNN with 10, 10 units respectively.
     regressor = tf.contrib.learn.DNNRegressor(feature_columns=feature_cols,
@@ -68,15 +70,14 @@ def main(unused_argv):
 
     # Print out predictions
     # y = regressor.predict(input_fn=lambda: input_fn(prediction_set))
-    y = regressor.predict_scores(input_fn=lambda: input_fn(prediction_set))
-    # .predict() returns an iterator; convert to a list and print predictions
-    # predictions = list(itertools.islice(y, 6))
-    predictions = list(y)
-    # print("Predictions: {}".format(str(predictions)))
-
-    with open("/Users/weilu/Research/data/tensorFlow/{}_results.csv".format(name), "w") as f:
-        f.write("Result\n")
-        for i in predictions:
-            f.write(str(i) + "\n")
+    name_list = ["1MBA", "T251", "T0766", "T0784", "T0792", "T0803", "T0815", "T0833"]
+    for name in name_list:
+        prediction_set = pd.read_csv("~/Research/data/tensorFlow/{}.csv".format(name), skipinitialspace=True)
+        y = regressor.predict_scores(input_fn=lambda: input_fn(prediction_set))
+        predictions = list(y)
+        with open("/Users/weilu/Research/data/tensorFlow/{}_results.csv".format(name), "w") as f:
+            f.write("Result\n")
+            for i in predictions:
+                f.write(str(i) + "\n")
 if __name__ == "__main__":
     tf.app.run()

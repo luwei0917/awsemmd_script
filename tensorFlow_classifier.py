@@ -67,16 +67,16 @@ def main(unused_argv):
     # loss_score = ev["loss"]
     # print("Loss: {0:f}".format(loss_score))
 
-    accuracy_score = classifier.evaluate(input_fn=lambda: input_fn(test_set))["accuracy"]
-    print('Accuracy: {0:f}'.format(accuracy_score))
+    # accuracy_score = classifier.evaluate(input_fn=lambda: input_fn(test_set))["accuracy"]
+    # print('Accuracy: {0:f}'.format(accuracy_score))
     # Print out predictions
     # y = regressor.predict(input_fn=lambda: input_fn(prediction_set))
-    # y = classifier.predict(input_fn=lambda: input_fn(prediction_set), as_iterable=True)
+    y = classifier.predict(input_fn=lambda: input_fn(prediction_set), as_iterable=True)
     #y = classifier.predict(input_fn=lambda: input_fn(prediction_set))
     # .predict() returns an iterator; convert to a list and print predictions
     # predictions = list(itertools.islice(y, 6))
-    #predictions = list(y)
-    # print("Predictions: {}".format(str(predictions)))
+    predictions = list(y)
+    print("Predictions: {}".format(str(predictions)))
 
     # with open("/Users/weilu/Research/data/tensorFlow/{}_results.csv".format(name), "w") as f:
     #     f.write("Result\n")
