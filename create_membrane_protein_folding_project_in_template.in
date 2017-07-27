@@ -47,11 +47,11 @@ group		c_end id LAST
 
 thermo 4000
 fix               1 all nve
-fix               2 all langevin 100 100 10000.0 RANDOM
+fix               2 all langevin 800 800 10000.0 RANDOM
 fix		  4 alpha_carbons backbone beta_atoms oxygens unfold_fixbackbone.data PROTEIN.seq
 
-variable F_c_end_added equal -0.5
-variable F_n_end_added equal 0.5
+variable F_c_end_added equal -1
+variable F_n_end_added equal 1
 
 fix 5 c_end addforce v_F_c_end_added 0 0
 fix 7 n_end addforce v_F_n_end_added 0 0
@@ -110,7 +110,7 @@ fix         	wham all print 4000 "${step}, ${qw}, ${rg}, ${tc}, ${E_P}" file NUM
 
 # reset_timestep	0
 restart         100000 restart
-run		100000
+run		1000000
 
 unfix 1
 unfix 2

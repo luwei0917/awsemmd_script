@@ -81,9 +81,10 @@ do("python2 ~/opt/small_script/coord2data.py {0}.coord data.{0} -b".format(prote
 
 
 # copy parameters
-
-do("cp ~/opt/parameters/membrane/* .")
-
+if args.globular:
+    do("cp ~/opt/parameters/aawsem_parameter/* .")
+else:
+    do("cp ~/opt/parameters/membrane/* .")
 # task specific input
 
 ## frag memory generation

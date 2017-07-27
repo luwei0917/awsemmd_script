@@ -38,7 +38,7 @@ parser.add_argument("-t", "--test", help="test ", action="store_true", default=F
 parser.add_argument("-n", "--number", type=int, default=10, help="number of run")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("-m", "--mode",
-                    type=int, default=1)
+                    type=int, default=0)
 args = parser.parse_args()
 
 if(args.debug):
@@ -74,6 +74,40 @@ def test():
             # for i in range(2):
             #     address = folder + "/simulation/" + str(i)
             #     f.write(address+"  \n")
+if(args.mode == 1):
+    print("create frustration_censored_contacts.dat")
+    with open("frustration_censored_contacts.dat", "w") as f:
+        for i in range(1,182):
+            # f.write("65 {}\n".format(i))
+            f.write("116 {}\n".format(i))
+
+if(args.mode == 2):
+    print("Extract qw and distance info.")
+    for i in range(50):
+        cd(str(i))
+        cd("0")
+        do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
+        do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > distance.dat")
+        cd("../..")
+
+# do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov directory_list out")
+if(args.mode == 3):
+    print("create directory_list")
+    with open("directory_list", "w") as f:
+        for i in range(29, 30):
+            # print(os.getcwd())
+            location = os.getcwd() + "/../"
+            f.write(location+str(i)+"/0\n")
+
+if(args.mode == 4):
+    print("create directory_list")
+    for i in range(0, 20):
+        with open(str(i), "w") as f:
+            # print(os.getcwd())
+            location = os.getcwd() + "/../"
+            f.write(location+str(i)+"/0\n")
+        do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov {0} out_{0}".format(i))
+
 
 if(args.test):
     if(args.mode == 3):
