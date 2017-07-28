@@ -25,8 +25,13 @@ import tensorflow as tf
 # parser = argparse.ArgumentParser(description="This is my TensorFlow program")
 # parser.add_argument("protein", help="The name of the protein")
 # args = parser.parse_args()
+<<<<<<< HEAD
 tf.logging.set_verbosity(tf.logging.INFO)
 # tf.logging.set_verbosity(tf.logging.ERROR)
+=======
+# tf.logging.set_verbosity(tf.logging.INFO)
+tf.logging.set_verbosity(tf.logging.ERROR)
+>>>>>>> feda63843012f2259f6c873c9a5079bd07436002
 # COLUMNS = ["crim", "zn", "indus", "nox", "rm", "age",
         #    "dis", "tax", "ptratio", "medv"]
 FEATURES = ["Rama", "Chain", "Chi", "DSSP", "P_AP", "Water", "Burial",
