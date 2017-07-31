@@ -20,6 +20,7 @@ parser.add_argument("template", help="the name of template file")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--rerun",
                     type=int, default=0)
+parser.add_argument("-m", "--mode", type=int, default=1)
 args = parser.parse_args()
 protein_name = args.template.strip('/')
 
@@ -93,13 +94,19 @@ if args.rerun == 1:
 # rg_list = [3, 4]
 # force_list = ["ramp"]
 # memb_k_list = [0, 0.1, 1, 2, 5, 10]
-distance_list = np.linspace(0, 400, 40)
-
+if args.mode == 1:
+    distance_list = np.linspace(0, 400, 100)
+if args.mode == 2:
+    distance_list = range(100)
+if args.mode == 3:
+    distance_list = np.linspace(0, 200, 101)
 i = args.rerun
 
+do("mkdir simulation")
+cd("simulation")
 for dis in distance_list:
     folder_name = "dis_{}".format(dis)
-    do("cp -r 2xov " + folder_name)
+    do("cp -r ../2xov " + folder_name)
     cd(folder_name)
     # fixFile = "fix_backbone_coeff_go.data"
     fixFile = "colvars.x"

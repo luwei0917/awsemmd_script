@@ -63,12 +63,30 @@ def extract_data():
     do("paste qn_half qc_half etotal_half qo_half > halfdata")
 
 if args.mode == 1:
-    print("Reorganize data")
+    print("Reorganize data, mode 1")
     files = glob.glob("*")
     for one in files:
         cd(one)
         cd("0")
         do("awk '{print $5}' wham.dat |  sed 's/,$//' | sed 1d > e.dat")
+        do("awk '{print $13}' energy.dat |  sed 's/,$//' | sed 1d > rg.dat")
+        do("awk '{print $9}' energy.dat |  sed 's/,$//' | sed 1d > membrane.dat")
+        do("paste membrane.dat rg.dat | awk '{print $1+$2}' > sum.dat")
         do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > d.dat")
+        # do("paste membrane.dat rg.dat sum.dat d.dat | tail -n 600 > data")
         do("paste e.dat d.dat | tail -n 600 > data")
+        cd("../..")
+if args.mode == 2:
+    print("Reorganize data, mode 2")
+    files = glob.glob("*")
+    for one in files:
+        cd(one)
+        cd("0")
+        do("awk '{print $5}' wham.dat |  sed 's/,$//' | sed 1d > e.dat")
+        do("awk '{print $13}' energy.dat |  sed 's/,$//' | sed 1d > rg.dat")
+        do("awk '{print $9}' energy.dat |  sed 's/,$//' | sed 1d > membrane.dat")
+        do("paste membrane.dat rg.dat | awk '{print $1+$2}' > sum.dat")
+        do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > d.dat")
+        do("paste membrane.dat rg.dat sum.dat d.dat | tail -n 600 > data")
+        # do("paste e.dat d.dat | tail -n 600 > data")
         cd("../..")
