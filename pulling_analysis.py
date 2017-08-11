@@ -36,19 +36,14 @@ parser = argparse.ArgumentParser(description="Analysis code, need run multiple t
 # parser.add_argument("protein", help="the name of protein")
 # parser.add_argument("template", help="the name of template file")
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
-parser.add_argument("--pulling", action="store_true", default=False)
-parser.add_argument("--pulling2", action="store_true", default=False)
-parser.add_argument("--qnqc", action="store_true", default=False)
-parser.add_argument("--mutation", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--protein", default="2xov")
 parser.add_argument("--dimension", type=int, default=2)
-parser.add_argument("-f", "--freeEnergy", action="store_true", default=False)
 parser.add_argument("-m", "--mode", type=int, default=1)
-parser.add_argument("--rate", action="store_true", default=False)
 parser.add_argument("-s", "--save", action="store_true", default=False)
 parser.add_argument("-r", "--reproduce", default=None)
 parser.add_argument("--force", type=float, default=1.0)
+parser.add_argument("-p", "--patch", type=int, default=1)
 args = parser.parse_args()
 
 if(args.reproduce):
@@ -76,11 +71,6 @@ else:
 
 if(args.test):
     print("hello world")
-
-if(args.rate):
-    file_name = "test"
-    with open("data") as f:
-        names = next(f)
 
 
 def move_data_to_wham(temp_list):
@@ -127,16 +117,77 @@ srun python2 ~/opt/pulling_compute-pmf.py {}
 
 if(args.mode == 1):
     nsample = 600
-    force_list = np.arange(0.5, 3, 0.1)
+    force_list = np.arange(0, 1, 0.1)
+
     for force in force_list:
         # force = 1
         temp_arg = "-f {} -nsamples {}".format(force, nsample)
         folder_name = "force_{}".format(force)
-        do("mkdir "+folder_name)
+        do("mkdir -p "+folder_name)
         cd(folder_name)
         # do("make_metadata.py -m 1")
         do("cp ../metadatafile .")
-        arg = "-b 2 -e 1 -d 1 -v1 2 -v1n 30 " + temp_arg
+        arg = "-b 2 -e 1 -d 1 " + temp_arg
+        if args.patch == 2:
+            arg += " -v1 2 -v1n 30 "
+            arg += " -st 400 -et 800"
+        if args.patch == 1:
+            arg += " -v1 2 -v1n 30 "
+        if args.patch == 3:
+            arg += " -v1 2 -v1n 30 "
+        if args.patch == 4:
+            arg = "-b 4 -e 3 -d 1 " + temp_arg
+            arg += " -v1 4 -v1n 30 "
+        with open("freeEnergy.slurm", "w") as f:
+            f.write(freeEnergy.format(arg))
+        do("sbatch freeEnergy.slurm")
+        cd("..")
+
+if(args.mode == 2):
+    nsample = 600
+    force_list = np.arange(0, 0.2, 0.01)
+
+    for force in force_list:
+        # force = 1
+        temp_arg = "-f {} -nsamples {}".format(force, nsample)
+        folder_name = "force_{}".format(force)
+        do("mkdir -p "+folder_name)
+        cd(folder_name)
+        # do("make_metadata.py -m 1")
+        do("cp ../metadatafile .")
+        arg = "-b 2 -e 1 -d 1 " + temp_arg
+        if args.patch == 2:
+            arg += " -v1 2 -v1n 30 "
+            arg += " -st 400 -et 800"
+        if args.patch == 1:
+            arg += " -v1 2 -v1n 30 "
+        if args.patch == 3:
+            arg += " -v1 2 -v1n 80 "
+        if args.patch == 4:
+            arg = "-b 4 -e 3 -d 1 " + temp_arg
+            arg += " -v1 4 -v1n 30 "
+        with open("freeEnergy.slurm", "w") as f:
+            f.write(freeEnergy.format(arg))
+        do("sbatch freeEnergy.slurm")
+        cd("..")
+
+if(args.mode == 3):
+    nsample = 600
+    force_list = np.arange(0, 0.8, 0.04)
+
+    for force in force_list:
+        # force = 1
+        temp_arg = "-f {} -nsamples {}".format(force, nsample)
+        folder_name = "force_{}".format(force)
+        do("mkdir -p "+folder_name)
+        cd(folder_name)
+        # do("make_metadata.py -m 1")
+        do("cp ../metadatafile .")
+        arg = "-b 2 -e 1 -d 1 " + temp_arg
+        if args.patch == 1:
+            arg += " -v1 2 -v1n 80 "
+        if args.patch == 2:
+            arg += " -v1 2 -v1n 30 "
         with open("freeEnergy.slurm", "w") as f:
             f.write(freeEnergy.format(arg))
         do("sbatch freeEnergy.slurm")

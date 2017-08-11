@@ -17,9 +17,15 @@ import fileinput
 # sed 1d
 # sort -u -k 3
 # sed -e 's/+T//'
-mypath = os.environ["PATH"]
-os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
-my_env = os.environ.copy()
+# import re
+# numbers = re.compile(r'(\d+)')
+# def numericalSort(value):
+#     parts = numbers.split(value)
+#     parts[1::2] = map(int, parts[1::2])
+#     return parts
+# mypath = os.environ["PATH"]
+# os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
+# my_env = os.environ.copy()
 
 parser = argparse.ArgumentParser(description="This is my playground for current project")
 parser.add_argument("-r", "--run", help="test mode",
@@ -37,8 +43,40 @@ else:
     cd = os.chdir
 
 if args.mode == 1:
-    for i in range(20):
-        do("mv half_contact_force_0.8_memb1_rg1_2/{} half_contact_force_0.8_memb1_rg1/{}".format(i, i+20))
+    cd("simulation")
+    do("pulling_prepare.py")
+    cd("..")
+    do("mkdir freeEnergy")
+    cd("freeEnergy")
+    do("make_metadata.py -k 0.05 -t 300")
+    do("pulling_analysis.py -m 3 -p 2")
+
+if args.mode == 2:
+    print("80 bins.")
+    # cd("simulation")
+    # do("pulling_prepare.py")
+    # cd("..")
+    do("mkdir more_bin")
+    cd("more_bin")
+    do("make_metadata.py -k 0.05 -t 300")
+    do("pulling_analysis.py -m 3 -p 1")
+
+if args.mode == 3:
+    # cd("simulation")
+    # do("pulling_prepare.py")
+    # cd("..")
+    do("mkdir -p only_less_than_100")
+    cd("only_less_than_100")
+    do("make_metadata.py -k 0.05 -t 300 -m 2")
+    do("pulling_analysis.py -m 3 -p 1")
+    # for i in range(52, 70):
+    #     do("mv {}/{} .".format(i, i-40))
+    #     do("mv {} {}".format(i, i-20))
+    # for i in range(50):
+    #     do("mv force_0.8_2/{} force_0.8/{}".format(i, i+50))
+        # do("mv half_contact_force_0.8_memb1_rg1_2/{} half_contact_force_0.8_memb1_rg1/{}".format(i, i+20))
+
+
 if(args.run):
     print("Hello World")
 
