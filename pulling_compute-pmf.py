@@ -22,7 +22,7 @@ from pymbar import timeseries # used to subsample data so that the samples are u
 
 # Flags
 debug_flag = False
-check_for_pickle_files = False
+check_for_pickle_files = True
 
 # Command line arguments
 if len(sys.argv) == 1:

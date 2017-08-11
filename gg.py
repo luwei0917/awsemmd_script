@@ -74,6 +74,20 @@ def test():
             # for i in range(2):
             #     address = folder + "/simulation/" + str(i)
             #     f.write(address+"  \n")
+if(args.mode == 6):
+    n_list = [16, 10, 13, 16,15, 3, 8, 11, 6, 7, 20, 13, 18, 9,6, 19,4,14, 11,14]
+    print(len(n_list))
+    for i,n in enumerate(n_list):
+        do("cp run{0}/frames/{1}.pdb selection/run{0}.pdb".format(i+1,n-1))
+if(args.mode == 5):
+    n = 20
+    for i in range(1, n+1):
+        cd("run{}".format(i))
+        do("python3 ~/opt/small_script/last_n_frame.py -n 20 T0815. -m 2")
+        cd("frames")
+        do("python3 ~/opt/small_script/cross_q.py -m 3")
+        do("cp ~/opt/small_script/heatmap_script.m .")
+        cd("../..")
 if(args.mode == 1):
     print("create frustration_censored_contacts.dat")
     with open("frustration_censored_contacts.dat", "w") as f:
