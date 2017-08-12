@@ -14,14 +14,15 @@ parser = argparse.ArgumentParser(
     description="This is a python3 script to\
     make metadata")
 
-parser.add_argument("-k", "--kconstant", type=float, default=0.01)
+parser.add_argument("-k", "--kconstant", type=float, default=0.05)
+parser.add_argument("-t", "--temperature", type=float, default=300)
 parser.add_argument("-q", "--qStart", type=float, default=0.0)
 parser.add_argument("-n", "--number", type=int, default=20)
 
 parser.add_argument("-m", "--mode", type=int, default=1)
 parser.add_argument("-a", "--additionalMode", type=int, default=1)
 parser.add_argument("-p", "--pick", default=None)
-parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
+# parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("-s", "--save", action="store_true", default=False)
 parser.add_argument("-r", "--reproduce", default=None)
@@ -48,12 +49,11 @@ else:
     do = os.system
     cd = os.chdir
 
-
 if args.mode == 1:
-    print("Distance biased 1D Free Energy")
-    files = glob.glob("../simulation/*")
+    print("Distance biased 1D Free Energy, mode 1")
+    files = glob.glob("../simulation/dis_*")
     # print(files)
-    temp = 200
+    temp = args.temperature
     kconstant = args.kconstant
     with open("metadatafile", "w") as out:
         for oneFile in files:
@@ -61,28 +61,41 @@ if args.mode == 1:
             target = "../" + oneFile + "/0/data {} {} {}\n".format(temp, kconstant, q)
             out.write(target)
 
-if(args.test):
-    kconstant = args.kconstant * 2   # double the k constant
-    q0 = args.qStart
-    metadata = open("metadatafile", "w")
-    if(args.mode == 1):
-        qStep = 0.05
-        temp_list = [135, 160, 185, 210]
-        # temp_list = [160]
-        # temp_list = ['300', '200', '250']
-        if(args.additionalMode == 1):
-            pre_fix = "first_2000_"
-        else:
-            pre_fix = ""
-        for i in range(args.number):
-            q = q0 + i * qStep
-            name = pre_fix + str(i)
-            for temp in temp_list:
-                target = "../data/{}/".format(temp) + name + " {} {} {:.2f}\n".format(temp, kconstant, q)
-                # target = "../data/t_{}/small_".format(temp) + str(i) + " {} {} {:.2f}\n".format(temp, kconstant, q)
-                # target = "../data/{}/".format(temp) + name + " {} {} {:.2f}\n".format(temp, kconstant, q)
-                metadata.write(target)
-        metadata.close()
+if args.mode == 2:
+    print("Distance biased 1D Free Energy, mode 2")
+    files = glob.glob("../simulation/dis_*")
+    # print(files)
+    temp = args.temperature
+    kconstant = args.kconstant
+    with open("metadatafile", "w") as out:
+        for oneFile in files:
+            q = oneFile.split("_")[-1]
+            if float(q) < 100:
+                target = "../" + oneFile + "/0/data {} {} {}\n".format(temp, kconstant, q)
+                out.write(target)
+
+# if(args.test):
+#     kconstant = args.kconstant * 2   # double the k constant
+#     q0 = args.qStart
+#     metadata = open("metadatafile", "w")
+#     if(args.mode == 1):
+#         qStep = 0.05
+#         temp_list = [135, 160, 185, 210]
+#         # temp_list = [160]
+#         # temp_list = ['300', '200', '250']
+#         if(args.additionalMode == 1):
+#             pre_fix = "first_2000_"
+#         else:
+#             pre_fix = ""
+#         for i in range(args.number):
+#             q = q0 + i * qStep
+#             name = pre_fix + str(i)
+#             for temp in temp_list:
+#                 target = "../data/{}/".format(temp) + name + " {} {} {:.2f}\n".format(temp, kconstant, q)
+#                 # target = "../data/t_{}/small_".format(temp) + str(i) + " {} {} {:.2f}\n".format(temp, kconstant, q)
+#                 # target = "../data/{}/".format(temp) + name + " {} {} {:.2f}\n".format(temp, kconstant, q)
+#                 metadata.write(target)
+#         metadata.close()
     # See pulling prepare
     # if(args.mode == 2):
     #     print("2xov pulling")

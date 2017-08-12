@@ -321,7 +321,11 @@ if snapshot<0:
 			elif item[:10] == "BOX BOUNDS":
 				box.append(l)
 				l = l.split()
-				A.append([float(l[0]), float(l[1])])
+				l_left = float(l[0]) - float(l[0])
+				l_right = float(l[1]) - float(l[0])
+				print l_right - l_left
+				A.append([l_left, l_right])
+				# A.append([float(l[0]), float(l[1])])
 			elif item[:5] == "ATOMS":
 				l = l.split()
 				i_atom = l[0]

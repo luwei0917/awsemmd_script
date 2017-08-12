@@ -26,12 +26,16 @@ import tensorflow as tf
 # parser.add_argument("protein", help="The name of the protein")
 # args = parser.parse_args()
 tf.logging.set_verbosity(tf.logging.INFO)
+<<<<<<< HEAD
+=======
+# LEARNING_RATE = 0.0001
+>>>>>>> 20c0a9a48a8f18f89b1b7cebd9e4675698945876
 # tf.logging.set_verbosity(tf.logging.ERROR)
 # COLUMNS = ["crim", "zn", "indus", "nox", "rm", "age",
         #    "dis", "tax", "ptratio", "medv"]
-FEATURES = ["Rama", "Chain", "Chi", "DSSP", "P_AP", "Water", "Burial",
-            "Helix", "Frag_Mem", "QGO", "VTotal", "Rw"]
-
+# FEATURES = ["Rama", "Chain", "Chi", "DSSP", "P_AP", "Water", "Burial",
+            # "Helix", "Frag_Mem", "QGO", "VTotal", "Rw", "GDT"]
+FEATURES = ["Water", "QGO", "VTotal", "Rw"]
 # FEATURES = ["VTotal", "Rw"]
 LABEL = "Qw"
 
@@ -56,17 +60,33 @@ def main(unused_argv):
                     for k in FEATURES]
 
     # Build 2 layer fully connected DNN with 10, 10 units respectively.
+<<<<<<< HEAD
     regressor = tf.contrib.learn.DNNRegressor(feature_columns=feature_cols,
                                             hidden_units=[20, 20],
                                             model_dir="/tmp/awsem")
 
     # Fit
     regressor.fit(input_fn=lambda: input_fn(training_set), steps=100000)
+=======
+    regressor = tf.contrib.learn.DNNRegressor(
+                                feature_columns=feature_cols,
+                                hidden_units=[100, 100],
+                                model_dir="/tmp/awsem",
+                                optimizer=tf.train.ProximalAdagradOptimizer(
+                                learning_rate=0.01,
+                                l1_regularization_strength=0.001
+                                ))
+
+    # Fit
+    regressor.fit(input_fn=lambda: input_fn(training_set), steps=500)
+
+>>>>>>> 20c0a9a48a8f18f89b1b7cebd9e4675698945876
     # Score accuracy
     ev = regressor.evaluate(input_fn=lambda: input_fn(test_set), steps=1)
     loss_score = ev["loss"]
+    # accuracy = ev["accuracy"]
     print("Loss: {0:f}".format(loss_score))
-
+    # print("Accuracy: {0:f}".format(accuracy))
     # Print out predictions
     # y = regressor.predict(input_fn=lambda: input_fn(prediction_set))
     name_list = ["1MBA", "T251", "T0766", "T0784", "T0792", "T0803", "T0815", "T0833"]
