@@ -26,7 +26,10 @@ import tensorflow as tf
 # parser.add_argument("protein", help="The name of the protein")
 # args = parser.parse_args()
 tf.logging.set_verbosity(tf.logging.INFO)
+<<<<<<< HEAD
+=======
 # LEARNING_RATE = 0.0001
+>>>>>>> 20c0a9a48a8f18f89b1b7cebd9e4675698945876
 # tf.logging.set_verbosity(tf.logging.ERROR)
 # COLUMNS = ["crim", "zn", "indus", "nox", "rm", "age",
         #    "dis", "tax", "ptratio", "medv"]
@@ -57,6 +60,14 @@ def main(unused_argv):
                     for k in FEATURES]
 
     # Build 2 layer fully connected DNN with 10, 10 units respectively.
+<<<<<<< HEAD
+    regressor = tf.contrib.learn.DNNRegressor(feature_columns=feature_cols,
+                                            hidden_units=[20, 20],
+                                            model_dir="/tmp/awsem")
+
+    # Fit
+    regressor.fit(input_fn=lambda: input_fn(training_set), steps=100000)
+=======
     regressor = tf.contrib.learn.DNNRegressor(
                                 feature_columns=feature_cols,
                                 hidden_units=[100, 100],
@@ -69,6 +80,7 @@ def main(unused_argv):
     # Fit
     regressor.fit(input_fn=lambda: input_fn(training_set), steps=500)
 
+>>>>>>> 20c0a9a48a8f18f89b1b7cebd9e4675698945876
     # Score accuracy
     ev = regressor.evaluate(input_fn=lambda: input_fn(test_set), steps=1)
     loss_score = ev["loss"]
