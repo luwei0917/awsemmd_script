@@ -10,6 +10,7 @@ from datetime import datetime
 import imp
 from myPersonalFunctions import *
 import glob
+from small_script.myFunctions import compute_theta_for_each_helix
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -74,12 +75,20 @@ def test():
             # for i in range(2):
             #     address = folder + "/simulation/" + str(i)
             #     f.write(address+"  \n")
+if(args.mode == 8):
+    print("mode: {}".format(args.mode))
+    compute_theta_for_each_helix()
 if(args.mode == 7):
-    n_list = [10, 16, 20, 21, 31, 33, 4, 45, 53, 55, 56, 6, 60, 7, 74, 75, 80, 90, 92]
+    # n_list = [10, 16, 20, 21, 31, 33, 4, 45, 53, 55, 56, 6, 60, 7, 74, 75, 80, 90, 92]
+    n_list = [32, 41, 47, 48, 57, 58, 6, 63, 69, 72, 82, 96]
+    n_list = [0,1,10,11,12,13,14,15,16,17,18,19,2]
     for i,n in enumerate(n_list):
-        # cd("{}/0".format(n))
-        # do("python3 ~/opt/small_script/last_n_frame.py -n 1 2xov.")
-        # cd("../..")
+        cd("{}/0".format(n))
+        do("python3 ~/opt/small_script/last_n_frame.py -n 1 2xov.")
+        cd("../..")
+    cd("..")
+    cd("end_frame_that_folded")
+    for i,n in enumerate(n_list):
         do("cp ../simulation/{0}/0/frames/*.pdb {0}.pdb".format(n))
 if(args.mode == 6):
     n_list = [16, 10, 13, 16,15, 3, 8, 11, 6, 7, 20, 13, 18, 9,6, 19,4,14, 11,14]
