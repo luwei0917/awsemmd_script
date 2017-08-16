@@ -11,6 +11,7 @@ import imp
 import glob
 from time import sleep
 import fileinput
+import numpy as np
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -42,6 +43,43 @@ else:
     do = os.system
     cd = os.chdir
 
+if args.mode == 7:
+    for i in range(80):
+        do("mv {0} ../../../new_force_ramp/memb_0_force_ramp_rg_0_new/simulation/{1}".format(i,i+90))
+if args.mode == 6:
+    force_list = [0.55, 0.6, 0.65]
+    # force_list = [0.25, 0.35, 0.4, 0.45]
+    # force_list = [0.15, 0.2]
+    for force in force_list:
+        do("mkdir force_{}".format(force))
+        do("cp -r 2xov force_{}/".format(force))
+        cd("force_{}".format(force))
+        with fileinput.FileInput("2xov/2xov_multi.in", inplace=True, backup='.bak') as file:
+            for line in file:
+                print(line.replace("MY_FORCE", str(force)), end='')
+        do("run.py -n 10 2xov/")
+        cd("..")
+
+
+if args.mode == 5:
+    # cd("start_misfolded")
+    distance_list = np.linspace(0, 30, 16)
+    for dis in distance_list:
+        do("mkdir -p dis_{}".format(dis))
+        do("cp -r ../2xov/ dis_{}".format(dis))
+        do("cp ../../freeEnergy/go_model_start_unfolded/simulation/dis_{0}/restart.25000000 dis_{0}/2xov/".format(dis))
+        cd("dis_{}".format(dis))
+        do("run.py -n 10 2xov/")
+        cd("..")
+
+if args.mode == 4:
+    do("rm data")
+    for i in range(100):
+        do("cat dis_{}/0/data >> data.dat".format(i))
+    do("awk '{print $1}' data.dat  > e.dat")
+    do("awk '{print $2}' data.dat  > p.dat")
+    do("awk '{print $3}' data.dat  > qw.dat")
+
 if args.mode == 1:
     cd("simulation")
     do("pulling_prepare.py")
@@ -58,7 +96,7 @@ if args.mode == 2:
     # cd("..")
     do("mkdir more_bin")
     cd("more_bin")
-    do("make_metadata.py -k 0.05 -t 300")
+    do("make_metadata.py -k 0.05 -t 600")
     do("pulling_analysis.py -m 3 -p 1")
 
 if args.mode == 3:

@@ -94,40 +94,76 @@ if args.rerun == 1:
 # rg_list = [3, 4]
 # force_list = ["ramp"]
 # memb_k_list = [0, 0.1, 1, 2, 5, 10]
+if args.mode == 4:
+    i = args.rerun
+    do("mkdir simulation")
+    cd("simulation")
+    # qbias_list = [i*0.02 for i in range(50)]
+    for ii in range(50):
+        qbias = ii*0.02
+        folder_name = "{}".format(ii)
+        do("cp -r ../2xov " + folder_name)
+        cd(folder_name)
+        # fixFile = "fix_backbone_coeff_go.data"
+        fixFile = "fix_qbias_equil.data"
+        with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
+            for line in file:
+                print(line.replace("QBIAS", str(qbias)), end='')
+
+        do("cp 2xov_multi.in 2xov_{}.in".format(i))
+        with fileinput.FileInput("2xov_{}.in".format(i), inplace=True, backup='.bak') as file:
+            for line in file:
+                print(line.replace("START_FROM", start_from), end='')
+        do(  # replace SIMULATION_STEPS with specific steps
+            "sed -i.bak 's/NUMBER/'" +
+            str(int(i)) +
+            "'/g' 2xov_{}.in".format(i))
+        do("mkdir -p {}".format(i))
+        do(  # replace RANDOM with a radnom number
+            "sed -i.bak 's/RANDOM/'" +
+            str(randint(1, 10**6)) +
+            "'/g' *.in")
+        with open("run_{}.slurm".format(i), "w") as r:
+            r.write(run_slurm.format(i))
+        do("sbatch " + "run_{}.slurm".format(i))
+        cd("..")
+
 if args.mode == 1:
-    distance_list = np.linspace(0, 400, 100)
+    distance_list = np.linspace(0, 100, 51)
 if args.mode == 2:
     distance_list = range(100)
 if args.mode == 3:
-    distance_list = np.linspace(0, 200, 101)
-i = args.rerun
+    distance_list = np.linspace(10, 150, 141)
 
-do("mkdir simulation")
-cd("simulation")
-for dis in distance_list:
-    folder_name = "dis_{}".format(dis)
-    do("cp -r ../2xov " + folder_name)
-    cd(folder_name)
-    # fixFile = "fix_backbone_coeff_go.data"
-    fixFile = "colvars.x"
-    with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
-        for line in file:
-            print(line.replace("DISTANCE", str(dis)), end='')
+if args.mode <= 3:
+    i = args.rerun
+    i = 0
+    do("mkdir simulation")
+    cd("simulation")
+    for dis in distance_list:
+        folder_name = "dis_{}".format(dis)
+        do("cp -r ../2xov " + folder_name)
+        cd(folder_name)
+        # fixFile = "fix_backbone_coeff_go.data"
+        fixFile = "colvars.x"
+        with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
+            for line in file:
+                print(line.replace("DISTANCE", str(dis)), end='')
 
-    do("cp 2xov_multi.in 2xov_{}.in".format(i))
-    with fileinput.FileInput("2xov_{}.in".format(i), inplace=True, backup='.bak') as file:
-        for line in file:
-            print(line.replace("START_FROM", start_from), end='')
-    do(  # replace SIMULATION_STEPS with specific steps
-        "sed -i.bak 's/NUMBER/'" +
-        str(int(i)) +
-        "'/g' 2xov_{}.in".format(i))
-    do("mkdir -p {}".format(i))
-    do(  # replace RANDOM with a radnom number
-        "sed -i.bak 's/RANDOM/'" +
-        str(randint(1, 10**6)) +
-        "'/g' *.in")
-    with open("run_{}.slurm".format(i), "w") as r:
-        r.write(run_slurm.format(i))
-    do("sbatch " + "run_{}.slurm".format(i))
-    cd("..")
+        do("cp 2xov_multi.in 2xov_{}.in".format(i))
+        with fileinput.FileInput("2xov_{}.in".format(i), inplace=True, backup='.bak') as file:
+            for line in file:
+                print(line.replace("START_FROM", start_from), end='')
+        do(  # replace SIMULATION_STEPS with specific steps
+            "sed -i.bak 's/NUMBER/'" +
+            str(int(i)) +
+            "'/g' 2xov_{}.in".format(i))
+        do("mkdir -p {}".format(i))
+        do(  # replace RANDOM with a radnom number
+            "sed -i.bak 's/RANDOM/'" +
+            str(randint(1, 10**6)) +
+            "'/g' *.in")
+        with open("run_{}.slurm".format(i), "w") as r:
+            r.write(run_slurm.format(i))
+        do("sbatch " + "run_{}.slurm".format(i))
+        cd("..")

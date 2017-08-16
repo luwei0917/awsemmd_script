@@ -20,6 +20,7 @@ parser.add_argument("template", help="the name of template file")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--rerun",
                     type=int, default=0)
+parser.add_argument("-m", "--mode", type=int, default=2)
 args = parser.parse_args()
 protein_name = args.template.strip('/')
 
@@ -48,21 +49,38 @@ else:
 # srun ~/build/brian/adjustable_z_dependence/lmp_serial -in 2xov_{}.in
 # '''
 
-run_slurm = '''\
-#!/bin/bash
-#SBATCH --job-name=CTBP_WL
-#SBATCH --account=ctbp-common
-#SBATCH --partition=ctbp-common
-#SBATCH --ntasks=1
-#SBATCH --threads-per-core=1
-#SBATCH --mem-per-cpu=1G
-#SBATCH --time=1-00:00:00
-#SBATCH --mail-user=luwei0917@gmail.com
-#SBATCH --mail-type=FAIL
-echo "My job ran on:"
-echo $SLURM_NODELIST
-srun ~/build/brian/z_dependence/lmp_serial -in 2xov_{}.in
-'''
+# if args.mode == 1:
+#     run_slurm = '''\
+# #!/bin/bash
+# #SBATCH --job-name=CTBP_WL
+# #SBATCH --account=ctbp-common
+# #SBATCH --partition=ctbp-common
+# #SBATCH --ntasks=1
+# #SBATCH --threads-per-core=1
+# #SBATCH --mem-per-cpu=1G
+# #SBATCH --time=1-00:00:00
+# #SBATCH --mail-user=luwei0917@gmail.com
+# #SBATCH --mail-type=FAIL
+# echo "My job ran on:"
+# echo $SLURM_NODELIST
+# srun ~/build/brian/z_dependence/lmp_serial -in 2xov_{}.in
+# '''
+# if args.mode == 2:
+#     run_slurm = '''\
+# #!/bin/bash
+# #SBATCH --job-name=CTBP_WL
+# #SBATCH --account=ctbp-common
+# #SBATCH --partition=ctbp-common
+# #SBATCH --ntasks=1
+# #SBATCH --threads-per-core=1
+# #SBATCH --mem-per-cpu=1G
+# #SBATCH --time=1-00:00:00
+# #SBATCH --mail-user=luwei0917@gmail.com
+# #SBATCH --mail-type=FAIL
+# echo "My job ran on:"
+# echo $SLURM_NODELIST
+# srun /home/wl45/build/awsem_new_membrane/src/lmp_serial -in 2xov_{}.in
+# '''
 
 fileName = "2xov_multi.in"
 if args.rerun == 0:
@@ -94,45 +112,102 @@ if args.rerun == 1:
 # force_list = ["ramp"]
 # memb_k_list = [0, 0.1, 1, 2, 5, 10]
 
-rg_list = [0, 0.5, 1, 1.5, 2, 3]
-force_list = ["ramp"]
-memb_k_list = [0, 0.5, 1, 2, 2.5, 3, 4]
+# rg_list = [0, 0.5, 1, 1.5, 2, 3]
+# rg_list = [0, 0.01, 0.04, 0.08, 0.1, 0.2, 0.5, 1]
+# force_list = ["ramp"]
+# memb_k_list = [0, 0.5, 1, 2, 2.5, 3, 4]
 i = args.rerun
-for memb_k in memb_k_list:
-    for force in force_list:
-        for rg in rg_list:
-            folder_name = "memb_{}_force_{}_rg_{}".format(memb_k, force, rg)
-            do("cp -r 2xov " + folder_name)
-            cd(folder_name)
-            fixFile = "fix_backbone_coeff_go.data"
-            # fixFile = "fix_backbone_coeff_single.data"
-            with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
-                for line in file:
-                    print(line.replace("MY_MEMB_K", str(memb_k)), end='')
-            with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
-                for line in file:
-                    print(line.replace("MY_FORCE", str(force)), end='')
-            with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
-                for line in file:
-                    print(line.replace("MY_RG", str(rg)), end='')
 
-            do("cp 2xov_multi.in 2xov_{}.in".format(i))
-            with fileinput.FileInput("2xov_{}.in".format(i), inplace=True, backup='.bak') as file:
-                for line in file:
-                    print(line.replace("START_FROM", start_from), end='')
-            do(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/NUMBER/'" +
-                str(int(i)) +
-                "'/g' 2xov_{}.in".format(i))
-            do("mkdir -p {}".format(i))
-            do(  # replace RANDOM with a radnom number
-                "sed -i.bak 's/RANDOM/'" +
-                str(randint(1, 10**6)) +
-                "'/g' *.in")
-            with open("run_{}.slurm".format(i), "w") as r:
-                r.write(run_slurm.format(i))
-            do("sbatch " + "run_{}.slurm".format(i))
-            cd("..")
+simulation_steps = 5e7
+# Defaults
+rg_list = [0]
+memb_k_list = [0]
+force_list = ["ramp"]
+force_ramp_rate_list = [1]
+repeat = 80
+
+
+# rg_list = [0.08]
+# force_list = [0.0, 0.02]
+# force_list = [0.04, 0.06, 0.08]
+# force_list = [0.045, 0.05, 0.055]
+# force_list = [0.03, 0.07]
+# force_list = [0.1]
+# memb_k_list = [1]
+# force_ramp_rate_list = [1]
+
+
+
+# rg_list = [0, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.6, 1, 5]
+# memb_k_list = [0, 1, 2, 5, 10, 20]
+# force_list = ["ramp"]
+# force_ramp_rate_list = [1]
+
+rg_list = [0, 0.02, 0.08, 0.16, 0.6, 1, 2, 5]
+memb_k_list = [0, 1, 2, 5, 10]
+force_list = ["ramp"]
+force_ramp_rate_list = [1]
+repeat = 2
+# rg_list = [0, 0.04, 0.08]
+# memb_k_list = [0, 1, 2, 5, 10]
+# force_list = ["ramp"]
+# force_ramp_rate_list = [1]
+# repeat = 20
+
+
+# force_ramp_rate_list = [1, 5, 10, 20]
+# force_ramp_rate_list = [30, 40, 50, 60, 70, 80, 90, 100, 500, 1000]
+# force_ramp_rate_list = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 500, 1000]
+# force_ramp_rate_list = [1]
+for force_ramp_rate in force_ramp_rate_list:
+    for memb_k in memb_k_list:
+        for force in force_list:
+            for rg in rg_list:
+                folder_name = "memb_{}_force_{}_rg_{}".format(memb_k, force, rg)
+                # folder_name = "rate_{}".format(force_ramp_rate)
+                # folder_name = "force_{}".format(force)
+                # if memb_k == 0 and rg == 0:
+                #     continue
+                print(folder_name)
+
+                do("mkdir "+folder_name)
+                do("cp -r 2xov " + folder_name + "/")
+                cd(folder_name + "/2xov")
+                fixFile = "fix_backbone_coeff_go.data"
+                # fixFile = "fix_backbone_coeff_single.data"
+                with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
+                    for line in file:
+                        print(line.replace("MY_MEMB_K", str(memb_k)), end='')
+                with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+                    for line in file:
+                        tmp = line
+                        tmp = tmp.replace("MY_FORCE", str(force))
+                        tmp = tmp.replace("MY_RG", str(rg))
+                        tmp = tmp.replace("RATE", str(force_ramp_rate))
+                        tmp = tmp.replace("SIMULATION_STEPS", str(int(simulation_steps/force_ramp_rate)))
+                        print(tmp, end='')
+                do("cp 2xov_multi.in 2xov_{}.in".format(i))
+                with fileinput.FileInput("2xov_{}.in".format(i), inplace=True, backup='.bak') as file:
+                    for line in file:
+                        print(line.replace("START_FROM", start_from), end='')
+                cd("..")
+                do("run.py -m 2 2xov -n {}".format(repeat))
+                cd("..")
+
+
+                # do(  # replace SIMULATION_STEPS with specific steps
+                #     "sed -i.bak 's/NUMBER/'" +
+                #     str(int(i)) +
+                #     "'/g' 2xov_{}.in".format(i))
+                # do("mkdir -p {}".format(i))
+                # do(  # replace RANDOM with a radnom number
+                #     "sed -i.bak 's/RANDOM/'" +
+                #     str(randint(1, 10**6)) +
+                #     "'/g' *.in")
+                # with open("run_{}.slurm".format(i), "w") as r:
+                #     r.write(run_slurm.format(i))
+                # do("sbatch " + "run_{}.slurm".format(i))
+                # cd("..")
 
 
 

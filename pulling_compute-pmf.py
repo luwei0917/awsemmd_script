@@ -33,7 +33,7 @@ if len(sys.argv) == 1:
 
 # Set default command line arguments
 submit_to_cluster = True          # flag for submitting calculation to a cluster (eliminates interactivity)
-precision_threshold = 1e-18       # threshold to determine whether or not to attempt to compute expectation values
+precision_threshold = 1e-10       # threshold to determine whether or not to attempt to compute expectation values
 subsample_trajectories = False      # flag for using pymbar's built-in subsampling features
 compute_per_bin_quantities = False  # flag for computing per-bin expectation values
 kB = 1.381e-23 * 6.022e23 / 4184.0  # Boltzmann constant in kcal/mol/K
@@ -45,9 +45,9 @@ pmf_variable_column_1 = 5          # column in the trajectory file that contains
 pmf_variable_column_2 = 6          # column in the trajectory file that contians the second pmf variable
 nbins1 = 40                        # number of bins for the first pmf variable
 nbins2 = 30                        # number of bins for the second pmf variable
-start_temperature = 150            # temperature at which to start the free energy calculations
+start_temperature = 250            # temperature at which to start the free energy calculations
 end_temperature = 650              # temperature at which to stop the free energy calculations
-force = 1.7
+force = 0.0
 temperature_increment = 10         # how often (in degrees) to compute the free energy
 N_samples = 2000                   # number of correlated samples per simulation
 expectation_columns = []           # an array of column numbers for which to compute expectation values

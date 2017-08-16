@@ -29,7 +29,7 @@ parser.add_argument("-s", "--steps", type=int, default=5,
                     help="How many steps in unit of million,\
                     per run, default: 5")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
-parser.add_argument("-m", "--mode", type=int, default=0)
+parser.add_argument("-m", "--mode", type=int, default=2)
 parser.add_argument("-i", "--inplace", action="store_true", default=False)
 parser.add_argument("-f", "--force", type=float, default=1.0)
 args = parser.parse_args()
@@ -58,6 +58,38 @@ echo $SLURM_NODELIST
 srun ~/build/brian/z_dependence/lmp_serial -in {}_{}.in
     '''
 
+if args.mode == 1:
+    run_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=1-00:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun ~/build/lammps_awsemmd_20161127/src/lmp_serial -in {}_{}.in
+    '''
+if args.mode == 2:
+    run_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=1-00:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun /home/wl45/build/awsem_new_membrane/src/lmp_serial -in {}_{}.in
+    '''
 proteinName = args.protein.strip("/.")
 def set_up():
     seed(datetime.now())
