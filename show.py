@@ -44,7 +44,7 @@ else:
     frame = 1250
 do("cp ../{}.seq .".format(protein_name))
 do("cp ../crystal_structure.pdb {}.pdb".format(protein_name))
-do("BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq {}".format(protein_name, frame))
+do("~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq {}".format(protein_name, frame))
 do("~/opt/TMalign/TMalign awsem.pdb {}.pdb -o result".format(protein_name))
 do("grep 'TM-score=' result > tmscore.dat")
 # Seq_ID=n_identical/n_aligned
