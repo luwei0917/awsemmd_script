@@ -106,7 +106,7 @@ freeEnergy = """\
 #SBATCH --partition=ctbp-common
 #SBATCH --ntasks=1
 #SBATCH --threads-per-core=1
-#SBATCH --mem-per-cpu=1G
+#SBATCH --mem-per-cpu=15G
 #SBATCH --time=23:00:00
 #SBATCH --mail-user=luwei0917@gmail.com
 #SBATCH --mail-type=FAIL
@@ -114,9 +114,19 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun python2 ~/opt/pulling_compute-pmf.py {}
 """
+if(args.mode == 7):
+    nsample = 10000
+    force = 0.045
+    temp_arg = "-f {} -nsamples {}".format(force, nsample)
+    arg = "-b 4 -e 1 -d 1 " + temp_arg
+    arg += " -v1 2 -v1n 40 -clustering y"
+    with open("freeEnergy.slurm", "w") as f:
+        f.write(freeEnergy.format(arg))
+    # do("sbatch freeEnergy.slurm")
+
 if(args.mode == 6):
-    nsample = 3000
-    force_list = [0.0, 0.3, 0.5]
+    nsample = 5000
+    force_list = [0.0, 0.1, 0.2]
     for force in force_list:
         # force = 1
         temp_arg = "-f {} -nsamples {}".format(force, nsample)
@@ -125,8 +135,8 @@ if(args.mode == 6):
         cd(folder_name)
         # do("make_metadata.py -m 1")
         do("cp ../metadatafile .")
-        arg = "-b 3 -e 1 -d 1 " + temp_arg
-        arg += " -v1 3 -v1n 40"
+        arg = "-b 2 -e 1 -d 1 " + temp_arg
+        arg += " -v1 2 -v1n 50"
         with open("freeEnergy.slurm", "w") as f:
             f.write(freeEnergy.format(arg))
         do("sbatch freeEnergy.slurm")

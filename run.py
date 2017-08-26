@@ -32,6 +32,7 @@ parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("-m", "--mode", type=int, default=2)
 parser.add_argument("-i", "--inplace", action="store_true", default=False)
 parser.add_argument("-f", "--force", type=float, default=1.0)
+parser.add_argument("--start", default="native")
 args = parser.parse_args()
 
 if(args.debug):
@@ -108,6 +109,8 @@ def set_up():
             f.write("jobid=`sbatch "+dependency+" run_{}.slurm".format(i) + " | tail -n 1 | awk '{print $4}'`\necho $jobid\n")
             if i == 0:
                 start_from = "read_data data.{}".format(proteinName)
+                if args.start == "extended":
+                    start_from = "read_restart restart.extended"
             else:
                 start_from = "read_restart restart." + str(int(steps*i))
             do("cp {0}_multi.in {0}_{1}.in".format(proteinName, i))
@@ -118,6 +121,8 @@ def set_up():
                     tmp = line.replace("START_FROM", start_from)
                     tmp = tmp.replace("MY_FORCE", str(args.force))
                     tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
+                    if i == 0:
+                        tmp = tmp.replace("RESET_TIME_OR_NOT", "reset_timestep	0")
                     print(tmp, end='')
 
             os.system(  # replace SIMULATION_STEPS with specific steps

@@ -549,6 +549,7 @@ if load_pickle == False:
         bin_counts = numpy.zeros([nbins], numpy.int32)
         for i in range(nbins):
             bin_counts[i] = (bin_kn == cluster_bin_map[i]).sum()
+            # I set up a cutoff to simplify the view
     else:
         if ndim == 1:
             nbins = nbins1

@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("template", help="the name of template file")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--rerun",
-                    type=int, default=0)
+                    type=int, default=1)
 parser.add_argument("-m", "--mode", type=int, default=2)
 args = parser.parse_args()
 protein_name = args.template.strip('/')
@@ -86,7 +86,7 @@ fileName = "2xov_multi.in"
 if args.rerun == 0:
     start_from = "read_data data.2xov"
 if args.rerun == 1:
-    start_from = "read_restart restart.5000000"
+    start_from = "read_restart restart.extended"
 # rg_list = [0, 1, 5, 10]
 # force_list = [2.0]
 # memb_k_list = [0, 1, 5, 10]
@@ -143,16 +143,39 @@ repeat = 80
 # force_list = ["ramp"]
 # force_ramp_rate_list = [1]
 
-rg_list = [0, 0.02, 0.08, 0.16, 0.6, 1, 2, 5]
-memb_k_list = [0, 1, 2, 5, 10]
-force_list = ["ramp"]
-force_ramp_rate_list = [1]
-repeat = 2
+# rg_list = [0, 0.02, 0.08, 0.16, 0.6, 1, 2, 5]
+# memb_k_list = [0, 1, 2, 5, 10]
+# force_list = ["ramp"]
+# force_ramp_rate_list = [1]
+# repeat = 2
+
 # rg_list = [0, 0.04, 0.08]
 # memb_k_list = [0, 1, 2, 5, 10]
 # force_list = ["ramp"]
 # force_ramp_rate_list = [1]
 # repeat = 20
+
+# rg_list = [0.08]
+# memb_k_list = [1]
+# force_list = [0.02, 0.03, 0.04]
+# force_ramp_rate_list = [1]
+# repeat = 100
+
+rg_list = [0.08]
+memb_k_list = [1]
+# force_list = [0.02, 0.03, 0.04, 0.05, 0.06]
+force_list = [0.025, 0.035, 0.045]
+
+# force_list = [0.02, 0.03]
+force_ramp_rate_list = [1]
+repeat = 100
+
+
+# rg_list = [0, 0.1, 0.5, 1, 1.5, 2]
+# memb_k_list = [0, 1, 2, 3, 4]
+# force_list = ["force_ramp"]
+# force_ramp_rate_list = [1]
+# repeat = 2
 
 
 # force_ramp_rate_list = [1, 5, 10, 20]
@@ -186,12 +209,8 @@ for force_ramp_rate in force_ramp_rate_list:
                         tmp = tmp.replace("RATE", str(force_ramp_rate))
                         tmp = tmp.replace("SIMULATION_STEPS", str(int(simulation_steps/force_ramp_rate)))
                         print(tmp, end='')
-                do("cp 2xov_multi.in 2xov_{}.in".format(i))
-                with fileinput.FileInput("2xov_{}.in".format(i), inplace=True, backup='.bak') as file:
-                    for line in file:
-                        print(line.replace("START_FROM", start_from), end='')
                 cd("..")
-                do("run.py -m 2 2xov -n {}".format(repeat))
+                do("run.py -m 2 2xov --start extended -n {}".format(repeat))
                 cd("..")
 
 

@@ -49,6 +49,21 @@ else:
 # srun ~/build/lammps_awsemmd_20161127/src/lmp_serial -in 2xov_{}.in
 # '''
 
+# run_slurm = '''\
+# #!/bin/bash
+# #SBATCH --job-name=CTBP_WL
+# #SBATCH --account=ctbp-common
+# #SBATCH --partition=ctbp-common
+# #SBATCH --ntasks=1
+# #SBATCH --threads-per-core=1
+# #SBATCH --mem-per-cpu=1G
+# #SBATCH --time=1-00:00:00
+# #SBATCH --mail-user=luwei0917@gmail.com
+# #SBATCH --mail-type=FAIL
+# echo "My job ran on:"
+# echo $SLURM_NODELIST
+# srun ~/build/lammps_awsemmd_20161127/src/lmp_serial -in 2xov_{}.in
+# '''
 run_slurm = '''\
 #!/bin/bash
 #SBATCH --job-name=CTBP_WL
@@ -62,9 +77,8 @@ run_slurm = '''\
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
 echo $SLURM_NODELIST
-srun ~/build/lammps_awsemmd_20161127/src/lmp_serial -in 2xov_{}.in
+srun /home/wl45/build/awsem_new_membrane/src/lmp_serial -in 2xov_{}.in
 '''
-
 fileName = "2xov_multi.in"
 if args.rerun == 0:
     start_from = "read_data data.2xov"
@@ -133,7 +147,8 @@ if args.mode == 1:
 if args.mode == 2:
     distance_list = range(100)
 if args.mode == 3:
-    distance_list = np.linspace(10, 150, 141)
+    distance_list = np.linspace(10, 180, 171)
+    # distance_list = np.linspace(0, 1, 1)
 
 if args.mode <= 3:
     i = args.rerun

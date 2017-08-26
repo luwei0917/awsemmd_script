@@ -43,6 +43,69 @@ else:
     do = os.system
     cd = os.chdir
 
+base_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=01:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun {}\n'''
+
+if args.mode == 10:
+    distance_list = np.linspace(166, 180, 15)
+    for distance in distance_list:
+        folder = "dis_{}".format(distance)
+        cd(folder)
+        do("sbatch run_0.slurm")
+        cd("..")
+if args.mode == 9:
+    cmd = "python3 ~/opt/small_script/find_distance.py"
+    run_slurm = base_slurm.format(cmd)
+    folder_list = ['force_0.045']
+    print(folder_list)
+    for folder in folder_list:
+        cd(folder)
+        cd("simulation")
+        run_list = glob.glob("*")
+        for run in run_list:
+            cd(run)
+            cd("0")
+            with open("find_distance.slurm", "w") as r:
+                r.write(run_slurm)
+            do("sbatch find_distance.slurm")
+            cd("../..")
+        cd("../..")
+
+if args.mode == 8:
+    cmd = "gg.py -m 8"
+    run_slurm = base_slurm.format(cmd)
+
+    # folder_list = glob.glob("force_*")
+    # folder_list = ['force_0.08', 'force_0.03', 'force_0.0']
+    folder_list = ['force_0.055']
+    # folder_list = ['force_0.07', 'force_0.02', 'force_0.045']
+    # folder_list = ['force_0.06', 'force_0.04']
+    print(folder_list)
+    for folder in folder_list:
+        cd(folder)
+        cd("simulation")
+        run_list = glob.glob("*")
+        for run in run_list:
+            cd(run)
+            cd("0")
+            with open("compute_angle.slurm", "w") as r:
+                r.write(run_slurm)
+            do("sbatch compute_angle.slurm")
+            cd("../..")
+        cd("../..")
+
 if args.mode == 7:
     for i in range(80):
         do("mv {0} ../../../new_force_ramp/memb_0_force_ramp_rg_0_new/simulation/{1}".format(i,i+90))
