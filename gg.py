@@ -74,6 +74,9 @@ def test():
             # for i in range(2):
             #     address = folder + "/simulation/" + str(i)
             #     f.write(address+"  \n")
+if(args.mode == 7):
+    for i in range(1, 11):
+        do("cat run{}/AWSEM_energy.log  >> energy.log".format(i))
 if(args.mode == 6):
     n_list = [16, 10, 13, 16,15, 3, 8, 11, 6, 7, 20, 13, 18, 9,6, 19,4,14, 11,14]
     print(len(n_list))
