@@ -21,6 +21,7 @@ parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--rerun",
                     type=int, default=1)
 parser.add_argument("-m", "--mode", type=int, default=2)
+parser.add_argument("--model", default="single")
 args = parser.parse_args()
 protein_name = args.template.strip('/')
 
@@ -83,10 +84,10 @@ else:
 # '''
 
 fileName = "2xov_multi.in"
-if args.rerun == 0:
-    start_from = "read_data data.2xov"
-if args.rerun == 1:
-    start_from = "read_restart restart.extended"
+# if args.rerun == 0:
+#     start_from = "read_data data.2xov"
+# if args.rerun == 1:
+#     start_from = "read_restart restart.extended"
 # rg_list = [0, 1, 5, 10]
 # force_list = [2.0]
 # memb_k_list = [0, 1, 5, 10]
@@ -112,19 +113,19 @@ if args.rerun == 1:
 # force_list = ["ramp"]
 # memb_k_list = [0, 0.1, 1, 2, 5, 10]
 
-# rg_list = [0, 0.5, 1, 1.5, 2, 3]
+rg_list = [0, 0.1, 1, 2, 4, 8]
 # rg_list = [0, 0.01, 0.04, 0.08, 0.1, 0.2, 0.5, 1]
-# force_list = ["ramp"]
-# memb_k_list = [0, 0.5, 1, 2, 2.5, 3, 4]
+force_list = ["ramp"]
+memb_k_list = [0, 1, 2, 4, 8, 16]
 i = args.rerun
 
 simulation_steps = 5e7
 # Defaults
-rg_list = [0]
-memb_k_list = [0]
-force_list = ["ramp"]
-force_ramp_rate_list = [1]
-repeat = 80
+# rg_list = [0]
+# memb_k_list = [0]
+# force_list = ["ramp"]
+# force_ramp_rate_list = [1]
+# repeat = 80
 
 
 # rg_list = [0.08]
@@ -161,14 +162,15 @@ repeat = 80
 # force_ramp_rate_list = [1]
 # repeat = 100
 
-rg_list = [0.08]
-memb_k_list = [1]
-# force_list = [0.02, 0.03, 0.04, 0.05, 0.06]
-force_list = [0.025, 0.035, 0.045]
+# rg_list = [0.08]
+# memb_k_list = [1]
+# # force_list = [0.02, 0.03, 0.04, 0.05, 0.06]
+# force_list = [0.025, 0.035, 0.045]
 
 # force_list = [0.02, 0.03]
 force_ramp_rate_list = [1]
-repeat = 100
+repeat = 2
+# repeat = 100
 
 
 # rg_list = [0, 0.1, 0.5, 1, 1.5, 2]
@@ -186,7 +188,8 @@ for force_ramp_rate in force_ramp_rate_list:
     for memb_k in memb_k_list:
         for force in force_list:
             for rg in rg_list:
-                folder_name = "memb_{}_force_{}_rg_{}".format(memb_k, force, rg)
+                folder_name = "memb_{}_rg_{}".format(memb_k, rg)
+                # folder_name = "memb_{}_force_{}_rg_{}".format(memb_k, force, rg)
                 # folder_name = "rate_{}".format(force_ramp_rate)
                 # folder_name = "force_{}".format(force)
                 # if memb_k == 0 and rg == 0:
@@ -196,8 +199,10 @@ for force_ramp_rate in force_ramp_rate_list:
                 do("mkdir "+folder_name)
                 do("cp -r 2xov " + folder_name + "/")
                 cd(folder_name + "/2xov")
-                fixFile = "fix_backbone_coeff_go.data"
-                # fixFile = "fix_backbone_coeff_single.data"
+                if args.model == "go":
+                    fixFile = "fix_backbone_coeff_go.data"
+                if args.model == "single":
+                    fixFile = "fix_backbone_coeff_single.data"
                 with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
                     for line in file:
                         print(line.replace("MY_MEMB_K", str(memb_k)), end='')
@@ -210,7 +215,8 @@ for force_ramp_rate in force_ramp_rate_list:
                         tmp = tmp.replace("SIMULATION_STEPS", str(int(simulation_steps/force_ramp_rate)))
                         print(tmp, end='')
                 cd("..")
-                do("run.py -m 2 2xov --start extended -n {}".format(repeat))
+                do("run.py -m 2 2xov -n {}".format(repeat))
+                # do("run.py -m 2 2xov --start extended -n {}".format(repeat))
                 cd("..")
 
 
