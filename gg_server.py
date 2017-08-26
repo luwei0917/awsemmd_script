@@ -11,6 +11,7 @@ import imp
 import glob
 from time import sleep
 import fileinput
+import numpy as np
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -42,6 +43,106 @@ else:
     do = os.system
     cd = os.chdir
 
+base_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=01:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun {}\n'''
+
+if args.mode == 10:
+    distance_list = np.linspace(166, 180, 15)
+    for distance in distance_list:
+        folder = "dis_{}".format(distance)
+        cd(folder)
+        do("sbatch run_0.slurm")
+        cd("..")
+if args.mode == 9:
+    cmd = "python3 ~/opt/small_script/find_distance.py"
+    run_slurm = base_slurm.format(cmd)
+    folder_list = ['force_0.045']
+    print(folder_list)
+    for folder in folder_list:
+        cd(folder)
+        cd("simulation")
+        run_list = glob.glob("*")
+        for run in run_list:
+            cd(run)
+            cd("0")
+            with open("find_distance.slurm", "w") as r:
+                r.write(run_slurm)
+            do("sbatch find_distance.slurm")
+            cd("../..")
+        cd("../..")
+
+if args.mode == 8:
+    cmd = "gg.py -m 8"
+    run_slurm = base_slurm.format(cmd)
+
+    # folder_list = glob.glob("force_*")
+    # folder_list = ['force_0.08', 'force_0.03', 'force_0.0']
+    folder_list = ['force_0.055']
+    # folder_list = ['force_0.07', 'force_0.02', 'force_0.045']
+    # folder_list = ['force_0.06', 'force_0.04']
+    print(folder_list)
+    for folder in folder_list:
+        cd(folder)
+        cd("simulation")
+        run_list = glob.glob("*")
+        for run in run_list:
+            cd(run)
+            cd("0")
+            with open("compute_angle.slurm", "w") as r:
+                r.write(run_slurm)
+            do("sbatch compute_angle.slurm")
+            cd("../..")
+        cd("../..")
+
+if args.mode == 7:
+    for i in range(80):
+        do("mv {0} ../../../new_force_ramp/memb_0_force_ramp_rg_0_new/simulation/{1}".format(i,i+90))
+if args.mode == 6:
+    force_list = [0.55, 0.6, 0.65]
+    # force_list = [0.25, 0.35, 0.4, 0.45]
+    # force_list = [0.15, 0.2]
+    for force in force_list:
+        do("mkdir force_{}".format(force))
+        do("cp -r 2xov force_{}/".format(force))
+        cd("force_{}".format(force))
+        with fileinput.FileInput("2xov/2xov_multi.in", inplace=True, backup='.bak') as file:
+            for line in file:
+                print(line.replace("MY_FORCE", str(force)), end='')
+        do("run.py -n 10 2xov/")
+        cd("..")
+
+
+if args.mode == 5:
+    # cd("start_misfolded")
+    distance_list = np.linspace(0, 30, 16)
+    for dis in distance_list:
+        do("mkdir -p dis_{}".format(dis))
+        do("cp -r ../2xov/ dis_{}".format(dis))
+        do("cp ../../freeEnergy/go_model_start_unfolded/simulation/dis_{0}/restart.25000000 dis_{0}/2xov/".format(dis))
+        cd("dis_{}".format(dis))
+        do("run.py -n 10 2xov/")
+        cd("..")
+
+if args.mode == 4:
+    do("rm data")
+    for i in range(100):
+        do("cat dis_{}/0/data >> data.dat".format(i))
+    do("awk '{print $1}' data.dat  > e.dat")
+    do("awk '{print $2}' data.dat  > p.dat")
+    do("awk '{print $3}' data.dat  > qw.dat")
+
 if args.mode == 1:
     cd("simulation")
     do("pulling_prepare.py")
@@ -58,7 +159,7 @@ if args.mode == 2:
     # cd("..")
     do("mkdir more_bin")
     cd("more_bin")
-    do("make_metadata.py -k 0.05 -t 300")
+    do("make_metadata.py -k 0.05 -t 600")
     do("pulling_analysis.py -m 3 -p 1")
 
 if args.mode == 3:

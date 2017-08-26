@@ -329,7 +329,10 @@ if snapshot<0:
                     # A.append([float(l[0]), float(l[1])])
                     l_left = (float(l[0]) - float(l[1]))/2.0
                     l_right = (float(l[1]) - float(l[0]))/2.0
+                    # l_left = 0.0
+                    # l_right = float(l[1]) - float(l[0])
                     A.append([l_left, l_right])
+                    # A.append([float(l[0]), float(l[1])])
                     # print l_right - l_left
                 else:
                     xyz_count = 0
