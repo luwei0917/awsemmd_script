@@ -15,7 +15,8 @@
 import sys
 import numpy
 from VectorAlgebra import *
-from pylab import *
+# from pylab import *
+from numpy import zeros
 from Bio.PDB.PDBParser import PDBParser
 
 if len(sys.argv)!=4:
@@ -66,7 +67,7 @@ def compute_qis():
     qis = zeros([len(cb_atoms)])
 
     for i in range(0, N):
-        for j in range(i+6, N):
+        for j in range(i+4, N):
             if native_contacts[i][j] == 1:
                 r = vabs(vector(cb_atoms[i], cb_atoms[j]))
                 if (r < cutoff):
@@ -106,7 +107,7 @@ for i in range(0,len(native_coords)):
 native_contacts = zeros([len(native_distances),len(native_distances)],int)
 norm = zeros([len(native_distances)],int)
 for i in range(0,len(native_coords)):
-    for j in range(i+6,len(native_coords)):
+    for j in range(i+4,len(native_coords)):
         if (native_distances[i][j] < cutoff):
             native_contacts[i][j] = 1
             norm[i]+=1

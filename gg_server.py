@@ -12,6 +12,7 @@ import glob
 from time import sleep
 import fileinput
 import numpy as np
+from small_script.variable_test import variable_test
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -58,6 +59,53 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun {}\n'''
 
+if args.mode == 16:
+    rg_list = [0, 0.1, 0.2, 0.4, 0.5, 1, 2, 4, 8]
+    variable_test(rg_list=rg_list)
+
+if(args.mode == 15):
+    print("create directory_list")
+    with open("directory_list", "w") as f:
+        for i in range(100):
+            # print(os.getcwd())
+            location = os.getcwd() + "/../"
+            f.write(location+str(i)+"/0\n")
+    do("cp ../../2xov/2xov.pdb .")
+    do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov directory_list out")
+if(args.mode == 14):
+    print("Extract qw and distance info.")
+    for i in range(100):
+        cd(str(i))
+        cd("0")
+        do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
+        do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > distance.dat")
+        cd("../..")
+
+if args.mode == 13:
+    rg_list = [0, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2]
+    memb_k_list = [0, 1, 2, 4, 8]
+    variable_test(rg_list=rg_list, memb_k_list=memb_k_list)
+if args.mode == 12:
+    rg_list = [0.1, 0.2, 0.4, 0.8, 1.6, 3.2]
+    variable_test(rg_list=rg_list)
+if args.mode == 11:
+    zim_type_list = ["aug04", "aug26"]
+    membrane_width_list = [30, 28.8]
+    for zim in zim_type_list:
+        for width in membrane_width_list:
+            folder = "zim_{}_width_{}".format(zim, width)
+            do("mkdir -p {}".format(folder))
+            cd(folder)
+            do("cp -r ../2xov .")
+            cd("2xov")
+            fixFile = "fix_backbone_coeff_single.data"
+            with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
+                for line in file:
+                    print(line.replace("WIDTH", str(width)), end='')
+            do("cp zim_{} zim".format(zim))
+            cd("..")
+            do("run.py -n 2 2xov")
+            cd("..")
 if args.mode == 10:
     distance_list = np.linspace(166, 180, 15)
     for distance in distance_list:
