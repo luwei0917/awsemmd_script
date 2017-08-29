@@ -118,12 +118,12 @@ def set_up():
                 start_from = "read_restart restart." + str(int(steps*i))
             do("cp {0}_multi.in {0}_{1}.in".format(proteinName, i))
             fileName = "{0}_{1}.in".format(proteinName, i)
-            backbone_file = "fix_backbone_coeff_{}.data".format(args.name)
+            # backbone_file = "fix_backbone_coeff_{}.data".format(args.name)
             with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
                 for line in file:
                     tmp = line.replace("START_FROM", start_from)
                     tmp = tmp.replace("MY_FORCE", str(args.force))
-                    tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
+                    # tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
                     if i == 0:
                         tmp = tmp.replace("RESET_TIME_OR_NOT", "reset_timestep	0")
                     print(tmp, end='')
