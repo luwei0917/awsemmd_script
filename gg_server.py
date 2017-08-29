@@ -60,24 +60,35 @@ echo $SLURM_NODELIST
 srun {}\n'''
 
 if args.mode == 17:
-    protocol_list = ["er"]
+    # protocol_list = ["er", "awsemer", "frag", "raptor"]
+    protocol_list = ["awsemer", "frag"]
     protein_list = ["1occ"]
     for protein in protein_list:
         for protocol in protocol_list:
-            do("cp ~/opt/gremlin/protein/1occ/gremlin/go_rnativeC* {}/".format(protein))
+            print("Work on protein: {}, protocol: {}".format(protein, protocol))
+            if protocol == "raptor":
+                do("cp ~/opt/gremlin/protein/1occ/raptor/go_rnativeC* {}/".format(protein))
+            else:
+                do("cp ~/opt/gremlin/protein/1occ/gremlin/go_rnativeC* {}/".format(protein))
             do("mkdir -p {}".format(protocol))
             do("cp -r {} {}/".format(protein, protocol))
             cd(protocol)
             cd(protein)
             fileName = "{}_multi.in".format(protein)
-            backbone_file = "fix_backbone_coeff_{}.data".format(protocol)
+            if protocol == "raptor":
+                backbone_file = "fix_backbone_coeff_er.data"
+                do("cp ~/opt/gremlin/protein/{}/raptor/go_rnativeC* .".format(protein))
+            else:
+                backbone_file = "fix_backbone_coeff_{}.data".format(protocol)
+                do("cp ~/opt/gremlin/protein/{}/gremlin/go_rnativeC* .".format(protein))
             with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
                 for line in file:
                     tmp = line
-                    tmp = tmp.replace("fix_backbone_coeff_simulation.data", backbone_file)
+                    tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
                     print(tmp, end='')
             cd("..")
-            do("run.py -m 0 -n 2 {}".format(protein))
+            do("run.py -m 0 -n 20 {}".format(protein))
+            cd("..")
 
 if args.mode == 16:
     rg_list = [0, 0.1, 0.2, 0.4, 0.5, 1, 2, 4]
@@ -86,7 +97,7 @@ if args.mode == 16:
 if(args.mode == 15):
     print("create directory_list")
     with open("directory_list", "w") as f:
-        for i in range(100):
+        for i in range(40):
             # print(os.getcwd())
             location = os.getcwd() + "/../"
             f.write(location+str(i)+"/0\n")
