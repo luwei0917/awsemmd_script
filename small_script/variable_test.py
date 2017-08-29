@@ -30,7 +30,8 @@ def variable_test(force_ramp_rate_list=[1],
                   force_list=["ramp"],
                   rg_list=[0.08],
                   repeat=2,
-                  start_from_mode=0):
+                  start_from_mode=0,
+                  commons=False):
     for force_ramp_rate in force_ramp_rate_list:
         for memb_k in memb_k_list:
             for force in force_list:
@@ -68,6 +69,6 @@ def variable_test(force_ramp_rate_list=[1],
                             # tmp = tmp.replace("SIMULATION_STEPS", str(int(simulation_steps/force_ramp_rate)))
                             print(tmp, end='')
                     cd("..")
-                    do("run.py -m 2 2xov -n {}".format(repeat))
+                    do("run.py -m 2 2xov -n {} --commons".format(repeat, commons))
                     # do("run.py -m 2 2xov --start extended -n {}".format(repeat))
                     cd("..")

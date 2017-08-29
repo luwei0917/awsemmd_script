@@ -59,9 +59,29 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun {}\n'''
 
+if args.mode == 17:
+    protocol_list = ["er"]
+    protein_list = ["1occ"]
+    for protein in protein_list:
+        for protocol in protocol_list:
+            do("cp ~/opt/gremlin/protein/1occ/gremlin/go_rnativeC* {}/".format(protein))
+            do("mkdir -p {}".format(protocol))
+            do("cp -r {} {}/".format(protein, protocol))
+            cd(protocol)
+            cd(protein)
+            fileName = "{}_multi.in".format(protein)
+            backbone_file = "fix_backbone_coeff_{}.data".format(protocol)
+            with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+                for line in file:
+                    tmp = line
+                    tmp = tmp.replace("fix_backbone_coeff_simulation.data", backbone_file)
+                    print(tmp, end='')
+            cd("..")
+            do("run.py -m 0 -n 2 {}".format(protein))
+
 if args.mode == 16:
-    rg_list = [0, 0.1, 0.2, 0.4, 0.5, 1, 2, 4, 8]
-    variable_test(rg_list=rg_list)
+    rg_list = [0, 0.1, 0.2, 0.4, 0.5, 1, 2, 4]
+    variable_test(rg_list=rg_list, repeat=1, commons=True)
 
 if(args.mode == 15):
     print("create directory_list")
