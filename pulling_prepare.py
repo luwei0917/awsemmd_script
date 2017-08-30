@@ -62,6 +62,57 @@ def extract_data():
     do("paste qn qc etotal qo | tail -n 4000 > data")
     do("paste qn_half qc_half etotal_half qo_half > halfdata")
 
+if args.mode == 6:
+    print("Reorganize data, mode {}".format(args.mode))
+    files = glob.glob("*")
+    for one in files:
+        cd(one)
+        do("cat cluster.dat >> ../cluster.dat")
+        do("cat all_data >> ../all_data")
+        # do("paste tmp tmp_2 > all_data")
+        cd("..")
+
+if args.mode == 5:
+    print("Reorganize data, mode {}".format(args.mode))
+    files = glob.glob("*")
+    for one in files:
+        cd(one)
+        do("cat states.csv | sed 1d > cluster.dat")
+        do("head -n 10000 data  > all_data")
+        # do("paste tmp tmp_2 > all_data")
+        cd("..")
+if args.mode == 4:
+    print("Reorganize data, mode {}".format(args.mode))
+    files = glob.glob("*")
+    for one in files:
+        cd(one)
+        cd("0")
+        do("awk '{print $5}' wham.dat |  sed 's/,$//' | sed 1d > e.dat")
+        do("awk '{print $2}' distance.dat |  sed 's/,$//' | sed 1,2d > d.dat")
+        do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
+        do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > d_2.dat")
+        # do("paste membrane.dat rg.dat sum.dat d.dat | tail -n 600 > data")
+        # do("paste e.dat d.dat qw.dat d_2.dat | tail -n 3000 > data")
+        location = "/scratch/wl45/aug_2017/freeEnergy/data/{}".format(one)
+        do("mkdir -p "+location)
+        do("paste e.dat d.dat qw.dat d_2.dat > data")
+        do("cp data " + location + "/")
+        cd("../..")
+
+if args.mode == 3:
+    print("Reorganize data, mode {}".format(args.mode))
+    files = glob.glob("*")
+    for one in files:
+        cd(one)
+        cd("0")
+        do("awk '{print $5}' wham.dat |  sed 's/,$//' | sed 1d > e.dat")
+        do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > d.dat")
+        do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
+        do("awk '{print $2/400}' addforce.dat |  sed 's/,$//' | sed 1d > d_2.dat")
+        # do("paste membrane.dat rg.dat sum.dat d.dat | tail -n 600 > data")
+        do("paste e.dat d.dat qw.dat d_2.dat | tail -n 5000 > data")
+        cd("../..")
+
 if args.mode == 1:
     print("Reorganize data, mode 1")
     files = glob.glob("*")
@@ -73,8 +124,10 @@ if args.mode == 1:
         do("awk '{print $9}' energy.dat |  sed 's/,$//' | sed 1d > membrane.dat")
         do("paste membrane.dat rg.dat | awk '{print $1+$2}' > sum.dat")
         do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > d.dat")
+        do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
+        do("awk '{print $2/400}' addforce.dat |  sed 's/,$//' | sed 1d > d_2.dat")
         # do("paste membrane.dat rg.dat sum.dat d.dat | tail -n 600 > data")
-        do("paste e.dat d.dat | tail -n 600 > data")
+        do("paste e.dat d.dat qw.dat d_2.dat | tail -n 600 > data")
         cd("../..")
 if args.mode == 2:
     print("Reorganize data, mode 2")

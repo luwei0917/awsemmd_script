@@ -15,7 +15,8 @@
 import sys
 import numpy
 from VectorAlgebra import *
-from pylab import *
+# from pylab import *
+from numpy import zeros
 from Bio.PDB.PDBParser import PDBParser
 
 if len(sys.argv)!=4:

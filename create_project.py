@@ -16,6 +16,8 @@ parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--frag", action="store_true", default=False)
 parser.add_argument("--crystal", action="store_true", default=False)
 parser.add_argument("--membrane", action="store_true", default=False)
+parser.add_argument("--globular", action="store_true", default=False)
+
 args = parser.parse_args()
 
 if(args.debug):

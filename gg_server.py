@@ -11,6 +11,8 @@ import imp
 import glob
 from time import sleep
 import fileinput
+import numpy as np
+from small_script.variable_test import variable_test
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -42,6 +44,184 @@ else:
     do = os.system
     cd = os.chdir
 
+base_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=01:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun {}\n'''
+
+if args.mode == 17:
+    # protocol_list = ["er", "awsemer", "frag", "raptor"]
+    protocol_list = ["awsemer", "frag"]
+    protein_list = ["1occ"]
+    for protein in protein_list:
+        for protocol in protocol_list:
+            print("Work on protein: {}, protocol: {}".format(protein, protocol))
+            if protocol == "raptor":
+                do("cp ~/opt/gremlin/protein/1occ/raptor/go_rnativeC* {}/".format(protein))
+            else:
+                do("cp ~/opt/gremlin/protein/1occ/gremlin/go_rnativeC* {}/".format(protein))
+            do("mkdir -p {}".format(protocol))
+            do("cp -r {} {}/".format(protein, protocol))
+            cd(protocol)
+            cd(protein)
+            fileName = "{}_multi.in".format(protein)
+            if protocol == "raptor":
+                backbone_file = "fix_backbone_coeff_er.data"
+                do("cp ~/opt/gremlin/protein/{}/raptor/go_rnativeC* .".format(protein))
+            else:
+                backbone_file = "fix_backbone_coeff_{}.data".format(protocol)
+                do("cp ~/opt/gremlin/protein/{}/gremlin/go_rnativeC* .".format(protein))
+            with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+                for line in file:
+                    tmp = line
+                    tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
+                    print(tmp, end='')
+            cd("..")
+            do("run.py -m 0 -n 20 {}".format(protein))
+            cd("..")
+
+if args.mode == 16:
+    rg_list = [0, 0.1, 0.2, 0.4, 0.5, 1, 2, 4]
+    variable_test(rg_list=rg_list, repeat=1, commons=True)
+
+if(args.mode == 15):
+    print("create directory_list")
+    with open("directory_list", "w") as f:
+        for i in range(40):
+            # print(os.getcwd())
+            location = os.getcwd() + "/../"
+            f.write(location+str(i)+"/0\n")
+    do("cp ../../2xov/2xov.pdb .")
+    do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov directory_list out")
+if(args.mode == 14):
+    print("Extract qw and distance info.")
+    for i in range(100):
+        cd(str(i))
+        cd("0")
+        do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
+        do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > distance.dat")
+        cd("../..")
+
+if args.mode == 13:
+    rg_list = [0, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2]
+    memb_k_list = [0, 1, 2, 4, 8]
+    variable_test(rg_list=rg_list, memb_k_list=memb_k_list)
+if args.mode == 12:
+    rg_list = [0.1, 0.2, 0.4, 0.8, 1.6, 3.2]
+    variable_test(rg_list=rg_list)
+if args.mode == 11:
+    zim_type_list = ["aug04", "aug26"]
+    membrane_width_list = [30, 28.8]
+    for zim in zim_type_list:
+        for width in membrane_width_list:
+            folder = "zim_{}_width_{}".format(zim, width)
+            do("mkdir -p {}".format(folder))
+            cd(folder)
+            do("cp -r ../2xov .")
+            cd("2xov")
+            fixFile = "fix_backbone_coeff_single.data"
+            with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
+                for line in file:
+                    print(line.replace("WIDTH", str(width)), end='')
+            do("cp zim_{} zim".format(zim))
+            cd("..")
+            do("run.py -n 2 2xov")
+            cd("..")
+if args.mode == 10:
+    distance_list = np.linspace(166, 180, 15)
+    for distance in distance_list:
+        folder = "dis_{}".format(distance)
+        cd(folder)
+        do("sbatch run_0.slurm")
+        cd("..")
+if args.mode == 9:
+    cmd = "python3 ~/opt/small_script/find_distance.py"
+    run_slurm = base_slurm.format(cmd)
+    folder_list = ['force_0.045']
+    print(folder_list)
+    for folder in folder_list:
+        cd(folder)
+        cd("simulation")
+        run_list = glob.glob("*")
+        for run in run_list:
+            cd(run)
+            cd("0")
+            with open("find_distance.slurm", "w") as r:
+                r.write(run_slurm)
+            do("sbatch find_distance.slurm")
+            cd("../..")
+        cd("../..")
+
+if args.mode == 8:
+    cmd = "gg.py -m 8"
+    run_slurm = base_slurm.format(cmd)
+
+    # folder_list = glob.glob("force_*")
+    # folder_list = ['force_0.08', 'force_0.03', 'force_0.0']
+    folder_list = ['force_0.055']
+    # folder_list = ['force_0.07', 'force_0.02', 'force_0.045']
+    # folder_list = ['force_0.06', 'force_0.04']
+    print(folder_list)
+    for folder in folder_list:
+        cd(folder)
+        cd("simulation")
+        run_list = glob.glob("*")
+        for run in run_list:
+            cd(run)
+            cd("0")
+            with open("compute_angle.slurm", "w") as r:
+                r.write(run_slurm)
+            do("sbatch compute_angle.slurm")
+            cd("../..")
+        cd("../..")
+
+if args.mode == 7:
+    for i in range(80):
+        do("mv {0} ../../../new_force_ramp/memb_0_force_ramp_rg_0_new/simulation/{1}".format(i,i+90))
+if args.mode == 6:
+    force_list = [0.55, 0.6, 0.65]
+    # force_list = [0.25, 0.35, 0.4, 0.45]
+    # force_list = [0.15, 0.2]
+    for force in force_list:
+        do("mkdir force_{}".format(force))
+        do("cp -r 2xov force_{}/".format(force))
+        cd("force_{}".format(force))
+        with fileinput.FileInput("2xov/2xov_multi.in", inplace=True, backup='.bak') as file:
+            for line in file:
+                print(line.replace("MY_FORCE", str(force)), end='')
+        do("run.py -n 10 2xov/")
+        cd("..")
+
+
+if args.mode == 5:
+    # cd("start_misfolded")
+    distance_list = np.linspace(0, 30, 16)
+    for dis in distance_list:
+        do("mkdir -p dis_{}".format(dis))
+        do("cp -r ../2xov/ dis_{}".format(dis))
+        do("cp ../../freeEnergy/go_model_start_unfolded/simulation/dis_{0}/restart.25000000 dis_{0}/2xov/".format(dis))
+        cd("dis_{}".format(dis))
+        do("run.py -n 10 2xov/")
+        cd("..")
+
+if args.mode == 4:
+    do("rm data")
+    for i in range(100):
+        do("cat dis_{}/0/data >> data.dat".format(i))
+    do("awk '{print $1}' data.dat  > e.dat")
+    do("awk '{print $2}' data.dat  > p.dat")
+    do("awk '{print $3}' data.dat  > qw.dat")
+
 if args.mode == 1:
     cd("simulation")
     do("pulling_prepare.py")
@@ -58,7 +238,7 @@ if args.mode == 2:
     # cd("..")
     do("mkdir more_bin")
     cd("more_bin")
-    do("make_metadata.py -k 0.05 -t 300")
+    do("make_metadata.py -k 0.05 -t 600")
     do("pulling_analysis.py -m 3 -p 1")
 
 if args.mode == 3:
