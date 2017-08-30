@@ -27,6 +27,19 @@ else:
 
 protein_name = args.protein.split('.')[0]
 
+if args.mode == 3:
+    # do("python3 ~/opt/small_script/delete_lammps_frame.py")
+    shrinkage(shrink_size=6, max_frame=2000)
+    # shrinkage()
+    do("cp ../{}.seq .".format(protein_name))
+    do("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py small.lammpstrj movie "+protein_name+".seq")
+    do("cp ~/opt/plot_scripts/2xov_movie_bicelle.tcl .")
+    do("cp ~/opt/plot_scripts/movie_bicelle_no_smooth.tcl .")
+    do("cp ~/opt/plot_scripts/movie.tcl .")
+    if args.plot:
+        do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
+
+
 if args.mode == 1:
     # do("python3 ~/opt/small_script/delete_lammps_frame.py")
     shrinkage(shrink_size=1, max_frame=2000)
