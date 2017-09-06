@@ -66,4 +66,4 @@ def compute_theta_for_each_helix():
 
 
 def structure_prediction_run(protein):
-    
+    print(protein)
