@@ -13,6 +13,8 @@ import glob
 import re
 from small_script.myFunctions_helper import *
 import numpy as np
+import fileinput
+
 # compute cross Q for every pdb pair in one folder
 # parser = argparse.ArgumentParser(description="Compute cross q")
 # parser.add_argument("-m", "--mode",
@@ -67,3 +69,25 @@ def compute_theta_for_each_helix():
 
 def structure_prediction_run(protein):
     print(protein)
+    protocol_list = ["awsemer", "frag", "er"]
+    do = os.system
+    cd = os.chdir
+    cd(protein)
+    # run = "frag"
+    for protocol in protocol_list:
+        do("mkdir -p " + run)
+        do("cp -r {} {}/".format(protein, protocol))
+        cd(protocol)
+        cd(protein)
+        do("cp ~/opt/gremlin/protein/{}/gremlin/go_rnativeC* .".format(protein))
+        fileName = protein + "_multi.in"
+        backboneFile = "fix_backbone_coeff_" + protocol
+        with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+            for line in file:
+                tmp = line.replace("fix_backbone_coeff_er", backboneFile)
+                print(tmp, end='')
+        cd("..")
+        do("run.py -m 0 -n 20 {}".format(protein))
+        cd("..")
+    cd("..")
+    # do("")

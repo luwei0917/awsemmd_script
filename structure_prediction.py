@@ -10,7 +10,7 @@ from datetime import datetime
 import imp
 from myPersonalFunctions import *
 import glob
-from small_script.myFunctions import compute_theta_for_each_helix
+from small_script.myFunctions import *
 from small_script.extract_pdb import *
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
@@ -34,12 +34,9 @@ parser.add_argument("-m", "--mode",
                     type=int, default=0)
 args = parser.parse_args()
 
-if(args.debug):
-    do = print
-    cd = print
-else:
-    do = os.system
-    cd = os.chdir
+
+do = os.system
+cd = os.chdir
 
 # convert \( 0.0.png 0.2.png 0.4.png  +append \) \( 0.6.png  0.8.png    1.0.png +append \) -background none -append final.png
 def test():
@@ -71,4 +68,6 @@ if(args.mode == 2):
         cd("../..")
 
 if(args.mode ==3):
-    structure_prediction_run("1occ")
+    protein_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
+    for protein in protein_list:
+        structure_prediction_run(protein)
