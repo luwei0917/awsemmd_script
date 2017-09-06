@@ -59,6 +59,15 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun {}\n'''
 
+if args.mode == 18:
+    rg_list = [0, 0.1, 0.2, 1]
+    memb_k_list = [0, 1, 2, 4]
+    pressure_list = [0, 0.1, 0.2, 0.4, 0.8, 1, 2]
+    # rg_list = [0.1]
+    # memb_k_list = [1]
+    # pressure_list = [0.1, 1]
+    variable_test(rg_list=rg_list, memb_k_list=memb_k_list, pressure_list=pressure_list, repeat=2)
+
 if args.mode == 17:
     # protocol_list = ["er", "awsemer", "frag", "raptor"]
     protocol_list = ["awsemer", "frag"]
