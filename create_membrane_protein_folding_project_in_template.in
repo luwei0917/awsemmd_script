@@ -2,7 +2,7 @@
 
 units real
 
-timestep 2
+timestep 5
 
 dimension	3
 

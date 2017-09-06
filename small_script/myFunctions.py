@@ -63,3 +63,7 @@ def compute_theta_for_each_helix():
                 # print(angle)
                 out.write("{}, {}, {}\n".format(ii, count+1, angle))
             # helices_angles_all_frames.append(helices_angles)
+
+
+def structure_prediction_run(protein):
+    
