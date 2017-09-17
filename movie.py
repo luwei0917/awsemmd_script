@@ -68,6 +68,11 @@ if args.mode == 2:
         do("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj last "+protein_name+".seq {}".format(last_frame))
         do("cp ~/opt/plot_scripts/last_frame.pml .")
         do("pymol last_frame.pml")
+
+    if args.plot:
+        do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
+
+
 # if(args.number == -1):
 #     # do("cp ~/opt/pulling/2xov.seq .")
 #     if(not args.plot):

@@ -84,7 +84,7 @@ do("python2 ~/opt/small_script/coord2data.py {0}.coord data.{0} -b".format(prote
 
 # copy parameters
 if args.globular:
-    do("cp ~/opt/parameters/aawsem_parameter/* .")
+    do("cp ~/opt/parameters/globular_parameter/* .")
 else:
     do("cp ~/opt/parameters/membrane/* .")
 # task specific input

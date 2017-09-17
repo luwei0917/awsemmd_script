@@ -13,6 +13,7 @@ import glob
 import re
 from small_script.myFunctions_helper import *
 import numpy as np
+import pandas as pd
 # compute cross Q for every pdb pair in one folder
 # parser = argparse.ArgumentParser(description="Compute cross q")
 # parser.add_argument("-m", "--mode",
@@ -67,3 +68,17 @@ def compute_theta_for_each_helix():
 
 def structure_prediction_run(protein):
     print(protein)
+
+
+
+
+def pick_out_and_show():
+    protein_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
+    for protein in protein_list:
+        frames = [pd.read_csv("{}/awsemer/simulation/{}/0/wham.dat".format(protein, run)).assign(Run=run) for run in range(20)]
+        result = pd.concat(frames)
+        answer = result.iloc[result[' Qw'].argsort()].iloc[-1]
+        print(protein, answer.Steps, answer.Run)
+        os.chdir("{}/awsemer/simulation/{}/0/".format(protein, int(answer.Run)))
+        os.system("show.py --frame {} {} -p".format(int(answer.Steps/4000), protein))
+        os.chdir("../../../../../")
