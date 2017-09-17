@@ -49,6 +49,23 @@ else:
     do = os.system
     cd = os.chdir
 
+
+if args.mode == 8:
+    print("Distance biased 1D Free Energy, mode {}".format(args.mode))
+    cwd = os.getcwd()
+    # print(files)
+    # temp = args.temperature
+    kconstant = args.kconstant
+    with open("metadatafile", "w") as out:
+        temp_list = [220, 230]
+        for temp in temp_list:
+            files = glob.glob("../temp_{}/simulation/dis_*".format(temp))
+            for oneFile in files:
+                q = oneFile.split("_")[-1]
+                target = cwd + "/" + oneFile + "/0/data {} {} {}\n".format(temp, kconstant, q)
+                out.write(target)
+
+
 if args.mode == 7:
     print("Distance biased 1D Free Energy, mode {}".format(args.mode))
     cwd = os.getcwd()

@@ -75,7 +75,8 @@ def structure_prediction_run(protein):
     cd(protein)
     # run = "frag"
     for protocol in protocol_list:
-        do("mkdir -p " + run)
+        do("rm -r " + protocol)
+        do("mkdir -p " + protocol)
         do("cp -r {} {}/".format(protein, protocol))
         cd(protocol)
         cd(protein)
@@ -91,3 +92,32 @@ def structure_prediction_run(protein):
         cd("..")
     cd("..")
     # do("")
+
+
+def check_and_correct_fragment_memory():
+    with open("tmp.mem", "w") as out:
+        with open("fragsLAMW.mem", "r") as f:
+            for i in range(4):
+                line = next(f)
+                out.write(line)
+            for line in f:
+                gro, _, i, n, _ = line.split()
+                delete = False
+                # print(gro, i, n)
+                # name = gro.split("/")[-1]
+                with open(gro, "r") as one:
+                    next(one)
+                    next(one)
+                    all_residues = set()
+                    for atom in one:
+                        residue, *_ = atom.split()
+                        # print(residue)
+                        all_residues.add(int(residue))
+                    for test in range(int(i), int(i)+int(n)):
+                        if test not in all_residues:
+                            print("ATTENTION", gro, i, n, "missing:",test)
+                            delete = True
+                if not delete:
+                    out.write(line)
+    os.system("mv fragsLAMW.mem fragsLAMW_back")
+    os.system("mv tmp.mem fragsLAMW.mem")

@@ -125,7 +125,7 @@ if(args.mode == 7):
     # do("sbatch freeEnergy.slurm")
 
 if(args.mode == 6):
-    nsample = 5000
+    nsample = 2000
     force_list = [0.0, 0.1, 0.2]
     for force in force_list:
         # force = 1
@@ -136,7 +136,7 @@ if(args.mode == 6):
         # do("make_metadata.py -m 1")
         do("cp ../metadatafile .")
         arg = "-b 2 -e 1 -d 1 " + temp_arg
-        arg += " -v1 2 -v1n 50"
+        arg += " -v1 2 -v1n 50 -st 100 -et 400"
         with open("freeEnergy.slurm", "w") as f:
             f.write(freeEnergy.format(arg))
         do("sbatch freeEnergy.slurm")

@@ -10,7 +10,7 @@ from datetime import datetime
 import imp
 from myPersonalFunctions import *
 import glob
-from small_script.myFunctions import compute_theta_for_each_helix
+from small_script.myFunctions import *
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -50,6 +50,8 @@ else:
     cd = os.chdir
 
 # convert \( 0.0.png 0.2.png 0.4.png  +append \) \( 0.6.png  0.8.png    1.0.png +append \) -background none -append final.png
+if(args.test):
+    check_and_correct_fragment_memory()
 def test():
     print("don't show me")
     # force_list = [round(i*0.1,2) for i in range(20)]
@@ -140,38 +142,38 @@ if(args.mode == 4):
         do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov {0} out_{0}".format(i))
 
 
-if(args.test):
-    if(args.mode == 3):
-        do("cp ../2xov.pdb .")
-        do("python2 ~/opt/script/CalcLocalQTrajectory.py 2xov dump.lammpstrj localQ_trajectory")
-    if(args.mode == 0):
-        run = 4
-        cd(str(run))
-        cd("0")
-        do("movie.py 2xov")
-        do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
-    if(args.mode == 1):
-        folder = "memb_0_force_ramp_rg_0"
-        cd(folder)
-        cd("0")
-        do("tail -n 4 addforce.dat")
-        do("tail wham.dat")
-        do("movie.py 2xov")
-        do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
-    if(args.mode == 2):
-        files = glob.glob("memb_*")
-        # print(files)
-        for folder in files:
-            print(folder)
-            cd(folder)
-            cd("0")
-            do("movie.py 2xov")
-            do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
-            cd("../..")
-    # for i in range(0, 20):
-    #     cd(str(i))
-    #     do("python3 ~/opt/aawsem_show.py --casp -m 2 T0782.")
-    #     cd("..")
+# if(args.test):
+#     if(args.mode == 3):
+#         do("cp ../2xov.pdb .")
+#         do("python2 ~/opt/script/CalcLocalQTrajectory.py 2xov dump.lammpstrj localQ_trajectory")
+#     if(args.mode == 0):
+#         run = 4
+#         cd(str(run))
+#         cd("0")
+#         do("movie.py 2xov")
+#         do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
+#     if(args.mode == 1):
+#         folder = "memb_0_force_ramp_rg_0"
+#         cd(folder)
+#         cd("0")
+#         do("tail -n 4 addforce.dat")
+#         do("tail wham.dat")
+#         do("movie.py 2xov")
+#         do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
+#     if(args.mode == 2):
+#         files = glob.glob("memb_*")
+#         # print(files)
+#         for folder in files:
+#             print(folder)
+#             cd(folder)
+#             cd("0")
+#             do("movie.py 2xov")
+#             do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
+#             cd("../..")
+#     # for i in range(0, 20):
+#     #     cd(str(i))
+#     #     do("python3 ~/opt/aawsem_show.py --casp -m 2 T0782.")
+#     #     cd("..")
 
 
 def calQnQc():

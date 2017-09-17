@@ -62,6 +62,20 @@ def extract_data():
     do("paste qn qc etotal qo | tail -n 4000 > data")
     do("paste qn_half qc_half etotal_half qo_half > halfdata")
 
+if args.mode == 7:
+    print("Reorganize data, mode {}".format(args.mode))
+    files = glob.glob("*")
+    for one in files:
+        cd(one)
+        cd("0")
+        do("paste wham.dat pressure.dat | awk '{print $5+$7}' | sed 1d > e.dat")
+        do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > d.dat")
+        do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
+        do("awk '{print $2/400}' addforce.dat |  sed 's/,$//' | sed 1d > d_2.dat")
+        # do("paste membrane.dat rg.dat sum.dat d.dat | tail -n 600 > data")
+        do("paste e.dat d.dat qw.dat d_2.dat | tail -n 2000 > data")
+        cd("../..")
+
 if args.mode == 6:
     print("Reorganize data, mode {}".format(args.mode))
     files = glob.glob("*")
@@ -110,7 +124,7 @@ if args.mode == 3:
         do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
         do("awk '{print $2/400}' addforce.dat |  sed 's/,$//' | sed 1d > d_2.dat")
         # do("paste membrane.dat rg.dat sum.dat d.dat | tail -n 600 > data")
-        do("paste e.dat d.dat qw.dat d_2.dat | tail -n 5000 > data")
+        do("paste e.dat d.dat qw.dat d_2.dat | tail -n 2000 > data")
         cd("../..")
 
 if args.mode == 1:

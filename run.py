@@ -33,7 +33,7 @@ parser.add_argument("-m", "--mode", type=int, default=2)
 parser.add_argument("-i", "--inplace", action="store_true", default=False)
 parser.add_argument("-f", "--force", type=float, default=1.0)
 parser.add_argument("--start", default="native")
-parser.add_argument("--commons", default="No")
+parser.add_argument("--commons", type=int, default=0)
 args = parser.parse_args()
 
 if(args.debug):
@@ -92,7 +92,7 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun /home/wl45/build/awsem_new_membrane/src/lmp_serial -in {}_{}.in
     '''
-if args.commons == "Yes":
+if args.commons:
     run_slurm = run_slurm.replace("ctbp-common", "commons")
 proteinName = args.protein.strip("/.")
 def set_up():
