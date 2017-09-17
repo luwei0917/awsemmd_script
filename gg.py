@@ -77,6 +77,21 @@ def test():
             # for i in range(2):
             #     address = folder + "/simulation/" + str(i)
             #     f.write(address+"  \n")
+if(args.mode == 10):
+    source_img = "final.untitled.*.jpg"
+    # do('convert ' + source_img + ' -pointsize 14 -draw "fill black text 1,11 \'some text\' " ' + "test.gif")
+    for i in range(1,1301, 1):
+        do("convert final.2xov.{:05d}.jpg -pointsize 50 -annotate +800+100 'Current force: {:5.2f}pN' -gravity West {:05d}.jpg".format(i, 69.7*(i*4e-4), i))
+if(args.mode == 9):
+    print("create directory_list")
+    with open("directory_list", "w") as f:
+        force_list = [0.3, 0.35, 0.4]
+        for force in force_list:
+            for i in range(0, 20):
+                # print(os.getcwd())
+                location = os.getcwd() + "/../force_{}_/simulation/".format(force)
+                f.write(location+str(i)+"/0\n")
+
 if(args.mode == 8):
     print("mode: {}".format(args.mode))
     compute_theta_for_each_helix()
@@ -116,7 +131,7 @@ if(args.mode == 1):
 
 if(args.mode == 2):
     print("Extract qw and distance info.")
-    for i in range(50):
+    for i in range(20):
         cd(str(i))
         cd("0")
         do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
@@ -127,7 +142,7 @@ if(args.mode == 2):
 if(args.mode == 3):
     print("create directory_list")
     with open("directory_list", "w") as f:
-        for i in range(29, 30):
+        for i in range(0, 20):
             # print(os.getcwd())
             location = os.getcwd() + "/../"
             f.write(location+str(i)+"/0\n")

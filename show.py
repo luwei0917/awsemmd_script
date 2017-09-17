@@ -43,6 +43,7 @@ if(args.frame >= 0):
 else:
     frame = 1250
 do("cp ../{}.seq .".format(protein_name))
+do("cp ../2xov.pdb .")
 do("cp ../crystal_structure.pdb {}.pdb".format(protein_name))
 do("~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq {}".format(protein_name, frame))
 do("~/opt/TMalign/TMalign awsem.pdb {}.pdb -o result".format(protein_name))
