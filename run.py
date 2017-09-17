@@ -92,9 +92,7 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun /home/wl45/build/awsem_new_membrane/src/lmp_serial -in {}_{}.in
     '''
-<<<<<<< HEAD
-if args.commons:
-=======
+
 if args.mode == 3:
     run_slurm = '''\
 #!/bin/bash
@@ -113,7 +111,6 @@ srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_serial -in {}_{}.in
     '''
 
 if args.commons == "Yes":
->>>>>>> 6394459509230f070b08fef86421fe9a2aa1d7c1
     run_slurm = run_slurm.replace("ctbp-common", "commons")
 proteinName = args.protein.strip("/.")
 def set_up():

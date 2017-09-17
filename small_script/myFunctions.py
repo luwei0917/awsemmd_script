@@ -68,7 +68,6 @@ def compute_theta_for_each_helix():
 
 def structure_prediction_run(protein):
     print(protein)
-<<<<<<< HEAD
     protocol_list = ["awsemer", "frag", "er"]
     do = os.system
     cd = os.chdir
@@ -121,19 +120,16 @@ def check_and_correct_fragment_memory():
                     out.write(line)
     os.system("mv fragsLAMW.mem fragsLAMW_back")
     os.system("mv tmp.mem fragsLAMW.mem")
-=======
 
 
 
-
-def pick_out_and_show():
-    protein_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
-    for protein in protein_list:
-        frames = [pd.read_csv("{}/awsemer/simulation/{}/0/wham.dat".format(protein, run)).assign(Run=run) for run in range(20)]
-        result = pd.concat(frames)
-        answer = result.iloc[result[' Qw'].argsort()].iloc[-1]
-        print(protein, answer.Steps, answer.Run)
-        os.chdir("{}/awsemer/simulation/{}/0/".format(protein, int(answer.Run)))
-        os.system("show.py --frame {} {} -p".format(int(answer.Steps/4000), protein))
-        os.chdir("../../../../../")
->>>>>>> 6394459509230f070b08fef86421fe9a2aa1d7c1
+# def pick_out_and_show():
+#     protein_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
+#     for protein in protein_list:
+#         frames = [pd.read_csv("{}/awsemer/simulation/{}/0/wham.dat".format(protein, run)).assign(Run=run) for run in range(20)]
+#         result = pd.concat(frames)
+#         answer = result.iloc[result[' Qw'].argsort()].iloc[-1]
+#         print(protein, answer.Steps, answer.Run)
+#         os.chdir("{}/awsemer/simulation/{}/0/".format(protein, int(answer.Run)))
+#         os.system("show.py --frame {} {} -p".format(int(answer.Steps/4000), protein))
+#         os.chdir("../../../../../")
