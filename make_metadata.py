@@ -14,12 +14,12 @@ parser = argparse.ArgumentParser(
     description="This is a python3 script to\
     make metadata")
 
-parser.add_argument("-k", "--kconstant", type=float, default=0.05)
+parser.add_argument("-k", "--kconstant", type=float, default=0.02)
 parser.add_argument("-t", "--temperature", type=float, default=350)
 parser.add_argument("-q", "--qStart", type=float, default=0.0)
 parser.add_argument("-n", "--number", type=int, default=20)
-
-parser.add_argument("-m", "--mode", type=int, default=1)
+parser.add_argument("--submode", type=int, default=0)
+parser.add_argument("-m", "--mode", type=int, default=0)
 parser.add_argument("-a", "--additionalMode", type=int, default=1)
 parser.add_argument("-p", "--pick", default=None)
 # parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
@@ -49,6 +49,33 @@ else:
     do = os.system
     cd = os.chdir
 
+if args.mode == 10:
+    print("Distance biased 1D Free Energy, mode {}".format(args.mode))
+    cwd = os.getcwd()
+    # print(files)
+    temp = args.temperature
+    kconstant = args.kconstant
+    with open("metadatafile", "w") as out:
+        files = glob.glob("../simulation/dis_*".format(temp))
+        for oneFile in files:
+            q = oneFile.split("_")[-1]
+            target = cwd + "/" + oneFile + "/0/t{}.dat {} {} {}\n".format(int(temp), temp, kconstant, q)
+            out.write(target)
+
+if args.mode == 9:
+    print("Distance biased 1D Free Energy, mode {}".format(args.mode))
+    cwd = os.getcwd()
+    # print(files)
+    # temp = args.temperature
+    kconstant = args.kconstant
+    with open("metadatafile", "w") as out:
+        temp_list = [350, 400, 450, 500]
+        files = glob.glob("../simulation/dis_*")
+        for oneFile in files:
+            for temp in temp_list:
+                q = oneFile.split("_")[-1]
+                target = cwd + "/" + oneFile + "/0/t{}.dat {} {} {}\n".format(temp, temp, kconstant, q)
+                out.write(target)
 
 if args.mode == 8:
     print("Distance biased 1D Free Energy, mode {}".format(args.mode))
@@ -113,13 +140,14 @@ if args.mode == 5:
 if args.mode == 1:
     print("Distance biased 1D Free Energy, mode 1")
     files = glob.glob("../simulation/dis_*")
+    cwd = os.getcwd()
     # print(files)
     temp = args.temperature
     kconstant = args.kconstant
     with open("metadatafile", "w") as out:
         for oneFile in files:
             q = oneFile.split("_")[-1]
-            target = "../" + oneFile + "/0/data {} {} {}\n".format(temp, kconstant, q)
+            target = cwd + "/" + oneFile + "/0/data {} {} {}\n".format(temp, kconstant, q)
             out.write(target)
 
 if args.mode == 2:
@@ -145,7 +173,7 @@ if args.mode == 3:
     with open("metadatafile", "w") as out:
         for oneFile in files:
             q = oneFile.split("_")[-1]
-            target = cwd + "/" + oneFile + "/0/data {} {} {}\n".format(temp, kconstant, q)
+            target = cwd + "/" + oneFile + "/{}/data {} {} {}\n".format(args.submode, temp, kconstant, q)
             out.write(target)
 
 if args.mode == 4:
