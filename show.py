@@ -19,6 +19,8 @@ parser.add_argument("--step", type=int, default=8000,
 parser.add_argument("--tmalign", action="store_true", default=False)
 parser.add_argument("-f", "--frame",
                     type=int, default=-1)
+parser.add_argument("--submode",
+                    type=int, default=-1)
 args = parser.parse_args()
 
 try:
@@ -45,7 +47,10 @@ else:
 do("cp ../{}.seq .".format(protein_name))
 do("cp ../2xov.pdb .")
 do("cp ../crystal_structure.pdb {}.pdb".format(protein_name))
-do("~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq {}".format(protein_name, frame))
+if args.submode == -1:
+    do("~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq {}".format(protein_name, frame))
+else:
+    do("~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj.{} awsem {}.seq {}".format(args.submode, protein_name, frame))
 do("~/opt/TMalign/TMalign awsem.pdb {}.pdb -o result".format(protein_name))
 do("grep 'TM-score=' result > tmscore.dat")
 # Seq_ID=n_identical/n_aligned

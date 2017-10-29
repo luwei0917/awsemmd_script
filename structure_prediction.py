@@ -46,12 +46,13 @@ if(args.mode == 1):
     location = "/Users/weilu/opt/crystal_structures/membrane_proteins/"
     pdbFileDataBase = "http://opm.phar.umich.edu/pdb/"
     protein_info_list = []
-    protein_info_list.append((location, "1occ","C",71,261))
-    protein_info_list.append((location, "1pv6", "A", 1, 190))
-    protein_info_list.append((location, "2bl2", "A", 12, 156))
-    protein_info_list.append((location, "2bg9", "A", 211, 301))
-    protein_info_list.append((location, "1j4n", "A", 4, 119))
-    protein_info_list.append((location, "1py6", "A", 77, 199))
+    protein_info_list.append((location, "2xov","A",91,271))
+    # protein_info_list.append((location, "1occ","C",71,261))
+    # protein_info_list.append((location, "1pv6", "A", 1, 190))
+    # protein_info_list.append((location, "2bl2", "A", 12, 156))
+    # protein_info_list.append((location, "2bg9", "A", 211, 301))
+    # protein_info_list.append((location, "1j4n", "A", 4, 119))
+    # protein_info_list.append((location, "1py6", "A", 77, 199))
     for (location, protein, chain, residue_start, residue_end) in protein_info_list:
         do("wget {0}{1} -O ~/opt/crystal_structures/membrane_proteins/original_pdb/{1}".format(pdbFileDataBase, protein+".pdb"))
         extract_pdb(location, protein, chain, residue_start, residue_end)

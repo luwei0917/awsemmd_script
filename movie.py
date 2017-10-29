@@ -15,6 +15,8 @@ parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("-l", "--last", action="store_true", default=False)
 parser.add_argument("-m", "--mode",
                     type=int, default=2)
+parser.add_argument("--submode",
+                    type=int, default=-1)
 args = parser.parse_args()
 # render Tachyon frame450.dat '/Applications/VMD 1.9.2.app/Contents/vmd/tachyon_MACOSXX86' -aasamples 12 %s -format TARGA -o frame450.tga -res 2000 2000
 
@@ -55,7 +57,10 @@ if args.mode == 1:
 if args.mode == 2:
     if not args.last:
         do("cp ../{}.seq .".format(protein_name))
-        do("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie "+protein_name+".seq")
+        if args.submode == -1:
+            do("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie "+protein_name+".seq")
+        else:
+            do("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj.{} movie ".format(args.submode)+protein_name+".seq")
         do("cp ~/opt/plot_scripts/2xov_movie_bicelle.tcl .")
         do("cp ~/opt/plot_scripts/movie_bicelle_no_smooth.tcl .")
         do("cp ~/opt/plot_scripts/2xov_movie_bicelle_no_smooth.tcl .")
