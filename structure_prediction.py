@@ -70,6 +70,7 @@ if(args.mode == 2):
         cd("../..")
 
 if(args.mode ==3):
-    protein_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
+    # protein_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
+    protein_list = ["2xov"]
     for protein in protein_list:
         structure_prediction_run(protein)
