@@ -44,6 +44,9 @@ parser.add_argument("-s", "--save", action="store_true", default=False)
 parser.add_argument("-r", "--reproduce", default=None)
 parser.add_argument("--force", type=float, default=1.0)
 parser.add_argument("-p", "--patch", type=int, default=1)
+parser.add_argument("--commons", type=int, default=0)
+parser.add_argument("--nsample", type=int, default=2500)
+parser.add_argument("--submode", type=int, default=-1)
 args = parser.parse_args()
 
 if(args.reproduce):
@@ -106,7 +109,7 @@ freeEnergy = """\
 #SBATCH --partition=ctbp-common
 #SBATCH --ntasks=1
 #SBATCH --threads-per-core=1
-#SBATCH --mem-per-cpu=15G
+#SBATCH --mem-per-cpu=30G
 #SBATCH --time=23:00:00
 #SBATCH --mail-user=luwei0917@gmail.com
 #SBATCH --mail-type=FAIL
@@ -114,6 +117,130 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun python2 ~/opt/pulling_compute-pmf.py {}
 """
+
+if args.commons:
+    freeEnergy = freeEnergy.replace("ctbp-common", "commons")
+
+if args.mode >= 9 and args.mode <= 11:
+    print("two d")
+    nsample = args.nsample
+    # force_list = [0.0, 0.1, 0.2]
+    force_list = [0.0]
+    for force in force_list:
+        # force = 1
+        temp_arg = "-f {} -nsamples {}".format(force, nsample)
+        folder_name = "force_{}".format(force)
+        do("mkdir -p "+folder_name)
+        cd(folder_name)
+        # do("make_metadata.py -m 1")
+        do("cp ../metadatafile .")
+        if(args.mode == 11):
+            print("two d")
+            arg = "-b 6 -e 11 -d 2 " + temp_arg
+            arg += " -v1 4 -v1n 30 -v2 6 -v2n 30"
+        if(args.mode == 10):
+            arg = "-b 6 -e 11 -d 1 " + temp_arg
+            arg += " -v1 4 -v1n 50"
+        if(args.mode == 9):
+            arg = "-b 6 -e 11 -d 1 " + temp_arg
+            arg += " -v1 6 -v1n 50 -st 400"
+
+        if args.submode == -1:
+            arg += " -st 490 -et 510 -p 9 -p 8 -pb y"
+        if args.submode == 1:
+            arg += " -ti 50 -st 450 -et 550 -p 12 -p 13 -p 14 -p 15 -pb y -ev 7-10"
+        with open("freeEnergy.slurm", "w") as f:
+            f.write(freeEnergy.format(arg))
+        do("sbatch freeEnergy.slurm")
+        cd("..")
+# if(args.mode == 11):
+#     print("two d")
+#     nsample = args.nsample
+#     # force_list = [0.0, 0.1, 0.2]
+#     force_list = [0.0]
+#     for force in force_list:
+#         # force = 1
+#         temp_arg = "-f {} -nsamples {}".format(force, nsample)
+#         folder_name = "force_{}".format(force)
+#         do("mkdir -p "+folder_name)
+#         cd(folder_name)
+#         # do("make_metadata.py -m 1")
+#         do("cp ../metadatafile .")
+#         arg = "-b 6 -e 11 -d 2 " + temp_arg
+#         arg += " -v1 4 -v1n 30 -v2 6 -v2n 30"
+#         if args.submode == -1:
+#             arg += " -st 490 -et 510 -p 9 -p 8 -pb y"
+#         if args.submode == 1:
+#             arg += "-ti 50 -st 450 -et 550 -p 9 -p 8 -pb y -ev 7-10"
+#         with open("freeEnergy.slurm", "w") as f:
+#             f.write(freeEnergy.format(arg))
+#         do("sbatch freeEnergy.slurm")
+#         cd("..")
+#
+# if(args.mode == 10):
+#     nsample = args.nsample
+#     # force_list = [0.0, 0.1, 0.2]
+#     force_list = [0.0]
+#     for force in force_list:
+#         # force = 1
+#         temp_arg = "-f {} -nsamples {}".format(force, nsample)
+#         folder_name = "force_{}".format(force)
+#         do("mkdir -p "+folder_name)
+#         cd(folder_name)
+#         # do("make_metadata.py -m 1")
+#         do("cp ../metadatafile .")
+#         arg = "-b 6 -e 11 -d 1 " + temp_arg
+#         arg += " -v1 4 -v1n 50"
+#         if args.submode == -1:
+#             arg += " -st 490 -et 510 -p 9 -p 8 -pb y"
+#         if args.submode == 1:
+#             arg += "-ti 50 -st 450 -et 550 -p 9 -p 8 -pb y -ev 7-10"
+#         with open("freeEnergy.slurm", "w") as f:
+#             f.write(freeEnergy.format(arg))
+#         do("sbatch freeEnergy.slurm")
+#         cd("..")
+#
+# if(args.mode == 9):
+#     nsample = args.nsample
+#     # force_list = [0.0, 0.1, 0.2]
+#     force_list = [0.0]
+#     for force in force_list:
+#         # force = 1
+#         temp_arg = "-f {} -nsamples {}".format(force, nsample)
+#         folder_name = "force_{}".format(force)
+#         do("mkdir -p "+folder_name)
+#         cd(folder_name)
+#         # do("make_metadata.py -m 1")
+#         do("cp ../metadatafile .")
+#         arg = "-b 6 -e 11 -d 1 " + temp_arg
+#         arg += " -v1 6 -v1n 50 -st 400"
+#         if args.submode == -1:
+#             arg += " -st 490 -et 510 -p 9 -p 8 -pb y"
+#         if args.submode == 1:
+#             arg += "-ti 50 -st 450 -et 550 -p 9 -p 8 -pb y -ev 7-10"
+#         with open("freeEnergy.slurm", "w") as f:
+#             f.write(freeEnergy.format(arg))
+#         do("sbatch freeEnergy.slurm")
+#         cd("..")
+
+if(args.mode == 8):
+    nsample = 2000
+    force_list = [0.0, 0.1, 0.2]
+    for force in force_list:
+        # force = 1
+        temp_arg = "-f {} -nsamples {}".format(force, nsample)
+        folder_name = "force_{}".format(force)
+        do("mkdir -p "+folder_name)
+        cd(folder_name)
+        # do("make_metadata.py -m 1")
+        do("cp ../metadatafile .")
+        arg = "-b 2 -e 1 -d 1 " + temp_arg
+        arg += " -v1 3 -v1n 50 -st 100 -et 600"
+        with open("freeEnergy.slurm", "w") as f:
+            f.write(freeEnergy.format(arg))
+        do("sbatch freeEnergy.slurm")
+        cd("..")
+
 if(args.mode == 7):
     nsample = 10000
     force = 0.045
@@ -125,7 +252,7 @@ if(args.mode == 7):
     # do("sbatch freeEnergy.slurm")
 
 if(args.mode == 6):
-    nsample = 5000
+    nsample = 2000
     force_list = [0.0, 0.1, 0.2]
     for force in force_list:
         # force = 1
@@ -136,15 +263,15 @@ if(args.mode == 6):
         # do("make_metadata.py -m 1")
         do("cp ../metadatafile .")
         arg = "-b 2 -e 1 -d 1 " + temp_arg
-        arg += " -v1 2 -v1n 50"
+        arg += " -v1 2 -v1n 50 -st 100 -et 600"
         with open("freeEnergy.slurm", "w") as f:
             f.write(freeEnergy.format(arg))
         do("sbatch freeEnergy.slurm")
         cd("..")
 
 if(args.mode == 5):
-    nsample = 600
-    force_list = [0.0, 0.5, 1]
+    nsample = 2000
+    force_list = [0.0, 0.1]
     for force in force_list:
         # force = 1
         temp_arg = "-f {} -nsamples {}".format(force, nsample)
@@ -154,8 +281,9 @@ if(args.mode == 5):
         # do("make_metadata.py -m 1")
         do("cp ../metadatafile .")
         arg = "-b 2 -e 1 -d 2 " + temp_arg
-        arg += " -v1 2 -v1n 30 "
-        arg += " -v2 3 -v1n 30 "
+        arg += " -v1 2 -v1n 20 "
+        arg += " -v2 3 -v1n 20 "
+        arg += " -st 100 -et 600"
         with open("freeEnergy.slurm", "w") as f:
             f.write(freeEnergy.format(arg))
         do("sbatch freeEnergy.slurm")

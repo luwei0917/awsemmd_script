@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("template", help="the name of template file")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--rerun",
-                    type=int, default=0)
+                    type=int, default=1)
 parser.add_argument("-m", "--mode", type=int, default=1)
 args = parser.parse_args()
 protein_name = args.template.strip('/')
@@ -31,57 +31,7 @@ else:
     do = os.system
     cd = os.chdir
 
-# protein_name = args.template.split('_', 1)[-1].strip('/')
-# os.system("cp ~/opt/variable_test_run.py .")
-
-# run_slurm = '''\
-# #!/bin/bash
-# #SBATCH --job-name=CTBP_WL
-# #SBATCH --account=ctbp-common
-# #SBATCH --partition=ctbp-common
-# #SBATCH --ntasks=1
-# #SBATCH --mem-per-cpu=1G
-# #SBATCH --time=1-00:00:00
-# #SBATCH --mail-user=luwei0917@gmail.com
-# #SBATCH --mail-type=FAIL
-# echo "My job ran on:"
-# echo $SLURM_NODELIST
-# srun ~/build/lammps_awsemmd_20161127/src/lmp_serial -in 2xov_{}.in
-# '''
-
-# run_slurm = '''\
-# #!/bin/bash
-# #SBATCH --job-name=CTBP_WL
-# #SBATCH --account=ctbp-common
-# #SBATCH --partition=ctbp-common
-# #SBATCH --ntasks=1
-# #SBATCH --threads-per-core=1
-# #SBATCH --mem-per-cpu=1G
-# #SBATCH --time=1-00:00:00
-# #SBATCH --mail-user=luwei0917@gmail.com
-# #SBATCH --mail-type=FAIL
-# echo "My job ran on:"
-# echo $SLURM_NODELIST
-# srun ~/build/lammps_awsemmd_20161127/src/lmp_serial -in 2xov_{}.in
-# '''
-
-# run_slurm = '''\
-# #!/bin/bash
-# #SBATCH --job-name=CTBP_WL
-# #SBATCH --account=ctbp-common
-# #SBATCH --partition=ctbp-common
-# #SBATCH --ntasks=1
-# #SBATCH --threads-per-core=1
-# #SBATCH --mem-per-cpu=1G
-# #SBATCH --time=1-00:00:00
-# #SBATCH --mail-user=luwei0917@gmail.com
-# #SBATCH --mail-type=FAIL
-# echo "My job ran on:"
-# echo $SLURM_NODELIST
-# srun /home/wl45/build/awsem_new_membrane/src/lmp_serial -in 2xov_{}.in
-# '''
-if args.mode == 2:
-    run_slurm = '''\
+run_slurm = '''\
 #!/bin/bash
 #SBATCH --job-name=CTBP_WL
 #SBATCH --account=ctbp-common
@@ -96,22 +46,6 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_serial -in 2xov_{}.in
 '''
-if args.mode == 3:
-    run_slurm = '''\
-#!/bin/bash
-#SBATCH --job-name=CTBP_WL
-#SBATCH --account=ctbp-common
-#SBATCH --partition=ctbp-common
-#SBATCH --ntasks=12
-#SBATCH --threads-per-core=1
-#SBATCH --mem-per-cpu=1G
-#SBATCH --time=1-00:00:00
-#SBATCH --mail-user=luwei0917@gmail.com
-#SBATCH --mail-type=FAIL
-echo "My job ran on:"
-echo $SLURM_NODELIST
-srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 12x1 -in 2xov_{}.in
-'''
 
 def change(fileName, from_str, to_str):
     with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
@@ -121,10 +55,8 @@ def change(fileName, from_str, to_str):
             print(tmp, end='')
 
 fileName = "2xov_multi.in"
-if args.rerun == 0:
-    start_from = "read_data data.2xov"
 if args.rerun == 1:
-    start_from = "read_restart restart.2000000"
+    start_from = "read_restart restart.20000000"
 # rg_list = [0, 1, 5, 10]
 # force_list = [2.0]
 # memb_k_list = [0, 1, 5, 10]
@@ -186,33 +118,25 @@ if args.mode == 4:
 if args.mode == 1:
     distance_list = np.linspace(0, 100, 51)
 if args.mode == 2:
-    distance_list = np.linspace(30, 130, 101)
+    distance_list = range(100)
 if args.mode == 3:
-    distance_list = np.linspace(30, 230, 101)
-    # distance_list = np.linspace(132, 232, 51)
-
+    distance_list = np.linspace(30, 130, 101)
     # distance_list = np.linspace(10, 180, 171)
     # distance_list = np.linspace(0, 1, 1)
 
 if args.mode <= 3:
     i = args.rerun
-    i = 0
-    do("mkdir simulation")
+    # do("mkdir simulation")
     cd("simulation")
+    # distance_list = ["test"]
     for dis in distance_list:
         folder_name = "dis_{}".format(dis)
-        do("cp -r ../2xov " + folder_name)
         cd(folder_name)
         # fixFile = "fix_backbone_coeff_go.data"
-        fixFile = "colvars.x"
-        with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
-            for line in file:
-                print(line.replace("DISTANCE", str(dis)), end='')
-
         do("cp 2xov_multi.in 2xov_{}.in".format(i))
-        with fileinput.FileInput("2xov_{}.in".format(i), inplace=True, backup='.bak') as file:
-            for line in file:
-                print(line.replace("START_FROM", start_from), end='')
+        change("2xov_{}.in".format(i), "read_restart restart.extended", start_from)
+        change("2xov_{}.in".format(i), "reset_timestep	0", "")
+
         do(  # replace SIMULATION_STEPS with specific steps
             "sed -i.bak 's/NUMBER/'" +
             str(int(i)) +

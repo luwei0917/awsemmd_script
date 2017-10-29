@@ -19,7 +19,7 @@ import pickle # used to save files so that the initialization calculations don't
 # sys.path.append('/home/wl45/python/lib/python2.7/site-packages/pymbar-3.0.0.dev0-py2.7-linux-ppc64.egg/pymbar')
 import pymbar
 from pymbar import timeseries # used to subsample data so that the samples are uncorrelated
-
+os.system("echo 'Time' > time.info")
 # Flags
 debug_flag = False
 check_for_pickle_files = True
@@ -33,7 +33,7 @@ if len(sys.argv) == 1:
 
 # Set default command line arguments
 submit_to_cluster = True          # flag for submitting calculation to a cluster (eliminates interactivity)
-precision_threshold = 1e-10       # threshold to determine whether or not to attempt to compute expectation values
+precision_threshold = 1e-15       # threshold to determine whether or not to attempt to compute expectation values
 subsample_trajectories = False      # flag for using pymbar's built-in subsampling features
 compute_per_bin_quantities = False  # flag for computing per-bin expectation values
 kB = 1.381e-23 * 6.022e23 / 4184.0  # Boltzmann constant in kcal/mol/K
@@ -291,18 +291,18 @@ if load_pickle == False:
         print biasing_values
 
     # Parameters
-    K = len(files) # number of simulations
+    K = len(files)  # number of simulations
 
     # Allocate storage for simulation data
-    N_k = numpy.zeros([K], numpy.int32) # N_k[k] is the number of snapshots from umbrella simulation k
+    N_k = numpy.zeros([K], numpy.int32)  # N_k[k] is the number of snapshots from umbrella simulation k
     for i in range(nbiases):
         biasing_variable_kt.append(numpy.zeros([K,N_samples], numpy.float64))
     for i in range(nperturbations+1):
         U_kt.append(numpy.zeros([K,N_samples], numpy.float64))
-    pmf_variable_kt_1 = numpy.zeros([K,N_samples], numpy.float64) # pmf_variable_kt_1[k,t] is the value of the first pmf variable from snapshot t of simulation k
+    pmf_variable_kt_1 = numpy.zeros([K,N_samples], numpy.float64)  # pmf_variable_kt_1[k,t] is the value of the first pmf variable from snapshot t of simulation k
     if ndim == 2:
-        pmf_variable_kt_2 = numpy.zeros([K,N_samples], numpy.float64) # pmf_variable_kt_2[k,t] is the value of the second pmf variable from snapshot t of simulation k
-    cluster_bin_kt = -1*numpy.ones([K,N_samples], numpy.int32) # cluster_bin_kt[k,t] is the bin of snapshot t of umbrella simulation k
+        pmf_variable_kt_2 = numpy.zeros([K,N_samples], numpy.float64)  # pmf_variable_kt_2[k,t] is the value of the second pmf variable from snapshot t of simulation k
+    cluster_bin_kt = -1*numpy.ones([K,N_samples], numpy.int32)  # cluster_bin_kt[k,t] is the bin of snapshot t of umbrella simulation k
     if (len(expectation_columns) > 0):
         for i in range(len(expectation_columns)):
             expectation_data.append(numpy.zeros([K,N_samples], numpy.float64))
@@ -377,6 +377,8 @@ if load_pickle == False:
               t += 1 # increment time step index
         for expectation_file in expectation_files_set:
           t = 0                       # time step index
+          if expectation_file == "DEFAULT":
+              break
           for line_index, line in enumerate(open(os.path.join(directory,expectation_file), 'r')):
               if line_index == 0:
                   print "WARNING: Skipping first line of %s by default." % expectation_file
@@ -685,7 +687,7 @@ for perturbation_index in range(nperturbations+1):
                 # print bin_expectation[i]
             else:
                 f_i[i] = numpy.nan
-                # print bin_expectation[i]
+                print bin_expectation[i], i
             df_i[i] = 0.0
         for i in range(nreduced_bins):
             f_i[i] -= numpy.nanmin(f_i)

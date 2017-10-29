@@ -66,6 +66,7 @@ if(args.mode == 2):
         cd(protein)
         do("cp ~/opt/crystal_structures/membrane_proteins/for_simulation/{}.pdb crystal_structure.pdb ".format(protein))
         do("create_project.py {} --frag --membrane > generation.log".format(protein))
+        check_and_correct_fragment_memory()
         cd("../..")
 
 if(args.mode ==3):
