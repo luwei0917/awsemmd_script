@@ -102,7 +102,7 @@ if args.mode == 3:
 #SBATCH --job-name=CTBP_WL
 #SBATCH --account=ctbp-common
 #SBATCH --partition=ctbp-common
-#SBATCH --ntasks=4
+#SBATCH --ntasks=12
 #SBATCH --threads-per-core=1
 #SBATCH --mem-per-cpu=1G
 #SBATCH --time=1-00:00:00
@@ -110,7 +110,7 @@ if args.mode == 3:
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
 echo $SLURM_NODELIST
-srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 4x1 -in 2xov_{}.in
+srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 12x1 -in 2xov_{}.in
 '''
 
 def change(fileName, from_str, to_str):
@@ -188,7 +188,9 @@ if args.mode == 1:
 if args.mode == 2:
     distance_list = np.linspace(30, 130, 101)
 if args.mode == 3:
-    distance_list = np.linspace(30, 130, 51)
+    distance_list = np.linspace(30, 230, 101)
+    # distance_list = np.linspace(132, 232, 51)
+
     # distance_list = np.linspace(10, 180, 171)
     # distance_list = np.linspace(0, 1, 1)
 

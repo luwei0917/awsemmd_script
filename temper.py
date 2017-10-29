@@ -10,7 +10,8 @@ from datetime import datetime
 import imp
 from myPersonalFunctions import *
 import glob
-import numpy
+import numpy as np
+import pandas as pd
 
 def process_data(folder, dis):
     location = folder + "/simulation/dis_{}/0/".format(dis)
@@ -65,6 +66,7 @@ def process_data(folder, dis):
 
 # pre = "/Users/weilu/Research/server/oct_2017/week_of_oct02/freeEnergy"
 # folder_list = glob.glob(pre+"/*")
+dis_list = np.linspace(30, 130, 51)
 folder = "/scratch/wl45/oct_2017/week_of_oct09/no_go_freeEnergy"
 for dis in dis_list:
     process_data(folder, dis)

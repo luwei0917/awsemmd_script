@@ -41,10 +41,10 @@ def shrinkage(n=552, shrink_size=6, max_frame=2000):
                     count += 1
                     out.write(line)
 
-def compute_theta_for_each_helix():
+def compute_theta_for_each_helix(dumpName="../dump.lammpstrj.0"):
     print("This is for 2xov only")
     helices_list = [(94,114), (147,168), (171, 192), (200, 217), (226, 241), (250, 269)]
-    atoms_all_frames = read_lammps()
+    atoms_all_frames = read_lammps(dumpName)
     # print(atoms[0])
     # print(len(atoms), len(atoms[0]))
     # helices_angles_all_frames = []

@@ -110,7 +110,7 @@ echo $SLURM_NODELIST
 srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_serial -in {}_{}.in
     '''
 
-if args.commons == "Yes":
+if args.commons == 1:
     run_slurm = run_slurm.replace("ctbp-common", "commons")
 proteinName = args.protein.strip("/.")
 def set_up():

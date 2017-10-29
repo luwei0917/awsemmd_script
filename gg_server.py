@@ -13,6 +13,9 @@ from time import sleep
 import fileinput
 import numpy as np
 from small_script.variable_test import variable_test
+import subprocess
+from small_script.myFunctions import compute_theta_for_each_helix
+
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -56,6 +59,320 @@ base_slurm = '''\
 echo "My job ran on:"
 echo $SLURM_NODELIST
 srun {}\n'''
+
+def replace(TARGET, FROM, TO):
+    do("sed -i.bak 's/{}/{}/g' {}".format(FROM,TO,TARGET))
+
+def getFromTerminal(CMD):
+    return subprocess.Popen(CMD,stdout=subprocess.PIPE,shell=True).communicate()[0].decode()
+
+def continueRunConvertion():
+    do("cp 2xov_0.in 2xov_1.in")
+    fileName = "2xov_1.in"
+    replace(fileName, "variable r world 0 1 2 3 4 5 6 7 8 9 10 11", "")
+    replace(fileName, "# read_restart restart.25000000", "variable r world 0 1 2 3 4 5 6 7 8 9 10 11")
+    replace(fileName, "read_restart restart.extended", "read_restart restart.$r.20000000")
+    replace(fileName, "read_restart restart.native_topology", "read_restart restart.$r.20000000")
+    replace(fileName, "0\/", "1\/")
+    cmd = 'tail -n 1 log.lammps | cut -d" " -f2-'
+    line = getFromTerminal(cmd).rstrip()
+    replace(fileName, "reset_timestep	0", "variable w world " + line)
+    replace(fileName, "fix     xbias all colvars colvars.x output x", "fix     xbias all colvars colvars.x output x.$r")
+    cmd = 'grep "temper" 2xov_1.in'
+    line = getFromTerminal(cmd).rstrip()
+    replace(fileName, line, line + " $w")
+
+
+if args.day == "oct28":
+    if args.mode == 1:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        # folder_list = ["memb_2_rg_0.1_lipid_1_extended", "memb_2_rg_0.1_lipid_1_topology"]
+        folder_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["all", "500"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    if temp != "all":
+                        do("make_metadata.py -m 10 --submode 1 -t " + temp)
+                    else:
+                        do("make_metadata.py -m 9 --submode 1")
+                    do("mkdir t_" + temp)
+                    do("mv metadatafile t_" + temp)
+                    cd("t_" + temp)
+                    do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 1".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+
+if args.day == "oct25":
+    if args.mode == 1:
+        compute_theta_for_each_helix()
+        print("Done")
+    if args.mode == 2:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        # folder_list = ["memb_2_rg_0.1_lipid_1_extended", "memb_2_rg_0.1_lipid_1_topology"]
+        folder_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["all", "500"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    if temp != "all":
+                        do("make_metadata.py -m 10 -t " + temp)
+                    else:
+                        do("make_metadata.py -m 9")
+                    do("mkdir t_" + temp)
+                    do("mv metadatafile t_" + temp)
+                    cd("t_" + temp)
+                    do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 1".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+if args.day == "oct24":
+    if args.mode == 2:
+        cmd = 'tail -n 1 log.lammps | cut -d" " -f2-'
+        line = getFromTerminal(cmd).rstrip()
+        print(line)
+    if args.mode == 1:
+        dis_list = glob.glob("dis_*")
+        print(dis_list)
+        for dis in dis_list:
+            cd(dis)
+            do("cp log0/log.lammps .")
+            continueRunConvertion()
+            # do("mkdir log0")
+            # do("mv log.* log0/")
+            # do("mkdir 1")
+
+            do("sed 's/2xov_0/2xov_1/g' run_0.slurm > run_1.slurm")
+            do("sbatch run_1.slurm")
+            cd("..")
+        # continueRunConvertion()
+
+if args.day == "oct21":
+    if args.mode == 1:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        # folder_list = ["memb_2_rg_0.1_lipid_1_extended", "memb_2_rg_0.1_lipid_1_topology"]
+        folder_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["all", "450"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    if temp != "all":
+                        do("make_metadata.py -m 10 -t " + temp)
+                    else:
+                        do("make_metadata.py -m 9")
+                    do("mkdir t_" + temp)
+                    do("mv metadatafile t_" + temp)
+                    cd("t_" + temp)
+                    do("pulling_analysis.py -m {} --commons 0 --nsample 2500".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+    if args.mode == 2:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        folder_list = ["memb_2_rg_0.1_lipid_1_extended", "memb_2_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["important_all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    do("make_metadata.py -m 9")
+                    do("rm t_t_" +temp)
+                    do("mkdir -p t_t_" + temp)
+                    do("mv metadatafile t_t_" + temp)
+                    cd("t_t_" + temp)
+                    do("pulling_analysis.py -m {} --commons 0 --nsample 2500".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+if args.day == "oct17":
+    if args.mode == 1:
+        print("can it fold")
+        # start_from_list=["native", "extended", "topology"]
+        # start_from_list=["native"]
+        start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0, 1, 2]
+        force_ramp_rate_list=[1]
+        temperature_list=[350, 500]
+        memb_k_list = [1, 2, 4]
+        rg_list = [0, 0.1, 0.4]
+        force_list = [0.0]
+        repeat = 2
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=1)
+if args.day == "oct16":
+    if args.mode == 1:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        folder_list = ["more_higher_temp"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["all", "350", "400", "450", "500"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    if temp != "all":
+                        do("make_metadata.py -m 10 -t " + temp)
+                    else:
+                        do("make_metadata.py -m 9")
+                    do("mkdir t" + temp)
+                    do("mv metadatafile t" + temp)
+                    cd("t" + temp)
+                    do("pulling_analysis.py -m {} --commons 1 --nsample 4000".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+if args.day == "oct13":
+    if args.mode == 2:
+        print("strong membrane fore ramp")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [1, 2]
+        force_ramp_rate_list=[1]
+        temperature_list=[350]
+        memb_k_list = [1, 2, 4, 8, 16]
+        rg_list = [0, 0.4]
+        force_list = [0.0]
+        repeat = 10
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=0)
+    if args.mode == 1:
+        folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        temp_list = ["all", "350", "400", "450", "500"]
+        for folder in folder_list:
+            cd(folder)
+
+            do("mkdir -p 2d_qw_dis")
+            cd("2d_qw_dis")
+            for temp in temp_list:
+                if temp != "all":
+                    do("make_metadata.py -m 10 -t " + temp)
+                else:
+                    do("make_metadata.py -m 9")
+                do("mkdir t" + temp)
+                do("mv metadatafile t" + temp)
+                cd("t" + temp)
+                do("pulling_analysis.py -m 11 --commons 1")
+                cd("..")
+            cd("..")
+            cd("..")
+if args.day == "oct12":
+    if args.mode == 1:
+        temp_list = ["400", "450", "500", "all"]
+        for temp in temp_list:
+            if temp != "all":
+                do("make_metadata.py -m 10 -t " + temp)
+            else:
+                do("make_metadata.py -m 9")
+            do("mkdir t" + temp)
+            do("mv metadatafile t" + temp)
+            cd("t" + temp)
+            do("pulling_analysis.py -m 9")
+            cd("..")
+    if args.mode == 2:
+        folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        temp_list = ["350", "400", "450", "500", "all"]
+        for folder in folder_list:
+            cd(folder)
+            # do("mkdir -p 1d_dis")
+            # cd("1d_dis")
+            # for temp in temp_list:
+            #     if temp != "all":
+            #         do("make_metadata.py -m 10 -t " + temp)
+            #     else:
+            #         do("make_metadata.py -m 9")
+            #     do("mkdir t" + temp)
+            #     do("mv metadatafile t" + temp)
+            #     cd("t" + temp)
+            #     do("pulling_analysis.py -m 9")
+            #     cd("..")
+            # cd("..")
+            do("mkdir -p 1d_qw")
+            cd("1d_qw")
+            for temp in temp_list:
+                if temp != "all":
+                    do("make_metadata.py -m 10 -t " + temp)
+                else:
+                    do("make_metadata.py -m 9")
+                do("mkdir t" + temp)
+                do("mv metadatafile t" + temp)
+                cd("t" + temp)
+                do("pulling_analysis.py -m 10")
+                cd("..")
+            cd("..")
+            cd("..")
+    if args.mode == 3:
+        print("high temp refold")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [2]
+        force_ramp_rate_list=[1000]
+        temperature_list=[100]
+        memb_k_list = [1, 2, 4, 8, 16, 32]
+        rg_list = [0.4]
+        force_list = [0.0]
+        repeat = 1
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=1)
+
 if args.day == "oct10":
     if args.mode == 5:
         do("mkdir combined")
