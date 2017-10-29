@@ -58,7 +58,8 @@ if(args.mode == 1):
         extract_pdb(location, protein, chain, residue_start, residue_end)
 
 if(args.mode == 2):
-    protein_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
+    # protein_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
+    protein_list = ["2xov"]
     for protein in protein_list:
         do("mkdir -p " + protein)
         cd(protein)
