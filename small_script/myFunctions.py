@@ -14,6 +14,7 @@ import re
 from small_script.myFunctions_helper import *
 import numpy as np
 import pandas as pd
+import fileinput
 # compute cross Q for every pdb pair in one folder
 # parser = argparse.ArgumentParser(description="Compute cross q")
 # parser.add_argument("-m", "--mode",
@@ -79,7 +80,8 @@ def structure_prediction_run(protein):
         do("cp -r {} {}/".format(protein, protocol))
         cd(protocol)
         cd(protein)
-        do("cp ~/opt/gremlin/protein/{}/gremlin/go_rnativeC* .".format(protein))
+        # do("cp ~/opt/gremlin/protein/{}/gremlin/go_rnativeC* .".format(protein))
+        do("cp ~/opt/gremlin/protein/{}/raptor/go_rnativeC* .".format(protein))
         fileName = protein + "_multi.in"
         backboneFile = "fix_backbone_coeff_" + protocol
         with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
