@@ -12,6 +12,8 @@ from myPersonalFunctions import *
 import glob
 from small_script.myFunctions import *
 from small_script.extract_pdb import *
+import fileinput
+
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
