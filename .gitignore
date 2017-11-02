@@ -22,3 +22,4 @@ script/pdb_seqres.txt
 .Rproj.user
 
 *.pyc
+.ipynb_checkpoints/

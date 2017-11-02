@@ -31,7 +31,10 @@ protein_name = args.protein.split('.')[0]
 
 if args.mode == 3:
     # do("python3 ~/opt/small_script/delete_lammps_frame.py")
-    shrinkage(shrink_size=6, max_frame=2000)
+    if args.submode == -1:
+        shrinkage(shrink_size=6, max_frame=2000)
+    else:
+        shrinkage(shrink_size=6, max_frame=2000,fileName="dump.lammpstrj.{}".format(args.submode))
     # shrinkage()
     do("cp ../{}.seq .".format(protein_name))
     do("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py small.lammpstrj movie "+protein_name+".seq")

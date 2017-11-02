@@ -22,19 +22,19 @@ import fileinput
 
 # args = parser.parse_args()
 
-def shrinkage(n=552, shrink_size=6, max_frame=2000):
+def shrinkage(n=552, shrink_size=6, max_frame=2000, fileName="dump.lammpstrj"):
     print("Shrinkage: size: {}, max_frame: {}".format(shrink_size, max_frame))
-    bashCommand = "wc dump.lammpstrj"
+    bashCommand = "wc " + fileName
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
     line_number = int(output.decode("utf-8").split()[0])
     print(line_number)
-    # print(line_number/552)
+    print(line_number/552)
     # number of atom = 543
     n = 552
     count = 0
     with open("small.lammpstrj", "w") as out:
-        with open("dump.lammpstrj", "r") as f:
+        with open(fileName, "r") as f:
             for i, line in enumerate(f):
                 if (i // n) % shrink_size == 0:
                     if count >= max_frame*n:
