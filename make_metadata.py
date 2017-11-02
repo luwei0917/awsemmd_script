@@ -66,6 +66,10 @@ if args.mode == 9 or args.mode == 10:
         for oneFile in files:
             for temp in temp_list:
                 q = oneFile.split("_")[-1]
+                if args.submode == 3:
+                    if float(q) < 130:
+                        target = cwd + "/" + oneFile + "/0/t{}_new.dat {} {} {}\n".format(int(temp), temp, kconstant, q)
+                        out.write(target)
                 if args.submode == 1:
                     if float(q) > 131:
                         target = cwd + "/" + oneFile + "/0/t{}_new.dat {} {} {}\n".format(int(temp), temp, kconstant, q)
