@@ -76,4 +76,4 @@ fix pulloneside all print 1000 "${step} ${dis} ${F_n_end_added}  ${F_x} ${F_y} $
 
 
 
-rerun dump.lammpstrj start 1000 dump x y z
+rerun dump.lammpstrj dump x y z

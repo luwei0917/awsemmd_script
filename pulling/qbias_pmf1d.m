@@ -3,8 +3,8 @@ pdb_array= { 'q20' 'Abeta40_2' 'Abeta40_3' 'Abeta40_6_nonfibril'};
 sim_labels = [14 7 6 4];
 
 qa_name ='p_total';%new rxn co
-T=330;
-binN=30;
+T=350;
+binN=50;
 color={'r','m','g','b'};
 dih_range=16:22;
 
@@ -43,7 +43,7 @@ fsize=25; tsize=16; %mr=3; mc=2;
         Nsample = length(q);
 
         %load pmf file and calculate pi_sample
-        filename=sprintf('%s/2lhc_%d_pmf.dat',path, T);
+        filename=sprintf('%s/2lhd_%d_pmf.dat',path, T);
 
         FF=load(filename); qx=FF(:,1);  Fy = FF(:,2); nbin=length(qx);
         dq=qx(2)-qx(1); qmin=qx(1)-dq/2; qmax= qx(nbin)+dq/2;

@@ -1,5 +1,5 @@
 pdb_array= {'q30' 'IkBa' 'Abeta42_3' 'Abeta40_3' 'Abeta42_40_3'};
-repeat = 40; k_bias=1120;
+repeat = 40; k_bias=100;
 labels = [10 9 7 14 13 10 4 4 ];
 
 for protein_i=1:1

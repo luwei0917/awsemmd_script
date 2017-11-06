@@ -29,11 +29,22 @@ protein_name = args.template.strip('/')
 
 
 warm_up_steps = 2*10**6
-simulation_steps = 8*10**6
+simulation_steps = 6*10**6
 
 # temp_list = [400, 500]
-temp_list = [350]
-n = 40
+# temp_list = [250, 275, 325]
+# temp_list = [300]
+temp_list = [135, 160, 185, 210]
+# temp_list = [200, 250, 300]
+n = 20
+
+if(platform.system() == 'Darwin'):
+    print("Are you sure?")
+    exit()
+elif(platform.system() == 'Linux'):
+    pass
+else:
+    print("system unkown")
 
 config = open('config.py', 'w')
 config.write("protein_name = '%s'\nnumber_of_run = %d\nsimulation_steps = %d\n\
@@ -49,21 +60,21 @@ for temp in temp_list:
     seed(datetime.now())
     os.system("mkdir -p simulation/"+str(temp))
     os.chdir("simulation/"+str(temp))
-    q_bias_step = 0.02
-    q0 = 0.1
+    q_bias_step = 0.05
+    q0 = 0.0
     for i in range(n):
         q0 += q_bias_step
         os.system("mkdir -p "+str(i))
-        os.system("cp -r ../../"+args.template+"* "+str(i))
+        os.system("cp -r ../../"+args.template+"/* "+str(i))
         os.chdir(str(i))
         os.system(  # replace TEMPERATURE with specific steps
             "sed -i.bak 's/Q0/'" +
             str(q0) +
             "'/g' fix_qbias_coeff.data")
-        os.system(  # replace TEMPERATURE with specific steps
-            "sed -i.bak 's/Q0/'" +
-            str(q0) +
-            "'/g' fix_qbias_coeff1.data")
+        # os.system(  # replace TEMPERATURE with specific steps
+        #     "sed -i.bak 's/Q0/'" +
+        #     str(q0) +
+        #     "'/g' fix_qbias_coeff1.data")
         os.system(  # replace TEMPERATURE with specific steps
             "sed -i.bak 's/TEMPERATURE/'" +
             str(temp) +
@@ -81,22 +92,22 @@ for temp in temp_list:
             str(warm_up_steps) +
             "'/g' "+protein_name+".in")
         os.system(  # replace RANDOM with a radnom number
-                "sed -i.bak 's/RANDOM/'" +
-                str(randint(1, 10**6)) +
-                "'/g' "+protein_name+".in")
+            "sed -i.bak 's/RANDOM/'" +
+            str(randint(1, 10**6)) +
+            "'/g' "+protein_name+".in")
         os.system(  # replace SIMULATION_STEPS with specific steps
-                "sed -i.bak 's/SIMULATION_STEPS/'" +
-                str(simulation_steps) +
-                "'/g' "+protein_name+".in")
+            "sed -i.bak 's/SIMULATION_STEPS/'" +
+            str(simulation_steps) +
+            "'/g' "+protein_name+".in")
         if(platform.system() == 'Darwin'):
             os.system("/Users/weilu/Documents/lammps-9Oct12_modified/src/lmp_serial \
             < "+protein_name+".in")
         elif(platform.system() == 'Linux'):
-            os.system("cp ~/opt/run.slurm .")
+            os.system("cp ~/opt/run_tmp.slurm run.slurm")
             os.system(  # replace PROTEIN with pdb name
-                    "sed -i.bak 's/PROTEIN/'" +
-                    protein_name +
-                    "'/g' run.slurm")
+                "sed -i.bak 's/PROTEIN/'" +
+                protein_name +
+                "'/g' run.slurm")
             os.system("sbatch run.slurm")
         else:
             print("system unkown")

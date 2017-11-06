@@ -114,15 +114,24 @@ if(args.multi):
     sequence = "a206g"
     force = 1.0
     i = 1
-    force_list = [1.6, 1.8, 2.0]
+    force_list = [round(i*0.1,2) for i in range(6,10)]
+    # force_list = [round(i*0.1,2) for i in range(4,8)]
+    # force_list = [0.1] + force_list
+    # force_list = [1.6, 1.7, 1.8, 1.9, 2.0, 2.1]
+    # force_list = [1.6, 1.8, 2.0, 2.2, 2.4, 2.6]
     for force in force_list:
-        target = str(i)+"_force_"+str(force)+"_"+sequence+"/"
+        target = str(force) + "/"
+        # target = "wham_"+str(i)+"_force_"+str(force)+"/"
+        # target = str(i)+"_force_"+str(force)+"_"+sequence+"/"
         # target = "1_force_1.0_a206g/"
         name = target + 'pmf-'+str(temp)+'.dat'
         data = pd.read_table(name, sep='\s+', comment='#', names=["bin","bin_center_1","f","df","e","s"])
         # print(data)
+        norm = float(data[data["bin_center_1"]==68.836]["f"])
+        data["f"] -= norm
+        # data["f"] = data["f"] - data[data['bin_center_1'] == "128.650"]["f"]
         # data.plot(ax=ax, x='bin_center_1', y='f', linewidth=5.0)
-        data.plot(ax=ax, x='bin_center_1', y='f',xlim=(0, 200), label=str(force))
+        data.plot(ax=ax, x='bin_center_1', y='f',xlim=(0, 250), label=str(force))
     ax.set_xlabel("Distance(Å)")
     ax.set_ylabel("free energy(kT)")
     # ax.set_title("Force at 0.7 Kcal/mole-Angstrom")

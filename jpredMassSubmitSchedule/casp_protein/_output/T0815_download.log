@@ -1,0 +1,11 @@
+--2017-02-12 20:26:22--  http://www.compbio.dundee.ac.uk/jpred4/results/jp_WRlAEji/jp_WRlAEji.jnet
+Resolving www.compbio.dundee.ac.uk... 134.36.67.203
+Connecting to www.compbio.dundee.ac.uk|134.36.67.203|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 4036 (3.9K) [text/plain]
+Saving to: ‘jp_WRlAEji.jnet’
+
+     0K ...                                                   100% 2.04M=0.002s
+
+2017-02-12 20:26:22 (2.04 MB/s) - ‘jp_WRlAEji.jnet’ saved [4036/4036]
+

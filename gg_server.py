@@ -10,24 +10,1625 @@ from datetime import datetime
 import imp
 import glob
 from time import sleep
+import fileinput
+import numpy as np
+from small_script.variable_test import variable_test
+import subprocess
+from small_script.myFunctions import compute_theta_for_each_helix
+
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
 # sed 1d
 # sort -u -k 3
 # sed -e 's/+T//'
-mypath = os.environ["PATH"]
-os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
-my_env = os.environ.copy()
+# import re
+# numbers = re.compile(r'(\d+)')
+# def numericalSort(value):
+#     parts = numbers.split(value)
+#     parts[1::2] = map(int, parts[1::2])
+#     return parts
+# mypath = os.environ["PATH"]
+# os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
+# my_env = os.environ.copy()
 
 parser = argparse.ArgumentParser(description="This is my playground for current project")
-parser.add_argument("--fix", help="fix ", action="store_true", default=False)
-parser.add_argument("--rerun", help="rerun ", action="store_true", default=False)
-parser.add_argument("--go", help="continue_run ", action="store_true", default=False)
-parser.add_argument("-n", "--number", type=int, default=10, help="number of run")
+parser.add_argument("-r", "--run", help="test mode",
+                    action="store_true")
+parser.add_argument("-s", "--see", help="test mode",
+                    action="store_true")
+# parser.add_argument("-d", "--debug", action="store_true", default=False)
+parser.add_argument("-m", "--mode", type=int, default=0)
+parser.add_argument("-d", "--day", type=str, default="someday")
+parser.add_argument("-t", "--test", action="store_true", default=False)
 args = parser.parse_args()
 
+if args.test:
+    do = print
+else:
+    do = os.system
+cd = os.chdir
 
+base_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=01:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun {}\n'''
+
+def replace(TARGET, FROM, TO):
+    do("sed -i.bak 's/{}/{}/g' {}".format(FROM,TO,TARGET))
+
+def getFromTerminal(CMD):
+    return subprocess.Popen(CMD,stdout=subprocess.PIPE,shell=True).communicate()[0].decode()
+
+def continueRunConvertion():
+    do("cp 2xov_0.in 2xov_1.in")
+    fileName = "2xov_1.in"
+    replace(fileName, "variable r world 0 1 2 3 4 5 6 7 8 9 10 11", "")
+    replace(fileName, "# read_restart restart.25000000", "variable r world 0 1 2 3 4 5 6 7 8 9 10 11")
+    replace(fileName, "read_restart restart.extended", "read_restart restart.$r.20000000")
+    replace(fileName, "read_restart restart.native_topology", "read_restart restart.$r.20000000")
+    replace(fileName, "0\/", "1\/")
+    cmd = 'tail -n 1 log.lammps | cut -d" " -f2-'
+    line = getFromTerminal(cmd).rstrip()
+    replace(fileName, "reset_timestep	0", "variable w world " + line)
+    replace(fileName, "fix     xbias all colvars colvars.x output x", "fix     xbias all colvars colvars.x output x.$r")
+    cmd = 'grep "temper" 2xov_1.in'
+    line = getFromTerminal(cmd).rstrip()
+    replace(fileName, line, line + " $w")
+
+def scancel_jobs_in_folder(folder):
+    cd(bias)
+    cmd = "find -name 'slurm-*' | rev | awk -F'[-.]' '{print $2}' | rev"
+    lines = getFromTerminal(cmd).splitlines()
+    for line in lines:
+        # print(line)
+        do("scancel " + line)
+    cd("..")
+if args.day == "nov01":
+    if args.mode == 2:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        folder_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended", "rgWidth_memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["all", "500"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                cd(bias)
+                cmd = "find -name 'slurm-*' | rev | awk -F'[-.]' '{print $2}' | rev"
+                lines = getFromTerminal(cmd).splitlines()
+                for line in lines:
+                    # print(line)
+                    do("scancel " + line)
+                cd("..")
+                do("rm -r " + bias)
+            cd("..")
+        # cmd = "find -name 'slurm-*' | rev | awk -F'[-.]' '{print $2}' | rev"
+        # lines = getFromTerminal(cmd).splitlines()
+        # for line in lines:
+        #     print(line)
+        #     do("scancel " + line)
+    if args.mode == 1:
+        print("how unfolding change")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [1]
+        force_ramp_rate_list=[1]
+        temperature_list=[350, 500]
+        memb_k_list = [2, 4]
+        rg_list = [0.1, 0.4]
+        force_list = [0.0]
+        repeat = 10
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=1)
+if args.day == "oct31":
+    if args.mode == 4:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        folder_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended", "rgWidth_memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["all", "500"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    if temp != "all":
+                        do("make_metadata.py -m 10 --submode 3 -t " + temp)
+                    else:
+                        do("make_metadata.py -m 9 --submode 3")
+                    do("mkdir t_" + temp)
+                    do("mv metadatafile t_" + temp)
+                    cd("t_" + temp)
+                    do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 1".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+    if args.mode == 3:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        # folder_list = ["memb_2_rg_0.1_lipid_1_extended", "memb_2_rg_0.1_lipid_1_topology"]
+        folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended", "rgWidth_memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["all", "500"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    if temp != "all":
+                        do("make_metadata.py -m 10 --submode 3 -t " + temp)
+                    else:
+                        do("make_metadata.py -m 9 --submode 3")
+                    do("mkdir t_" + temp)
+                    do("mv metadatafile t_" + temp)
+                    cd("t_" + temp)
+                    do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 1".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+    if args.mode == 2:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        # folder_list = ["memb_2_rg_0.1_lipid_1_extended", "memb_2_rg_0.1_lipid_1_topology"]
+        folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended", "rgWidth_memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["all", "500"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("rm -r " + bias)
+            cd("..")
+    if args.mode == 1:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        # folder_list = ["memb_2_rg_0.1_lipid_1_extended", "memb_2_rg_0.1_lipid_1_topology"]
+        folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended", "rgWidth_memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["all", "500"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    if temp != "all":
+                        do("make_metadata.py -m 10 --submode 1 -t " + temp)
+                    else:
+                        do("make_metadata.py -m 9 --submode 1")
+                    do("mkdir t_" + temp)
+                    do("mv metadatafile t_" + temp)
+                    cd("t_" + temp)
+                    do("pulling_analysis.py -m {} --commons 0 --nsample 2500 --submode 1".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+
+if args.day == "oct28":
+    if args.mode == 1:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        # folder_list = ["memb_2_rg_0.1_lipid_1_extended", "memb_2_rg_0.1_lipid_1_topology"]
+        folder_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["all", "500"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    if temp != "all":
+                        do("make_metadata.py -m 10 --submode 1 -t " + temp)
+                    else:
+                        do("make_metadata.py -m 9 --submode 1")
+                    do("mkdir t_" + temp)
+                    do("mv metadatafile t_" + temp)
+                    cd("t_" + temp)
+                    do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 1".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+
+if args.day == "oct25":
+    if args.mode == 1:
+        compute_theta_for_each_helix()
+        print("Done")
+    if args.mode == 2:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        # folder_list = ["memb_2_rg_0.1_lipid_1_extended", "memb_2_rg_0.1_lipid_1_topology"]
+        folder_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["all", "500"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    if temp != "all":
+                        do("make_metadata.py -m 10 -t " + temp)
+                    else:
+                        do("make_metadata.py -m 9")
+                    do("mkdir t_" + temp)
+                    do("mv metadatafile t_" + temp)
+                    cd("t_" + temp)
+                    do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 1".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+if args.day == "oct24":
+    if args.mode == 2:
+        cmd = 'tail -n 1 log.lammps | cut -d" " -f2-'
+        line = getFromTerminal(cmd).rstrip()
+        print(line)
+    if args.mode == 1:
+        dis_list = glob.glob("dis_*")
+        print(dis_list)
+        for dis in dis_list:
+            cd(dis)
+            do("cp log0/log.lammps .")
+            continueRunConvertion()
+            # do("mkdir log0")
+            # do("mv log.* log0/")
+            # do("mkdir 1")
+
+            do("sed 's/2xov_0/2xov_1/g' run_0.slurm > run_1.slurm")
+            do("sbatch run_1.slurm")
+            cd("..")
+        # continueRunConvertion()
+
+if args.day == "oct21":
+    if args.mode == 1:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        # folder_list = ["memb_2_rg_0.1_lipid_1_extended", "memb_2_rg_0.1_lipid_1_topology"]
+        folder_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["all", "450"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    if temp != "all":
+                        do("make_metadata.py -m 10 -t " + temp)
+                    else:
+                        do("make_metadata.py -m 9")
+                    do("mkdir t_" + temp)
+                    do("mv metadatafile t_" + temp)
+                    cd("t_" + temp)
+                    do("pulling_analysis.py -m {} --commons 0 --nsample 2500".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+    if args.mode == 2:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        folder_list = ["memb_2_rg_0.1_lipid_1_extended", "memb_2_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["important_all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    do("make_metadata.py -m 9")
+                    do("rm t_t_" +temp)
+                    do("mkdir -p t_t_" + temp)
+                    do("mv metadatafile t_t_" + temp)
+                    cd("t_t_" + temp)
+                    do("pulling_analysis.py -m {} --commons 0 --nsample 2500".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+if args.day == "oct17":
+    if args.mode == 1:
+        print("can it fold")
+        # start_from_list=["native", "extended", "topology"]
+        # start_from_list=["native"]
+        start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0, 1, 2]
+        force_ramp_rate_list=[1]
+        temperature_list=[350, 500]
+        memb_k_list = [1, 2, 4]
+        rg_list = [0, 0.1, 0.4]
+        force_list = [0.0]
+        repeat = 2
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=1)
+if args.day == "oct16":
+    if args.mode == 1:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        folder_list = ["more_higher_temp"]
+        # folder_list = ["more_higher_temp_topology"]
+        temp_list = ["all", "350", "400", "450", "500"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    if temp != "all":
+                        do("make_metadata.py -m 10 -t " + temp)
+                    else:
+                        do("make_metadata.py -m 9")
+                    do("mkdir t" + temp)
+                    do("mv metadatafile t" + temp)
+                    cd("t" + temp)
+                    do("pulling_analysis.py -m {} --commons 1 --nsample 4000".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+if args.day == "oct13":
+    if args.mode == 2:
+        print("strong membrane fore ramp")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [1, 2]
+        force_ramp_rate_list=[1]
+        temperature_list=[350]
+        memb_k_list = [1, 2, 4, 8, 16]
+        rg_list = [0, 0.4]
+        force_list = [0.0]
+        repeat = 10
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=0)
+    if args.mode == 1:
+        folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        temp_list = ["all", "350", "400", "450", "500"]
+        for folder in folder_list:
+            cd(folder)
+
+            do("mkdir -p 2d_qw_dis")
+            cd("2d_qw_dis")
+            for temp in temp_list:
+                if temp != "all":
+                    do("make_metadata.py -m 10 -t " + temp)
+                else:
+                    do("make_metadata.py -m 9")
+                do("mkdir t" + temp)
+                do("mv metadatafile t" + temp)
+                cd("t" + temp)
+                do("pulling_analysis.py -m 11 --commons 1")
+                cd("..")
+            cd("..")
+            cd("..")
+if args.day == "oct12":
+    if args.mode == 1:
+        temp_list = ["400", "450", "500", "all"]
+        for temp in temp_list:
+            if temp != "all":
+                do("make_metadata.py -m 10 -t " + temp)
+            else:
+                do("make_metadata.py -m 9")
+            do("mkdir t" + temp)
+            do("mv metadatafile t" + temp)
+            cd("t" + temp)
+            do("pulling_analysis.py -m 9")
+            cd("..")
+    if args.mode == 2:
+        folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        temp_list = ["350", "400", "450", "500", "all"]
+        for folder in folder_list:
+            cd(folder)
+            # do("mkdir -p 1d_dis")
+            # cd("1d_dis")
+            # for temp in temp_list:
+            #     if temp != "all":
+            #         do("make_metadata.py -m 10 -t " + temp)
+            #     else:
+            #         do("make_metadata.py -m 9")
+            #     do("mkdir t" + temp)
+            #     do("mv metadatafile t" + temp)
+            #     cd("t" + temp)
+            #     do("pulling_analysis.py -m 9")
+            #     cd("..")
+            # cd("..")
+            do("mkdir -p 1d_qw")
+            cd("1d_qw")
+            for temp in temp_list:
+                if temp != "all":
+                    do("make_metadata.py -m 10 -t " + temp)
+                else:
+                    do("make_metadata.py -m 9")
+                do("mkdir t" + temp)
+                do("mv metadatafile t" + temp)
+                cd("t" + temp)
+                do("pulling_analysis.py -m 10")
+                cd("..")
+            cd("..")
+            cd("..")
+    if args.mode == 3:
+        print("high temp refold")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [2]
+        force_ramp_rate_list=[1000]
+        temperature_list=[100]
+        memb_k_list = [1, 2, 4, 8, 16, 32]
+        rg_list = [0.4]
+        force_list = [0.0]
+        repeat = 1
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=1)
+
+if args.day == "oct10":
+    if args.mode == 5:
+        do("mkdir combined")
+        cd("combined")
+        do("make_metadata.py -m 9")
+        do("pulling_analysis.py -m 9 --commons 1")
+    if args.mode == 4:
+        temp_list = [350, 400, 450, 500]
+        for temp in temp_list:
+            do("mkdir t" + str(temp))
+            cd("t" + str(temp))
+            do("make_metadata.py -m 10 -t {}".format(temp))
+            do("pulling_analysis.py -m 9 --commons 1")
+            cd("..")
+    if args.mode == 3:
+        do("make_metadata.py -m 10 -t 400")
+        do("pulling_analysis.py -m 9")
+    if args.mode == 2:
+        print("high temp refold")
+        start_from_list=["native", "extended", "topology"]
+        # start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [2]
+        force_ramp_rate_list=[1]
+        temperature_list=[500, 550, 600]
+        memb_k_list = [1]
+        rg_list = [0.4]
+        force_list = [0.0]
+        repeat = 50
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat)
+    if args.mode == 1:
+        fold_list = ["rg_0.4_lipid_2_temp_300_extended", "rg_0.4_lipid_2_temp_300_topology",
+                        "rg_0.4_lipid_2_temp_400_extended", "rg_0.4_lipid_2_temp_400_topology"]
+        for folder in fold_list:
+            cd(folder)
+            cd("simulation")
+            do("pulling_prepare.py -m 8 --submode 1")
+            cd("..")
+            do("mkdir freeEnergy_2")
+            cd("freeEnergy_2")
+            do("make_metadata.py -m 3 -k 0.02 -t 300 --submode 1")
+            do("pulling_analysis.py -m 6")
+            cd("../..")
+
+if args.day == "oct05":
+    if args.mode == 5:
+        print("no go, constant force, refold")
+        # start_from_list=["native", "extended", "topology"]
+        # start_from_list=["native"]
+        start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [2]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[400]
+        memb_k_list = [0, 1, 2, 4]
+        rg_list = [0.4]
+        force_list = [0.0]
+        repeat = 10
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat)
+        # # start_from_list=["native", "extended", "topology"]
+        # # start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        # mode_list = [3]  # lipid mediated interaction
+        # # pressure_list = [0, 0.1, 1.0]
+        # pressure_list = [0, 2]
+        # force_ramp_rate_list=[0.5]
+        # temperature_list=[400]
+        # memb_k_list = [0, 1, 2, 4]
+        # rg_list = [0, 0.4]
+        # force_list = [0.0]
+        # repeat = 10
+        # variable_test(temperature_list=temperature_list,
+        #                 start_from_list=start_from_list,
+        #                 rg_list=rg_list,
+        #                 memb_k_list=memb_k_list,
+        #                 mode_list=mode_list,
+        #                 pressure_list=pressure_list,
+        #                 force_ramp_rate_list=force_ramp_rate_list,
+        #                 force_list=force_list,
+        #                 repeat=repeat)
+
+    if args.mode == 4:
+        print("membrane effect")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0, 0.1, 1, 2]
+        force_ramp_rate_list=[100]
+        temperature_list=[200, 300, 400, 500]
+        memb_k_list = [1, 2, 4, 8, 16]
+        rg_list = [0, 0.08, 0.4]
+        force_list =["ramp"]
+        repeat = 2
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat)
+    if args.mode == 1:
+        fold_list = ["rg_0.4_lipid_2_temp_300_extended", "rg_0.4_lipid_2_temp_300_topology",
+                        "rg_0.4_lipid_2_temp_400_extended", "rg_0.4_lipid_2_temp_400_topology"]
+        for folder in fold_list:
+            cd(folder)
+            cd("simulation")
+            do("pulling_prepare.py -m 8 --submode 1")
+            cd("..")
+            do("mkdir freeEnergy_2")
+            cd("freeEnergy_2")
+            do("make_metadata.py -m 3 -k 0.02 -t 300 --submode 1")
+            do("pulling_analysis.py -m 6")
+            cd("../..")
+    if args.mode == 2:
+        print("2d wham")
+        # cd("simulation")
+        # do("pulling_prepare.py -m 8")
+        # cd("..")
+        fold_list = ["rg_0.4_lipid_2_temp_300_extended", "rg_0.4_lipid_2_temp_300_topology",
+                        "rg_0.4_lipid_2_temp_400_extended", "rg_0.4_lipid_2_temp_400_topology"]
+        for folder in fold_list:
+            cd(folder)
+            name = "wham2d"
+            do("mkdir {}".format(name))
+            cd(name)
+            do("make_metadata.py -m 3 -k 0.02 -t 300 --submode 1")
+            do("pulling_analysis.py -m 5")
+            cd("../..")
+    if args.mode == 3:
+        print("qw wham")
+        # cd("simulation")
+        # do("pulling_prepare.py -m 8")
+        # cd("..")
+        fold_list = ["rg_0.4_lipid_2_temp_300_extended", "rg_0.4_lipid_2_temp_300_topology",
+                        "rg_0.4_lipid_2_temp_400_extended", "rg_0.4_lipid_2_temp_400_topology"]
+        for folder in fold_list:
+            cd(folder)
+            name = "qw_2"
+            do("mkdir {}".format(name))
+            cd(name)
+            do("make_metadata.py -m 3 -k 0.02 -t 300 --submode 1")
+            do("pulling_analysis.py -m 8")
+            cd("../..")
+if args.day == "oct04":
+    if args.mode == 1:
+        # cd("simulation")
+        # do("pulling_prepare.py -m 8")
+        # cd("..")
+        do("mv freeEnergy old_freeEnergy")
+        do("mkdir freeEnergy")
+        cd("freeEnergy")
+        do("make_metadata.py -m 3 -k 0.02 -t 300")
+        do("pulling_analysis.py -m 6")
+    if args.mode == 2:
+        # cd("simulation")
+        # do("pulling_prepare.py -m 8")
+        # cd("..")
+        fold_list = ["rg_0.4_lipid_2_temp_300_extended", "rg_0.4_lipid_2_temp_300_topology",
+                        "rg_0.4_lipid_2_temp_400_extended", "rg_0.4_lipid_2_temp_400_topology"]
+        for folder in fold_list:
+            cd(folder)
+            name = "qw"
+            do("mkdir {}".format(name))
+            cd(name)
+            do("make_metadata.py -m 3 -k 0.02 -t 300")
+            do("pulling_analysis.py -m 8")
+            cd("../..")
+if args.day == "oct03":
+    if args.mode == 1:
+        print("p3 force ramp")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[200, 300, 400]
+        memb_k_list = [1]
+        rg_list = [0, 0.08, 0.4]
+        force_list =["ramp"]
+        repeat = 5
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat)
+    if args.mode == 2:
+        print("p3 folding temperature")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0, 2]
+        force_ramp_rate_list=[0.5]
+        temperature_list=["ramp"]
+        memb_k_list = [1, 2, 4]
+        rg_list = [0, 0.08, 0.4]
+        force_list =["ramp"]
+        repeat = 2
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat)
+if args.day == "sep26":
+    if args.mode == 1:
+        print("constant force")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[200, 300, 400]
+        memb_k_list = [1]
+        rg_list = [0, 0.08, 0.4]
+        force_list =[0.1, 0.2, 0.25, 0.3, 0.4]
+        repeat = 5
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat)
+if args.day == "sep25":
+    if args.mode == 5:
+        print("constant force")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [2]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[300]
+        memb_k_list = [1]
+        rg_list = [0.4]
+        force_list =[0.6, 0.7, 0.75, 0.8, 0.85]
+        repeat = 20
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat)
+    if args.mode == 4:
+        print("start with basic")
+        # start_from_list=["native", "extended", "topology"]
+        # start_from_list=["native"]
+        start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [2]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[300]
+        memb_k_list = [1]
+        rg_list = [0.4]
+        force_list =[0.0, 0.1, 0.2, 0.3]
+        repeat = 50
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat)
+
+    if args.mode == 3:
+        print("start with basic")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0]
+        force_ramp_rate_list=[1]
+        temperature_list=[200, 300]
+        memb_k_list = [1]
+        rg_list = [0.08]
+        repeat = 5
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        repeat=repeat)
+    if args.mode == 2:
+        print("Force ramp with high rg")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0, 1, 2, 3]
+        force_ramp_rate_list=[1]
+        temperature_list=[300]
+        memb_k_list = [1, 2]
+        rg_list = [0, 0.2, 0.4, 0.8, 1.6]
+        repeat = 3
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        repeat=repeat)
+    if args.mode == 1:
+        print("Force ramp without go")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0, 1, 2, 3]
+        force_ramp_rate_list=[1]
+        temperature_list=[300]
+        memb_k_list = [0, 1, 2, 4]
+        rg_list = [0, 0.08, 0.2, 0.4, 1, 2]
+        repeat = 3
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        repeat=repeat)
+if args.day == "sep24":
+    if args.mode == 1:
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        mode_list = [3]
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0, 1, 2, 3]
+        force_ramp_rate_list=[1]
+        temperature_list=[200, 300]
+        memb_k_list = [1, 2, 4]
+        rg_list = [0, 0.02, 0.08, 0.2]
+        repeat = 3
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        repeat=repeat)
+
+if args.day == "sep23":
+    if args.mode == 1:
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        mode_list = [3]
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0, 2, 4, 6, 8]
+        force_ramp_rate_list=[1]
+        temperature_list=[200, 300, 400]
+        memb_k_list = [1, 2, 4, 8, 16]
+        repeat = 5
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        repeat=repeat)
+
+if args.day == "sep20":
+    if args.mode == 3:
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        mode_list = [3]
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0, 0.1, 1, 2, 4]
+        force_ramp_rate_list=[1]
+        temperature_list=[300]
+        memb_k_list = [1, 2, 4, 8, 16]
+        repeat = 5
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        repeat=repeat)
+    if args.mode == 1:
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        mode_list = [3]
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0]
+        force_ramp_rate_list=[10]
+        temperature_list=["ramp"]
+        memb_k_list = [1, 2, 4, 8, 16]
+        repeat = 2
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        repeat=repeat)
+    if args.mode == 2:
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        mode_list = [3]
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0]
+        force_ramp_rate_list=[10]
+        temperature_list=["ramp"]
+        repeat = 5
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        repeat=repeat)
+if args.day == "sep17":
+    if args.mode == 1:
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        mode_list = [3]
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0, 0.1, 1, 2, 4]
+        force_ramp_rate_list=[1, 10]
+        temperature_list=[230, 300]
+        repeat = 5
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        repeat=repeat)
+if args.day == "sep11":
+    if args.mode == 1:
+        # folding tempearture
+        pressure_list = [0.1]
+        rg_list = [0.08]
+        force_list =["ramp"]
+        temperature_list=[230, 300]
+        memb_k_list=[1]
+        # start_from_list=["extended", "topology"]
+        start_from_list=["native"]
+        simulation_model_list=["go"]
+        force_ramp_rate_list=[1]
+        variable_test(temperature_list=temperature_list,
+                        memb_k_list=memb_k_list,
+                        rg_list=rg_list,
+                        simulation_model_list=simulation_model_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=100,force_ramp_rate_list=force_ramp_rate_list)
+
+if args.day == "sep10":
+    if args.mode == 1:
+        # folding tempearture
+        pressure_list = [0.4, 0.8]
+        rg_list = [0.4]
+        force_list =[0.3, 0.35, 0.4]
+        temperature_list=[230, 300]
+        memb_k_list=[1, 4]
+        # start_from_list=["extended", "topology"]
+        start_from_list=["native"]
+        simulation_model_list=["go"]
+        force_ramp_rate_list=[2]
+        variable_test(temperature_list=temperature_list,
+                        memb_k_list=memb_k_list,
+                        rg_list=rg_list,
+                        simulation_model_list=simulation_model_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=10,force_ramp_rate_list=force_ramp_rate_list)
+    if args.mode == 2:
+        # folding tempearture
+        pressure_list = [0.1]
+        rg_list = [0.08, 0.2]
+        memb_k_list=[1, 2, 4]
+        force_list =[0.01, 0.02, 0.04, 0.08]
+        temperature_list=[230, 300]
+        start_from_list=["extended", "topology"]
+        # start_from_list=["native"]
+        simulation_model_list=["go"]
+        force_ramp_rate_list=[2]
+        variable_test(temperature_list=temperature_list,
+                        memb_k_list=memb_k_list,
+                        rg_list=rg_list,
+                        simulation_model_list=simulation_model_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=4, force_ramp_rate_list=force_ramp_rate_list)
+    if args.mode == 3:
+        # folding tempearture
+        pressure_list = [0.1]
+        rg_list = [0.08]
+        memb_k_list=[1]
+        force_list =[0.2, 0.3, 0.35, 0.4]
+        temperature_list=[230]
+        # start_from_list=["extended", "topology"]
+        start_from_list=["native"]
+        simulation_model_list=["go"]
+        force_ramp_rate_list=[2]
+        variable_test(temperature_list=temperature_list,
+                        memb_k_list=memb_k_list,
+                        rg_list=rg_list,
+                        simulation_model_list=simulation_model_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=20, force_ramp_rate_list=force_ramp_rate_list)
+    if args.mode == 4:              # pending
+        # folding tempearture
+        pressure_list = [0.1]
+        rg_list = [0.08]
+        memb_k_list=[1, 2, 4]
+        force_list =[0.2, 0.3, 0.35, 0.4]
+        temperature_list=[230, 300]
+        # start_from_list=["extended", "topology"]
+        start_from_list=["native"]
+        simulation_model_list=["go"]
+        force_ramp_rate_list=[2]
+        variable_test(temperature_list=temperature_list,
+                        memb_k_list=memb_k_list,
+                        rg_list=rg_list,
+                        simulation_model_list=simulation_model_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=10, force_ramp_rate_list=force_ramp_rate_list)
+if args.day == "sep09":
+    if args.mode == 1:
+        cd("simulation")
+        do("pulling_prepare.py -m 7")
+        cd("..")
+        do("mkdir freeEnergy")
+        cd("freeEnergy")
+        do("make_metadata.py -m 3 -k 0.02 -t 230")
+        do("pulling_analysis.py -m 6")
+    if args.mode == 2:
+        cmd = "gg.py -m 8"
+        run_slurm = base_slurm.format(cmd)
+        # folder_list = glob.glob("force_*")
+        # folder_list = ['force_0.08', 'force_0.03', 'force_0.0']
+        folder_list = ['force_0.055']
+        # folder_list = ['force_0.07', 'force_0.02', 'force_0.045']
+        # folder_list = ['force_0.06', 'force_0.04']
+        print(folder_list)
+        for folder in folder_list:
+            cd(folder)
+            cd("simulation")
+            run_list = glob.glob("*")
+            for run in run_list:
+                cd(run)
+                cd("0")
+                with open("compute_angle.slurm", "w") as r:
+                    r.write(run_slurm)
+                do("sbatch compute_angle.slurm")
+                cd("../..")
+            cd("../..")
+    if args.mode == 3:
+        # folding tempearture
+        pressure_list = [0.0, 0.1, 0.2]
+        force_list =[0.0]
+        rg_list = [0, 0.08, 0.1, 0.2]
+        temperature_list=["ramp"]
+        # start_from_list=["extended", "topology"]
+        start_from_list=["native"]
+        simulation_model_list=["go", "single"]
+        variable_test(temperature_list=temperature_list,
+                        simulation_model_list=simulation_model_list,
+                        rg_list=rg_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=3,force_ramp_rate_list=[10, 1])
+    if args.mode == 4:
+        # folding tempearture
+        pressure_list = [0, 0.1, 0.2]
+        rg_list = [0, 0.08, 0.1, 0.2]
+        force_list =[0.0]
+        temperature_list=[230]
+        # start_from_list=["extended", "topology"]
+        start_from_list=["native"]
+        simulation_model_list=["go", "single"]
+        force_ramp_rate_list=[1, 10]
+        variable_test(temperature_list=temperature_list,
+                        rg_list=rg_list,
+                        simulation_model_list=simulation_model_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=5,force_ramp_rate_list=force_ramp_rate_list)
+    if(args.mode == 5):
+        print("Extract qw and distance info.")
+        for i in range(100):
+            cd(str(i))
+            cd("0")
+            do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
+            do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > distance.dat")
+            cd("../..")
+        print("create directory_list")
+        with open("directory_list", "w") as f:
+            for i in range(40):
+                # print(os.getcwd())
+                location = os.getcwd() + "/../"
+                f.write(location+str(i)+"/0\n")
+        do("cp ../../2xov/2xov.pdb .")
+        do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov directory_list out")
+    if args.mode == 6:
+        # folding tempearture
+        pressure_list = [0.1]
+        rg_list = [0.1]
+        memb_k_list=[1, 4]
+        force_list =[0.1, 0.15, 0.05]
+        temperature_list=[230, 300]
+        start_from_list=["extended", "topology"]
+        # start_from_list=["native"]
+        simulation_model_list=["go", "single"]
+        force_ramp_rate_list=[10]
+        variable_test(temperature_list=temperature_list,
+                        memb_k_list=memb_k_list,
+                        rg_list=rg_list,
+                        simulation_model_list=simulation_model_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=7,force_ramp_rate_list=force_ramp_rate_list)
+    if args.mode == 7:
+        # folding tempearture
+        pressure_list = [0.4]
+        rg_list = [0.4]
+        memb_k_list=[4]
+        force_list =[0.0]
+        temperature_list=[230]
+        # start_from_list=["extended", "topology"]
+        start_from_list=["native"]
+        simulation_model_list=["go", "single"]
+        force_ramp_rate_list=[1]
+        variable_test(temperature_list=temperature_list,
+                        memb_k_list=memb_k_list,
+                        rg_list=rg_list,
+                        simulation_model_list=simulation_model_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=20,force_ramp_rate_list=force_ramp_rate_list)
+    if args.mode == 8:
+        # folding tempearture
+        pressure_list = [0.4]
+        rg_list = [0.4]
+        memb_k_list=[4]
+        force_list =[0.1, 0.15, 0.05]
+        temperature_list=[230, 300]
+        start_from_list=["extended", "topology"]
+        # start_from_list=["native"]
+        simulation_model_list=["go", "single"]
+        force_ramp_rate_list=[2]
+        variable_test(temperature_list=temperature_list,
+                        memb_k_list=memb_k_list,
+                        rg_list=rg_list,
+                        simulation_model_list=simulation_model_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=6,force_ramp_rate_list=force_ramp_rate_list)
+if args.day == "sep08":
+    if args.mode == 1:
+        pressure_list = [0.1, 0.2, 0.4]
+        force_list =[0.01, 0.02, 0.04, 0.08]
+        temperature_list=[230]
+        start_from_list=["extended", "topology"]
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=20,force_ramp_rate_list=[1])
+    if args.mode == 2:
+        pressure_list = [0.1]
+        force_list =[0.01, 0.02]
+        temperature_list=[230, 240]
+        # start_from_list=["extended", "topology"]
+        start_from_list=["extended"]
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=50,force_ramp_rate_list=[0.5])
+    if args.mode == 3:
+        # folding tempearture
+        pressure_list = [0.1, 0.2]
+        force_list =[0.0]
+        temperature_list=["ramp"]
+        # start_from_list=["extended", "topology"]
+        start_from_list=["native"]
+        simulation_model_list=["go", "single"]
+        variable_test(temperature_list=temperature_list,
+                        simulation_model_list=simulation_model_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=5,force_ramp_rate_list=[10])
+    if args.mode == 4:
+        # folding tempearture
+        pressure_list = [0.1, 0.2]
+        force_list =[0.0]
+        temperature_list=[200]
+        # start_from_list=["extended", "topology"]
+        start_from_list=["native"]
+        simulation_model_list=["go", "single"]
+        force_ramp_rate_list=[1, 10]
+        variable_test(temperature_list=temperature_list,
+                        simulation_model_list=simulation_model_list,
+                        start_from_list=start_from_list,
+                        force_list=force_list,
+                        pressure_list=pressure_list,
+                        repeat=20,force_ramp_rate_list=force_ramp_rate_list)
+if args.day == "sep07":
+    if args.mode == 9:
+        # simulation_model_list=["go", "single"]
+        force_list =[0.55, 0.5, 0.56, 0.57, 0.58, 0.59]
+        variable_test(force_list=force_list, repeat=20)
+    if args.mode == 8:
+        # simulation_model_list=["go", "single"]
+        # force_list =[0.6, 0.5, 0.4]
+        # memb_k_list = [1, 2, 4]
+        pressure_list = [0.1, 0.2, 0.4]
+        # pressure_list = [0.8, 1.6]
+        rg_list = [0.08, 0.04, 0.02]
+        k_list = [0.1, 0.2, 0.3, 0.4]
+        variable_test(k_list=k_list, pressure_list=pressure_list,
+                        force_ramp_rate_list=[10], rg_list=rg_list, repeat=3)
+    if args.mode == 7:
+        cd("simulation")
+        do("pulling_prepare.py -m 7")
+        cd("..")
+        do("mkdir freeEnergy")
+        cd("freeEnergy")
+        do("make_metadata.py -m 3 -k 0.02 -t 230")
+        do("pulling_analysis.py -m 6")
+    if args.mode == 1:
+        memb_k_list = [1, 2, 4, 8, 16]
+        variable_test(memb_k_list=memb_k_list, repeat=5)
+    if args.mode == 2:
+        force_ramp_rate_list = [1, 2, 4, 8, 16, 32]
+        variable_test(force_ramp_rate_list=force_ramp_rate_list, repeat=5)
+    if args.mode == 3:
+        force_ramp_rate_list = [1, 2, 4, 8, 16, 32]
+        variable_test(temperature_list=[200], force_ramp_rate_list=force_ramp_rate_list, repeat=5)
+    if args.mode == 4:
+        # simulation_model_list=["go", "single"]
+        # force_list =[0.6, 0.5, 0.4]
+        force_list =[0.8, 0.6, 0.4]
+        memb_k_list = [1, 2, 4]
+        variable_test(memb_k_list=memb_k_list, force_list=force_list, repeat=5)
+    if args.mode == 6:
+        # simulation_model_list=["go", "single"]
+        # force_list =[0.6, 0.5, 0.4]
+        force_list =[0.3]
+        memb_k_list = [1, 2, 4]
+        # pressure_list = [0.1, 0.2, 0.4]
+        pressure_list = [0.8, 1.6]
+        k_list = [10, 11, 12, 13]
+        variable_test(k_list=k_list, pressure_list=pressure_list,
+                        force_ramp_rate_list=[10], memb_k_list=memb_k_list, force_list=force_list, repeat=3)
+if args.day == "sep06":
+    if args.mode == 1:
+        start_from_list=["extended", "topology"]
+        simulation_model_list=["go", "single"]
+        temperature_list = [200, 250, 300]
+        pressure_list = [0, 0.1, 0.5, 1]
+        variable_test(pressure_list=pressure_list,
+                        start_from_list=start_from_list,
+                        simulation_model_list=simulation_model_list,
+                        repeat=5,
+                        temperature_list=temperature_list,
+                        commons=0)
+    if args.mode == 2:
+        start_from_list=["extended", "topology"]
+        simulation_model_list=["go", "single"]
+        temperature_list = [250, 300]
+        memb_k_list = [0, 1, 2, 4]
+        rg_list = [0, 0.1]
+        variable_test(rg_list=rg_list, memb_k_list=memb_k_list,
+                        start_from_list=start_from_list,
+                        simulation_model_list=simulation_model_list,
+                        repeat=3,
+                        temperature_list=temperature_list,
+                        commons=0)
+if args.mode == 20:
+    rg_list = [0]
+    temperature_list = [200]
+    variable_test(rg_list=rg_list, repeat=40, temperature_list=temperature_list, commons=True)
+
+
+if args.mode == 19:
+    rg_list = [0]
+    temperature_list = [175, 200, 225, 250]
+    variable_test(rg_list=rg_list, repeat=20, temperature_list=temperature_list, commons=True)
+
+if args.mode == 18:
+    rg_list = [0, 0.1, 0.2, 1]
+    memb_k_list = [0, 1, 2, 4]
+    pressure_list = [0, 0.1, 0.2, 0.4, 0.8, 1, 2]
+    # rg_list = [0.1]
+    # memb_k_list = [1]
+    # pressure_list = [0.1, 1]
+    variable_test(rg_list=rg_list, memb_k_list=memb_k_list, pressure_list=pressure_list, repeat=2)
+
+if args.mode == 17:
+    # protocol_list = ["er", "awsemer", "frag", "raptor"]
+    protocol_list = ["awsemer", "frag"]
+    protein_list = ["1occ"]
+    for protein in protein_list:
+        for protocol in protocol_list:
+            print("Work on protein: {}, protocol: {}".format(protein, protocol))
+            if protocol == "raptor":
+                do("cp ~/opt/gremlin/protein/1occ/raptor/go_rnativeC* {}/".format(protein))
+            else:
+                do("cp ~/opt/gremlin/protein/1occ/gremlin/go_rnativeC* {}/".format(protein))
+            do("mkdir -p {}".format(protocol))
+            do("cp -r {} {}/".format(protein, protocol))
+            cd(protocol)
+            cd(protein)
+            fileName = "{}_multi.in".format(protein)
+            if protocol == "raptor":
+                backbone_file = "fix_backbone_coeff_er.data"
+                do("cp ~/opt/gremlin/protein/{}/raptor/go_rnativeC* .".format(protein))
+            else:
+                backbone_file = "fix_backbone_coeff_{}.data".format(protocol)
+                do("cp ~/opt/gremlin/protein/{}/gremlin/go_rnativeC* .".format(protein))
+            with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+                for line in file:
+                    tmp = line
+                    tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
+                    print(tmp, end='')
+            cd("..")
+            do("run.py -m 0 -n 20 {}".format(protein))
+            cd("..")
+
+if args.mode == 16:
+    rg_list = [0, 0.1, 0.2, 0.4, 0.5, 1, 2, 4]
+    variable_test(rg_list=rg_list, repeat=1, commons=True)
+
+if(args.mode == 15):
+    print("create directory_list")
+    with open("directory_list", "w") as f:
+        for i in range(40):
+            # print(os.getcwd())
+            location = os.getcwd() + "/../"
+            f.write(location+str(i)+"/0\n")
+    do("cp ../../2xov/2xov.pdb .")
+    do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov directory_list out")
+if(args.mode == 14):
+    print("Extract qw and distance info.")
+    for i in range(100):
+        cd(str(i))
+        cd("0")
+        do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
+        do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > distance.dat")
+        cd("../..")
+
+if args.mode == 13:
+    rg_list = [0, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2]
+    memb_k_list = [0, 1, 2, 4, 8]
+    variable_test(rg_list=rg_list, memb_k_list=memb_k_list)
+if args.mode == 12:
+    rg_list = [0.1, 0.2, 0.4, 0.8, 1.6, 3.2]
+    variable_test(rg_list=rg_list)
+if args.mode == 11:
+    zim_type_list = ["aug04", "aug26"]
+    membrane_width_list = [30, 28.8]
+    for zim in zim_type_list:
+        for width in membrane_width_list:
+            folder = "zim_{}_width_{}".format(zim, width)
+            do("mkdir -p {}".format(folder))
+            cd(folder)
+            do("cp -r ../2xov .")
+            cd("2xov")
+            fixFile = "fix_backbone_coeff_single.data"
+            with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
+                for line in file:
+                    print(line.replace("WIDTH", str(width)), end='')
+            do("cp zim_{} zim".format(zim))
+            cd("..")
+            do("run.py -n 2 2xov")
+            cd("..")
+if args.mode == 10:
+    distance_list = np.linspace(166, 180, 15)
+    for distance in distance_list:
+        folder = "dis_{}".format(distance)
+        cd(folder)
+        do("sbatch run_0.slurm")
+        cd("..")
+# if args.mode == 9:
+#     cmd = "python3 ~/opt/small_script/find_distance.py"
+#     run_slurm = base_slurm.format(cmd)
+#     folder_list = ['force_0.045']
+#     print(folder_list)
+#     for folder in folder_list:
+#         cd(folder)
+#         cd("simulation")
+#         run_list = glob.glob("*")
+#         for run in run_list:
+#             cd(run)
+#             cd("0")
+#             with open("find_distance.slurm", "w") as r:
+#                 r.write(run_slurm)
+#             do("sbatch find_distance.slurm")
+#             cd("../..")
+#         cd("../..")
+#
+# if args.mode == 8:
+#     cmd = "gg.py -m 8"
+#     run_slurm = base_slurm.format(cmd)
+#
+#     # folder_list = glob.glob("force_*")
+#     # folder_list = ['force_0.08', 'force_0.03', 'force_0.0']
+#     folder_list = ['force_0.055']
+#     # folder_list = ['force_0.07', 'force_0.02', 'force_0.045']
+#     # folder_list = ['force_0.06', 'force_0.04']
+#     print(folder_list)
+#     for folder in folder_list:
+#         cd(folder)
+#         cd("simulation")
+#         run_list = glob.glob("*")
+#         for run in run_list:
+#             cd(run)
+#             cd("0")
+#             with open("compute_angle.slurm", "w") as r:
+#                 r.write(run_slurm)
+#             do("sbatch compute_angle.slurm")
+#             cd("../..")
+#         cd("../..")
+
+# if args.mode == 7:
+#     for i in range(80):
+#         do("mv {0} ../../../new_force_ramp/memb_0_force_ramp_rg_0_new/simulation/{1}".format(i,i+90))
+# if args.mode == 6:
+#     force_list = [0.55, 0.6, 0.65]
+#     # force_list = [0.25, 0.35, 0.4, 0.45]
+#     # force_list = [0.15, 0.2]
+#     for force in force_list:
+#         do("mkdir force_{}".format(force))
+#         do("cp -r 2xov force_{}/".format(force))
+#         cd("force_{}".format(force))
+#         with fileinput.FileInput("2xov/2xov_multi.in", inplace=True, backup='.bak') as file:
+#             for line in file:
+#                 print(line.replace("MY_FORCE", str(force)), end='')
+#         do("run.py -n 10 2xov/")
+#         cd("..")
+#
+#
+# if args.mode == 5:
+#     # cd("start_misfolded")
+#     distance_list = np.linspace(0, 30, 16)
+#     for dis in distance_list:
+#         do("mkdir -p dis_{}".format(dis))
+#         do("cp -r ../2xov/ dis_{}".format(dis))
+#         do("cp ../../freeEnergy/go_model_start_unfolded/simulation/dis_{0}/restart.25000000 dis_{0}/2xov/".format(dis))
+#         cd("dis_{}".format(dis))
+#         do("run.py -n 10 2xov/")
+#         cd("..")
+
+# if args.mode == 4:
+#     do("rm data")
+#     for i in range(100):
+#         do("cat dis_{}/0/data >> data.dat".format(i))
+#     do("awk '{print $1}' data.dat  > e.dat")
+#     do("awk '{print $2}' data.dat  > p.dat")
+#     do("awk '{print $3}' data.dat  > qw.dat")
+#
+# if args.mode == 1:
+#     cd("simulation")
+#     do("pulling_prepare.py")
+#     cd("..")
+#     do("mkdir freeEnergy")
+#     cd("freeEnergy")
+#     do("make_metadata.py -k 0.05 -t 300")
+#     do("pulling_analysis.py -m 3 -p 2")
+#
+# if args.mode == 2:
+#     print("80 bins.")
+#     # cd("simulation")
+#     # do("pulling_prepare.py")
+#     # cd("..")
+#     do("mkdir more_bin")
+#     cd("more_bin")
+#     do("make_metadata.py -k 0.05 -t 600")
+#     do("pulling_analysis.py -m 3 -p 1")
+#
+# if args.mode == 3:
+#     # cd("simulation")
+#     # do("pulling_prepare.py")
+#     # cd("..")
+#     do("mkdir -p only_less_than_100")
+#     cd("only_less_than_100")
+#     do("make_metadata.py -k 0.05 -t 300 -m 2")
+#     do("pulling_analysis.py -m 3 -p 1")
+#     # for i in range(52, 70):
+#     #     do("mv {}/{} .".format(i, i-40))
+#     #     do("mv {} {}".format(i, i-20))
+#     # for i in range(50):
+#     #     do("mv force_0.8_2/{} force_0.8/{}".format(i, i+50))
+#         # do("mv half_contact_force_0.8_memb1_rg1_2/{} half_contact_force_0.8_memb1_rg1/{}".format(i, i+20))
+#
+
+if(args.run):
+    print("Hello World")
+
+    name = "T0833"
+    n = 21
+    do("mkdir "+name)
+    cd(name)
+    for i in range(1, n):
+        do("mkdir -p job.{}".format(i))
+        do("cp ../preparation_files/myjob_nots.slurm job.{}".format(i))
+        do("cp ../preparation_files/loopsubmit.bash job.{}".format(i))
+        do("cp -r ../preparation_files/{0}_runpackage job.{1}/runpackage".format(name, i))
+        do("cp ../preparation_files/{1}_tpr/run.{0}.tpr job.{0}/runpackage/run.tpr".format(i, name))
+    for i in range(1, n):
+        cd("job.{}".format(i))
+        fileName = "myjob_nots.slurm"
+        with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+            for line in file:
+                print(line.replace("T0766", name), end='')
+
+        do("bash loopsubmit.bash")
+        cd("..")
+
+    # for i in range(1, 6):
+    #     do("mkdir job.{}".format(i))
+    #     do("cp myjob_nots.slurm job.{}".format(i))
+    #     do("cp loopsubmit.bash job.{}".format(i))
+    #     do("cp -r runpackage job.{}".format(i))
+    #     do("cp run.{0}.tpr job.{0}/runpackage/run.tpr".format(i))
+    # for i in range(1, 6):
+    #     cd("job.{}".format(i))
+    #     fileName = "myjob_nots.slurm"
+    #     name = "T0833"
+    #     with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+    #         for line in file:
+    #             print(line.replace("T0766", name), end='')
+    #     do("bash loopsubmit.bash")
+    #     cd("..")
+
+    # force_list = [0.3, 0.5, 0.7, 0.9, 1.1, 1.3]
+    # for force in force_list:
+    #     folder = "1d_force_" + str(force)
+    #     do("mkdir -p " + folder)
+    #     cd(folder)
+    #     do("cp ../metadatafile .")
+    #     do("~/bin/python3/bin/python3 ~/opt/pulling_analysis.py -f -m 5 --force {}".format(force))
+    #     do("sbatch freeEnergy.slurm")
+    #     cd("..")
+    # do("rm -r test")
+    # do("cp -r 2xov test")
+    # cd("test")
+    # do("test_run.py test.in")
+
+if(args.see):
+    do("head test/0/addforce.dat")
 def fix_error_run():
     n = args.number
     for i in range(n):
@@ -54,8 +1655,8 @@ def fix_error_run():
     #     os.chdir(cwd)
 
     # os.system("cut -d'/' -f2 list >")
-if(args.fix):
-    fix_error_run()
+# if(args.fix):
+#     fix_error_run()
 
 
 def rerun():
@@ -72,8 +1673,8 @@ def rerun():
         os.system("rm slurm*")
         os.system("sbatch run.slurm")
         os.chdir("..")
-if(args.rerun):
-    rerun()
+# if(args.rerun):
+#     rerun()
 
 
 def continue_run():
@@ -95,8 +1696,8 @@ def continue_run():
             "'/g' 2xov.in")
         os.system("sbatch run.slurm")
         os.chdir("..")
-if(args.go):
-    continue_run()
+# if(args.go):
+#     continue_run()
 # parser = argparse.ArgumentParser(
 #         description="This is my playground for current project")
 # parser.add_argument("protein", help="the name of protein")

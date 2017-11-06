@@ -1,0 +1,19 @@
+# VMD for MACOSXX86, version 1.9.3 (November 30, 2016)
+# Log file '/Users/weilu/Research/server/jun_2017/single_constant_force/rg_3_force_2_mem_4/simulation/19/0/label.vmd', created by user weilu
+label add Atoms 0/895
+label add Atoms 0/5
+label add Bonds 0/895 0/5
+menu color off
+menu color on
+color Labels Bonds blue
+menu color off
+menu labels off
+menu labels on
+label hide Atoms 0
+label hide Atoms 1
+label textoffset Bonds 0 { 0.207692 0.258242 }
+label textsize 3.575758
+label textthickness 2.484848
+menu labels off
+# VMD for MACOSXX86, version 1.9.3 (November 30, 2016)
+# end of log file.

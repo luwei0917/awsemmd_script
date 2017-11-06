@@ -83,14 +83,14 @@ for (( i_T=0 ; i_T<$n_T; ++i_T )) ; do
 	T_target=$(( $T_min + ($T_max - $T_min)/$n_T*$i_T ))
 	echo $T_target
 
-	#generate input files 
+	#generate input files
 	sed "s/emin/$Emin/g" ~/opt/script/wham/Wham_generate_input.pl | sed "s/emax/$Emax/g" | sed "s/eshift/$Eshift/g" | \
 	 sed "s/(xmin)/$qmin/" | sed "s/(xmax)/$qmax/" | sed "s/binN_q/$binN_q/" | sed "s/binN_E/$binN_E/" | sed "s/T_target/$T_target/" | sed "s/T_sample/$T_sample/" | \
 	  sed "s/Nsample_list/$Nline/" | sed "s/qlist/${qlist[*]}/" | sed "s/k0/$k0/" | sed "s/L0/$L0/" | sed "s/q_E_file/q_E_file/" > tmp.pl
 	chmod 755 tmp.pl
 	./tmp.pl
 
-	~/opt/script/wham/wham -c counts_file -s simcount_file -u umbrella_potential_file -r $tolerance -x 4000 > whamout
+	~/bin/wham -c counts_file -s simcount_file -u umbrella_potential_file -r $tolerance -x 4000 > whamout
 
 	# convert Wham output to PMF files
 	sed "s/emin/$Emin/g" ~/opt/script/wham/WhamPMF.pl | sed "s/emax/$Emax/g" | sed "s/eshift/$Eshift/g" | \

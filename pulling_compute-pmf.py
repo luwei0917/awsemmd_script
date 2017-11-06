@@ -19,10 +19,10 @@ import pickle # used to save files so that the initialization calculations don't
 # sys.path.append('/home/wl45/python/lib/python2.7/site-packages/pymbar-3.0.0.dev0-py2.7-linux-ppc64.egg/pymbar')
 import pymbar
 from pymbar import timeseries # used to subsample data so that the samples are uncorrelated
-
+os.system("echo 'Time' > time.info")
 # Flags
 debug_flag = False
-check_for_pickle_files = False
+check_for_pickle_files = True
 
 # Command line arguments
 if len(sys.argv) == 1:
@@ -33,11 +33,11 @@ if len(sys.argv) == 1:
 
 # Set default command line arguments
 submit_to_cluster = True          # flag for submitting calculation to a cluster (eliminates interactivity)
-precision_threshold = 10e-13       # threshold to determine whether or not to attempt to compute expectation values
+precision_threshold = 1e-15       # threshold to determine whether or not to attempt to compute expectation values
 subsample_trajectories = False      # flag for using pymbar's built-in subsampling features
-compute_per_bin_quantities = False # flag for computing per-bin expectation values
-kB = 1.381e-23 * 6.022e23 / 4184.0 # Boltzmann constant in kcal/mol/K
-ndim = 1                           # dimension of the pmf, can be 1 or 2
+compute_per_bin_quantities = False  # flag for computing per-bin expectation values
+kB = 1.381e-23 * 6.022e23 / 4184.0  # Boltzmann constant in kcal/mol/K
+ndim = 2                           # dimension of the pmf, can be 1 or 2
 metadata_file = 'metadatafile'         # name of the metadata file
 biasing_variable_column = 5        # column in the trajectory file that contains the biasing variable information
 energy_column = 4                  # column in the trajectory file that contains the total (unbiased) potential energy
@@ -45,9 +45,9 @@ pmf_variable_column_1 = 5          # column in the trajectory file that contains
 pmf_variable_column_2 = 6          # column in the trajectory file that contians the second pmf variable
 nbins1 = 40                        # number of bins for the first pmf variable
 nbins2 = 30                        # number of bins for the second pmf variable
-start_temperature = 300            # temperature at which to start the free energy calculations
-end_temperature = 400              # temperature at which to stop the free energy calculations
-force = 1.7
+start_temperature = 250            # temperature at which to start the free energy calculations
+end_temperature = 650              # temperature at which to stop the free energy calculations
+force = 0.0
 temperature_increment = 10         # how often (in degrees) to compute the free energy
 N_samples = 2000                   # number of correlated samples per simulation
 expectation_columns = []           # an array of column numbers for which to compute expectation values
@@ -61,7 +61,7 @@ fep_data = []                      # an array of numpy arrays to hold data used 
 cluster_binning = False            # True if you are using pre-assigned clusters to bin the data
 cluster_bin_map = []               # Used to map cluster indices
 nbiases = 1                        # Number of biases applied during the simulations
-nperturbations = 5                 # Number of perturbed Hamiltonians to evaluate
+nperturbations = 0                 # Number of perturbed Hamiltonians to evaluate
 biasing_variable_columns = []      # List of biasing variable columns in data file
 biasing_variable_columns.append(biasing_variable_column)
 specified_a_biasing_variable_column = False
@@ -291,18 +291,18 @@ if load_pickle == False:
         print biasing_values
 
     # Parameters
-    K = len(files) # number of simulations
+    K = len(files)  # number of simulations
 
     # Allocate storage for simulation data
-    N_k = numpy.zeros([K], numpy.int32) # N_k[k] is the number of snapshots from umbrella simulation k
+    N_k = numpy.zeros([K], numpy.int32)  # N_k[k] is the number of snapshots from umbrella simulation k
     for i in range(nbiases):
         biasing_variable_kt.append(numpy.zeros([K,N_samples], numpy.float64))
     for i in range(nperturbations+1):
         U_kt.append(numpy.zeros([K,N_samples], numpy.float64))
-    pmf_variable_kt_1 = numpy.zeros([K,N_samples], numpy.float64) # pmf_variable_kt_1[k,t] is the value of the first pmf variable from snapshot t of simulation k
+    pmf_variable_kt_1 = numpy.zeros([K,N_samples], numpy.float64)  # pmf_variable_kt_1[k,t] is the value of the first pmf variable from snapshot t of simulation k
     if ndim == 2:
-        pmf_variable_kt_2 = numpy.zeros([K,N_samples], numpy.float64) # pmf_variable_kt_2[k,t] is the value of the second pmf variable from snapshot t of simulation k
-    cluster_bin_kt = -1*numpy.ones([K,N_samples], numpy.int32) # cluster_bin_kt[k,t] is the bin of snapshot t of umbrella simulation k
+        pmf_variable_kt_2 = numpy.zeros([K,N_samples], numpy.float64)  # pmf_variable_kt_2[k,t] is the value of the second pmf variable from snapshot t of simulation k
+    cluster_bin_kt = -1*numpy.ones([K,N_samples], numpy.int32)  # cluster_bin_kt[k,t] is the bin of snapshot t of umbrella simulation k
     if (len(expectation_columns) > 0):
         for i in range(len(expectation_columns)):
             expectation_data.append(numpy.zeros([K,N_samples], numpy.float64))
@@ -377,6 +377,8 @@ if load_pickle == False:
               t += 1 # increment time step index
         for expectation_file in expectation_files_set:
           t = 0                       # time step index
+          if expectation_file == "DEFAULT":
+              break
           for line_index, line in enumerate(open(os.path.join(directory,expectation_file), 'r')):
               if line_index == 0:
                   print "WARNING: Skipping first line of %s by default." % expectation_file
@@ -489,7 +491,11 @@ if load_pickle == False:
                 # print biasing_strengths[i][l]/2.0
                 # print biasing_values[i][l]
                 # print biasing_variable_kn[i][k,0:10]
+                # print N
                 # print biasing_variable_kn[i][k,0:10] - biasing_values[i][l]
+                # print (biasing_strengths[i][l]/2.0) * (biasing_variable_kn[i][k,0:10] - biasing_values[i][l])**2
+                # print "------"
+                # print (biasing_variable_kn[i][k,0:10]-25.1)*force
                 # print "------"
 
                 u_kln[k,l,0:N] += beta * (U_bias)
@@ -545,6 +551,7 @@ if load_pickle == False:
         bin_counts = numpy.zeros([nbins], numpy.int32)
         for i in range(nbins):
             bin_counts[i] = (bin_kn == cluster_bin_map[i]).sum()
+            # I set up a cutoff to simplify the view
     else:
         if ndim == 1:
             nbins = nbins1
@@ -677,8 +684,10 @@ for perturbation_index in range(nperturbations+1):
             bin_expectation[i] = mbar.computePerturbedExpectation(u_kn[perturbation_index], in_this_bin[i], compute_uncertainty=False)[0]
             if bin_expectation[i] > precision_threshold:
                 f_i[i] = -numpy.log(bin_expectation[i])
+                # print bin_expectation[i]
             else:
                 f_i[i] = numpy.nan
+                print bin_expectation[i], i
             df_i[i] = 0.0
         for i in range(nreduced_bins):
             f_i[i] -= numpy.nanmin(f_i)

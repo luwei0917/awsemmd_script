@@ -10,6 +10,7 @@ from datetime import datetime
 import imp
 from myPersonalFunctions import *
 import glob
+from small_script.myFunctions import *
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -17,6 +18,7 @@ import glob
 # sort -u -k 3
 # sed -e 's/+T//'
 # awk '$5=-$5' data
+# awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat
 mypath = os.environ["PATH"]
 os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
@@ -35,29 +37,164 @@ parser.add_argument("--energy", help="energy ", action="store_true", default=Fal
 parser.add_argument("--qnqc", help="calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("-n", "--number", type=int, default=10, help="number of run")
+parser.add_argument("-d", "--debug", action="store_true", default=False)
+parser.add_argument("-m", "--mode",
+                    type=int, default=0)
 args = parser.parse_args()
 
+if(args.debug):
+    do = print
+    cd = print
+else:
+    do = os.system
+    cd = os.chdir
 
+# convert \( 0.0.png 0.2.png 0.4.png  +append \) \( 0.6.png  0.8.png    1.0.png +append \) -background none -append final.png
+if(args.test):
+    check_and_correct_fragment_memory()
 def test():
     print("don't show me")
-    n = args.number
-    folder_list = sorted(glob.glob("wham*"))
-    for folder in folder_list:
-        print(folder)
-        os.system("tail -n+2 {}/cv-300-400-10.dat | sort -r -k 2 | head -n1".format(folder))
+    # force_list = [round(i*0.1,2) for i in range(20)]
+    # for force in force_list:
+    #     cd("{}".format(force))
+    #     do("plotcontour.py pmf-300.dat")
+    #     do("cp test.png ../result/{}.png".format(force))
+    #     cd("..")
+
+    with open("metadata", "w") as f:
+        temp_list = [325, 350]
+        i_range = range(40)
+        for temp in temp_list:
+            for i in i_range:
+                f.write("/Users/weilu/Research/server/project/freeEnergy_2xov/qValue_v4/simulation/{}/{}/halfdata\n".format(temp, i))
+
+    # n = args.number
+    # folder_list = sorted(glob.glob("wham*"))
+    # for folder in folder_list:
+    #     print(folder)
+    #     os.system("tail -n+2 {}/cv-300-400-10.dat | sort -r -k 2 | head -n1".format(folder))
 
             # for i in range(2):
             #     address = folder + "/simulation/" + str(i)
             #     f.write(address+"  \n")
+if(args.mode == 10):
+    source_img = "final.untitled.*.jpg"
+    # do('convert ' + source_img + ' -pointsize 14 -draw "fill black text 1,11 \'some text\' " ' + "test.gif")
+    for i in range(1,1301, 1):
+        do("convert final.2xov.{:05d}.jpg -pointsize 50 -annotate +800+100 'Current force: {:5.2f}pN' -gravity West {:05d}.jpg".format(i, 69.7*(i*4e-4), i))
+if(args.mode == 9):
+    print("create directory_list")
+    with open("directory_list", "w") as f:
+        force_list = [0.3, 0.35, 0.4]
+        for force in force_list:
+            for i in range(0, 20):
+                # print(os.getcwd())
+                location = os.getcwd() + "/../force_{}_/simulation/".format(force)
+                f.write(location+str(i)+"/0\n")
 
-if(args.test):
-    test()
+if(args.mode == 8):
+    print("mode: {}".format(args.mode))
+    compute_theta_for_each_helix()
+if(args.mode == 7):
+    # n_list = [10, 16, 20, 21, 31, 33, 4, 45, 53, 55, 56, 6, 60, 7, 74, 75, 80, 90, 92]
+    n_list = [32, 41, 47, 48, 57, 58, 6, 63, 69, 72, 82, 96]
+    n_list = [0,1,10,11,12,13,14,15,16,17,18,19,2]
+    for i,n in enumerate(n_list):
+        cd("{}/0".format(n))
+        do("python3 ~/opt/small_script/last_n_frame.py -n 1 2xov.")
+        cd("../..")
+    cd("..")
+    cd("end_frame_that_folded")
+    for i,n in enumerate(n_list):
+        do("cp ../simulation/{0}/0/frames/*.pdb {0}.pdb".format(n))
+if(args.mode == 6):
+    n_list = [16, 10, 13, 16,15, 3, 8, 11, 6, 7, 20, 13, 18, 9,6, 19,4,14, 11,14]
+    print(len(n_list))
+    for i,n in enumerate(n_list):
+        do("cp run{0}/frames/{1}.pdb selection/run{0}.pdb".format(i+1,n-1))
+
+if(args.mode == 5):
+    n = 20
+    for i in range(1, n+1):
+        cd("run{}".format(i))
+        do("python3 ~/opt/small_script/last_n_frame.py -n 20 T0815. -m 2")
+        cd("frames")
+        do("python3 ~/opt/small_script/cross_q.py -m 3")
+        do("cp ~/opt/small_script/heatmap_script.m .")
+        cd("../..")
+if(args.mode == 1):
+    print("create frustration_censored_contacts.dat")
+    with open("frustration_censored_contacts.dat", "w") as f:
+        for i in range(1,182):
+            # f.write("65 {}\n".format(i))
+            f.write("116 {}\n".format(i))
+
+if(args.mode == 2):
+    print("Extract qw and distance info.")
+    for i in range(20):
+        cd(str(i))
+        cd("0")
+        do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
+        do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > distance.dat")
+        cd("../..")
+
+# do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov directory_list out")
+if(args.mode == 3):
+    print("create directory_list")
+    with open("directory_list", "w") as f:
+        for i in range(0, 20):
+            # print(os.getcwd())
+            location = os.getcwd() + "/../"
+            f.write(location+str(i)+"/0\n")
+
+if(args.mode == 4):
+    print("create directory_list")
+    for i in range(0, 20):
+        with open(str(i), "w") as f:
+            # print(os.getcwd())
+            location = os.getcwd() + "/../"
+            f.write(location+str(i)+"/0\n")
+        do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov {0} out_{0}".format(i))
+
+
+# if(args.test):
+#     if(args.mode == 3):
+#         do("cp ../2xov.pdb .")
+#         do("python2 ~/opt/script/CalcLocalQTrajectory.py 2xov dump.lammpstrj localQ_trajectory")
+#     if(args.mode == 0):
+#         run = 4
+#         cd(str(run))
+#         cd("0")
+#         do("movie.py 2xov")
+#         do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
+#     if(args.mode == 1):
+#         folder = "memb_0_force_ramp_rg_0"
+#         cd(folder)
+#         cd("0")
+#         do("tail -n 4 addforce.dat")
+#         do("tail wham.dat")
+#         do("movie.py 2xov")
+#         do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
+#     if(args.mode == 2):
+#         files = glob.glob("memb_*")
+#         # print(files)
+#         for folder in files:
+#             print(folder)
+#             cd(folder)
+#             cd("0")
+#             do("movie.py 2xov")
+#             do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
+#             cd("../..")
+#     # for i in range(0, 20):
+#     #     cd(str(i))
+#     #     do("python3 ~/opt/aawsem_show.py --casp -m 2 T0782.")
+#     #     cd("..")
 
 
 def calQnQc():
     qn_start = 0
-    qn_end = 81
-    qc_start = 81
+    qn_end = 80
+    qc_start = 80
     qc_end = 181
     qc2_start = 130
     qc2_end = 181
@@ -68,14 +205,14 @@ def calQnQc():
     size2 = file_len("qc")
     size3 = file_len("qc2")
     # os.system("paste qn qc > qnqc")
-    if(size1 < 400 or size2 < 400 or size3 < 400):
-        raise ValueError('file length too small')
-    os.system("head -n 4000 qn > qn_all")
-    os.system("head -n 4000 qc > qc_all")
-    os.system("head -n 4000 qc2 > qc2_all")
-    os.system("tail -n 2000 qn_all > qn_half")
-    os.system("tail -n 2000 qc_all > qc_half")
-    os.system("tail -n 2000 qc2_all > qc2_half")
+    # if(size1 < 400 or size2 < 400 or size3 < 400):
+    #     raise ValueError('file length too small')
+    # os.system("head -n 4000 qn > qn_all")
+    # os.system("head -n 4000 qc > qc_all")
+    # os.system("head -n 4000 qc2 > qc2_all")
+    # os.system("tail -n 2000 qn_all > qn_half")
+    # os.system("tail -n 2000 qc_all > qc_half")
+    # os.system("tail -n 2000 qc2_all > qc2_half")
     # os.system("paste qn_half qc_half qc2_half ")
 if(args.qnqc):
     calQnQc()

@@ -1,0 +1,12 @@
+# Settings for libraries used by specific LAMMPS packages
+# this file is auto-edited when those packages are included/excluded
+
+PKG_INC =   -I../../lib/colvars 
+PKG_PATH =  -L../../lib/colvars$(LIBOBJDIR) 
+PKG_LIB =   -lcolvars 
+PKG_CPP_DEPENDS = 
+PKG_LINK_DEPENDS = 
+
+PKG_SYSINC =  $(colvars_SYSINC) 
+PKG_SYSLIB =  $(colvars_SYSLIB) 
+PKG_SYSPATH = $(colvars_SYSPATH) 

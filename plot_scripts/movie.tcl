@@ -29,10 +29,12 @@ display resetview
 rotate x by 90.000000
 rotate x by 90.000000
 rotate x by 90.000000
+
 translate by 0.0 1.0 0.0
 scale by 0.833000
 scale by 0.9
-animate speed 0.168831
+animate speed 1.0
+mol smoothrep 0 0 10
 #animate forward
 #animate goto 450
 #source "~/Downloads/take_picture.tcl"

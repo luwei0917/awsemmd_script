@@ -37,10 +37,10 @@ cutoff_identical = 90   # Consider >90% identity as itself, < 90% as homologs.
 
 # set up directories
 myhome = os.environ.get("HOME")
-pdbDir = "~/opt/script/PDBs/"
-indexDir = "~/opt/script/indices/"
-fLibDir = "~/opt/script/fraglib/"
-pdbSeqres = "~/opt/script/pdb_seqres.txt"
+pdbDir = myhome + "/opt/script/PDBs/"
+indexDir = myhome + "/opt/script/Indices/"
+fLibDir = "fraglib/"
+pdbSeqres = "/Users/weilu/opt/script/pdb_seqres.txt"
 if not os.path.exists(indexDir):
     os.makedirs(indexDir)
 if not os.path.exists(pdbDir):
@@ -95,6 +95,7 @@ for record in SeqIO.parse(handle, "fasta"):
         psiblastOut = os.popen(exeline).read()
         psiblastOut = psiblastOut.splitlines()  # now an array
         N_blast = len(psiblastOut)
+        # print psiblastOut
         if psiblastOut[N_blast - 1] == 'Search has CONVERGED!':
             N_blast = N_blast - 2  # exclude last two lines for the text
 
@@ -191,11 +192,14 @@ for record in SeqIO.parse(handle, "fasta"):
             exeline = "wget ftp://ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/"
             exeline += pdbIDsecond + pdbIDthird + "/pdb" + pdbID + ".ent.gz"
             os.system(exeline)
+            print(exeline)
             os.system("nice gunzip pdb" + pdbID + ".ent.gz; mv pdb" +
                       pdbID + ".ent " + pdbDir + pdbID.upper() + ".pdb")
         if not os.path.isfile(pdbDir + pdbID.upper() + ".pdb"):
             failed_pdb[pdbID] = 1
             print ":::Cannot build PDB for PDB ID, failed to download:" + pdbID.upper()
+
+        # exit()
 
     # blast the whole sequence to identify homologs Evalue 0.005
     exeline = "psiblast -num_iterations 1 -word_size 3 -evalue 0.005"
@@ -262,9 +266,11 @@ for record in SeqIO.parse(handle, "fasta"):
             res_End = int(entries[4])
             print pdbFile, "start: ", res_Start, "end: ", res_End
             # Do I have the index file?  If No, write it
+
             if not os.path.isfile(indexFile):
                 # generate fasta file
                 if not os.path.isfile(pdbSeqres):
+                    print pdbSeqres
                     print "Need to download pdb_seqres.txt from PDB!"
                     print "ftp://ftp.wwpdb.org/pub/pdb/derived_data/pdb_seqres.txt"
                     print "Copy to $HOME/opt/script/"

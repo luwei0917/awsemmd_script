@@ -18,6 +18,7 @@ parser.add_argument("-t", "--test", help="Test run", action="store_true", defaul
 parser.add_argument("--fix", action="store_true", default=False)
 parser.add_argument("--move", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
+parser.add_argument("--may04", action="store_true", default=False)
 args = parser.parse_args()
 
 if(args.debug):
@@ -27,6 +28,9 @@ else:
     do = os.system
     cd = os.chdir
 
+if(args.may04):
+    do("mkdir tertiary_T0782")
+    do("cp ~/opt/AAWSEM/T0782.fasta .")
 if(args.move):
     folder_list = ["T0766", "T0792", "T0778", "T0782", "T0833", "T0844"]
     # folder_list = ["T0766"]
@@ -50,12 +54,48 @@ if(args.fix):
     os.chdir("aawsemJan15")
     for protein_name in folder_list:
         os.chdir(protein_name)
+
         os.system("cp {0}/frag1.mem {0}/frag.mem".format(protein_name))
         os.system("rm -r simulation")
         os.system("run.py -n 20 -o "+protein_name+"\/")
         os.chdir("..")
 
 if(args.test):
+    folder_list = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
+    for protein_name in folder_list:
+        cd(protein_name)
+        protein_size = myPersonalFunctions.file_width(protein_name+".seq")
+        print(protein_size)
+        n = 0
+        nn = 0
+        with open('Hybrid.mem', 'w') as w:
+            with open('HE.mem', 'r') as f:
+                he_lines = f.readlines()
+            # print(ha_lines)
+            with open('HO.mem', 'r') as f:
+                ho_lines = f.readlines()
+            for i in range(1, protein_size-7):
+                fragGroup = []
+                for line in ho_lines:
+                    # _, loc, _, fragLens, _ = line.split(" ")
+                    window, _, score, evalue, name, loc, j_start, fragLens, *weight = line.split()
+                    locEnd = int(loc) + int(fragLens)
+                    # print(loc, fragLens, locEnd)
+                    if(i <= int(loc) and i+9 >= locEnd):
+                        fragGroup += [line]
+                groupLens = len(fragGroup)
+                if(groupLens != 0):
+                    nn += 1
+                    for j in range(20):
+                        w.write(fragGroup[j % groupLens])
+                else:
+                    n += 1
+                    for j in range(20):
+                        try:
+                            w.write(he_lines[(i-1)*20+j])
+                        except:
+                            print(i*20+j)
+        cd("..")
     # folder_list = ["T0792", "T0778", "T0782", "T0833", "T0844"]
     #
     # print(folder_list)
@@ -102,12 +142,12 @@ if(args.test):
     #     os.chdir("../..")
     # os.chdir("aawsemJan12")
     # folder_list1 = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
-    folder_list = ["T0792", "T0778", "T0782", "T0833", "T0844"]
-    # folder_list = ["T0792"]
-    # folder_list = list(set(folder_list1) - set(folder_list2))
-    for protein_name in folder_list:
-        os.system("echo '"+protein_name+"' >> info.dat")
-        os.system("cat {0}/{0}/info.dat >> info.dat".format(protein_name))
+    # folder_list = ["T0792", "T0778", "T0782", "T0833", "T0844"]
+    # # folder_list = ["T0792"]
+    # # folder_list = list(set(folder_list1) - set(folder_list2))
+    # for protein_name in folder_list:
+    #     os.system("echo '"+protein_name+"' >> info.dat")
+    #     os.system("cat {0}/{0}/info.dat >> info.dat".format(protein_name))
 
 if(args.jan15):
     folder_list = ["T0766", "T0792", "T0778", "T0782", "T0833", "T0844"]
@@ -340,14 +380,16 @@ if(args.jan03):
 if(args.dec25):
     folder_list = ["T0792", "T0815", "T0778", "T0766", "T0782", "T0833", "T0844", "T0842", "T0846", "T0803"]
     # folder_list = ["T0815", "T0778"]
-    os.system("mkdir -p aawsemDec25")
-    os.chdir("aawsemDec25")
+    # folder_list = ["T0766"]
+    name = "aawsemFeb15"
+    os.system("mkdir -p {}".format(name))
+    os.chdir("{}".format(name))
     for protein_name in folder_list:
         os.system("mkdir -p "+protein_name)
         os.chdir(protein_name)
         os.system("mkdir -p "+protein_name)
         os.chdir(protein_name)
-        os.system("cp ~/Research/project_AAWSEM/aasem/_output/"+protein_name+".fasta .")
+        os.system("cp ~/opt/AAWSEM/"+protein_name+".fasta .")
         os.system("create_project.py " + protein_name)
         os.chdir("../..")
 

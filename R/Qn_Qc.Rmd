@@ -1,0 +1,64 @@
+---
+title: "Pulling Study"
+author: "Wei Lu"
+date: "3/25/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(gridExtra)
+library(stringr)
+theme_set(theme_gray(base_size = 20))
+```
+
+```{r, include=FALSE, cache=TRUE}
+folder_address = "/Users/weilu/Research/server/march_2017/pulling/ha_glpg/analysis/data/"
+read <- function(temp, loc) {
+  file_name <-  str_c(folder_address, temp, "/", loc)
+  data <- read_tsv(file_name, col_names = FALSE)
+  names(data) <- c("qn", "qc", "qw", "energy")
+  data <- add_column(data, run = rep(loc,nrow(data)))
+  data <- add_column(data, temp = rep(temp,nrow(data)))
+  data
+}
+output <- NULL
+temp_list <- c("135", "160", "185", "210")
+for(temp in temp_list){
+  for(i in 0:19){
+    output <- rbind(output, read(temp, i))
+  } 
+}
+```
+
+## Qc vs Qn
+At lowest Q bias, equlibrium qn, qc results under different temperature. 
+```{r}
+output %>% 
+  filter(run == 0) %>% 
+  ggplot() +
+  aes(qn, qc, color = temp )+
+  geom_point()
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
