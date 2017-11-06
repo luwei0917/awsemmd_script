@@ -94,26 +94,27 @@ def scancel_jobs_in_folder(folder):
         # print(line)
         do("scancel " + line)
     cd("..")
-if args.day == "nov01":
-    if args.mode == 2:
+if args.day == "nov05":
+    if args.mode == 1:
         # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
-        folder_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
         # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended", "rgWidth_memb_3_rg_0.1_lipid_1_topology"]
         # folder_list = ["more_higher_temp_topology"]
-        temp_list = ["all", "500"]
-        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        temp_list = ["all"]
+        # bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        bias_list = {"2d_qw_dis":"11"}
 
-        for folder in folder_list:
-            cd(folder)
-            for bias, mode in bias_list.items():
-                cd(bias)
-                cmd = "find -name 'slurm-*' | rev | awk -F'[-.]' '{print $2}' | rev"
-                lines = getFromTerminal(cmd).splitlines()
-                for line in lines:
-                    # print(line)
-                    do("scancel " + line)
+        for bias, mode in bias_list.items():
+            do("mkdir -p " + bias)
+            cd(bias)
+            for temp in temp_list:
+                do("make_metadata.py -m 12")
+                do("mkdir t_" + temp)
+                do("mv metadatafile t_" + temp)
+                cd("t_" + temp)
+                do("pulling_analysis.py -m {} --commons 0 --nsample 2500 --submode 1".format(mode))
                 cd("..")
-                do("rm -r " + bias)
             cd("..")
         # cmd = "find -name 'slurm-*' | rev | awk -F'[-.]' '{print $2}' | rev"
         # lines = getFromTerminal(cmd).splitlines()
