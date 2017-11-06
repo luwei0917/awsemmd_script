@@ -9,6 +9,7 @@ import platform
 from datetime import datetime
 import imp
 import glob
+import numpy as np
 # from run_parameter import *
 parser = argparse.ArgumentParser(
     description="This is a python3 script to\
@@ -49,7 +50,22 @@ else:
     do = os.system
     cd = os.chdir
 
-if args.mode == 9 or args.mode == 10:
+if args.mode == 12:
+    print("Distance biased 1D Free Energy, mode {}".format(args.mode))
+    print("multiple temp")
+    cwd = os.getcwd()
+    dis_list = np.linspace(30, 180, 151)
+    temp_list = [450, 500, 550, 600]
+    kconstant = args.kconstant
+    with open("metadatafile", "w") as out:
+        for dis in dis_list:
+            for temp in temp_list:
+                q = dis
+                if int(float(q)) % 3 == 0:
+                    target = "../../../data/dis_{}_temp_{}.dat {} {} {}\n".format(dis, int(temp), temp, kconstant, q)
+                    out.write(target)
+
+if args.mode == 9 or args.mode == 10 or args.mode == 11:
     print("Distance biased 1D Free Energy, mode {}".format(args.mode))
     print("multiple temp")
     cwd = os.getcwd()
@@ -62,10 +78,16 @@ if args.mode == 9 or args.mode == 10:
             temp_list = [args.temperature]
         if args.mode == 9:
             temp_list = [350, 400, 450, 500, 550, 600]
+        if args.mode == 11:
+            temp_list = [450, 500, 550, 600]
         files = glob.glob("../simulation/dis_*")
         for oneFile in files:
             for temp in temp_list:
                 q = oneFile.split("_")[-1]
+                if args.submode == 4:
+                    if int(float(q)) % 5 == 0:
+                        target = cwd + "/" + oneFile + "/0/t{}_new.dat {} {} {}\n".format(int(temp), temp, kconstant, q)
+                        out.write(target)
                 if args.submode == 3:
                     if float(q) < 130:
                         target = cwd + "/" + oneFile + "/0/t{}_new.dat {} {} {}\n".format(int(temp), temp, kconstant, q)

@@ -22,6 +22,7 @@ import fileinput
 
 # args = parser.parse_args()
 
+
 def shrinkage(n=552, shrink_size=6, max_frame=2000, fileName="dump.lammpstrj"):
     print("Shrinkage: size: {}, max_frame: {}".format(shrink_size, max_frame))
     bashCommand = "wc " + fileName

@@ -186,9 +186,10 @@ if args.mode == 4:
 if args.mode == 1:
     distance_list = np.linspace(0, 100, 51)
 if args.mode == 2:
-    distance_list = np.linspace(30, 130, 101)
+    distance_list = np.linspace(30, 180, 151)
 if args.mode == 3:
-    distance_list = np.linspace(30, 230, 101)
+    # distance_list = np.linspace(30, 230, 101)
+    distance_list = np.linspace(30, 180, 151)
     # distance_list = np.linspace(132, 232, 51)
 
     # distance_list = np.linspace(10, 180, 171)

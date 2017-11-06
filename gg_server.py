@@ -86,6 +86,30 @@ def continueRunConvertion():
     line = getFromTerminal(cmd).rstrip()
     replace(fileName, line, line + " $w")
 
+def extra(fileName, offset=0):
+    replace(fileName, "1 1 30 5", "1 1 30 {}".format(offset))
+
+
+def rerun(extra=extra, offset=0):
+    do("cp 2xov_0.in rerun_{}.in".format(offset))
+    fileName = "rerun_{}.in".format(offset)
+    replace(fileName, "fix               1 all nve", "")
+    replace(fileName, "fix               2 all langevin", "#")
+    replace(fileName, "0\/", "recompute_offset_{}\/".format(offset))
+    replace(fileName, "dump		1 all atom 4000", "#")
+    replace(fileName, "dump_modify	1 sort id", "")
+    replace(fileName, "run", "#")
+    replace(fileName, "restart         100000 restart", "rerun 0\/dump.lammpstrj dump x y z")
+
+    # replace(fileName, "1 1 30 5", "1 1 30 0")
+    extra(fileName, offset)
+    slurm = "rerun_{}.slurm".format(offset)
+    do("cp ~/opt/2xov_eval/run.slurm " + slurm)
+    replace(slurm, "2xov_eval", "rerun_{}".format(offset))
+    replace(slurm, "commons", "ctbp-common")
+    do("mkdir recompute_offset_{}".format(offset))
+    do("sbatch " + slurm)
+
 def scancel_jobs_in_folder(folder):
     cd(bias)
     cmd = "find -name 'slurm-*' | rev | awk -F'[-.]' '{print $2}' | rev"
@@ -94,7 +118,48 @@ def scancel_jobs_in_folder(folder):
         # print(line)
         do("scancel " + line)
     cd("..")
+if args.day == "nov05":
+    if args.mode == 1:
+        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
+        # folder_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended", "rgWidth_memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["more_higher_temp_topology"]
+        folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        temp_list = ["all"]
+        # bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        bias_list = {"2d_qw_dis":"11"}
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    do("make_metadata.py -m 12")
+                    do("mkdir t_" + temp)
+                    do("mv metadatafile t_" + temp)
+                    cd("t_" + temp)
+                    do("pulling_analysis.py -m {} --commons 0 --nsample 2500 --submode 1".format(mode))
+                    cd("..")
+                cd("..")
+            cd("..")
+
+if args.day == "nov02":
+    if args.mode == 1:
+        for i in range(-10, 15, 1):
+            rerun(offset=i)
+
 if args.day == "nov01":
+    if args.mode == 3:
+        # location_list = ["strengthen_helix_1", "strengthen_helix_1_baseline_without_strengthen"]
+        location_list = ["strengthen_helix_1_baseline_without_strengthen"]
+        pre = os.getcwd() + "/"
+        for location in location_list:
+            folder_list = glob.glob(pathname=pre + location + "/*_")
+            for folder in folder_list:
+                print(folder)
+                for i in range(10):
+                    cd(folder + "/simulation/{}".format(i))
+                    rerun()
     if args.mode == 2:
         # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
         folder_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
