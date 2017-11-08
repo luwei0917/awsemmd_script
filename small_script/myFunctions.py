@@ -194,11 +194,41 @@ def process_temper_data(pre, data_folder, folder_list):
             location = one_simulation + "/0/"
             try:
                 data = read_temper(location=location, n=12)
+                remove_columns = ['index', 'Step', "Run", "Temp"]
+                tmp = tmp.drop(remove_columns, axis=1)
+                data.reset_index().to_feather(pre+folder+"/data/"+f"dis{dis}.feather")
             except:
                 print("notrun?", dis)
     #         temps = list(dic.keys())
-            data.reset_index().to_feather(pre+folder+"/data/"+f"dis{dis}.feather")
         os.system("mv "+pre+folder+"/data "+data_folder+folder)
+
+def move_data(data_folder, freeEnergy_folder, folder):
+    os.system("mkdir -p "+freeEnergy_folder+folder+"/data")
+    dis_list = glob.glob(data_folder+folder+"/dis*.feather")
+    for dis_file in dis_list:
+        dis = dis_file.split("/")[-1].replace('dis', '').replace('.feather', '')
+        print(dis)
+        t6 = pd.read_feather(dis_file)
+        t6 = t6.assign(TotalE_perturb_mem_p=t6.TotalE + 0.2*t6.Membrane)
+        t6 = t6.assign(TotalE_perturb_mem_m=t6.TotalE - 0.2*t6.Membrane)
+        t6 = t6.assign(TotalE_perturb_lipid_p=t6.TotalE + 0.1*t6.Lipid)
+        t6 = t6.assign(TotalE_perturb_lipid_m=t6.TotalE - 0.1*t6.Lipid)
+        t6 = t6.assign(TotalE_perturb_go_p=t6.TotalE + 0.1*t6["AMH-Go"])
+        t6 = t6.assign(TotalE_perturb_go_m=t6.TotalE - 0.1*t6["AMH-Go"])
+        t6 = t6.assign(TotalE_perturb_rg_p=t6.TotalE + 0.2*t6.Rg)
+        t6 = t6.assign(TotalE_perturb_rg_m=t6.TotalE - 0.2*t6.Rg)
+        dic = {"T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
+        temps = list(dic.values())
+
+        def convert(x):
+            return dic[x]
+        t6["Temp"] = t6["Temp"].apply(convert)
+
+        for temp in temps:
+            if temp > 600:
+                continue
+            tmp = t6.query('Temp=="{}"& Step > 1e7'.format(temp))
+            tmp.to_csv(freeEnergy_folder+folder+"/data/t_{}_dis_{}.dat".format(temp, dis), sep=' ', index=False, header=False)
 # def pick_out_and_show():
 #     protein_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
 #     for protein in protein_list:

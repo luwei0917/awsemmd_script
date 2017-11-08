@@ -49,6 +49,44 @@ if(args.debug):
 else:
     do = os.system
     cd = os.chdir
+
+if args.mode == 16:
+    print("Distance biased 1D Free Energy, mode {}".format(args.mode))
+    print("multiple temp")
+    cwd = os.getcwd()
+    files = glob.glob("../data/*")
+    kconstant = args.kconstant
+    with open("metadatafile", "w") as out:
+        for oneFile in files:
+            tmp = oneFile.split("/")[-1].replace('.dat', '')
+            t = tmp.split("_")[1]
+            dis = tmp.split("_")[3]
+            # print(tmp)
+            if int(t) < 400 or int(t) > 500:
+                continue
+            if int(float(dis)) % 2 == 1:
+                continue
+            target = "../{} {} {} {}\n".format(oneFile, t, kconstant, dis)
+            out.write(target)
+
+if args.mode == 15:
+    print("Distance biased 1D Free Energy, mode {}".format(args.mode))
+    print("multiple temp")
+    cwd = os.getcwd()
+    files = glob.glob("../data/*")
+    kconstant = args.kconstant
+    with open("metadatafile", "w") as out:
+        for oneFile in files:
+            tmp = oneFile.split("/")[-1].replace('.dat', '')
+            t = tmp.split("_")[1]
+            dis = tmp.split("_")[3]
+            # print(tmp)
+            if int(t) < 500:
+                continue
+            target = "../{} {} {} {}\n".format(oneFile, t, kconstant, dis)
+            out.write(target)
+
+
 if args.mode == 14:
     print("Distance biased 1D Free Energy, mode {}".format(args.mode))
     print("multiple temp")

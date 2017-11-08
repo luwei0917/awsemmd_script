@@ -91,11 +91,82 @@ def scancel_jobs_in_folder(folder):
     cmd = "find -name 'slurm-*' | rev | awk -F'[-.]' '{print $2}' | rev"
     lines = getFromTerminal(cmd).splitlines()
     for line in lines:
-        # print(line)
+        print(line)
         do("scancel " + line)
     cd("..")
-
+if args.day == "nov08":
+    if args.mode == 1:
+        pre = "/scratch/wl45/nov_2017/06nov/"
+        data_folder = "/scratch/wl45/nov_2017/06nov/all_data_folder/"
+        folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+                        "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+                        "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list)
 if args.day == "nov07":
+    if args.mode == 5:
+        scancel_jobs_in_folder(".")
+    if args.mode == 4:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        # bias_list = {"2d_qw_dis":"11"}
+        # bias_list = {"1d_dis":"9", "1d_qw":"10"}
+        data_folder = "all_data_folder/"
+        freeEnergy_folder = "all_freeEnergy_calculation/"
+        # folder = "rgWidth_memb_3_rg_0.1_lipid_1_extended"
+        folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_topology",
+                        "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        folder_list = ["expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+                        "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+                        "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        # for folder in folder_list:
+        #     move_data(data_folder, freeEnergy_folder, folder)
+        submode_list = ["", "low_t_"]
+        cd("all_freeEnergy_calculation")
+        for folder in folder_list:
+            cd(folder)
+            for submode in submode_list:
+                for bias, mode in bias_list.items():
+                    # name = "low_t_" + bias
+                    name = submode+bias
+                    do("mkdir -p " + name)
+                    cd(name)
+                    for temp in temp_list:
+                        # do("make_metadata.py -m 16")
+                        do("pulling_analysis.py -m {} --commons 0 --nsample 2500 --submode 2".format(mode))
+                    cd("..")
+            cd("..")
+    if args.mode == 3:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        # bias_list = {"2d_qw_dis":"11"}
+        # bias_list = {"1d_dis":"9", "1d_qw":"10"}
+        data_folder = "all_data_folder/"
+        freeEnergy_folder = "all_freeEnergy_calculation/"
+        # folder = "rgWidth_memb_3_rg_0.1_lipid_1_extended"
+        folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_topology",
+                        "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+
+        for folder in folder_list:
+            move_data(data_folder, freeEnergy_folder, folder)
+        cd("all_freeEnergy_calculation")
+        for folder in folder_list:
+            cd(folder)
+            for bias, mode in bias_list.items():
+                do("mkdir -p " + bias)
+                cd(bias)
+                for temp in temp_list:
+                    do("make_metadata.py -m 15")
+                    do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 2".format(mode))
+                cd("..")
+            cd("..")
+    if args.mode == 2:
+        data_folder = "all_data_folder/"
+        freeEnergy_folder = "all_freeEnergy_calculation/"
+        folder = "rgWidth_memb_3_rg_0.1_lipid_1_extended"
+        move_data(data_folder, freeEnergy_folder, folder)
+
     if args.mode == 1:
         pre = "/scratch/wl45/nov_2017/06nov/"
         data_folder = "/scratch/wl45/nov_2017/06nov/all_data_folder/"
