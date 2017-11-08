@@ -15,7 +15,7 @@ import numpy as np
 from small_script.variable_test import variable_test
 import subprocess
 from small_script.myFunctions import compute_theta_for_each_helix
-
+from small_script.myFunctions import *
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -87,24 +87,29 @@ def continueRunConvertion():
     replace(fileName, line, line + " $w")
 
 def scancel_jobs_in_folder(folder):
-    cd(bias)
+    cd(folder)
     cmd = "find -name 'slurm-*' | rev | awk -F'[-.]' '{print $2}' | rev"
     lines = getFromTerminal(cmd).splitlines()
     for line in lines:
         # print(line)
         do("scancel " + line)
     cd("..")
+
+if args.day == "nov07":
+    if args.mode == 1:
+        pre = "/scratch/wl45/nov_2017/06nov/"
+        data_folder = "/scratch/wl45/nov_2017/06nov/all_data_folder/"
+        folder_list = [
+            "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"
+        ]
+        process_temper_data(pre, data_folder, folder_list)
+
 if args.day == "nov05":
     if args.mode == 1:
-        # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
-        # folder_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
-        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended", "rgWidth_memb_3_rg_0.1_lipid_1_topology"]
-        # folder_list = ["more_higher_temp_topology"]
-        folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended"]
         temp_list = ["all"]
-        # bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
-        bias_list = {"2d_qw_dis":"11"}
-
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        # bias_list = {"2d_qw_dis":"11"}
+        # bias_list = {"1d_dis":"9", "1d_qw":"10"}
         for bias, mode in bias_list.items():
             do("mkdir -p " + bias)
             cd(bias)
@@ -121,30 +126,7 @@ if args.day == "nov05":
         # for line in lines:
         #     print(line)
         #     do("scancel " + line)
-    if args.mode == 1:
-        print("how unfolding change")
-        # start_from_list=["native", "extended", "topology"]
-        start_from_list=["native"]
-        # start_from_list=["extended", "topology"]
-        mode_list = [3]  # lipid mediated interaction
-        # pressure_list = [0, 0.1, 1.0]
-        pressure_list = [1]
-        force_ramp_rate_list=[1]
-        temperature_list=[350, 500]
-        memb_k_list = [2, 4]
-        rg_list = [0.1, 0.4]
-        force_list = [0.0]
-        repeat = 10
-        variable_test(temperature_list=temperature_list,
-                        start_from_list=start_from_list,
-                        rg_list=rg_list,
-                        memb_k_list=memb_k_list,
-                        mode_list=mode_list,
-                        pressure_list=pressure_list,
-                        force_ramp_rate_list=force_ramp_rate_list,
-                        force_list=force_list,
-                        repeat=repeat,
-                        commons=1)
+
 if args.day == "oct31":
     if args.mode == 4:
         # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]

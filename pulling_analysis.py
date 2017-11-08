@@ -120,12 +120,14 @@ srun python2 ~/opt/pulling_compute-pmf.py {}
 
 if args.commons:
     freeEnergy = freeEnergy.replace("ctbp-common", "commons")
+    freeEnergy = freeEnergy.replace("--time=23:00:00", "--time=08:00:00")
 
-if args.mode >= 9 and args.mode <= 11:
+if args.mode >= 9 and args.mode <= 12:
     print("two d")
     nsample = args.nsample
     # force_list = [0.0, 0.1, 0.2]
-    force_list = [0.0]
+    # force_list = [0.0]
+    force_list = [0.0, 0.1, 0.2]
     for force in force_list:
         # force = 1
         temp_arg = "-f {} -nsamples {}".format(force, nsample)
@@ -134,6 +136,9 @@ if args.mode >= 9 and args.mode <= 11:
         cd(folder_name)
         # do("make_metadata.py -m 1")
         do("cp ../metadatafile .")
+        if(args.mode == 12):
+            arg = "-b 6 -e 11 -d 1 " + temp_arg
+            arg += " -v1 6 -v1n 50"
         if(args.mode == 11):
             print("two d")
             arg = "-b 6 -e 11 -d 2 " + temp_arg
@@ -149,6 +154,9 @@ if args.mode >= 9 and args.mode <= 11:
             arg += " -st 490 -et 510 -p 9 -p 8 -pb y"
         if args.submode == 1:
             arg += " -ti 50 -st 450 -et 600 -p 12 -p 13 -p 14 -p 15 -p 16 -p 17 -p 18 -p 19 -pb y -ss y"
+        if args.submode == 2:
+            arg += " -ti 10 -st 500 -et 700 -p 12 -p 13 -p 14 -p 15 -p 16 -p 17 -p 18 -p 19 -pb y -ss y"
+
         with open("freeEnergy.slurm", "w") as f:
             f.write(freeEnergy.format(arg))
         do("sbatch freeEnergy.slurm")

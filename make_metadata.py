@@ -49,6 +49,35 @@ if(args.debug):
 else:
     do = os.system
     cd = os.chdir
+if args.mode == 14:
+    print("Distance biased 1D Free Energy, mode {}".format(args.mode))
+    print("multiple temp")
+    cwd = os.getcwd()
+    dis_list = np.linspace(30, 150, 121)
+    temp_list = [500, 550, 600, 650]
+    kconstant = args.kconstant
+    with open("metadatafile", "w") as out:
+        for dis in dis_list:
+            for temp in temp_list:
+                q = dis
+                if int(float(q)) % 2 == 0:
+                    target = "../data/dis_{}_temp_{}.dat {} {} {}\n".format(dis, int(temp), temp, kconstant, q)
+                    out.write(target)
+
+if args.mode == 13:
+    print("Distance biased 1D Free Energy, mode {}".format(args.mode))
+    print("multiple temp")
+    cwd = os.getcwd()
+    dis_list = np.linspace(30, 150, 121)
+    temp_list = [450, 500, 550, 600]
+    kconstant = args.kconstant
+    with open("metadatafile", "w") as out:
+        for dis in dis_list:
+            for temp in temp_list:
+                q = dis
+                if int(float(q)) % 3 == 0:
+                    target = "../data/dis_{}_temp_{}.dat {} {} {}\n".format(dis, int(temp), temp, kconstant, q)
+                    out.write(target)
 
 if args.mode == 12:
     print("Distance biased 1D Free Energy, mode {}".format(args.mode))

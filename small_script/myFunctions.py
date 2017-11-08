@@ -125,7 +125,80 @@ def check_and_correct_fragment_memory():
     os.system("mv tmp.mem fragsLAMW.mem")
 
 
+def read_temper(n=4, location="."):
+    all_lipid_list = []
+    for i in range(n):
+        file = "lipid.{}.dat".format(i)
+        lipid = pd.read_csv(location+file).assign(Run=i)
+        lipid.columns = lipid.columns.str.strip()
+        lipid = lipid[["Steps","Lipid","Run"]]
+        all_lipid_list.append(lipid)
+    lipid = pd.concat(all_lipid_list)
 
+    all_energy_list = []
+    for i in range(n):
+        file = "energy.{}.dat".format(i)
+        energy = pd.read_csv(location+file).assign(Run=i)
+        energy.columns = energy.columns.str.strip()
+        energy = energy[["Steps", "AMH-Go", "Membrane", "Rg", "Run"]]
+        all_energy_list.append(energy)
+    energy = pd.concat(all_energy_list)
+
+    all_dis_list = []
+    for i in range(n):
+        file = "addforce.{}.dat".format(i)
+        dis = pd.read_csv(location+file).assign(Run=i)
+        dis.columns = dis.columns.str.strip()
+        remove_columns = ['AddedForce', 'Dis12', 'Dis34', 'Dis56']
+        dis.drop(remove_columns, axis=1,inplace=True)
+        all_dis_list.append(dis)
+    dis = pd.concat(all_dis_list)
+
+    all_wham_list = []
+    for i in range(n):
+        file = "wham.{}.dat".format(i)
+        wham = pd.read_csv(location+file).assign(Run=i)
+        wham.columns = wham.columns.str.strip()
+        remove_columns = ['Rg', 'Tc']
+        wham = wham.drop(remove_columns, axis=1)
+        all_wham_list.append(wham)
+    wham = pd.concat(all_wham_list)
+
+    file = "../log.lammps"
+#     file = "../log0/log.lammps"
+    temper = pd.read_table(location+file, skiprows=2, sep=' ')
+    temper = temper.melt(id_vars=['Step'], value_vars=['T' + str(i) for i in range(n)], value_name="Temp", var_name="Run")
+    temper["Run"] = temper["Run"].str[1:].astype(int)
+    temper["Temp"] = "T" + temper["Temp"].astype(str)
+    t2 = temper.merge(wham, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
+    t3 = t2.merge(dis, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
+    t4 = t3.merge(lipid, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
+    t5 = t4.merge(energy, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
+    t6 = t5.assign(TotalE=t5.Energy + t5.Lipid)
+#     t6 = t6.assign(TotalE_perturb_mem_p = t6.TotalE + 0.1*t6.Membrane)
+#     t6 = t6.assign(TotalE_perturb_mem_m = t6.TotalE - 0.1*t6.Membrane)
+#     t6 = t6.assign(TotalE_perturb_lipid_p = t6.TotalE + 0.1*t6.Lipid)
+#     t6 = t6.assign(TotalE_perturb_lipid_m = t6.TotalE - 0.1*t6.Lipid)
+#     t6 = t6.assign(TotalE_perturb_go_p = t6.TotalE + 0.1*t6["AMH-Go"])
+#     t6 = t6.assign(TotalE_perturb_go_m = t6.TotalE - 0.1*t6["AMH-Go"])
+#     t6 = t6.assign(TotalE_perturb_rg_p = t6.TotalE + 0.1*t6.Rg)
+#     t6 = t6.assign(TotalE_perturb_rg_m = t6.TotalE - 0.1*t6.Rg)
+    return t6
+def process_temper_data(pre, data_folder, folder_list):
+    for folder in folder_list:
+        simulation_list = glob.glob(pre+folder+"/simulation/dis_*")
+        os.system("mkdir -p " + pre+folder+"/data")
+        for one_simulation in simulation_list:
+            dis = one_simulation.split("_")[-1]
+            print(dis)
+            location = one_simulation + "/0/"
+            try:
+                data = read_temper(location=location, n=12)
+            except:
+                print("notrun?", dis)
+    #         temps = list(dic.keys())
+            data.reset_index().to_feather(pre+folder+"/data/"+f"dis{dis}.feather")
+        os.system("mv "+pre+folder+"/data "+data_folder+folder)
 # def pick_out_and_show():
 #     protein_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
 #     for protein in protein_list:
