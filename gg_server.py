@@ -13,8 +13,10 @@ from time import sleep
 import fileinput
 import numpy as np
 from small_script.variable_test import variable_test
+from small_script.variable_test2 import variable_test2
 import subprocess
 from small_script.myFunctions import compute_theta_for_each_helix
+from small_script.myFunctions import *
 
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
@@ -102,11 +104,11 @@ def rerun(extra=extra, offset=0):
     replace(fileName, "restart         100000 restart", "rerun 0\/dump.lammpstrj dump x y z")
 
     # replace(fileName, "1 1 30 5", "1 1 30 0")
-    extra(fileName, offset)
+    # extra(fileName, offset)
     slurm = "rerun_{}.slurm".format(offset)
     do("cp ~/opt/2xov_eval/run.slurm " + slurm)
     replace(slurm, "2xov_eval", "rerun_{}".format(offset))
-    replace(slurm, "commons", "ctbp-common")
+    # replace(slurm, "commons", "ctbp-common")
     do("mkdir recompute_offset_{}".format(offset))
     do("sbatch " + slurm)
 
@@ -118,6 +120,93 @@ def scancel_jobs_in_folder(folder):
         # print(line)
         do("scancel " + line)
     cd("..")
+
+if args.day == "nov08":
+    if args.mode == 5:
+        rerun()
+    if args.mode == 4:
+        print("how unfolding change")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [1, 3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0]
+        force_ramp_rate_list=[10]
+        temperature_list=[500]
+        memb_k_list = [3]
+        rg_list = [0.1]
+        force_list = [0.4, 0.5, 0.6, 0.7, 0.8]
+        repeat = 2
+        variable_test2(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=1)
+    if args.mode == 3:
+        print("how unfolding change")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0]
+        force_ramp_rate_list=[20]
+        temperature_list=[500]
+        memb_k_list = [3]
+        rg_list = [0.1]
+        # force_list = [0.4, 0.5, 0.6, 0.7, 0.8]
+        force_list = [0.3, 0.2, 0.1, 0.0]
+        repeat = 2
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=1)
+    if args.mode == 2:
+        print("how unfolding change")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0]
+        force_ramp_rate_list=[10]
+        temperature_list=[500]
+        memb_k_list = [2, 4]
+        rg_list = [0.1, 0.4]
+        force_list = [0.0]
+        repeat = 2
+        variable_test(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=1)
+    if args.mode == 1:
+        print("hello")
+        pre = "/scratch/wl45/nov_2017/06nov/"
+        data_folder = "/scratch/wl45/nov_2017/06nov/all_data_folder/"
+        folder_list = ["23oct/rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list)
+
 if args.day == "nov05":
     if args.mode == 1:
         # folder_list = ["rg_0.4_lipid_2_extended", "rg_0.4_lipid_2_topology"]
