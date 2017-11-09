@@ -209,6 +209,8 @@ def move_data(data_folder, freeEnergy_folder, folder):
         dis = dis_file.split("/")[-1].replace('dis', '').replace('.feather', '')
         print(dis)
         t6 = pd.read_feather(dis_file)
+        remove_columns = ['index']
+        t6 = t6.drop(remove_columns, axis=1)
         t6 = t6.assign(TotalE_perturb_mem_p=t6.TotalE + 0.2*t6.Membrane)
         t6 = t6.assign(TotalE_perturb_mem_m=t6.TotalE - 0.2*t6.Membrane)
         t6 = t6.assign(TotalE_perturb_lipid_p=t6.TotalE + 0.1*t6.Lipid)
@@ -227,6 +229,7 @@ def move_data(data_folder, freeEnergy_folder, folder):
         for temp in temps:
             if temp > 600:
                 continue
+
             tmp = t6.query('Temp=="{}"& Step > 1e7'.format(temp))
             tmp.to_csv(freeEnergy_folder+folder+"/data/t_{}_dis_{}.dat".format(temp, dis), sep=' ', index=False, header=False)
 # def pick_out_and_show():

@@ -155,7 +155,10 @@ if args.mode >= 9 and args.mode <= 12:
         if args.submode == 1:
             arg += " -ti 50 -st 450 -et 600 -p 12 -p 13 -p 14 -p 15 -p 16 -p 17 -p 18 -p 19 -pb y -ss y"
         if args.submode == 2:
-            arg += " -ti 10 -st 500 -et 700 -p 12 -p 13 -p 14 -p 15 -p 16 -p 17 -p 18 -p 19 -pb y -ss y"
+            arg += " -ti 10 -st 500 -et 620 -p 12 -p 13 -p 14 -p 15 -p 16 -p 17 -p 18 -p 19 -pb y -ss y"
+        if args.submode == 3:
+            arg += " -ti 10 -st 400 -et 520 -p 12 -p 13 -p 14 -p 15 -p 16 -p 17 -p 18 -p 19 -pb y -ss y"
+
 
         with open("freeEnergy.slurm", "w") as f:
             f.write(freeEnergy.format(arg))
