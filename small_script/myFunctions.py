@@ -185,6 +185,7 @@ def read_temper(n=4, location="."):
 #     t6 = t6.assign(TotalE_perturb_rg_m = t6.TotalE - 0.1*t6.Rg)
     return t6
 def process_temper_data(pre, data_folder, folder_list):
+    print("process temp data")
     for folder in folder_list:
         simulation_list = glob.glob(pre+folder+"/simulation/dis_*")
         os.system("mkdir -p " + pre+folder+"/data")
@@ -194,15 +195,17 @@ def process_temper_data(pre, data_folder, folder_list):
             location = one_simulation + "/0/"
             try:
                 data = read_temper(location=location, n=12)
-                remove_columns = ['index', 'Step', "Run", "Temp"]
-                tmp = tmp.drop(remove_columns, axis=1)
+                remove_columns = ['Step', "Run", "Temp"]
+                data = data.drop(remove_columns, axis=1)
                 data.reset_index().to_feather(pre+folder+"/data/"+f"dis{dis}.feather")
             except:
+                print("Unexpected error:", sys.exc_info()[0])
                 print("notrun?", dis)
     #         temps = list(dic.keys())
         os.system("mv "+pre+folder+"/data "+data_folder+folder)
 
 def move_data(data_folder, freeEnergy_folder, folder):
+    print("move data")
     os.system("mkdir -p "+freeEnergy_folder+folder+"/data")
     dis_list = glob.glob(data_folder+folder+"/dis*.feather")
     for dis_file in dis_list:
