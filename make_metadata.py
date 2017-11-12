@@ -62,11 +62,11 @@ if args.mode == 18:
             t = tmp.split("_")[1]
             dis = tmp.split("_")[3]
             # print(tmp)
-            if int(float(dis)) > 120:
+            if int(float(dis)) > 150:
                 continue
-            if int(t) == 500:
+            if int(t)< 650 and int(t) > 400:
                 target = "../{} {} {} {}\n".format(oneFile, t, kconstant, dis)
-                out.write(target)
+            out.write(target)
 
 
 if args.mode == 17:

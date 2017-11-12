@@ -94,7 +94,35 @@ def scancel_jobs_in_folder(folder):
         print(line)
         do("scancel " + line)
     cd("..")
-
+if args.day == "nov11":
+    if args.mode == 1:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        data_folder = "all_data_folder/"
+        freeEnergy_folder = "all_freeEnergy_calculation_nov11/"
+        folder_list = ["next_gen_native_based_memb_3_rg_0.2_lipid_0.6_extended"]
+        for folder in folder_list:
+            move_data(data_folder, freeEnergy_folder, folder)
+        submode_list = [""]
+        cd(freeEnergy_folder)
+        for folder in folder_list:
+            cd(folder)
+            for submode in submode_list:
+                for bias, mode in bias_list.items():
+                    # name = "low_t_" + bias
+                    name = submode+bias
+                    do("rm -r "+name)
+                    do("mkdir -p " + name)
+                    cd(name)
+                    for temp in temp_list:
+                        if submode == "":
+                            do("make_metadata.py -m 18")
+                            do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 2".format(mode))
+                        # elif submode == "low_t_":
+                        #     do("make_metadata.py -m 16")
+                        #     do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 3".format(mode))
+                    cd("..")
+            cd("..")
 if args.day == "nov09":
     if args.mode == 1:
         temp_list = ["all"]
