@@ -121,6 +121,42 @@ def scancel_jobs_in_folder(folder):
         do("scancel " + line)
     cd("..")
 
+if args.day == "nov11":
+    if args.mode == 1:
+        print("hello")
+        pre = "/scratch/wl45/nov_2017/06nov/"
+        data_folder = "/scratch/wl45/nov_2017/06nov/all_data_folder/"
+        folder_list = ["next_gen_native_based_memb_3_rg_0.2_lipid_0.6_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list)
+if args.day == "nov10":
+    if args.mode == 1:
+        print("how unfolding change")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0.8, 2]
+        force_ramp_rate_list=[1]
+        temperature_list=[500]
+        memb_k_list = [3]
+        rg_list = [0.3, 0.4]
+        force_list = [0.6]
+        repeat = 5
+        variable_test2(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        memb_k_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=1)
+
 if args.day == "nov08":
     if args.mode == 5:
         rerun()
@@ -136,8 +172,8 @@ if args.day == "nov08":
         temperature_list=[500]
         memb_k_list = [3]
         rg_list = [0.1]
-        force_list = [0.4, 0.5, 0.6, 0.7, 0.8]
-        repeat = 2
+        force_list = [0.4, 0.3, 0.2]
+        repeat = 10
         variable_test2(temperature_list=temperature_list,
                         start_from_list=start_from_list,
                         rg_list=rg_list,

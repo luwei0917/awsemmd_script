@@ -57,18 +57,26 @@ def variable_test2(k_list=[1],
     for index, row in all_inputs.iterrows():
         # print(index, row)
         folder_name_template = ""
-        for name in row.index:
-            exec(name.replace("_list", "")+"= '"+str(row[name]) + "'")
-        # k = row["k_list"]
-        # force_ramp_rate = row["force_ramp_rate_list"]
-        # memb_k = row["memb_k_list"]
-        # force = row["force_list"]
-        # rg = row["rg_list"]
-        # pressure = row["pressure_list"]
-        # mode = row["mode_list"]
-        # temperature = row["temperature_list"]
-        # simulation_model = row["simulation_model_list"]
-        # start_from = row["start_from_list"]
+        # print(row["simulation_model_list"])
+        # variables = {}
+        # for name in row.index:
+        #     print(name)
+        #     print(name.replace("_list", "")+"= '"+str(row[name]) + "'")
+        #     # exec(name.replace("_list", "")+"= '"+str(row[name]) + "'")
+        #     variables[name.replace("_list", "")] = str(row[name])
+        # locals().update(variables)
+        # print(mode)
+        # print(simulation_model)
+        k = row["k_list"]
+        force_ramp_rate = row["force_ramp_rate_list"]
+        memb_k = row["memb_k_list"]
+        force = row["force_list"]
+        rg = row["rg_list"]
+        pressure = row["pressure_list"]
+        mode = row["mode_list"]
+        temperature = row["temperature_list"]
+        simulation_model = row["simulation_model_list"]
+        start_from = row["start_from_list"]
 
         for name in folder_name_list:
             tmp = row[name]

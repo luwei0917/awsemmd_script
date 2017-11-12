@@ -21,6 +21,7 @@ parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--rerun",
                     type=int, default=0)
 parser.add_argument("-m", "--mode", type=int, default=1)
+parser.add_argument("--commons", type=int, default=0)
 args = parser.parse_args()
 protein_name = args.template.strip('/')
 
@@ -113,6 +114,8 @@ echo $SLURM_NODELIST
 srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 12x1 -in 2xov_{}.in
 '''
 
+if args.commons == 1:
+    run_slurm = run_slurm.replace("ctbp-common", "commons")
 def change(fileName, from_str, to_str):
     with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
         for line in file:
@@ -189,7 +192,8 @@ if args.mode == 2:
     distance_list = np.linspace(30, 180, 151)
 if args.mode == 3:
     # distance_list = np.linspace(30, 230, 101)
-    distance_list = np.linspace(30, 180, 151)
+    distance_list = np.linspace(30, 180, 51)
+    # distance_list = np.linspace(60.5, 90.5, 16)
     # distance_list = np.linspace(132, 232, 51)
 
     # distance_list = np.linspace(10, 180, 171)
@@ -225,5 +229,6 @@ if args.mode <= 3:
             "'/g' *.in")
         with open("run_{}.slurm".format(i), "w") as r:
             r.write(run_slurm.format(i))
+
         do("sbatch " + "run_{}.slurm".format(i))
         cd("..")

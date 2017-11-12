@@ -29,5 +29,8 @@ if args.all:
 else:
     n = args.n
     start = args.start
-    for i in range(n):
-        os.system("scancel "+str(start+i))
+    if n > 1000:
+        print("NO")
+    else:
+        for i in range(n):
+            os.system("scancel "+str(start+i))
