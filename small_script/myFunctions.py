@@ -204,7 +204,7 @@ def process_temper_data(pre, data_folder, folder_list):
     #         temps = list(dic.keys())
         os.system("mv "+pre+folder+"/data "+data_folder+folder)
 
-def move_data(data_folder, freeEnergy_folder, folder):
+def move_data(data_folder, freeEnergy_folder, folder, kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2):
     print("move data")
     os.system("mkdir -p "+freeEnergy_folder+folder+"/data")
     dis_list = glob.glob(data_folder+folder+"/dis*.feather")
@@ -214,14 +214,14 @@ def move_data(data_folder, freeEnergy_folder, folder):
         t6 = pd.read_feather(dis_file)
         remove_columns = ['index']
         t6 = t6.drop(remove_columns, axis=1)
-        t6 = t6.assign(TotalE_perturb_mem_p=t6.TotalE + 0.2*t6.Membrane)
-        t6 = t6.assign(TotalE_perturb_mem_m=t6.TotalE - 0.2*t6.Membrane)
-        t6 = t6.assign(TotalE_perturb_lipid_p=t6.TotalE + 0.1*t6.Lipid)
-        t6 = t6.assign(TotalE_perturb_lipid_m=t6.TotalE - 0.1*t6.Lipid)
-        t6 = t6.assign(TotalE_perturb_go_p=t6.TotalE + 0.1*t6["AMH-Go"])
-        t6 = t6.assign(TotalE_perturb_go_m=t6.TotalE - 0.1*t6["AMH-Go"])
-        t6 = t6.assign(TotalE_perturb_rg_p=t6.TotalE + 0.2*t6.Rg)
-        t6 = t6.assign(TotalE_perturb_rg_m=t6.TotalE - 0.2*t6.Rg)
+        t6 = t6.assign(TotalE_perturb_mem_p=t6.TotalE + kmem*t6.Membrane)
+        t6 = t6.assign(TotalE_perturb_mem_m=t6.TotalE - kmem*t6.Membrane)
+        t6 = t6.assign(TotalE_perturb_lipid_p=t6.TotalE + klipid*t6.Lipid)
+        t6 = t6.assign(TotalE_perturb_lipid_m=t6.TotalE - klipid*t6.Lipid)
+        t6 = t6.assign(TotalE_perturb_go_p=t6.TotalE + kgo*t6["AMH-Go"])
+        t6 = t6.assign(TotalE_perturb_go_m=t6.TotalE - kgo*t6["AMH-Go"])
+        t6 = t6.assign(TotalE_perturb_rg_p=t6.TotalE + krg*t6.Rg)
+        t6 = t6.assign(TotalE_perturb_rg_m=t6.TotalE - krg*t6.Rg)
         dic = {"T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
         temps = list(dic.values())
 
