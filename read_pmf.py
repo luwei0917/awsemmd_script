@@ -100,5 +100,7 @@ def readPMF(pre):
     return pd.concat(all_pmf_list).dropna().reset_index()
 
 data = readPMF(".")
+remove_columns = ['bin']
+data = data.drop(remove_columns, axis=1)
 label = args.label
 data.to_feather(f"/Users/weilu/Research/data/pulling/{datetime.datetime.today().strftime('%d_%h')}_pmf_{label}.feather")
