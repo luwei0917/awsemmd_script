@@ -102,7 +102,7 @@ if args.mode == 3:
 #SBATCH --ntasks=1
 #SBATCH --threads-per-core=1
 #SBATCH --mem-per-cpu=1G
-#SBATCH --time=1:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --mail-user=luwei0917@gmail.com
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
