@@ -37,124 +37,111 @@ parser.add_argument("--energy", help="energy ", action="store_true", default=Fal
 parser.add_argument("--qnqc", help="calculate q of n terminal and q of c terminal ", action="store_true", default=False)
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("-n", "--number", type=int, default=10, help="number of run")
-parser.add_argument("-d", "--debug", action="store_true", default=False)
-parser.add_argument("-m", "--mode",
-                    type=int, default=0)
+parser.add_argument("-d", "--day", type=str, default="someday")
+parser.add_argument("-m", "--mode",type=int, default=0)
 args = parser.parse_args()
 
-if(args.debug):
+if(args.test):
     do = print
     cd = print
 else:
     do = os.system
     cd = os.chdir
 
-# convert \( 0.0.png 0.2.png 0.4.png  +append \) \( 0.6.png  0.8.png    1.0.png +append \) -background none -append final.png
-if(args.test):
-    check_and_correct_fragment_memory()
-def test():
-    print("don't show me")
-    # force_list = [round(i*0.1,2) for i in range(20)]
-    # for force in force_list:
-    #     cd("{}".format(force))
-    #     do("plotcontour.py pmf-300.dat")
-    #     do("cp test.png ../result/{}.png".format(force))
-    #     cd("..")
 
-    with open("metadata", "w") as f:
-        temp_list = [325, 350]
-        i_range = range(40)
-        for temp in temp_list:
-            for i in i_range:
-                f.write("/Users/weilu/Research/server/project/freeEnergy_2xov/qValue_v4/simulation/{}/{}/halfdata\n".format(temp, i))
 
-    # n = args.number
-    # folder_list = sorted(glob.glob("wham*"))
-    # for folder in folder_list:
-    #     print(folder)
-    #     os.system("tail -n+2 {}/cv-300-400-10.dat | sort -r -k 2 | head -n1".format(folder))
 
-            # for i in range(2):
-            #     address = folder + "/simulation/" + str(i)
-            #     f.write(address+"  \n")
-if(args.mode == 10):
-    source_img = "final.untitled.*.jpg"
-    # do('convert ' + source_img + ' -pointsize 14 -draw "fill black text 1,11 \'some text\' " ' + "test.gif")
-    for i in range(1,1301, 1):
-        do("convert final.2xov.{:05d}.jpg -pointsize 50 -annotate +800+100 'Current force: {:5.2f}pN' -gravity West {:05d}.jpg".format(i, 69.7*(i*4e-4), i))
-if(args.mode == 9):
-    print("create directory_list")
-    with open("directory_list", "w") as f:
-        force_list = [0.3, 0.35, 0.4]
-        for force in force_list:
+if args.day == "nov15":
+    if args.mode == 1:
+        simulation_list = ["memb_3_rg_0.1_lipid_1_extended"]
+        for simulation in simulation_list:
+            for mode in range(3):
+                cd(f"nov_15_all_freeEnergy_calculation_sample_range_mode_{mode}")
+                cd(simulation)
+                do(f"read_pmf.py -m 1 -l {simulation}_{mode}")
+if args.day == "old":
+    #  convert \( 0.0.png 0.2.png 0.4.png  +append \) \( 0.6.png  0.8.png    1.0.png +append \) -background none -append final.png
+    if(args.test):
+        check_and_correct_fragment_memory()
+
+    if(args.mode == 10):
+        source_img = "final.untitled.*.jpg"
+        # do('convert ' + source_img + ' -pointsize 14 -draw "fill black text 1,11 \'some text\' " ' + "test.gif")
+        for i in range(1,1301, 1):
+            do("convert final.2xov.{:05d}.jpg -pointsize 50 -annotate +800+100 'Current force: {:5.2f}pN' -gravity West {:05d}.jpg".format(i, 69.7*(i*4e-4), i))
+    if(args.mode == 9):
+        print("create directory_list")
+        with open("directory_list", "w") as f:
+            force_list = [0.3, 0.35, 0.4]
+            for force in force_list:
+                for i in range(0, 20):
+                    # print(os.getcwd())
+                    location = os.getcwd() + "/../force_{}_/simulation/".format(force)
+                    f.write(location+str(i)+"/0\n")
+
+    if(args.mode == 8):
+        print("mode: {}".format(args.mode))
+        compute_theta_for_each_helix()
+    if(args.mode == 7):
+        # n_list = [10, 16, 20, 21, 31, 33, 4, 45, 53, 55, 56, 6, 60, 7, 74, 75, 80, 90, 92]
+        n_list = [32, 41, 47, 48, 57, 58, 6, 63, 69, 72, 82, 96]
+        n_list = [0,1,10,11,12,13,14,15,16,17,18,19,2]
+        for i,n in enumerate(n_list):
+            cd("{}/0".format(n))
+            do("python3 ~/opt/small_script/last_n_frame.py -n 1 2xov.")
+            cd("../..")
+        cd("..")
+        cd("end_frame_that_folded")
+        for i,n in enumerate(n_list):
+            do("cp ../simulation/{0}/0/frames/*.pdb {0}.pdb".format(n))
+    if(args.mode == 6):
+        n_list = [16, 10, 13, 16,15, 3, 8, 11, 6, 7, 20, 13, 18, 9,6, 19,4,14, 11,14]
+        print(len(n_list))
+        for i,n in enumerate(n_list):
+            do("cp run{0}/frames/{1}.pdb selection/run{0}.pdb".format(i+1,n-1))
+
+    if(args.mode == 5):
+        n = 20
+        for i in range(1, n+1):
+            cd("run{}".format(i))
+            do("python3 ~/opt/small_script/last_n_frame.py -n 20 T0815. -m 2")
+            cd("frames")
+            do("python3 ~/opt/small_script/cross_q.py -m 3")
+            do("cp ~/opt/small_script/heatmap_script.m .")
+            cd("../..")
+    if(args.mode == 1):
+        print("create frustration_censored_contacts.dat")
+        with open("frustration_censored_contacts.dat", "w") as f:
+            for i in range(1,182):
+                # f.write("65 {}\n".format(i))
+                f.write("116 {}\n".format(i))
+
+    if(args.mode == 2):
+        print("Extract qw and distance info.")
+        for i in range(20):
+            cd(str(i))
+            cd("0")
+            do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
+            do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > distance.dat")
+            cd("../..")
+
+    # do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov directory_list out")
+    if(args.mode == 3):
+        print("create directory_list")
+        with open("directory_list", "w") as f:
             for i in range(0, 20):
                 # print(os.getcwd())
-                location = os.getcwd() + "/../force_{}_/simulation/".format(force)
+                location = os.getcwd() + "/../"
                 f.write(location+str(i)+"/0\n")
 
-if(args.mode == 8):
-    print("mode: {}".format(args.mode))
-    compute_theta_for_each_helix()
-if(args.mode == 7):
-    # n_list = [10, 16, 20, 21, 31, 33, 4, 45, 53, 55, 56, 6, 60, 7, 74, 75, 80, 90, 92]
-    n_list = [32, 41, 47, 48, 57, 58, 6, 63, 69, 72, 82, 96]
-    n_list = [0,1,10,11,12,13,14,15,16,17,18,19,2]
-    for i,n in enumerate(n_list):
-        cd("{}/0".format(n))
-        do("python3 ~/opt/small_script/last_n_frame.py -n 1 2xov.")
-        cd("../..")
-    cd("..")
-    cd("end_frame_that_folded")
-    for i,n in enumerate(n_list):
-        do("cp ../simulation/{0}/0/frames/*.pdb {0}.pdb".format(n))
-if(args.mode == 6):
-    n_list = [16, 10, 13, 16,15, 3, 8, 11, 6, 7, 20, 13, 18, 9,6, 19,4,14, 11,14]
-    print(len(n_list))
-    for i,n in enumerate(n_list):
-        do("cp run{0}/frames/{1}.pdb selection/run{0}.pdb".format(i+1,n-1))
-
-if(args.mode == 5):
-    n = 20
-    for i in range(1, n+1):
-        cd("run{}".format(i))
-        do("python3 ~/opt/small_script/last_n_frame.py -n 20 T0815. -m 2")
-        cd("frames")
-        do("python3 ~/opt/small_script/cross_q.py -m 3")
-        do("cp ~/opt/small_script/heatmap_script.m .")
-        cd("../..")
-if(args.mode == 1):
-    print("create frustration_censored_contacts.dat")
-    with open("frustration_censored_contacts.dat", "w") as f:
-        for i in range(1,182):
-            # f.write("65 {}\n".format(i))
-            f.write("116 {}\n".format(i))
-
-if(args.mode == 2):
-    print("Extract qw and distance info.")
-    for i in range(20):
-        cd(str(i))
-        cd("0")
-        do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
-        do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > distance.dat")
-        cd("../..")
-
-# do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov directory_list out")
-if(args.mode == 3):
-    print("create directory_list")
-    with open("directory_list", "w") as f:
+    if(args.mode == 4):
+        print("create directory_list")
         for i in range(0, 20):
-            # print(os.getcwd())
-            location = os.getcwd() + "/../"
-            f.write(location+str(i)+"/0\n")
-
-if(args.mode == 4):
-    print("create directory_list")
-    for i in range(0, 20):
-        with open(str(i), "w") as f:
-            # print(os.getcwd())
-            location = os.getcwd() + "/../"
-            f.write(location+str(i)+"/0\n")
-        do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov {0} out_{0}".format(i))
+            with open(str(i), "w") as f:
+                # print(os.getcwd())
+                location = os.getcwd() + "/../"
+                f.write(location+str(i)+"/0\n")
+            do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov {0} out_{0}".format(i))
 
 
 # if(args.test):
@@ -189,7 +176,31 @@ if(args.mode == 4):
 #     #     cd(str(i))
 #     #     do("python3 ~/opt/aawsem_show.py --casp -m 2 T0782.")
 #     #     cd("..")
+    def test():
+        print("don't show me")
+        # force_list = [round(i*0.1,2) for i in range(20)]
+        # for force in force_list:
+        #     cd("{}".format(force))
+        #     do("plotcontour.py pmf-300.dat")
+        #     do("cp test.png ../result/{}.png".format(force))
+        #     cd("..")
 
+        with open("metadata", "w") as f:
+            temp_list = [325, 350]
+            i_range = range(40)
+            for temp in temp_list:
+                for i in i_range:
+                    f.write("/Users/weilu/Research/server/project/freeEnergy_2xov/qValue_v4/simulation/{}/{}/halfdata\n".format(temp, i))
+
+        # n = args.number
+        # folder_list = sorted(glob.glob("wham*"))
+        # for folder in folder_list:
+        #     print(folder)
+        #     os.system("tail -n+2 {}/cv-300-400-10.dat | sort -r -k 2 | head -n1".format(folder))
+
+                # for i in range(2):
+                #     address = folder + "/simulation/" + str(i)
+                #     f.write(address+"  \n")
 
 def calQnQc():
     qn_start = 0

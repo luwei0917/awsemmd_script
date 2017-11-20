@@ -15,13 +15,62 @@ from small_script.myFunctions_helper import *
 import numpy as np
 import pandas as pd
 import fileinput
+from itertools import product
 # compute cross Q for every pdb pair in one folder
 # parser = argparse.ArgumentParser(description="Compute cross q")
 # parser.add_argument("-m", "--mode",
 #                     type=int, default=1)
 
 # args = parser.parse_args()
+def expand_grid(dictionary):
+    return pd.DataFrame([row for row in product(*dictionary.values())],
+                        columns=dictionary.keys())
+def readPMF(pre):
+    perturbation_table = {0:"original", 1:"p_mem",
+                          2:"m_mem", 3:"p_lipid",
+                          4:"m_lipid", 5:"p_go",
+                          6:"m_go", 7:"p_rg", 8:"m_rg"}
+    pmf_list = {
+        "perturbation":list(perturbation_table.keys()),
+        "force":["0.0", "0.1", "0.2"]
+    }
+    pmf_list_data = expand_grid(pmf_list)
+    all_pmf_list = []
+    for index, row in pmf_list_data.iterrows():
+        force = row["force"]
+        perturbation = row["perturbation"]
+        if perturbation == 0:
+            location = pre + f"/force_{force}/pmf-*.dat"
+            pmf_list = glob.glob(location)
+            change = "none"
+            upOrDown = "none"
+        else:
+            location = pre + f"/force_{force}/perturbation-{perturbation}-pmf-*.dat"
+            pmf_list = glob.glob(location)
+            change = perturbation_table[perturbation].split("_")[-1]
+            upOrDown = perturbation_table[perturbation].split("_")[0]
+        # print(location)
+        name_list = ["f", "df", "e", "s"]
+        names = ["bin", "x"] + name_list
+        for location in pmf_list:
+            # print(location)
+            temp = re.findall(r'pmf-(\d+)', location)
+            if len(temp) != 1:
+                raise ValueError('Not expected to see more than one or none')
+            else:
+                temp = temp[0]
+            data = pd.read_table(location, skiprows=2, sep='\s+', names=names).assign(upOrDown=upOrDown, change=change, force=force, temp=temp, perturbation=perturbation_table[perturbation])
+            all_pmf_list.append(data)
 
+    return pd.concat(all_pmf_list).dropna().reset_index()
+
+def readPMF_2(pre):
+    mode_list = ["1d_dis", "1d_qw"]
+    all_data_list =[]
+    for mode in mode_list:
+        tmp = readPMF(mode).assign(mode=mode)
+        all_data_list.append(tmp)
+    return pd.concat(all_data_list).dropna().reset_index()
 
 def shrinkage(n=552, shrink_size=6, max_frame=2000, fileName="dump.lammpstrj"):
     print("Shrinkage: size: {}, max_frame: {}".format(shrink_size, max_frame))

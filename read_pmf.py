@@ -18,8 +18,9 @@ import glob
 import numpy as np
 import datetime
 import pandas as pd
-from itertools import product
 import re
+from small_script.myFunctions import readPMF
+from small_script.myFunctions import readPMF_2
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -34,7 +35,7 @@ parser.add_argument("-t", "--test", help="test ", action="store_true", default=F
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("-l", "--label", default="1")
 parser.add_argument("--dimension", type=int, default=2)
-parser.add_argument("-m", "--mode", type=int, default=1)
+parser.add_argument("-m", "--mode", type=int, default=0)
 parser.add_argument("--force", type=float, default=1.0)
 parser.add_argument("-p", "--patch", type=int, default=1)
 parser.add_argument("--commons", type=int, default=0)
@@ -49,58 +50,53 @@ else:
     do = os.system
     cd = os.chdir
 
-
+label = args.label
 
 if(args.test):
     print("hello world")
 
-def expand_grid(dictionary):
-    return pd.DataFrame([row for row in product(*dictionary.values())],
-                        columns=dictionary.keys())
-def readPMF(pre):
-    perturbation_table = {0:"original", 1:"p_mem",
-                          2:"m_mem", 3:"p_lipid",
-                          4:"m_lipid", 5:"p_go",
-                          6:"m_go", 7:"p_rg", 8:"m_rg"}
-    pmf_list = {
-        "perturbation":list(perturbation_table.keys()),
-        "force":["0.0", "0.1", "0.2"]
-    }
-    pmf_list_data = expand_grid(pmf_list)
+if args.mode == 0:
+    data = readPMF(".")
+elif args.mode == 1:
+    data = readPMF_2(".")
+elif args.mode ==3:
     all_pmf_list = []
-    for index, row in pmf_list_data.iterrows():
-        #     print(index)
-        #     print("--")
-        #     print(row)
-        force = row["force"]
-        perturbation = row["perturbation"]
-        if perturbation == 0:
-            location = pre + f"/force_{force}/pmf-*.dat"
-            pmf_list = glob.glob(location)
-            change = "none"
-            upOrDown = "none"
-        else:
-            location = pre + f"/force_{force}/perturbation-{perturbation}-pmf-*.dat"
-            pmf_list = glob.glob(location)
-            change = perturbation_table[perturbation].split("_")[-1]
-            upOrDown = perturbation_table[perturbation].split("_")[0]
-        # print(location)
-        name_list = ["f", "df", "e", "s"]
-        names = ["bin", "x"] + name_list
-        for location in pmf_list:
-            # print(location)
-            temp = re.findall(r'pmf-(\d+)', location)
-            if len(temp) != 1:
-                raise ValueError('Not expected to see more than one or none')
-            else:
-                temp = temp[0]
-            data = pd.read_table(location, skiprows=2, sep='\s+', names=names).assign(upOrDown=upOrDown, change=change, force=force, temp=temp, perturbation=perturbation_table[perturbation])
-            all_pmf_list.append(data)
+    simulation_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
+    for simulation in simulation_list:
+        for mode in range(3):
+            cd(f"nov_15_all_freeEnergy_calculation_sample_range_mode_{mode}")
+            cd(simulation)
+            tmp = readPMF_2(".").assign(submode=mode, simulation=simulation)
+            all_pmf_list.append(tmp)
+            cd("../..")
+    data = pd.concat(all_pmf_list).reset_index(drop=True)
+elif args.mode ==4:
+    all_pmf_list = []
+    simulation_list = ["next_gen_native_based_memb_3_rg_0.2_lipid_0.6_extended",
+                        "next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended",
+                        "next_gen_native_based_memb_3_rg_0.4_lipid_0.6_topology"]
+    cd(f"all_freeEnergy_calculation_nov11")
+    for simulation in simulation_list:
 
-    return pd.concat(all_pmf_list).dropna().reset_index()
+        cd(simulation)
+        tmp = readPMF_2(".").assign(submode="0", simulation=simulation)
+        all_pmf_list.append(tmp)
+        cd("..")
+    data = pd.concat(all_pmf_list).reset_index(drop=True)
+# data = readPMF(".")
+elif args.mode ==5:
+    all_pmf_list = []
+    simulation_list = ["new_next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended", "new_next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended_2", "new_next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extendedshort"]
+    for simulation in simulation_list:
+        for mode in range(3):
+            cd(f"nov_18_all_freeEnergy_calculation_sample_range_mode_{mode}")
+            cd(simulation)
+            tmp = readPMF_2(".").assign(submode=mode, simulation=simulation)
+            all_pmf_list.append(tmp)
+            cd("../..")
+    data = pd.concat(all_pmf_list).reset_index(drop=True)
 
-data = readPMF(".")
 remove_columns = ['bin']
 data = data.drop(remove_columns, axis=1)
-label = args.label
+
 data.to_feather(f"/Users/weilu/Research/data/pulling/{datetime.datetime.today().strftime('%d_%h')}_pmf_{label}.feather")
