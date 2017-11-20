@@ -120,8 +120,123 @@ def scancel_jobs_in_folder(folder):
         # print(line)
         do("scancel " + line)
     cd("..")
+if args.day == "nov19":
+    if args.mode ==1:
+        rerun()
+if args.day == "nov18":
+    if args.mode == 1:
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/06nov/"
+        data_folder = "/scratch/wl45/nov_2017/06nov/all_data_folder_nov15/"
+        folder_list = ["next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list, rerun=2)
+if args.day == "nov15":
+    if args.mode == 6:
+        dis_list = glob.glob("dis_*")
+        print(dis_list)
+        for dis in dis_list:
+            cd(dis)
+            # do("mkdir log0")
+            # do("mv log.* log0/")
+            do("cp log0/log.lammps .")
+            continueRunConvertion()
+            do("mkdir 1")
 
+            do("sed 's/2xov_0/2xov_1/g' run_0.slurm > run_1.slurm")
+            do("sbatch run_1.slurm")
+            cd("..")
+    if args.mode == 1:
+        simulation_list = glob.glob("dis_*")
+        # print(simulation_list)
+        for dis in simulation_list:
+            do(f"mkdir {dis}/log{1}")
+            do(f"mv {dis}/log.* {dis}/log{1}/")
+    if args.mode == 2:
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/06nov/"
+        data_folder = "/scratch/wl45/nov_2017/06nov/all_data_folder_nov15/"
+        folder_list = ["23oct/memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list, rerun=2)
+    if args.mode == 3:
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/06nov/"
+        data_folder = "/scratch/wl45/nov_2017/06nov/all_data_folder_nov15/"
+        folder_list = ["23oct/memb_4_rg_0.1_lipid_1_extended",
+                        "23oct/memb_4_rg_0.1_lipid_1_topology"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list)
+    if args.mode == 4:
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/06nov/"
+        data_folder = "/scratch/wl45/nov_2017/06nov/all_data_folder_nov15/"
+        folder_list = ["23oct/rgWidth_memb_3_rg_0.1_lipid_1_extended",
+                        "23oct/rgWidth_memb_3_rg_0.1_lipid_1_topology"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list)
+    if args.mode == 5:
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/06nov/"
+        data_folder = "/scratch/wl45/nov_2017/06nov/all_data_folder_nov15/"
+        folder_list = ["expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended",
+                        "next_gen_native_based_memb_3_rg_0.2_lipid_0.6_extended",
+                        "next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended",
+                        "next_gen_native_based_memb_3_rg_0.4_lipid_0.6_topology",
+                        "stronger_bias_for_expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list)
+
+
+if args.day == "nov14":
+    if args.mode == 1:
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/06nov/"
+        data_folder = "/scratch/wl45/nov_2017/06nov/all_data_folder/"
+        folder_list = ["next_gen_native_based_memb_3_rg_0.4_lipid_0.6_topology"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list)
+    if args.mode == 2:
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/06nov/"
+        data_folder = "/scratch/wl45/nov_2017/06nov/all_data_folder/"
+        folder_list = ["stronger_bias_for_expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list)
+if args.day == "nov12":
+    if args.mode == 2:
+        rerun(offset=1)
+    if args.mode == 1:
+        print("hello")
+        pre = "/scratch/wl45/nov_2017/06nov/"
+        data_folder = "/scratch/wl45/nov_2017/06nov/all_data_folder/"
+        folder_list = ["next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list)
 if args.day == "nov11":
+    if args.mode == 2:
+        rerun(offset=1)
     if args.mode == 1:
         print("hello")
         pre = "/scratch/wl45/nov_2017/06nov/"
