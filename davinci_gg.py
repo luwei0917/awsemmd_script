@@ -94,6 +94,211 @@ def scancel_jobs_in_folder(folder):
         print(line)
         do("scancel " + line)
     cd("..")
+if args.day == "nov19":
+    if args.mode == 2:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(3):
+            freeEnergy_folder = f"nov_18_all_freeEnergy_calculation_sample_range_mode_{sample_range_mode}/"
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            folder_list = ["new_next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended"]
+            submode_list = ["_no_energy"]
+            for submode in submode_list:
+                for folder in folder_list:
+                    move_data(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode, sub_mode_name=submode)
+
+
+    if args.mode == 1:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(3):
+            freeEnergy_folder = f"nov_18_all_freeEnergy_calculation_sample_range_mode_{sample_range_mode}/"
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            folder_list = ["new_next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended"]
+            submode_list = ["short"]
+            for submode in submode_list:
+                for folder in folder_list:
+                    move_data(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode, sub_mode_name=submode)
+
+            cd(freeEnergy_folder)
+            for submode in submode_list:
+                for folder in folder_list:
+                    cd(folder+submode)
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        for temp in temp_list:
+                            if submode == "":
+                                do("make_metadata.py -m 18 -k 0.02")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 2".format(mode))
+                            if submode == "short":
+                                do("make_metadata.py -m 21")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 3".format(mode))
+                            elif submode == "low_t_":
+                                do("make_metadata.py -m 20")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 4".format(mode))
+                        cd("..")
+                    cd("..")
+            cd("..")
+
+if args.day == "nov18":
+    if args.mode == 1:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(3):
+            freeEnergy_folder = f"nov_18_all_freeEnergy_calculation_sample_range_mode_{sample_range_mode}/"
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            folder_list = ["new_next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended"]
+            for folder in folder_list:
+                move_data(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode)
+            submode_list = [""]
+            cd(freeEnergy_folder)
+            for folder in folder_list:
+                cd(folder)
+                for submode in submode_list:
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = submode+bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        for temp in temp_list:
+                            if submode == "":
+                                do("make_metadata.py -m 18 -k 0.02")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 2".format(mode))
+                            if submode == "short":
+                                do("make_metadata.py -m 19")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 3".format(mode))
+                            elif submode == "low_t_":
+                                do("make_metadata.py -m 20")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 4".format(mode))
+                        cd("..")
+                cd("..")
+            cd("..")
+    if args.mode == 2:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(3):
+            freeEnergy_folder = f"nov_18_all_freeEnergy_calculation_sample_range_mode_{sample_range_mode}_2/"
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            folder_list = ["new_next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended"]
+            for folder in folder_list:
+                move_data(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode)
+            submode_list = [""]
+            cd(freeEnergy_folder)
+            for folder in folder_list:
+                cd(folder)
+                for submode in submode_list:
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = submode+bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        for temp in temp_list:
+                            if submode == "":
+                                do("make_metadata.py -m 18 -k 0.02")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 2".format(mode))
+                            if submode == "short":
+                                do("make_metadata.py -m 19")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 3".format(mode))
+                            elif submode == "low_t_":
+                                do("make_metadata.py -m 20")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 4".format(mode))
+                        cd("..")
+                cd("..")
+            cd("..")
+if args.day == "nov15":
+    if args.mode == 2:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        data_folder = "all_data_folder/"
+        freeEnergy_folder = "nov_15_all_freeEnergy_calculation/"
+        # do("mkdir " + freeEnergy_folder)
+        # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "next_gen_native_based_memb_3_rg_0.2_lipid_0.6_extended",
+        #                 "next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended",
+        #                 "next_gen_native_based_memb_3_rg_0.4_lipid_0.6_topology",
+        #                 "stronger_bias_for_expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_topology",
+                        "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended",
+                        "next_gen_native_based_memb_3_rg_0.2_lipid_0.6_extended",
+                        "next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended",
+                        "next_gen_native_based_memb_3_rg_0.4_lipid_0.6_topology",
+                        "stronger_bias_for_expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        for folder in folder_list:
+            move_data(data_folder, freeEnergy_folder, folder, sample_range_mode=0)
+        submode_list = [""]
+        cd(freeEnergy_folder)
+        for folder in folder_list:
+            cd(folder)
+            for submode in submode_list:
+                for bias, mode in bias_list.items():
+                    # name = "low_t_" + bias
+                    name = submode+bias
+                    print(name)
+                    do("rm -r "+name)
+                    do("mkdir -p " + name)
+                    cd(name)
+                    for temp in temp_list:
+                        if submode == "":
+                            if folder == "stronger_bias_for_expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended":
+                                do("make_metadata.py -m 18 -k 0.05")
+                            else:
+                                do("make_metadata.py -m 18 -k 0.02")
+                            do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 2".format(mode))
+                    cd("..")
+            cd("..")
+
+    if args.mode == 1:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(3):
+            freeEnergy_folder = f"nov_15_all_freeEnergy_calculation_sample_range_mode_{sample_range_mode}/"
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            folder_list = ["memb_3_rg_0.1_lipid_1_topology"]
+            for folder in folder_list:
+                move_data(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode)
+            submode_list = [""]
+            cd(freeEnergy_folder)
+            for folder in folder_list:
+                cd(folder)
+                for submode in submode_list:
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = submode+bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        for temp in temp_list:
+                            if submode == "":
+                                do("make_metadata.py -m 18 -k 0.02")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 2".format(mode))
+                            if submode == "short":
+                                do("make_metadata.py -m 19")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 3".format(mode))
+                            elif submode == "low_t_":
+                                do("make_metadata.py -m 20")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 4".format(mode))
+                        cd("..")
+                cd("..")
+            cd("..")
 if args.day == "nov14":
     if args.mode == 2:
         temp_list = ["all"]

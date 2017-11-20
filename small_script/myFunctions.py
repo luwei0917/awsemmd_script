@@ -204,9 +204,9 @@ def process_temper_data(pre, data_folder, folder_list):
     #         temps = list(dic.keys())
         os.system("mv "+pre+folder+"/data "+data_folder+folder)
 
-def move_data(data_folder, freeEnergy_folder, folder, kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2):
+def move_data(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2, sample_range_mode=0):
     print("move data")
-    os.system("mkdir -p "+freeEnergy_folder+folder+"/data")
+    os.system("mkdir -p "+freeEnergy_folder+folder+sub_mode_name+"/data")
     dis_list = glob.glob(data_folder+folder+"/dis*.feather")
     for dis_file in dis_list:
         dis = dis_file.split("/")[-1].replace('dis', '').replace('.feather', '')
@@ -222,6 +222,7 @@ def move_data(data_folder, freeEnergy_folder, folder, kmem=0.2, klipid=0.1, kgo=
         t6 = t6.assign(TotalE_perturb_go_m=t6.TotalE - kgo*t6["AMH-Go"])
         t6 = t6.assign(TotalE_perturb_rg_p=t6.TotalE + krg*t6.Rg)
         t6 = t6.assign(TotalE_perturb_rg_m=t6.TotalE - krg*t6.Rg)
+        t6["TotalE"] = 0
         dic = {"T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
         temps = list(dic.values())
         def convert(x):
@@ -231,8 +232,13 @@ def move_data(data_folder, freeEnergy_folder, folder, kmem=0.2, klipid=0.1, kgo=
         for temp in temps:
             if temp > 600:
                 continue
-            tmp = t6.query('Temp=="{}"& Step > 1e7'.format(temp))
-            tmp.to_csv(freeEnergy_folder+folder+"/data/t_{}_dis_{}.dat".format(temp, dis), sep=' ', index=False, header=False)
+            if sample_range_mode == 0:
+                tmp = t6.query('Temp=="{}"& Step > 1e7 & Step <= 2e7'.format(temp))
+            elif sample_range_mode == 1:
+                tmp = t6.query('Temp=="{}"& Step > 2e7 & Step <= 3e7'.format(temp))
+            elif sample_range_mode == 2:
+                tmp = t6.query('Temp=="{}"& Step > 3e7 & Step <= 4e7'.format(temp))
+            tmp.to_csv(freeEnergy_folder+folder+sub_mode_name+"/data/t_{}_dis_{}.dat".format(temp, dis), sep=' ', index=False, header=False)
 # def pick_out_and_show():
 #     protein_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
 #     for protein in protein_list:
