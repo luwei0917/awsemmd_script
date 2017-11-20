@@ -113,6 +113,25 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 12x1 -in 2xov_{}.in
 '''
+if args.mode == 5:
+    run_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=12
+#SBATCH --threads-per-core=1
+#SBATCH --constraint=opath
+#SBATCH --ntasks-per-node=24
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=1-00:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 12x1 -in 2xov_{}.in
+'''
+
 
 if args.commons == 1:
     run_slurm = run_slurm.replace("ctbp-common", "commons")
@@ -128,6 +147,12 @@ if args.rerun == 0:
     start_from = "read_data data.2xov"
 if args.rerun == 1:
     start_from = "read_restart restart.2000000"
+
+
+if args.mode == 5:
+    # distance_list = np.linspace(30, 230, 101)
+    # distance_list = np.linspace(30, 180, 51)
+    distance_list = np.linspace(30, 140, 56)
 # rg_list = [0, 1, 5, 10]
 # force_list = [2.0]
 # memb_k_list = [0, 1, 5, 10]
@@ -192,14 +217,14 @@ if args.mode == 2:
     distance_list = np.linspace(30, 180, 151)
 if args.mode == 3:
     # distance_list = np.linspace(30, 230, 101)
-    distance_list = np.linspace(30, 180, 51)
+    distance_list = np.linspace(30, 140, 56)
     # distance_list = np.linspace(60.5, 90.5, 16)
     # distance_list = np.linspace(132, 232, 51)
 
     # distance_list = np.linspace(10, 180, 171)
     # distance_list = np.linspace(0, 1, 1)
 
-if args.mode <= 3:
+if args.mode <= 3 or args.mode ==5:
     i = args.rerun
     i = 0
     do("mkdir simulation")
