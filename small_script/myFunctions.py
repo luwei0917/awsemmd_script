@@ -125,7 +125,7 @@ def check_and_correct_fragment_memory():
     os.system("mv tmp.mem fragsLAMW.mem")
 
 
-def read_temper(n=4, location="."):
+def read_temper(n=4, location=".", rerun=-1):
     all_lipid_list = []
     for i in range(n):
         file = "lipid.{}.dat".format(i)
@@ -163,9 +163,10 @@ def read_temper(n=4, location="."):
         wham = wham.drop(remove_columns, axis=1)
         all_wham_list.append(wham)
     wham = pd.concat(all_wham_list)
-
-    file = "../log.lammps"
-#     file = "../log0/log.lammps"
+    if rerun == -1:
+        file = "../log.lammps"
+    else:
+        file = f"../log{rerun}/log.lammps"
     temper = pd.read_table(location+file, skiprows=2, sep=' ')
     temper = temper.melt(id_vars=['Step'], value_vars=['T' + str(i) for i in range(n)], value_name="Temp", var_name="Run")
     temper["Run"] = temper["Run"].str[1:].astype(int)
@@ -175,32 +176,45 @@ def read_temper(n=4, location="."):
     t4 = t3.merge(lipid, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
     t5 = t4.merge(energy, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
     t6 = t5.assign(TotalE=t5.Energy + t5.Lipid)
-#     t6 = t6.assign(TotalE_perturb_mem_p = t6.TotalE + 0.1*t6.Membrane)
-#     t6 = t6.assign(TotalE_perturb_mem_m = t6.TotalE - 0.1*t6.Membrane)
-#     t6 = t6.assign(TotalE_perturb_lipid_p = t6.TotalE + 0.1*t6.Lipid)
-#     t6 = t6.assign(TotalE_perturb_lipid_m = t6.TotalE - 0.1*t6.Lipid)
-#     t6 = t6.assign(TotalE_perturb_go_p = t6.TotalE + 0.1*t6["AMH-Go"])
-#     t6 = t6.assign(TotalE_perturb_go_m = t6.TotalE - 0.1*t6["AMH-Go"])
-#     t6 = t6.assign(TotalE_perturb_rg_p = t6.TotalE + 0.1*t6.Rg)
-#     t6 = t6.assign(TotalE_perturb_rg_m = t6.TotalE - 0.1*t6.Rg)
     return t6
-def process_temper_data(pre, data_folder, folder_list):
+
+def process_temper_data(pre, data_folder, folder_list, rerun=0):
     print("process temp data")
     for folder in folder_list:
         simulation_list = glob.glob(pre+folder+"/simulation/dis_*")
+        print(pre+folder+"/simulation/dis_*")
         os.system("mkdir -p " + pre+folder+"/data")
         for one_simulation in simulation_list:
             dis = one_simulation.split("_")[-1]
-            print(dis)
-            location = one_simulation + "/0/"
-            try:
-                data = read_temper(location=location, n=12)
-                # remove_columns = ['Step', "Run"]
-                # data = data.drop(remove_columns, axis=1)
-                data.reset_index().to_feather(pre+folder+"/data/"+f"dis{dis}.feather")
-            except:
-                print("Unexpected error:", sys.exc_info()[0])
-                print("notrun?", dis)
+            print(dis, "!")
+            if rerun == 0:
+                location = one_simulation + "/0/"
+                try:
+                    data = read_temper(location=location, n=12)
+                    # remove_columns = ['Step', "Run"]
+                    # data = data.drop(remove_columns, axis=1)
+                    data.reset_index().to_feather(pre+folder+"/data/"+f"dis{dis}.feather")
+                except:
+                    print("Unexpected error:", sys.exc_info()[0])
+                    print("notrun?", dis)
+            else:
+                all_data_list = []
+                for i in range(rerun):
+                    location = one_simulation + f"/{i}/"
+                    try:
+                        data = read_temper(location=location, n=12, rerun=i)
+                        # remove_columns = ['Step', "Run"]
+                        # data = data.drop(remove_columns, axis=1)
+                        all_data_list.append(data)
+                    except:
+                        print("Unexpected error:", sys.exc_info()[0])
+                        print("notrun?", dis)
+                try:
+                    data = pd.concat(all_data_list)
+                    data.reset_index().to_feather(pre+folder+"/data/"+f"dis{dis}.feather")
+                except:
+                    print("Unexpected error:", sys.exc_info()[0])
+                    print("not data?", dis)
     #         temps = list(dic.keys())
         os.system("mv "+pre+folder+"/data "+data_folder+folder)
 
