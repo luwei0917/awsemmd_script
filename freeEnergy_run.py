@@ -135,6 +135,8 @@ srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 12x1 -in 2xov_{}.i
 
 if args.commons == 1:
     run_slurm = run_slurm.replace("ctbp-common", "commons")
+if args.nick:
+    run_slurm = run_slurm.replace("/home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi", "/home/ns24/lmp_mpi")
 def change(fileName, from_str, to_str):
     with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
         for line in file:
