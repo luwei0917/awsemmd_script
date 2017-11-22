@@ -100,7 +100,7 @@ srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_serial -in 2xov_{}.in
 if args.mode == 3:
     run_slurm = '''\
 #!/bin/bash
-#SBATCH --job-name=CTBP_WL
+#SBATCH --job-name=CTBP
 #SBATCH --account=ctbp-common
 #SBATCH --partition=ctbp-common
 #SBATCH --ntasks=12
