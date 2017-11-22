@@ -94,6 +94,49 @@ def scancel_jobs_in_folder(folder):
         print(line)
         do("scancel " + line)
     cd("..")
+
+if args.day == "nov21":
+    if args.mode == 1:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(1):
+            freeEnergy_folder = f"no_side_contraint_memb_3_rg_0.4_lipid_0.6_extended_{sample_range_mode}/"
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            folder_list = ["no_side_contraint_memb_3_rg_0.4_lipid_0.6_extended"]
+            # submode_list = ["_no_energy"]
+            submode_list = [""]
+            for submode in submode_list:
+                for folder in folder_list:
+                    move_data(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode, sub_mode_name=submode)
+
+            cd(freeEnergy_folder)
+            for submode in submode_list:
+                for folder in folder_list:
+                    cd(folder+submode)
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        for temp in temp_list:
+                            if submode == "_no_energy":
+                                do("make_metadata.py -m 18 -k 0.02")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 2".format(mode))
+                            if submode == "":
+                                do("make_metadata.py -m 18 -k 0.02")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 2".format(mode))
+                            if submode == "short":
+                                do("make_metadata.py -m 21")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 3".format(mode))
+                            elif submode == "low_t_":
+                                do("make_metadata.py -m 20")
+                                do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 4".format(mode))
+                        cd("..")
+                    cd("..")
+            cd("..")
 if args.day == "nov19":
     if args.mode == 2:
         temp_list = ["all"]
