@@ -227,7 +227,7 @@ def read_temper(n=4, location=".", rerun=-1):
     t6 = t5.assign(TotalE=t5.Energy + t5.Lipid)
     return t6
 
-def process_temper_data(pre, data_folder, folder_list, rerun=0):
+def process_temper_data(pre, data_folder, folder_list, rerun=-1):
     print("process temp data")
     for folder in folder_list:
         simulation_list = glob.glob(pre+folder+"/simulation/dis_*")
@@ -236,7 +236,7 @@ def process_temper_data(pre, data_folder, folder_list, rerun=0):
         for one_simulation in simulation_list:
             dis = one_simulation.split("_")[-1]
             print(dis, "!")
-            if rerun == 0:
+            if rerun == -1:
                 location = one_simulation + "/0/"
                 try:
                     data = read_temper(location=location, n=12)
