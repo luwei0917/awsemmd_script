@@ -120,6 +120,50 @@ def scancel_jobs_in_folder(folder):
         # print(line)
         do("scancel " + line)
     cd("..")
+
+
+if args.day == "nov21":
+    if args.mode == 3:
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/13nov/"
+        data_folder = "/scratch/wl45/nov_2017/13nov/all_data_folder/"
+        folder_list = ["no_side_contraint_memb_3_rg_0.4_lipid_0.6_extended"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list, rerun=1)
+    if args.mode == 2:
+        dis_list = glob.glob("dis_*")
+        print(dis_list)
+        for dis in dis_list:
+            num = float(dis.split("_")[-1])
+            if num <= 90:
+                print(num, "large")
+                continue
+            cd(dis)
+            # do("mkdir log0")
+            # do("mv log.* log0/")
+            do("cp log0/log.lammps .")
+            continueRunConvertion()
+            do("mkdir 1")
+
+            do("sed 's/2xov_0/2xov_1/g' run_0.slurm > run_1.slurm")
+            do("sbatch run_1.slurm")
+            cd("..")
+    if args.mode == 1:
+        simulation_list = glob.glob("dis_*")
+        print(simulation_list)
+
+        for dis in simulation_list:
+            num = float(dis.split("_")[-1])
+            if num <= 90:
+                print(num, "large")
+                continue
+            do(f"mkdir {dis}/log{0}")
+            do(f"cp {dis}/x.* {dis}/log{0}")
+            do(f"mv {dis}/log.* {dis}/log{0}/")
+
 if args.day == "nov19":
     if args.mode ==1:
         rerun()
