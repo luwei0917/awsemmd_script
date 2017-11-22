@@ -22,6 +22,8 @@ parser.add_argument("--rerun",
                     type=int, default=0)
 parser.add_argument("-m", "--mode", type=int, default=1)
 parser.add_argument("--commons", type=int, default=0)
+parser.add_argument("--nick", action="store_true", default=False)
+
 args = parser.parse_args()
 protein_name = args.template.strip('/')
 
