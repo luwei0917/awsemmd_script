@@ -31,8 +31,9 @@ def expand_grid(dictionary):
 
 
 def variable_test2(k_list=[1],
+                      qbias_list=["none"],
                       force_ramp_rate_list=[1],
-                      memb_k_list=[1],
+                      mem_list=[1],
                       force_list=["ramp"],
                       rg_list=[0.08],
                       pressure_list=[0.1],
@@ -69,7 +70,7 @@ def variable_test2(k_list=[1],
         # print(simulation_model)
         k = row["k_list"]
         force_ramp_rate = row["force_ramp_rate_list"]
-        memb_k = row["memb_k_list"]
+        mem = row["mem_list"]
         force = row["force_list"]
         rg = row["rg_list"]
         pressure = row["pressure_list"]
@@ -77,7 +78,7 @@ def variable_test2(k_list=[1],
         temperature = row["temperature_list"]
         simulation_model = row["simulation_model_list"]
         start_from = row["start_from_list"]
-
+        qbias = row["qbias_list"]
         for name in folder_name_list:
             tmp = row[name]
             folder_name_template += name.replace("_list", "")+f"_{tmp}_"
@@ -90,6 +91,12 @@ def variable_test2(k_list=[1],
         do("cp -r 2xov " + folder_name_template + "/")
         cd(folder_name_template + "/2xov")
 
+        with fileinput.FileInput("fix_qbias.data", inplace=True, backup='.bak') as file:
+            for line in file:
+                print(line.replace("MY_QBIAS", str(qbias)), end='')
+        with fileinput.FileInput("fix_qbias_equil.data", inplace=True, backup='.bak') as file:
+            for line in file:
+                print(line.replace("MY_QBIAS", str(qbias)), end='')
         if simulation_model == "go":
             fixFile = "fix_backbone_coeff_go.data"
             simulation_steps = 1e7/force_ramp_rate
@@ -106,7 +113,7 @@ def variable_test2(k_list=[1],
 
         with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
             for line in file:
-                print(line.replace("MY_MEMB_K", str(memb_k)), end='')
+                print(line.replace("MY_MEMB_K", str(mem)), end='')
         with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
             for line in file:
                 tmp = line
