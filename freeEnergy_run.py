@@ -168,7 +168,7 @@ if args.rerun == 1:
     start_from = "read_restart restart.2000000"
 
 if args.mode ==6:
-    qbias_list = np.linspace(0.8,1,2)
+    qbias_list = np.linspace(0.1,1,46)
     i = args.rerun
     do("mkdir simulation")
     cd("simulation")
