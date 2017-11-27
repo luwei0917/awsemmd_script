@@ -121,6 +121,75 @@ def scancel_jobs_in_folder(folder):
         do("scancel " + line)
     cd("..")
 
+if args.day == "nov23":
+    if args.mode == 4:
+        print("how unfolding change")
+        # start_from_list=["native", "extended", "topology"]
+        # start_from_list=["native"]
+        start_from_list=["extended"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [1]
+        force_ramp_rate_list=[2]
+        temperature_list=[500, 600, 650]
+        memb_k_list = [3]
+        rg_list = [0.3]
+        # qbias_list = [0.25, 0.45, 0.65, 0.85]
+        qbias_list = list(np.linspace(0.2,0.9,36))
+        force_list = ["ramp"]
+        repeat = 3
+        variable_test2(temperature_list=temperature_list,
+                        qbias_list=qbias_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        mem_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=1)
+    if args.mode == 3:
+        simulation_list = glob.glob("dis_*")
+        # print(simulation_list)
+        for dis in simulation_list:
+            do(f"mkdir -p {dis}/log{1}")
+            do(f"cp {dis}/log.* {dis}/log{1}/")
+    if args.mode == 2:
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/13nov/"
+        data_folder = "/scratch/wl45/nov_2017/13nov/all_data_folder/"
+        folder_list = ["no_side_contraint_memb_3_rg_0.4_lipid_0.6_extended"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list, rerun=2)
+    if args.mode == 1:
+        print("how unfolding change")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [1]
+        force_ramp_rate_list=[2]
+        temperature_list=[500]
+        memb_k_list = [0,1,2,4,8]
+        rg_list = [0, 0.1, 0.2, 0.3, 0.4, 0.8]
+        force_list = ["ramp"]
+        repeat = 10
+        variable_test2(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        rg_list=rg_list,
+                        mem_list=memb_k_list,
+                        mode_list=mode_list,
+                        pressure_list=pressure_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=1)
 
 if args.day == "nov21":
     if args.mode == 3:

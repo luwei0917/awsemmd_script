@@ -22,6 +22,8 @@ parser.add_argument("--rerun",
                     type=int, default=0)
 parser.add_argument("-m", "--mode", type=int, default=1)
 parser.add_argument("--commons", type=int, default=0)
+parser.add_argument("--nick", action="store_true", default=False)
+
 args = parser.parse_args()
 protein_name = args.template.strip('/')
 
@@ -100,7 +102,7 @@ srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_serial -in 2xov_{}.in
 if args.mode == 3:
     run_slurm = '''\
 #!/bin/bash
-#SBATCH --job-name=CTBP_WL
+#SBATCH --job-name=CTBP
 #SBATCH --account=ctbp-common
 #SBATCH --partition=ctbp-common
 #SBATCH --ntasks=12
@@ -131,10 +133,27 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 12x1 -in 2xov_{}.in
 '''
-
+if args.mode == 6:
+    run_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=10
+#SBATCH --threads-per-core=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=1-00:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 10x1 -in 2xov_{}.in
+'''
 
 if args.commons == 1:
     run_slurm = run_slurm.replace("ctbp-common", "commons")
+if args.nick:
+    run_slurm = run_slurm.replace("/home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi", "/home/ns24/lmp_mpi")
 def change(fileName, from_str, to_str):
     with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
         for line in file:
@@ -148,7 +167,39 @@ if args.rerun == 0:
 if args.rerun == 1:
     start_from = "read_restart restart.2000000"
 
+if args.mode ==6:
+    qbias_list = np.linspace(0.1,1,46)
+    i = args.rerun
+    do("mkdir simulation")
+    cd("simulation")
+    # qbias_list = [i*0.02 for i in range(50)]
+    for qbias in qbias_list:
+        folder_name = "qbias_{:.1f}".format(qbias)
+        do("cp -r ../2xov " + folder_name)
+        cd(folder_name)
+        # fixFile = "fix_backbone_coeff_go.data"
+        fixFile = "fix_qbias.data"
+        with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
+            for line in file:
+                print(line.replace("MY_QBIAS", str(qbias)), end='')
 
+        do("cp 2xov_multi.in 2xov_{}.in".format(i))
+        # with fileinput.FileInput("2xov_{}.in".format(i), inplace=True, backup='.bak') as file:
+        #     for line in file:
+        #         print(line.replace("START_FROM", start_from), end='')
+        do(  # replace SIMULATION_STEPS with specific steps
+            "sed -i.bak 's/NUMBER/'" +
+            str(int(i)) +
+            "'/g' 2xov_{}.in".format(i))
+        do("mkdir -p {}".format(i))
+        do(  # replace RANDOM with a radnom number
+            "sed -i.bak 's/RANDOM/'" +
+            str(randint(1, 10**6)) +
+            "'/g' *.in")
+        with open("run_{}.slurm".format(i), "w") as r:
+            r.write(run_slurm.format(i))
+        do("sbatch " + "run_{}.slurm".format(i))
+        cd("..")
 if args.mode == 5:
     # distance_list = np.linspace(30, 230, 101)
     # distance_list = np.linspace(30, 180, 51)
