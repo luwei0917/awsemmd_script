@@ -72,12 +72,13 @@ elif args.mode ==3:
     data = pd.concat(all_pmf_list).reset_index(drop=True)
 elif args.mode ==4:
     all_pmf_list = []
-    simulation_list = ["next_gen_native_based_memb_3_rg_0.2_lipid_0.6_extended",
-                        "next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended",
-                        "next_gen_native_based_memb_3_rg_0.4_lipid_0.6_topology"]
-    cd(f"all_freeEnergy_calculation_nov11")
-    for simulation in simulation_list:
+    # simulation_list = ["next_gen_native_based_memb_3_rg_0.2_lipid_0.6_extended",
+    #                     "next_gen_native_based_memb_3_rg_0.4_lipid_0.6_extended",
+    #                     "next_gen_native_based_memb_3_rg_0.4_lipid_0.6_topology"]
+    simulation_list = ["no_side_contraint_memb_3_rg_0.4_lipid_0.6_extended_no_energy"]
 
+    cd(f"no_side_contraint_memb_3_rg_0.4_lipid_0.6_extended_0")
+    for simulation in simulation_list:
         cd(simulation)
         tmp = readPMF_2(".").assign(submode="0", simulation=simulation)
         all_pmf_list.append(tmp)
