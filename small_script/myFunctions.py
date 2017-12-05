@@ -243,22 +243,22 @@ def read_temper(n=4, location=".", rerun=-1):
     t6 = t5.assign(TotalE=t5.Energy + t5.Lipid)
     return t6
 
-def process_temper_data(pre, data_folder, folder_list, rerun=-1):
+def process_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis"):
     print("process temp data")
     for folder in folder_list:
-        simulation_list = glob.glob(pre+folder+"/simulation/dis_*")
-        print(pre+folder+"/simulation/dis_*")
+        simulation_list = glob.glob(pre+folder+f"/simulation/{bias}_*")
+        print(pre+folder+f"/simulation/{bias}_*")
         os.system("mkdir -p " + pre+folder+"/data")
         for one_simulation in simulation_list:
-            dis = one_simulation.split("_")[-1]
-            print(dis, "!")
+            bias_num = one_simulation.split("_")[-1]
+            print(bias_num, "!")
             if rerun == -1:
                 location = one_simulation + "/0/"
                 try:
-                    data = read_temper(location=location, n=12)
+                    data = read_temper(location=location, n=n)
                     # remove_columns = ['Step', "Run"]
                     # data = data.drop(remove_columns, axis=1)
-                    data.reset_index().to_feather(pre+folder+"/data/"+f"dis{dis}.feather")
+                    data.reset_index().to_feather(pre+folder+"/data/"+f"{bias}{bias_num}.feather")
                 except:
                     print("Unexpected error:", sys.exc_info()[0])
                     print("notrun?", dis)
@@ -267,7 +267,7 @@ def process_temper_data(pre, data_folder, folder_list, rerun=-1):
                 for i in range(rerun):
                     location = one_simulation + f"/{i}/"
                     try:
-                        data = read_temper(location=location, n=12, rerun=i)
+                        data = read_temper(location=location, n=n, rerun=i)
                         # remove_columns = ['Step', "Run"]
                         # data = data.drop(remove_columns, axis=1)
                         all_data_list.append(data)
@@ -276,7 +276,7 @@ def process_temper_data(pre, data_folder, folder_list, rerun=-1):
                         print("notrun?", dis)
                 try:
                     data = pd.concat(all_data_list)
-                    data.reset_index().to_feather(pre+folder+"/data/"+f"dis{dis}.feather")
+                    data.reset_index().to_feather(pre+folder+"/data/"+f"{bias}{bias_num}.feather")
                 except:
                     print("Unexpected error:", sys.exc_info()[0])
                     print("not data?", dis)

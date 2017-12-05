@@ -50,7 +50,14 @@ else:
 
 
 
-
+if args.day == "nov21":
+    if args.mode == 1:
+        simulation_list = ["memb_3_rg_0.1_lipid_1_extended"]
+        for simulation in simulation_list:
+            for mode in range(3):
+                cd(f"nov_15_all_freeEnergy_calculation_sample_range_mode_{mode}")
+                cd(simulation)
+                do(f"read_pmf.py -m 1 -l {simulation}_{mode}")
 if args.day == "nov15":
     if args.mode == 1:
         simulation_list = ["memb_3_rg_0.1_lipid_1_extended"]
