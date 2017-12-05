@@ -21,6 +21,7 @@ import pandas as pd
 import re
 from small_script.myFunctions import readPMF
 from small_script.myFunctions import readPMF_2
+from small_script.myFunctions import readPMF_basic
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -54,7 +55,8 @@ label = args.label
 
 if(args.test):
     print("hello world")
-
+if args.mode == -1:
+    data = readPMF_basic(".")
 if args.mode == 0:
     data = readPMF(".")
 elif args.mode == 1:
@@ -99,5 +101,6 @@ elif args.mode ==5:
 
 remove_columns = ['bin']
 data = data.drop(remove_columns, axis=1)
-
-data.to_feather(f"/Users/weilu/Research/data/pulling/{datetime.datetime.today().strftime('%d_%h')}_pmf_{label}.feather")
+fileName = f"/Users/weilu/Research/data/pulling/{datetime.datetime.today().strftime('%d_%h')}_pmf_{label}.feather"
+print(fileName)
+data.to_feather(fileName)

@@ -25,6 +25,44 @@ from itertools import product
 def expand_grid(dictionary):
     return pd.DataFrame([row for row in product(*dictionary.values())],
                         columns=dictionary.keys())
+
+def readPMF_basic(pre):
+    perturbation_table = {0:"original", 1:"p_mem",
+                          2:"m_mem", 3:"p_lipid",
+                          4:"m_lipid", 5:"p_go",
+                          6:"m_go", 7:"p_rg", 8:"m_rg"}
+    pmf_list = {
+        "perturbation":list(perturbation_table.keys())
+    }
+    pmf_list_data = expand_grid(pmf_list)
+    all_pmf_list = []
+    for index, row in pmf_list_data.iterrows():
+        perturbation = row["perturbation"]
+        if perturbation == 0:
+            location = pre + f"/pmf-*.dat"
+            pmf_list = glob.glob(location)
+            change = "none"
+            upOrDown = "none"
+        else:
+            location = pre + f"/perturbation-{perturbation}-pmf-*.dat"
+            pmf_list = glob.glob(location)
+            change = perturbation_table[perturbation].split("_")[-1]
+            upOrDown = perturbation_table[perturbation].split("_")[0]
+        # print(location)
+        name_list = ["f", "df", "e", "s"]
+        names = ["bin", "x"] + name_list
+        for location in pmf_list:
+            # print(location)
+            temp = re.findall(r'pmf-(\d+)', location)
+            if len(temp) != 1:
+                raise ValueError('Not expected to see more than one or none')
+            else:
+                temp = temp[0]
+            data = pd.read_table(location, skiprows=2, sep='\s+', names=names).assign(upOrDown=upOrDown, change=change, temp=temp, perturbation=perturbation_table[perturbation])
+            all_pmf_list.append(data)
+
+    return pd.concat(all_pmf_list).dropna().reset_index()
+
 def readPMF(pre):
     perturbation_table = {0:"original", 1:"p_mem",
                           2:"m_mem", 3:"p_lipid",
@@ -174,7 +212,7 @@ def check_and_correct_fragment_memory():
     os.system("mv tmp.mem fragsLAMW.mem")
 
 
-def read_temper(n=4, location=".", rerun=-1):
+def read_temper(n=4, location=".", rerun=-1, qnqc=False):
     all_lipid_list = []
     for i in range(n):
         file = "lipid.{}.dat".format(i)
@@ -210,6 +248,10 @@ def read_temper(n=4, location=".", rerun=-1):
         wham.columns = wham.columns.str.strip()
         remove_columns = ['Rg', 'Tc']
         wham = wham.drop(remove_columns, axis=1)
+        qc = pd.read_table(location+f"qc_{i}", names=["qc"])[1:].reset_index(drop=True)
+        qn = pd.read_table(location+f"qn_{i}", names=["qn"])[1:].reset_index(drop=True)
+        qc2 = pd.read_table(location+f"qc2_{i}", names=["qc2"])[1:].reset_index(drop=True)
+        wham = pd.concat([wham,qn, qc, qc2],axis=1)
         all_wham_list.append(wham)
     wham = pd.concat(all_wham_list)
     if rerun == -1:

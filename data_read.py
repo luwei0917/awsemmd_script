@@ -99,4 +99,4 @@ elif args.mode ==5:
 remove_columns = ['bin']
 data = data.drop(remove_columns, axis=1)
 
-data.to_feather(f"/Users/weilu/Research/data/pulling/{datetime.datetime.today().strftime('%d_%h')}_pmf_{label}.feather")
+data.to_feather(f"/Users/weilu/Research/data/pulling/{datetime.datetime.today().strftime('%d_%h')}_data_{label}.feather")
