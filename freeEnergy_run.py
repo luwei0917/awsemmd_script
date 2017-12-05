@@ -174,7 +174,7 @@ if args.mode ==6:
     cd("simulation")
     # qbias_list = [i*0.02 for i in range(50)]
     for qbias in qbias_list:
-        folder_name = "qbias_{:.1f}".format(qbias)
+        folder_name = "qbias_{:.2f}".format(qbias)
         do("cp -r ../2xov " + folder_name)
         cd(folder_name)
         # fixFile = "fix_backbone_coeff_go.data"
