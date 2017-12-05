@@ -257,13 +257,13 @@ def process_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis
                         all_data_list.append(data)
                     except:
                         print("Unexpected error:", sys.exc_info()[0])
-                        print("notrun?", dis)
+                        print("notrun?", bias_num)
                 try:
                     data = pd.concat(all_data_list)
                     data.reset_index().to_feather(pre+folder+"/data/"+f"{bias}{bias_num}.feather")
                 except:
                     print("Unexpected error:", sys.exc_info()[0])
-                    print("not data?", dis)
+                    print("not data?", bias_num)
     #         temps = list(dic.keys())
         os.system("mv "+pre+folder+"/data "+data_folder+folder)
 

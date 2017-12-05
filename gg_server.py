@@ -121,6 +121,82 @@ def scancel_jobs_in_folder(folder):
         do("scancel " + line)
     cd("..")
 
+qnqc_slurm = '''#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=02:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun python3 ~/opt/server.py --qnqc -m {}
+'''
+
+if args.day == "dec04":
+    i = 12
+    if args.mode == 2:
+        os.system("cp ../2xov.pdb .")
+        with open(f"qnqc.slurm", "w") as f:
+            f.write(qnqc_slurm.format(i))
+        os.system(f"sbatch qnqc.slurm")
+    if args.mode == 1:
+        simulation_list = glob.glob("dis_*")
+        print(simulation_list)
+        for dis in simulation_list:
+            cd(dis)
+            for ii in range(2):
+                cd(str(ii))
+                os.system("cp ../2xov.pdb .")
+                with open(f"qnqc.slurm", "w") as f:
+                    f.write(qnqc_slurm.format(i))
+                os.system(f"sbatch qnqc.slurm")
+                cd("..")
+            cd("..")
+
+if args.day == "nov29":
+    if args.mode == 2:
+        simulation_list = glob.glob("dis_*")
+        print(simulation_list)
+        for dis in simulation_list:
+            cd(dis)
+            do("mkdir -p log1")
+            do("mv log.* log1/")
+            cd("..")
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/13nov/"
+        data_folder = "/scratch/wl45/nov_2017/13nov/all_data_folder/"
+        folder_list = ["no_side_contraint_memb_3_rg_0.4_lipid_0.6_extended"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list, rerun=2)
+    if args.mode == 1:
+        simulation_list = glob.glob("qbias_*")
+        pre = "/scratch/wl45/nov_2017/27nov/"
+        data_folder = "/scratch/wl45/nov_2017/27nov/all_data_folder/"
+        folder_list = ["q_bias_temper_new"]
+        print(simulation_list)
+        for dis in simulation_list:
+            cd(dis)
+            do("mkdir -p log1")
+            do("mv log.* log1/")
+            cd("..")
+        process_temper_data(pre, data_folder, folder_list, n=10, bias="qbias", rerun=2)
+if args.day == "nov28":
+    if args.mode == 1:
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/13nov/"
+        data_folder = "/scratch/wl45/nov_2017/13nov/all_data_folder/"
+        folder_list = ["bias_0.05_memb_3_rg_0.4_lipid_0.6_extended"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list)
 if args.day == "nov27":
     if args.mode == 1:
         simulation_list = glob.glob("qbias_*")
