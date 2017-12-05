@@ -25,6 +25,22 @@ from itertools import product
 def expand_grid(dictionary):
     return pd.DataFrame([row for row in product(*dictionary.values())],
                         columns=dictionary.keys())
+
+def make_metadata(k=1000.0, temps_list=["450"]):
+    cwd = os.getcwd()
+    files = glob.glob("../data/*")
+    kconstant = k
+    with open("metadatafile", "w") as out:
+        for oneFile in files:
+            tmp = oneFile.split("/")[-1].replace('.dat', '')
+            t = tmp.split("_")[1]
+            bias = tmp.split("_")[3]
+            # print(tmp)
+            # if int(float(dis)) > 150:
+            #     continue
+            if t in temps_list:
+                target = "../{} {} {} {}\n".format(oneFile, t, kconstant, bias)
+                out.write(target)
 def readPMF(pre):
     perturbation_table = {0:"original", 1:"p_mem",
                           2:"m_mem", 3:"p_lipid",
@@ -267,12 +283,12 @@ def process_temper_data(pre, data_folder, folder_list, rerun=-1):
     #         temps = list(dic.keys())
         os.system("mv "+pre+folder+"/data "+data_folder+folder)
 
-def move_data(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2, sample_range_mode=0):
+def move_data(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2, sample_range_mode=0, bias="dis"):
     print("move data")
     os.system("mkdir -p "+freeEnergy_folder+folder+sub_mode_name+"/data")
-    dis_list = glob.glob(data_folder+folder+"/dis*.feather")
+    dis_list = glob.glob(data_folder+folder+f"/{bias}*.feather")
     for dis_file in dis_list:
-        dis = dis_file.split("/")[-1].replace('dis', '').replace('.feather', '')
+        dis = dis_file.split("/")[-1].replace(bias, '').replace('.feather', '')
         print(dis)
         t6 = pd.read_feather(dis_file)
         remove_columns = ['index']
@@ -293,7 +309,7 @@ def move_data(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2
         t6["Temp"] = t6["Temp"].apply(convert)
 
         for temp in temps:
-            if temp > 600:
+            if temp > 800:
                 continue
             if sample_range_mode == 0:
                 tmp = t6.query('Temp=="{}"& Step > 1e7 & Step <= 2e7'.format(temp))
@@ -301,7 +317,7 @@ def move_data(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2
                 tmp = t6.query('Temp=="{}"& Step > 2e7 & Step <= 3e7'.format(temp))
             elif sample_range_mode == 2:
                 tmp = t6.query('Temp=="{}"& Step > 3e7 & Step <= 4e7'.format(temp))
-            tmp.to_csv(freeEnergy_folder+folder+sub_mode_name+"/data/t_{}_dis_{}.dat".format(temp, dis), sep=' ', index=False, header=False)
+            tmp.to_csv(freeEnergy_folder+folder+sub_mode_name+"/data/t_{}_{}_{}.dat".format(temp, bias, dis), sep=' ', index=False, header=False)
 # def pick_out_and_show():
 #     protein_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
 #     for protein in protein_list:
