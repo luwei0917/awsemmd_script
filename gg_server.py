@@ -72,11 +72,11 @@ def replace(TARGET, FROM, TO):
 def getFromTerminal(CMD):
     return subprocess.Popen(CMD,stdout=subprocess.PIPE,shell=True).communicate()[0].decode()
 
-def continueRunConvertion():
+def continueRunConvertion(n=12):
     do("cp 2xov_0.in 2xov_1.in")
     fileName = "2xov_1.in"
-    replace(fileName, "variable r world 0 1 2 3 4 5 6 7 8 9 10 11", "")
-    replace(fileName, "# read_restart restart.25000000", "variable r world 0 1 2 3 4 5 6 7 8 9 10 11")
+    replace(fileName, "variable r world "+ " ".join(str(i) for i in list(range(n))), "")
+    replace(fileName, "# read_restart restart.25000000", "variable r world "+ " ".join(str(i) for i in list(range(n))))
     replace(fileName, "read_restart restart.extended", "read_restart restart.$r.20000000")
     replace(fileName, "read_restart restart.native_topology", "read_restart restart.$r.20000000")
     replace(fileName, "0\/", "1\/")
@@ -120,6 +120,111 @@ def scancel_jobs_in_folder(folder):
         # print(line)
         do("scancel " + line)
     cd("..")
+
+qnqc_slurm = '''#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=02:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun python3 ~/opt/server.py --qnqc -m {}
+'''
+
+if args.day == "dec04":
+    i = 12
+    if args.mode == 2:
+        os.system("cp ../2xov.pdb .")
+        with open(f"qnqc.slurm", "w") as f:
+            f.write(qnqc_slurm.format(i))
+        os.system(f"sbatch qnqc.slurm")
+    if args.mode == 1:
+        simulation_list = glob.glob("dis_*")
+        print(simulation_list)
+        for dis in simulation_list:
+            cd(dis)
+            for ii in range(2):
+                cd(str(ii))
+                os.system("cp ../2xov.pdb .")
+                with open(f"qnqc.slurm", "w") as f:
+                    f.write(qnqc_slurm.format(i))
+                os.system(f"sbatch qnqc.slurm")
+                cd("..")
+            cd("..")
+
+if args.day == "nov29":
+    if args.mode == 2:
+        simulation_list = glob.glob("dis_*")
+        print(simulation_list)
+        for dis in simulation_list:
+            cd(dis)
+            do("mkdir -p log1")
+            do("mv log.* log1/")
+            cd("..")
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/13nov/"
+        data_folder = "/scratch/wl45/nov_2017/13nov/all_data_folder/"
+        folder_list = ["no_side_contraint_memb_3_rg_0.4_lipid_0.6_extended"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list, rerun=2)
+    if args.mode == 1:
+        simulation_list = glob.glob("qbias_*")
+        pre = "/scratch/wl45/nov_2017/27nov/"
+        data_folder = "/scratch/wl45/nov_2017/27nov/all_data_folder/"
+        folder_list = ["q_bias_temper_new"]
+        print(simulation_list)
+        for dis in simulation_list:
+            cd(dis)
+            do("mkdir -p log1")
+            do("mv log.* log1/")
+            cd("..")
+        process_temper_data(pre, data_folder, folder_list, n=10, bias="qbias", rerun=2)
+if args.day == "nov28":
+    if args.mode == 1:
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/13nov/"
+        data_folder = "/scratch/wl45/nov_2017/13nov/all_data_folder/"
+        folder_list = ["bias_0.05_memb_3_rg_0.4_lipid_0.6_extended"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list)
+if args.day == "nov27":
+    if args.mode == 1:
+        simulation_list = glob.glob("qbias_*")
+        print(simulation_list)
+
+        for dis in simulation_list:
+            cd(dis)
+            do("mkdir -p log0")
+            do("mv log.* log0/")
+            do("cp log0/log.lammps .")
+            do(f"cp x.* log0/")
+            continueRunConvertion(n=10)
+            do("mkdir 1")
+
+            do("sed 's/2xov_0/2xov_1/g' run_0.slurm > run_1.slurm")
+            do("sbatch run_1.slurm")
+            cd("..")
+if args.day == "nov25":
+    if args.mode == 1:
+        print("hello!")
+        pre = "/scratch/wl45/nov_2017/27nov/"
+        data_folder = "/scratch/wl45/nov_2017/27nov/all_data_folder/"
+        folder_list = ["q_bias_temper_new"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list, n=10, bias="qbias")
 
 if args.day == "nov23":
     if args.mode == 4:

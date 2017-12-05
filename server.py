@@ -7,6 +7,7 @@ from random import seed, randint
 import argparse
 import platform
 from datetime import datetime
+from myPersonalFunctions import *
 import imp
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
@@ -19,55 +20,95 @@ os.environ["PATH"] = "/home/wl45/python/bin:/home/wl45/opt:" + mypath
 my_env = os.environ.copy()
 
 parser = argparse.ArgumentParser(
-        description="This is my playground for current project")
+    description="I put quick sbatch commands here")
 # parser.add_argument("protein", help="the name of protein")
 # parser.add_argument("template", help="the name of template file")
+parser.add_argument("--qnqc", help="calculate q of n terminal and q of c terminal ", action="store_true", default=False)
+parser.add_argument("-m", "--mode",type=int, default=-1)
+
 args = parser.parse_args()
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 # protein_name = args.protein.strip('/')
     # name = "ga_2m"
 
+def calQnQc(i=-1):
+    qn_start = 0
+    qn_end = 80
+    qc_start = 80
+    qc_end = 181
+    qc2_start = 130
+    qc2_end = 181
+    if i == -1:
+        os.system("python2 ~/opt/CalcQnQc.py 2xov.pdb dump.lammpstrj {} 0.15 {} {}".format("qn", qn_start, qn_end))
+        os.system("python2 ~/opt/CalcQnQc.py 2xov.pdb dump.lammpstrj {} 0.15 {} {}".format("qc", qc_start, qc_end))
+        os.system("python2 ~/opt/CalcQnQc.py 2xov.pdb dump.lammpstrj {} 0.15 {} {}".format("qc2", qc2_start, qc2_end))
+        size1 = file_len("qn")
+        size2 = file_len("qc")
+        size3 = file_len("qc2")
+    else:
+        os.system("python2 ~/opt/CalcQnQc.py 2xov.pdb dump.lammpstrj.{} {} 0.15 {} {}".format(i, f"qn_{i}", qn_start, qn_end))
+        os.system("python2 ~/opt/CalcQnQc.py 2xov.pdb dump.lammpstrj.{} {} 0.15 {} {}".format(i, f"qc_{i}", qc_start, qc_end))
+        os.system("python2 ~/opt/CalcQnQc.py 2xov.pdb dump.lammpstrj.{} {} 0.15 {} {}".format(i, f"qc2_{i}", qc2_start, qc2_end))
+        size1 = file_len(f"qn_{i}")
+        size2 = file_len(f"qc_{i}")
+        size3 = file_len(f"qc2_{i}")
+    # os.system("paste qn qc > qnqc")
+    # if(size1 < 400 or size2 < 400 or size3 < 400):
+    #     raise ValueError('file length too small')
+    # os.system("head -n 4000 qn > qn_all")
+    # os.system("head -n 4000 qc > qc_all")
+    # os.system("head -n 4000 qc2 > qc2_all")
+    # os.system("tail -n 2000 qn_all > qn_half")
+    # os.system("tail -n 2000 qc_all > qc_half")
+    # os.system("tail -n 2000 qc2_all > qc2_half")
+    # os.system("paste qn_half qc_half qc2_half ")
+if(args.qnqc):
+    if args.mode == -1:
+        calQnQc(args.mode)
+    else:
+        for i in range(args.mode):
+            calQnQc(i)
 
-number_of_run_list = [2, 4, 8, 16]
-for n in number_of_run_list:
-    name = "ga_"+str(n)+"m"
-    # os.system("mkdir "+name)
-    os.system("cp -r 2lhd.pdb "+name)
-
-    # os.system("cp -r 2lhc variables.dat "+name)
-    os.chdir(name)
-    for i in range(20):
-        os.chdir("analysis/"+str(i))
-        os.system("cp ../../2lhd.pdb .")
-        os.system("python2 ~/opt/script/CalcQValue.py 2lhd.pdb dump.lammpstrj q_gb.dat")
-        os.system("python2 ~/opt/script/CalcQValue.py 2lhc.pdb dump.lammpstrj q_ga.dat")
-        os.system("cp ~/opt/small_script/qw_gagb.plt .")
-        os.system("gnuplot qw_gagb.plt")
-        os.system("mv qw_gagb.pdf ../../results/qw_gagb_{0}.pdf".format(str(i)))
-        os.chdir("../..")
-    os.chdir("..")
-
-for n in number_of_run_list:
-    name = "ga_"+str(n)+"m"
-    # os.system("mkdir "+name)
-    os.system("cp -r 2lhd.pdb "+name)
-
-    # os.system("cp -r 2lhc variables.dat "+name)
-    os.chdir(name)
-    for i in range(20):
-        os.chdir("analysis/"+str(i))
-        os.system("paste q_ga.dat q_gb.dat > q_gagb.dat")
-        os.system("cp ~/opt/small_script/qw_ga-gb.plt .")
-        os.system("gnuplot qw_ga-gb.plt")
-        os.system("mv qw_ga-gb.pdf ../../results/qw_ga-gb_{0}.pdf".format(str(i)))
-        os.chdir("../..")
-    os.system("cp ~/opt/small_script/qw_ga_all.plt .")
-    os.system("gnuplot qw_ga_all.plt")
-    os.system("cp ~/opt/small_script/qw_gb_all.plt .")
-    os.system("gnuplot qw_gb_all.plt")
-    os.system("cp ~/opt/small_script/qw_diff_all.plt .")
-    os.system("gnuplot qw_diff_all.plt")
-    os.chdir("..")
+# number_of_run_list = [2, 4, 8, 16]
+# for n in number_of_run_list:
+#     name = "ga_"+str(n)+"m"
+#     # os.system("mkdir "+name)
+#     os.system("cp -r 2lhd.pdb "+name)
+#
+#     # os.system("cp -r 2lhc variables.dat "+name)
+#     os.chdir(name)
+#     for i in range(20):
+#         os.chdir("analysis/"+str(i))
+#         os.system("cp ../../2lhd.pdb .")
+#         os.system("python2 ~/opt/script/CalcQValue.py 2lhd.pdb dump.lammpstrj q_gb.dat")
+#         os.system("python2 ~/opt/script/CalcQValue.py 2lhc.pdb dump.lammpstrj q_ga.dat")
+#         os.system("cp ~/opt/small_script/qw_gagb.plt .")
+#         os.system("gnuplot qw_gagb.plt")
+#         os.system("mv qw_gagb.pdf ../../results/qw_gagb_{0}.pdf".format(str(i)))
+#         os.chdir("../..")
+#     os.chdir("..")
+#
+# for n in number_of_run_list:
+#     name = "ga_"+str(n)+"m"
+#     # os.system("mkdir "+name)
+#     os.system("cp -r 2lhd.pdb "+name)
+#
+#     # os.system("cp -r 2lhc variables.dat "+name)
+#     os.chdir(name)
+#     for i in range(20):
+#         os.chdir("analysis/"+str(i))
+#         os.system("paste q_ga.dat q_gb.dat > q_gagb.dat")
+#         os.system("cp ~/opt/small_script/qw_ga-gb.plt .")
+#         os.system("gnuplot qw_ga-gb.plt")
+#         os.system("mv qw_ga-gb.pdf ../../results/qw_ga-gb_{0}.pdf".format(str(i)))
+#         os.chdir("../..")
+#     os.system("cp ~/opt/small_script/qw_ga_all.plt .")
+#     os.system("gnuplot qw_ga_all.plt")
+#     os.system("cp ~/opt/small_script/qw_gb_all.plt .")
+#     os.system("gnuplot qw_gb_all.plt")
+#     os.system("cp ~/opt/small_script/qw_diff_all.plt .")
+#     os.system("gnuplot qw_diff_all.plt")
+#     os.chdir("..")
 
 # simulation_steps = 4 * 10**6
 # warm_up_steps = 10 * 10**5
