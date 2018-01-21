@@ -268,7 +268,7 @@ if args.mode == 2:
     distance_list = np.linspace(30, 180, 151)
 if args.mode == 3:
     # distance_list = np.linspace(30, 230, 101)
-    distance_list = np.linspace(30, 140, 56)
+    distance_list = np.linspace(30, 100, 36)
     # distance_list = np.linspace(60.5, 90.5, 16)
     # distance_list = np.linspace(132, 232, 51)
 
