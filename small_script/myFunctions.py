@@ -281,6 +281,113 @@ def check_and_correct_fragment_memory():
     os.system("mv fragsLAMW.mem fragsLAMW_back")
     os.system("mv tmp.mem fragsLAMW.mem")
 
+def read_complete_temper(n=4, location=".", rerun=-1, qnqc=False):
+    all_lipid_list = []
+    for i in range(n):
+        file = "lipid.{}.dat".format(i)
+        lipid = pd.read_csv(location+file).assign(Run=i)
+        lipid.columns = lipid.columns.str.strip()
+        # lipid = lipid[["Steps","Lipid","Run"]]
+        all_lipid_list.append(lipid)
+    lipid = pd.concat(all_lipid_list)
+
+    all_rgs_list = []
+    for i in range(n):
+        file = "rgs.{}.dat".format(i)
+        rgs = pd.read_csv(location+file).assign(Run=i)
+        rgs.columns = rgs.columns.str.strip()
+        # lipid = lipid[["Steps","Lipid","Run"]]
+        all_rgs_list.append(rgs)
+    rgs = pd.concat(all_rgs_list)
+
+    all_energy_list = []
+    for i in range(n):
+        file = "energy.{}.dat".format(i)
+        energy = pd.read_csv(location+file).assign(Run=i)
+        energy.columns = energy.columns.str.strip()
+        energy = energy[["Steps", "AMH-Go", "Membrane", "Rg", "Run"]]
+        all_energy_list.append(energy)
+    energy = pd.concat(all_energy_list)
+
+    all_dis_list = []
+    for i in range(n):
+        file = "addforce.{}.dat".format(i)
+        dis = pd.read_csv(location+file).assign(Run=i)
+        dis.columns = dis.columns.str.strip()
+        remove_columns = ['AddedForce', 'Dis12', 'Dis34', 'Dis56']
+        dis.drop(remove_columns, axis=1,inplace=True)
+        all_dis_list.append(dis)
+    dis = pd.concat(all_dis_list)
+
+    all_wham_list = []
+    for i in range(n):
+        file = "wham.{}.dat".format(i)
+        wham = pd.read_csv(location+file).assign(Run=i)
+        wham.columns = wham.columns.str.strip()
+        remove_columns = ['Rg', 'Tc']
+        wham = wham.drop(remove_columns, axis=1)
+        if qnqc:
+            qc = pd.read_table(location+f"qc_{i}", names=["qc"])[1:].reset_index(drop=True)
+            qn = pd.read_table(location+f"qn_{i}", names=["qn"])[1:].reset_index(drop=True)
+            qc2 = pd.read_table(location+f"qc2_{i}", names=["qc2"])[1:].reset_index(drop=True)
+            wham = pd.concat([wham,qn, qc, qc2],axis=1)
+        all_wham_list.append(wham)
+    wham = pd.concat(all_wham_list)
+    if rerun == -1:
+        file = "../log.lammps"
+    else:
+        file = f"../log{rerun}/log.lammps"
+    temper = pd.read_table(location+file, skiprows=2, sep=' ')
+    temper = temper.melt(id_vars=['Step'], value_vars=['T' + str(i) for i in range(n)], value_name="Temp", var_name="Run")
+    temper["Run"] = temper["Run"].str[1:].astype(int)
+    temper["Temp"] = "T" + temper["Temp"].astype(str)
+    t2 = temper.merge(wham, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
+    t3 = t2.merge(dis, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
+    t4 = t3.merge(lipid, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
+    t5 = t4.merge(energy, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
+    t6 = t5.merge(rgs, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
+    t6 = t6.assign(TotalE=t5.Energy + t5.Lipid)
+    return t6
+
+def process_complete_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False):
+    print("process temp data")
+    for folder in folder_list:
+        simulation_list = glob.glob(pre+folder+f"/simulation/{bias}_*")
+        print(pre+folder+f"/simulation/{bias}_*")
+        os.system("mkdir -p " + pre+folder+"/data")
+        complete_data_list = []
+        for one_simulation in simulation_list:
+            bias_num = one_simulation.split("_")[-1]
+            print(bias_num, "!")
+            all_data_list = []
+            if rerun == -1:
+                location = one_simulation + "/0/"
+                print(location)
+                data = read_complete_temper(location=location, n=n, rerun=rerun, qnqc=qnqc)
+                # remove_columns = ['Step', "Run"]
+                # data = data.drop(remove_columns, axis=1)
+                all_data_list.append(data)
+            else:
+                for i in range(rerun):
+                    location = one_simulation + f"/{i}/"
+                    print(location)
+                    try:
+                        data = read_complete_temper(location=location, n=n, rerun=i, qnqc=qnqc)
+                        # remove_columns = ['Step', "Run"]
+                        # data = data.drop(remove_columns, axis=1)
+                        all_data_list.append(data)
+                    except:
+                        print("Unexpected error:", sys.exc_info()[0])
+                        print("notrun?", bias_num)
+            try:
+                data = pd.concat(all_data_list).assign(BiasTo=bias_num)
+                complete_data_list.append(data.reset_index(drop=True))
+            except:
+                print("Unexpected error:", sys.exc_info()[0])
+                print("not data?", bias_num)
+    #         temps = list(dic.keys())
+        complete_data = pd.concat(complete_data_list)
+        complete_data.reset_index(drop=True).to_feather(pre+folder+"/complete.feather")
 
 def read_temper(n=4, location=".", rerun=-1, qnqc=False):
     all_lipid_list = []
@@ -318,10 +425,11 @@ def read_temper(n=4, location=".", rerun=-1, qnqc=False):
         wham.columns = wham.columns.str.strip()
         remove_columns = ['Rg', 'Tc']
         wham = wham.drop(remove_columns, axis=1)
-        qc = pd.read_table(location+f"qc_{i}", names=["qc"])[1:].reset_index(drop=True)
-        qn = pd.read_table(location+f"qn_{i}", names=["qn"])[1:].reset_index(drop=True)
-        qc2 = pd.read_table(location+f"qc2_{i}", names=["qc2"])[1:].reset_index(drop=True)
-        wham = pd.concat([wham,qn, qc, qc2],axis=1)
+        if qnqc:
+            qc = pd.read_table(location+f"qc_{i}", names=["qc"])[1:].reset_index(drop=True)
+            qn = pd.read_table(location+f"qn_{i}", names=["qn"])[1:].reset_index(drop=True)
+            qc2 = pd.read_table(location+f"qc2_{i}", names=["qc2"])[1:].reset_index(drop=True)
+            wham = pd.concat([wham,qn, qc, qc2],axis=1)
         all_wham_list.append(wham)
     wham = pd.concat(all_wham_list)
     if rerun == -1:
@@ -339,7 +447,7 @@ def read_temper(n=4, location=".", rerun=-1, qnqc=False):
     t6 = t5.assign(TotalE=t5.Energy + t5.Lipid)
     return t6
 
-def process_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis"):
+def process_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False):
     print("process temp data")
     for folder in folder_list:
         simulation_list = glob.glob(pre+folder+f"/simulation/{bias}_*")
@@ -351,7 +459,7 @@ def process_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis
             if rerun == -1:
                 location = one_simulation + "/0/"
                 try:
-                    data = read_temper(location=location, n=n)
+                    data = read_temper(location=location, n=n, qnqc=qnqc)
                     # remove_columns = ['Step', "Run"]
                     # data = data.drop(remove_columns, axis=1)
                     data.reset_index().to_feather(pre+folder+"/data/"+f"{bias}{bias_num}.feather")
@@ -363,7 +471,7 @@ def process_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis
                 for i in range(rerun):
                     location = one_simulation + f"/{i}/"
                     try:
-                        data = read_temper(location=location, n=n, rerun=i)
+                        data = read_temper(location=location, n=n, rerun=i, qnqc=qnqc)
                         # remove_columns = ['Step', "Run"]
                         # data = data.drop(remove_columns, axis=1)
                         all_data_list.append(data)
@@ -372,7 +480,7 @@ def process_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis
                         print("notrun?", bias_num)
                 try:
                     data = pd.concat(all_data_list)
-                    data.reset_index().to_feather(pre+folder+"/data/"+f"{bias}{bias_num}.feather")
+                    data.reset_index(drop=True).to_feather(pre+folder+"/data/"+f"{bias}{bias_num}.feather")
                 except:
                     print("Unexpected error:", sys.exc_info()[0])
                     print("not data?", bias_num)
@@ -424,3 +532,14 @@ def move_data(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2
 #         os.chdir("{}/awsemer/simulation/{}/0/".format(protein, int(answer.Run)))
 #         os.system("show.py --frame {} {} -p".format(int(answer.Steps/4000), protein))
 #         os.chdir("../../../../../")
+
+def compute_average_z(dumpFile, outFile):
+    # input dump, output z.dat
+    z_list = []
+    with open(outFile, "w") as f:
+        a = read_lammps(dumpFile)
+        for atoms in a:
+            b = np.array(atoms)
+            z = b.mean(axis=0)[2]
+            z_list.append(z)
+            f.write(str(z)+"\n")

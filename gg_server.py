@@ -135,6 +135,59 @@ echo $SLURM_NODELIST
 srun python3 ~/opt/server.py --qnqc -m {}
 '''
 
+if args.day == "jan20":
+    if args.mode == 1:
+        pre = "/scratch/wl45/jan_2018/"
+        data_folder = "/scratch/wl45/jan_2018/all_data_folder/"
+        folder_list = ["rg_0.3_lipid_0.6_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_temper_data(pre, data_folder, folder_list)
+    if args.mode == 2:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(1):
+            freeEnergy_folder = f"freeEnergy_rg_0.3_lipid_0.6_mem_1_{sample_range_mode}/"
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            folder_list = ["rg_0.3_lipid_0.6_mem_1"]
+            # submode_list = ["_no_energy"]
+            # submode_list = ["", "only_500"]
+            # submode_list = ["350", "400", "450", "500", "550"]
+            temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    move_data(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode, sub_mode_name=temp_mode)
+
+            cd(freeEnergy_folder)
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    cd(folder+temp_mode)
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        make_metadata(temps_list=temp_list,k=0.02)
+                        do("pulling_analysis.py -m {} --commons 1 --nsample 2500 --submode 2".format(mode))
+                        cd("..")
+                    cd("..")
+            cd("..")
+    if args.mode == 3:
+        cd("simulation")
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        for folder in simulation_list:
+            cd(folder)
+            cd("0")
+            print(folder)
+            for i in range(12):
+                compute_average_z(f"dump.lammpstrj.{i}", f"z_{i}.dat")
+            cd("../..")
 if args.day == "dec04":
     i = 12
     if args.mode == 2:

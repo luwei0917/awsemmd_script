@@ -42,7 +42,8 @@ def variable_test2(k_list=[1],
                       commons=0,
                       temperature_list=[300],
                       start_from_list=["native"],
-                      simulation_model_list=["go"]):
+                      simulation_model_list=["go"],
+                      simulation_base_steps=1e7):
     inputs = locals()
     tmp = {}  # some none list one are not important
     # variables that changing determines the name of folder
@@ -90,16 +91,16 @@ def variable_test2(k_list=[1],
         do("mkdir "+folder_name_template)
         do("cp -r 2xov " + folder_name_template + "/")
         cd(folder_name_template + "/2xov")
-
-        with fileinput.FileInput("fix_qbias.data", inplace=True, backup='.bak') as file:
-            for line in file:
-                print(line.replace("MY_QBIAS", str(qbias)), end='')
-        with fileinput.FileInput("fix_qbias_equil.data", inplace=True, backup='.bak') as file:
-            for line in file:
-                print(line.replace("MY_QBIAS", str(qbias)), end='')
+        if qbias is not "none":
+            with fileinput.FileInput("fix_qbias.data", inplace=True, backup='.bak') as file:
+                for line in file:
+                    print(line.replace("MY_QBIAS", str(qbias)), end='')
+            with fileinput.FileInput("fix_qbias_equil.data", inplace=True, backup='.bak') as file:
+                for line in file:
+                    print(line.replace("MY_QBIAS", str(qbias)), end='')
         if simulation_model == "go":
             fixFile = "fix_backbone_coeff_go.data"
-            simulation_steps = 1e7/force_ramp_rate
+            simulation_steps = simulation_base_steps/force_ramp_rate
         if simulation_model == "single":
             fixFile = "fix_backbone_coeff_single.data"
             simulation_steps = 5e6/force_ramp_rate

@@ -7,7 +7,7 @@ def dotproduct(v1, v2):
 def length(v):
     return math.sqrt(dotproduct(v, v))
 
-def read_lammps(lammps_file="dump.lammpstrj"):
+def read_lammps(lammps_file="dump.lammpstrj", center=False):
     nFrame = 0
     with open(lammps_file, "r") as lfile:
         for line in lfile:
@@ -30,24 +30,29 @@ def read_lammps(lammps_file="dump.lammpstrj"):
                         xyz_count = 0
                 elif item[:10] == "BOX BOUNDS":
                     # I center x, y not z
-                    if xyz_count <= 1:
-                        xyz_count += 1
-                        box.append(l)
-                        l = l.split()
-                        # A.append([float(l[0]), float(l[1])])
-                        l_left = (float(l[0]) - float(l[1]))/2.0
-                        l_right = (float(l[1]) - float(l[0]))/2.0
-                        A.append([l_left, l_right])
-                        # print l_right - l_left
+                    if center:
+                        if xyz_count <= 1:
+                            xyz_count += 1
+                            box.append(l)
+                            l = l.split()
+                            # A.append([float(l[0]), float(l[1])])
+                            l_left = (float(l[0]) - float(l[1]))/2.0
+                            l_right = (float(l[1]) - float(l[0]))/2.0
+                            A.append([l_left, l_right])
+                            # print l_right - l_left
+                        else:
+                            xyz_count = 0
+                            box.append(l)
+                            l = l.split()
+                            A.append([float(l[0]), float(l[1])])
+                            # l_left = (float(l[0]) - float(l[1]))/2.0
+                            # l_right = (float(l[1]) - float(l[0]))/2.0
+                            # A.append([l_left, l_right])
+                            # print l_right - l_left
                     else:
-                        xyz_count = 0
                         box.append(l)
                         l = l.split()
                         A.append([float(l[0]), float(l[1])])
-                        # l_left = (float(l[0]) - float(l[1]))/2.0
-                        # l_right = (float(l[1]) - float(l[0]))/2.0
-                        # A.append([l_left, l_right])
-                        # print l_right - l_left
                 elif item[:5] == "ATOMS":
                     l = l.split()
                     i_atom = int(l[0])
