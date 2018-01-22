@@ -48,8 +48,25 @@ else:
     do = os.system
     cd = os.chdir
 
+if args.day == "jan19":
+    if args.mode == 1:
+        read_data_Pulling("pressure_0.5_rg_0.2_mem_1")
+    if args.mode == 2:
+        read_data_Pulling("pressure_1")
 
+if args.day == "jan17":
+    if args.mode == 1:
+        read_data_Pulling("pressure_0.5_rg_0.2_mem_1")
+    if args.mode == 2:
+        read_data_Pulling("pressure_0.5")
 
+if args.day == "jan12":
+    if args.mode == 1:
+        read_data_Pulling()
+
+if args.day == "jan05":
+    if args.mode == 1:
+        read_data_Pulling()
 if args.day == "nov21":
     if args.mode == 1:
         simulation_list = ["memb_3_rg_0.1_lipid_1_extended"]
