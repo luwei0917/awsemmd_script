@@ -226,7 +226,7 @@ def check_and_correct_fragment_memory():
     os.system("mv fragsLAMW.mem fragsLAMW_back")
     os.system("mv tmp.mem fragsLAMW.mem")
 
-def read_complete_temper(n=4, location=".", rerun=-1, qnqc=False):
+def read_complete_temper(n=4, location=".", rerun=-1, qnqc=False, average_z=False):
     all_lipid_list = []
     for i in range(n):
         file = "lipid.{}.dat".format(i)
@@ -275,7 +275,10 @@ def read_complete_temper(n=4, location=".", rerun=-1, qnqc=False):
             qc = pd.read_table(location+f"qc_{i}", names=["qc"])[1:].reset_index(drop=True)
             qn = pd.read_table(location+f"qn_{i}", names=["qn"])[1:].reset_index(drop=True)
             qc2 = pd.read_table(location+f"qc2_{i}", names=["qc2"])[1:].reset_index(drop=True)
-            wham = pd.concat([wham,qn, qc, qc2],axis=1)
+            wham = pd.concat([wham, qn, qc, qc2],axis=1)
+        if average_z:
+            z = pd.read_table(location+f"z_{i}.dat", names=["AverageZ"])[1:].reset_index(drop=True)
+            wham = pd.concat([wham, z],axis=1)
         all_wham_list.append(wham)
     wham = pd.concat(all_wham_list)
     if rerun == -1:
@@ -291,10 +294,10 @@ def read_complete_temper(n=4, location=".", rerun=-1, qnqc=False):
     t4 = t3.merge(lipid, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
     t5 = t4.merge(energy, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
     t6 = t5.merge(rgs, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
-    t6 = t6.assign(TotalE=t5.Energy + t5.Lipid)
+    t6 = t6.assign(TotalE=t6.Energy + t6.Lipid)
     return t6
 
-def process_complete_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False):
+def process_complete_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False, average_z=False):
     print("process temp data")
     for folder in folder_list:
         simulation_list = glob.glob(pre+folder+f"/simulation/{bias}_*")
@@ -308,7 +311,7 @@ def process_complete_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, 
             if rerun == -1:
                 location = one_simulation + "/0/"
                 print(location)
-                data = read_complete_temper(location=location, n=n, rerun=rerun, qnqc=qnqc)
+                data = read_complete_temper(location=location, n=n, rerun=rerun, qnqc=qnqc, average_z=average_z)
                 # remove_columns = ['Step', "Run"]
                 # data = data.drop(remove_columns, axis=1)
                 all_data_list.append(data)
@@ -316,24 +319,68 @@ def process_complete_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, 
                 for i in range(rerun):
                     location = one_simulation + f"/{i}/"
                     print(location)
-                    try:
-                        data = read_complete_temper(location=location, n=n, rerun=i, qnqc=qnqc)
-                        # remove_columns = ['Step', "Run"]
-                        # data = data.drop(remove_columns, axis=1)
-                        all_data_list.append(data)
-                    except:
-                        print("Unexpected error:", sys.exc_info()[0])
-                        print("notrun?", bias_num)
-            try:
-                data = pd.concat(all_data_list).assign(BiasTo=bias_num)
-                complete_data_list.append(data.reset_index(drop=True))
-            except:
-                print("Unexpected error:", sys.exc_info()[0])
-                print("not data?", bias_num)
+                    data = read_complete_temper(location=location, n=n, rerun=i, qnqc=qnqc, average_z=average_z)
+                    # remove_columns = ['Step', "Run"]
+                    # data = data.drop(remove_columns, axis=1)
+                    all_data_list.append(data)
+
+            data = pd.concat(all_data_list).assign(BiasTo=bias_num)
+            complete_data_list.append(data.reset_index(drop=True))
     #         temps = list(dic.keys())
         complete_data = pd.concat(complete_data_list)
-        complete_data.reset_index(drop=True).to_feather(pre+folder+"/complete.feather")
+        name = f"{datetime.today().strftime('%d_%h_%H%M%S')}.feather"
+        complete_data.reset_index(drop=True).to_feather(pre+folder+"/" + name)
+        os.system("cp "+pre+folder+"/" + name + " "+data_folder+folder+".feather")
 
+
+
+def move_data2(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2, sample_range_mode=0, biasName="dis", qnqc=False, average_z=False):
+    print("move data")
+    dic = {"T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
+    # read in complete.feather
+    data = pd.read_feather(data_folder + folder +".feather")
+    os.system("mkdir -p "+freeEnergy_folder+folder+sub_mode_name+"/data")
+    for bias, oneBias in data.groupby("BiasTo"):
+        for tempSymbol, oneTempAndBias in oneBias.groupby("Temp"):
+            temp = dic[tempSymbol]
+            if float(temp) > 800:
+                continue
+            print(f"t_{temp}_{biasName}_{bias}.dat")
+            if sample_range_mode == 0:
+                queryCmd = 'Step > 1e7 & Step <= 2e7'
+            elif sample_range_mode == 1:
+                queryCmd ='Step > 2e7 & Step <= 3e7'
+            elif sample_range_mode == 2:
+                queryCmd ='Step > 3e7 & Step <= 4e7'
+            tmp = oneTempAndBias.query(queryCmd)
+            chosen_list = ["TotalE", "Qw", "Distance"]
+            if average_z:
+                chosen_list += ["AverageZ"]
+            chosen = tmp[chosen_list]
+            chosen = chosen.assign(TotalE_perturb_mem_p=tmp.TotalE + kmem*tmp.Membrane,
+                                    TotalE_perturb_mem_m=tmp.TotalE - kmem*tmp.Membrane,
+                                    TotalE_perturb_lipid_p=tmp.TotalE + klipid*tmp.Lipid,
+                                    TotalE_perturb_lipid_m=tmp.TotalE - klipid*tmp.Lipid,
+                                    TotalE_perturb_go_p=tmp.TotalE + kgo*tmp["AMH-Go"],
+                                    TotalE_perturb_go_m=tmp.TotalE - kgo*tmp["AMH-Go"],
+                                    TotalE_perturb_rg_p=tmp.TotalE + krg*tmp.Rg,
+                                    TotalE_perturb_rg_m=tmp.TotalE - krg*tmp.Rg)
+    #         print(tmp.count())
+            chosen.to_csv(freeEnergy_folder+folder+sub_mode_name+f"/data/t_{temp}_{biasName}_{bias}.dat", sep=' ', index=False, header=False)
+    # chosen
+def compute_average_z(dumpFile, outFile):
+    # input dump, output z.dat
+    z_list = []
+    with open(outFile, "w") as f:
+        a = read_lammps(dumpFile)
+        for atoms in a:
+            b = np.array(atoms)
+            z = b.mean(axis=0)[2]
+            z_list.append(z)
+            f.write(str(z)+"\n")
+
+
+# ----------------------------depreciated---------------------------------------
 def read_temper(n=4, location=".", rerun=-1, qnqc=False):
     all_lipid_list = []
     for i in range(n):
@@ -391,6 +438,7 @@ def read_temper(n=4, location=".", rerun=-1, qnqc=False):
     t5 = t4.merge(energy, how='inner', left_on=["Step", "Run"], right_on=["Steps", "Run"]).sort_values('Step').drop('Steps', axis=1)
     t6 = t5.assign(TotalE=t5.Energy + t5.Lipid)
     return t6
+
 
 def process_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False):
     print("process temp data")
@@ -477,14 +525,3 @@ def move_data(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2
 #         os.chdir("{}/awsemer/simulation/{}/0/".format(protein, int(answer.Run)))
 #         os.system("show.py --frame {} {} -p".format(int(answer.Steps/4000), protein))
 #         os.chdir("../../../../../")
-
-def compute_average_z(dumpFile, outFile):
-    # input dump, output z.dat
-    z_list = []
-    with open(outFile, "w") as f:
-        a = read_lammps(dumpFile)
-        for atoms in a:
-            b = np.array(atoms)
-            z = b.mean(axis=0)[2]
-            z_list.append(z)
-            f.write(str(z)+"\n")
