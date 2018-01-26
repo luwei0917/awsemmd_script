@@ -172,8 +172,7 @@ def readPMF(pre):
 
     return pd.concat(all_pmf_list).dropna().reset_index()
 
-def readPMF_2(pre):
-    mode_list = ["1d_dis", "1d_qw"]
+def readPMF_2(pre, mode_list=["1d_dis", "1d_qw"]):
     all_data_list =[]
     for mode in mode_list:
         tmp = readPMF(mode).assign(mode=mode)
