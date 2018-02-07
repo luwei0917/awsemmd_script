@@ -134,6 +134,10 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun python3 ~/opt/server.py --qnqc -m {}
 '''
+if args.day == "feb07":
+    if args.mode == 1:
+        print("Read variables data")
+        read_variable_folder("/scratch/wl45/feb_2018/week_of_feb05/refolding_pressure_1.0")
 
 if args.day == "feb06":
     if args.mode == 1:
@@ -169,6 +173,18 @@ if args.day == "feb06":
                         force_list=force_list,
                         repeat=repeat,
                         commons=0,simulation_base_steps=2e7)
+    if args.mode == 4:
+        simulation_list = glob.glob("rg_0.1_")
+        for folder in simulation_list:
+            cd(folder)
+            cd("simulation")
+            for i in range(20):
+                cd(str(i))
+                cd("0")
+                print(folder)
+                compute_average_z(f"dump.lammpstrj", "z.dat")
+                cd("../..")
+            cd("../..")
 if args.day == "feb05":
     if args.mode == 1:
         print("how Unfolding change")
