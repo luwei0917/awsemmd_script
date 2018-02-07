@@ -47,7 +47,7 @@ if args.mode == 3:
 
 if args.mode == 1:
     # do("python3 ~/opt/small_script/delete_lammps_frame.py")
-    shrinkage(shrink_size=3, max_frame=4000)
+    shrinkage(shrink_size=1, max_frame=1000)
     # shrinkage()
     do("cp ../{}.seq .".format(protein_name))
     do("python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py small.lammpstrj movie "+protein_name+".seq")

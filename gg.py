@@ -48,6 +48,9 @@ else:
     do = os.system
     cd = os.chdir
 
+if args.day == "jan25":
+    if args.mode == 1:
+        compute_average_z(f"dump.lammpstrj", f"z.dat")
 if args.day == "jan19":
     if args.mode == 1:
         read_data_Pulling("pressure_0.5_rg_0.2_mem_1")
