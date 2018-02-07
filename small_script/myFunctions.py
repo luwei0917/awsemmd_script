@@ -26,61 +26,6 @@ def expand_grid(dictionary):
     return pd.DataFrame([row for row in product(*dictionary.values())],
                         columns=dictionary.keys())
 
-def readPulling(location):
-    file = "lipid.dat"
-    lipid = pd.read_csv(location+file)
-    lipid.columns = lipid.columns.str.strip()
-
-    file = "energy.dat"
-    energy = pd.read_csv(location+file)
-    energy.columns = energy.columns.str.strip()
-    file = "addforce.dat"
-    dis = pd.read_csv(location+file)
-    dis.columns = dis.columns.str.strip()
-#     remove_columns = ['AddedForce', 'Dis12', 'Dis34', 'Dis56']
-    file = "rgs.dat"
-    rgs = pd.read_csv(location+file)
-    rgs.columns = rgs.columns.str.strip()
-    file = "wham.dat"
-    wham = pd.read_csv(location+file)
-    wham.columns = wham.columns.str.strip()
-    remove_columns = ['Rg', 'Tc']
-    wham = wham.drop(remove_columns, axis=1)
-    data = wham.merge(rgs, how='inner', left_on=["Steps"], right_on=["Steps"]).\
-        merge(dis, how='inner', left_on=["Steps"], right_on=["Steps"]).\
-        merge(energy, how='inner', left_on=["Steps"], right_on=["Steps"]).\
-        merge(lipid, how='inner', left_on=["Steps"], right_on=["Steps"])
-    data = data.assign(TotalE=data.Energy + data.Lipid)
-    return data
-
-
-def read_data_Pulling(pre="./", to="."):
-    folder_list = glob.glob(pre+"*_")
-    all_data_list = []
-    for folder in folder_list:
-        print(folder)
-        location = os.path.join(folder, "simulation")
-        run_list = [f for f in os.listdir(location) if re.search(r'^\d+$', f)]
-        for i in run_list:
-            data = readPulling(folder + "/simulation/{}/0/".format(i))
-            tmp = folder.split("/")[-1]
-            # _,temp,_ = tmp.split("_")
-            splited = tmp.split("_")
-            variable_dic = {}
-            for ii in range(len(splited)//2):
-                tmpDic = dict([[splited[2*ii],float(splited[2*ii+1])]])
-                variable_dic.update(tmpDic)
-            # print(variable_dic)
-            data = data.assign(Run=i, folder=tmp, **variable_dic)
-            # _,rg,_,memb,_ = tmp.split("_")
-            # data = data.assign(Run=i, folder=tmp, rg=rg, memb=memb)
-            all_data_list.append(data)
-    data = pd.concat(all_data_list)
-    # data.reset_index(drop=True).to_feather(os.path.join(to, "data.feather"))
-    data.reset_index(drop=True).to_feather(os.path.join(to, f"{datetime.today().strftime('%d_%h_%H%M%S')}.feather"))
-
-
-
 def readPMF_basic(pre):
     perturbation_table = {0:"original", 1:"p_mem",
                           2:"m_mem", 3:"p_lipid",
@@ -435,6 +380,50 @@ def compute_average_z(dumpFile, outFile):
             f.write(str(z)+"\n")
 
 
+def read_simulation(location):
+    file = "lipid.dat"
+    lipid = pd.read_csv(location+file)
+    lipid.columns = lipid.columns.str.strip()
+
+    file = "energy.dat"
+    energy = pd.read_csv(location+file)
+    energy.columns = energy.columns.str.strip()
+    file = "addforce.dat"
+    dis = pd.read_csv(location+file)
+    dis.columns = dis.columns.str.strip()
+#     remove_columns = ['AddedForce', 'Dis12', 'Dis34', 'Dis56']
+    file = "rgs.dat"
+    rgs = pd.read_csv(location+file)
+    rgs.columns = rgs.columns.str.strip()
+    file = "wham.dat"
+    wham = pd.read_csv(location+file)
+    wham.columns = wham.columns.str.strip()
+    remove_columns = ['Rg', 'Tc']
+    wham = wham.drop(remove_columns, axis=1)
+    data = wham.merge(rgs, how='inner', left_on=["Steps"], right_on=["Steps"]).\
+        merge(dis, how='inner', left_on=["Steps"], right_on=["Steps"]).\
+        merge(energy, how='inner', left_on=["Steps"], right_on=["Steps"]).\
+        merge(lipid, how='inner', left_on=["Steps"], right_on=["Steps"])
+    data = data.assign(TotalE=data.Energy + data.Lipid)
+    return data
+
+def read_folder(location):
+    runFolders = os.listdir(location+"/simulation")
+    data_list = []
+    for run in runFolders:
+        tmp = read_simulation(location+"/simulation/"+run+"/0/").assign(Run=run)
+        data_list.append(tmp)
+    return pd.concat(data_list)
+
+def read_variable_folder(location):
+    variables = glob.glob(os.path.join(location, "*_"))
+    data_list = []
+    for variableFolder in variables:
+        tmp = variableFolder.split("/")[-1]
+        data_list.append(read_folder(variableFolder).assign(Folder=tmp))
+    data = pd.concat(data_list)
+    name = f"{datetime.today().strftime('%d_%h_%H%M%S')}.feather"
+    data.reset_index(drop=True).to_feather(name)
 # ----------------------------depreciated---------------------------------------
 def read_temper(n=4, location=".", rerun=-1, qnqc=False):
     all_lipid_list = []

@@ -135,6 +135,239 @@ echo $SLURM_NODELIST
 srun python3 ~/opt/server.py --qnqc -m {}
 '''
 
+if args.day == "feb06":
+    if args.mode == 1:
+        print("Read variables data")
+        read_variable_folder("/scratch/wl45/feb_2018/week_of_feb05/pulling_pressure_1.0")
+    if args.mode == 2:
+        print("Read variables data")
+        read_variable_folder("/scratch/wl45/feb_2018/week_of_feb05/different_rg_refold")
+    if args.mode == 3:
+        print("how Refolding change")
+        # start_from_list=["native", "extended", "topology"]
+        # start_from_list=["native"]
+        start_from_list=["extended"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [1]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[500]
+        memb_k_list = [1]
+        rg_list = [0.1, 0.15, 0.2, 0.3]
+        # qbias_list = [0.25, 0.45, 0.65, 0.85]
+        # qbias_list = list(np.linspace(0.2,0.9,36))
+        force_list = [0]
+        repeat = 20
+        variable_test2(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        pressure_list=pressure_list,
+                        rg_list=rg_list,
+                        mem_list=memb_k_list,
+                        mode_list=mode_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=0,simulation_base_steps=2e7)
+if args.day == "feb05":
+    if args.mode == 1:
+        print("how Unfolding change")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [1.0]
+        # pressure_list = [0.6, 1]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[500]
+        memb_k_list = [1]
+        # rg_list = [0.3]
+        rg_list = [0.1, 0.15, 0.2, 0.3]
+        # qbias_list = [0.25, 0.45, 0.65, 0.85]
+        # qbias_list = list(np.linspace(0.2,0.9,36))
+        force_list = ["ramp"]
+        repeat = 20
+        variable_test2(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        pressure_list=pressure_list,
+                        rg_list=rg_list,
+                        mem_list=memb_k_list,
+                        mode_list=mode_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=0,simulation_base_steps=1e7)
+if args.day == "feb04":
+    if args.mode == 1:
+        print("Read variables data")
+        read_variable_folder("/scratch/wl45/jan_2018/week_of_jan29/pulling")
+    if args.mode == 2:
+        print("how Refolding change")
+        # start_from_list=["native", "extended", "topology"]
+        # start_from_list=["native"]
+        start_from_list=["extended"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0.6]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[500]
+        memb_k_list = [1]
+        rg_list = [0.1, 0.2, 0.3]
+        # qbias_list = [0.25, 0.45, 0.65, 0.85]
+        # qbias_list = list(np.linspace(0.2,0.9,36))
+        force_list = [0]
+        repeat = 20
+        variable_test2(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        pressure_list=pressure_list,
+                        rg_list=rg_list,
+                        mem_list=memb_k_list,
+                        mode_list=mode_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=0,simulation_base_steps=2e7)
+if args.day == "feb02":
+    if args.mode == 1:
+        print("how Unfolding change")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0.6]
+        # pressure_list = [0.6, 1]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[500]
+        memb_k_list = [1]
+        # rg_list = [0.3]
+        rg_list = [0.15, 0.2]
+        # qbias_list = [0.25, 0.45, 0.65, 0.85]
+        # qbias_list = list(np.linspace(0.2,0.9,36))
+        force_list = ["ramp"]
+        repeat = 20
+        variable_test2(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        pressure_list=pressure_list,
+                        rg_list=rg_list,
+                        mem_list=memb_k_list,
+                        mode_list=mode_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=0,simulation_base_steps=2e7)
+if args.day == "feb01":
+    if args.mode == 1:
+        print("how Refolding change")
+        # start_from_list=["native", "extended", "topology"]
+        # start_from_list=["native"]
+        start_from_list=["extended"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0.6]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[500]
+        memb_k_list = [1]
+        rg_list = [0.3]
+        # qbias_list = [0.25, 0.45, 0.65, 0.85]
+        # qbias_list = list(np.linspace(0.2,0.9,36))
+        force_list = [0, 0.05, 0.1]
+        repeat = 20
+        variable_test2(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        pressure_list=pressure_list,
+                        rg_list=rg_list,
+                        mem_list=memb_k_list,
+                        mode_list=mode_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=0,simulation_base_steps=2e7)
+    if args.mode == 2:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(1):
+            freeEnergy_folder = f"freeEnergy_rg_0.3_lipid_0.6_mem_1_{sample_range_mode}/"
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            folder_list = ["rg_0.3_lipid_0.6_mem_1"]
+            # submode_list = ["_no_energy"]
+            # submode_list = ["", "only_500"]
+            # submode_list = ["350", "400", "450", "500", "550"]
+            temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    move_data2(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode, sub_mode_name=temp_mode, average_z=True)
+
+            cd(freeEnergy_folder)
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    cd(folder+temp_mode)
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        make_metadata(temps_list=temp_list,k=0.02)
+                        do("pulling_analysis.py -m {} --commons 0 --nsample 2500 --submode 5".format(mode))
+                        cd("..")
+                    cd("..")
+            cd("..")
+if args.day == "jan31":
+    if args.mode == 1:
+        pre = "/scratch/wl45/jan_2018/week_of_jan29/"
+        data_folder = "/scratch/wl45/jan_2018/week_of_jan29/all_data_folder/"
+        folder_list = ["rg_0.3_lipid_0.6_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_complete_temper_data(pre, data_folder, folder_list, rerun=-1, average_z=True)
+    if args.mode == 2:
+        cd("simulation")
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        for folder in simulation_list:
+            cd(folder)
+            cd("0")
+            print(folder)
+            for i in range(12):
+                compute_average_z(f"dump.lammpstrj.{i}", f"z_{i}.dat")
+            cd("../..")
+    if args.mode == 3:
+        print("how Unfolding change")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [0.6]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[500]
+        memb_k_list = [1]
+        rg_list = [0.3]
+        # qbias_list = [0.25, 0.45, 0.65, 0.85]
+        # qbias_list = list(np.linspace(0.2,0.9,36))
+        force_list = ["ramp"]
+        repeat = 20
+        variable_test2(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        pressure_list=pressure_list,
+                        rg_list=rg_list,
+                        mem_list=memb_k_list,
+                        mode_list=mode_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=0,simulation_base_steps=2e7)
 if args.day == "jan25":
     if args.mode == 1:
         simulation_list = glob.glob("dis_*")
@@ -217,13 +450,14 @@ if args.day == "jan25":
         repeat = 20
         variable_test2(temperature_list=temperature_list,
                         start_from_list=start_from_list,
+                        pressure_list=pressure_list,
                         rg_list=rg_list,
                         mem_list=memb_k_list,
                         mode_list=mode_list,
                         force_ramp_rate_list=force_ramp_rate_list,
                         force_list=force_list,
                         repeat=repeat,
-                        commons=1,simulation_base_steps=2e7)
+                        commons=0,simulation_base_steps=2e7)
     if args.mode == 6:
         print("how Unfolding change")
         # start_from_list=["native", "extended", "topology"]
@@ -243,6 +477,7 @@ if args.day == "jan25":
         repeat = 20
         variable_test2(temperature_list=temperature_list,
                         start_from_list=start_from_list,
+                        pressure_list=pressure_list,
                         rg_list=rg_list,
                         mem_list=memb_k_list,
                         mode_list=mode_list,
