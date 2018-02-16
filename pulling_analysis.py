@@ -166,8 +166,8 @@ if args.mode >= 9:
     print("two d")
     nsample = args.nsample
     # force_list = [0.0, 0.1, 0.2]
-    # force_list = [0.0]
-    force_list = [0.0, 0.1, 0.2]
+    force_list = [0.0]
+    # force_list = [0.0, 0.1, 0.2]
     for force in force_list:
         # force = 1
         temp_arg = "-f {} -nsamples {}".format(force, nsample)
