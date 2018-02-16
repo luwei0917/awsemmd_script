@@ -48,6 +48,41 @@ else:
     do = os.system
     cd = os.chdir
 
+if args.day == "feb14":
+    if(args.mode == 1):
+        print("add pdb")
+        for i in range(0, 20):
+            # print(os.getcwd())
+            cd(str(i))
+            do("cp 2xov.pdb 0/")
+            cd("..")
+    if(args.mode == 2):
+        print("Extract qw and distance info.")
+        for i in range(20):
+            cd(str(i))
+            cd("0")
+            do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
+            do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > distance.dat")
+            cd("../..")
+
+    # do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov directory_list out")
+    if(args.mode == 3):
+        print("create directory_list")
+        with open("directory_list", "w") as f:
+            for i in range(0, 20):
+                # print(os.getcwd())
+                location = os.getcwd() + "/../"
+                f.write(location+str(i)+"/0\n")
+
+    if(args.mode == 4):
+        print("create directory_list")
+        for i in range(0, 20):
+            with open(str(i), "w") as f:
+                # print(os.getcwd())
+                location = os.getcwd() + "/../"
+                f.write(location+str(i)+"/0\n")
+            do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov {0} out_{0}".format(i))
+
 if args.day == "jan25":
     if args.mode == 1:
         compute_average_z(f"dump.lammpstrj", f"z.dat")

@@ -23,7 +23,7 @@ dump_file_name = "dump.lammpstrj"
 output_file_name = "pick_structures_all.dat"
 structure_output_file_name = "pick_structures.dat"
 structure_index = 1
-structure_stride = 8050
+structure_stride = 50 # 8050
 max_pdbs_to_build = 20
 pdb_index = 0
 found_pdb_index = 0
@@ -82,6 +82,7 @@ for data_file in files_array:
         bad_condition = False
         # If all conditions are satisfied, print out the data
         for i in range(len(conditions)):
+            # print(data_point[int(conditions[i][0])-1], float(conditions[i][1]))
             if condition_signs[i] == "+":
                 if not data_point[int(conditions[i][0])-1] > float(conditions[i][1]): bad_condition = True
             elif condition_signs[i] == "-":
