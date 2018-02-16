@@ -58,7 +58,7 @@ if(args.test):
 if args.mode == 0:
     data = readPMF(".")
 elif args.mode == 1:
-    data = readPMF_2(".")  # read both 1d_dis and 1d_qw
+    data = readPMF_2(".")  # read all 1d_dis, 1d_qw and 1d_z
 elif args.mode ==3:
     all_pmf_list = []
     simulation_list = ["memb_3_rg_0.1_lipid_1_extended", "memb_3_rg_0.1_lipid_1_topology"]
@@ -95,8 +95,13 @@ elif args.mode ==5:
             all_pmf_list.append(tmp)
             cd("../..")
     data = pd.concat(all_pmf_list).reset_index(drop=True)
+elif args.mode == 6:
+    data = readPMF_2(".", is2d=True)  # read all 2d
+if args.mode != 6:
+    remove_columns = ['bin']
+    data = data.drop(remove_columns, axis=1)
 
-remove_columns = ['bin']
-data = data.drop(remove_columns, axis=1)
 
-data.to_feather(f"/Users/weilu/Research/data/pulling/{datetime.datetime.today().strftime('%d_%h')}_data_{label}.feather")
+destiny = f"/Users/weilu/Research/data/pulling/{datetime.datetime.today().strftime('%d_%h')}_data_{label}.feather"
+print(destiny)
+data.to_feather(destiny)

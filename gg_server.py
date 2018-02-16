@@ -51,6 +51,23 @@ else:
     do = os.system
 cd = os.chdir
 
+base_run_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=12
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=1-00:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+
+module load GCC/4.9.3 OpenMPI/1.8.8
+srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 12x1 -in 2xov_{}.in\n'''
+
 base_slurm = '''\
 #!/bin/bash
 #SBATCH --job-name=CTBP_WL
@@ -72,19 +89,21 @@ def replace(TARGET, FROM, TO):
 def getFromTerminal(CMD):
     return subprocess.Popen(CMD,stdout=subprocess.PIPE,shell=True).communicate()[0].decode()
 
-def continueRunConvertion(n=12):
-    do("cp 2xov_0.in 2xov_1.in")
-    fileName = "2xov_1.in"
+def continueRunConvertion(n=12, rerun=0):
+    rerun_plus_one = rerun + 1
+    do(f"cp 2xov_0.in 2xov_{rerun_plus_one}.in")
+    fileName = f"2xov_{rerun_plus_one}.in"
     replace(fileName, "variable r world "+ " ".join(str(i) for i in list(range(n))), "")
     replace(fileName, "# read_restart restart.25000000", "variable r world "+ " ".join(str(i) for i in list(range(n))))
-    replace(fileName, "read_restart restart.extended", "read_restart restart.$r.20000000")
-    replace(fileName, "read_restart restart.native_topology", "read_restart restart.$r.20000000")
+    initial_steps = 20000000 * rerun_plus_one
+    replace(fileName, "read_restart restart.extended", f"read_restart restart.$r.{initial_steps}")
+    replace(fileName, "read_restart restart.native_topology", f"read_restart restart.$r.{initial_steps}")
     replace(fileName, "0\/", "1\/")
     cmd = 'tail -n 1 log.lammps | cut -d" " -f2-'
     line = getFromTerminal(cmd).rstrip()
     replace(fileName, "reset_timestep	0", "variable w world " + line)
     replace(fileName, "fix     xbias all colvars colvars.x output x", "fix     xbias all colvars colvars.x output x.$r")
-    cmd = 'grep "temper" 2xov_1.in'
+    cmd = f'grep "temper" 2xov_{rerun_plus_one}.in'
     line = getFromTerminal(cmd).rstrip()
     replace(fileName, line, line + " $w")
 
@@ -134,11 +153,252 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun python3 ~/opt/server.py --qnqc -m {}
 '''
+
+
+if args.day == "feb15":
+    if args.mode == 1:
+        cd("simulation")
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        for folder in simulation_list:
+            cd(folder)
+            cd("1")
+            print(folder)
+            for i in range(12):
+                compute_average_z(f"dump.lammpstrj.{i}", f"z_{i}.dat")
+            cd("../..")
+    if args.mode == 2:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(3):
+            freeEnergy_folder = f"freeEnergy_rg_0.1_lipid_1.0_mem_1_{sample_range_mode}/"
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            folder_list = ["rg_0.1_lipid_1.0_mem_1"]
+            # submode_list = ["_no_energy"]
+            # submode_list = ["", "only_500"]
+            # submode_list = ["350", "400", "450", "500", "550"]
+            temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    move_data2(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode, sub_mode_name=temp_mode, average_z=True)
+
+            cd(freeEnergy_folder)
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    cd(folder+temp_mode)
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        make_metadata(temps_list=temp_list,k=0.02)
+                        do("pulling_analysis.py -m {} --commons 0 --nsample 2500 --submode 5".format(mode))
+                        cd("..")
+                    cd("..")
+            cd("..")
+    if args.mode == 3:
+        pre = "/scratch/wl45/feb_2018/week_of_feb05/"
+        data_folder = "/scratch/wl45/feb_2018/week_of_feb12/all_data_folder/"
+        folder_list = ["rg_0.1_lipid_1.0_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_complete_temper_data(pre, data_folder, folder_list, rerun=1, average_z=True)
+    if args.mode == 4:
+        simulation_list = glob.glob("dis_*")
+        print(simulation_list)
+        for dis in simulation_list:
+            print(dis)
+            cd(dis)
+            i = 1
+            i_plus_one = i +1
+            do(f"mkdir -p log{i}")
+            do(f"mv log.* log{i}/")
+            do(f"cp log{i}/log.lammps .")
+            do(f"cp x.* log{i}/")
+            continueRunConvertion(n=12, rerun=i)
+            do(f"mkdir {i_plus_one}")
+
+            # run_slurm = base_run_slurm.format(i_plus_one)
+            # with open(f"run_{i_plus_one}.slurm", "w") as r:
+            #     r.write(run_slurm)
+            # do(f"sbatch run_{i_plus_one}.slurm")
+
+            # do(f"sed 's/2xov_{i}/2xov_{i_plus_one}/g' run_{i}.slurm > run_{i_plus_one}.slurm")
+            # do(f"sbatch run_{i_plus_one}.slurm")
+            cd("..")
+    if args.mode == 5:
+        print("how Constant force refolding")
+        # start_from_list=["native", "extended", "topology"]
+        # start_from_list=["native"]
+        start_from_list=["extended"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [1]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[500]
+        memb_k_list = [1]
+        rg_list = [0.1]
+        # qbias_list = [0.25, 0.45, 0.65, 0.85]
+        # qbias_list = list(np.linspace(0.2,0.9,36))
+        # force_list = [0.22, 0.25, 0.28]
+        force_list = [0.0, 0.01, 0.05, 0.08, 0.1, 0.15]
+        repeat = 20
+        variable_test2(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        pressure_list=pressure_list,
+                        rg_list=rg_list,
+                        mem_list=memb_k_list,
+                        mode_list=mode_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=0,simulation_base_steps=2e7)
+if args.day == "feb14":
+    if args.mode == 1:
+        # simulation_list = glob.glob("rg_0.1_")
+        simulation_list = ["force_0.2_"]
+        for folder in simulation_list:
+            cd(folder)
+            cd("simulation")
+            for i in range(20):
+                cd(str(i))
+                cd("0")
+                print(folder)
+                compute_average_z(f"dump.lammpstrj", "z.dat")
+                cd("../..")
+            cd("../..")
+    if args.mode == 2:
+        simulation_list = glob.glob("dis_*")
+        print(simulation_list)
+        for dis in simulation_list:
+            cd(dis)
+            i = 0
+            i_plus_one = i +1
+            # do(f"mkdir -p log{i}")
+            # do(f"mv log.* log{i}/")
+            # do(f"cp log{i}/log.lammps .")
+            # do(f"cp x.* log{i}/")
+            # continueRunConvertion(n=12)
+            # do(f"mkdir {i_plus_one}")
+            run_slurm = base_run_slurm.format(i_plus_one)
+            with open(f"run_{i_plus_one}.slurm", "w") as r:
+                r.write(run_slurm)
+            do(f"sbatch run_{i_plus_one}.slurm")
+            # do(f"sed 's/2xov_{i}/2xov_{i_plus_one}/g' run_{i}.slurm > run_{i_plus_one}.slurm")
+            # do(f"sbatch run_{i_plus_one}.slurm")
+            cd("..")
+if args.day == "feb13":
+    if args.mode == 1:
+        cd("simulation")
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        for folder in simulation_list:
+            cd(folder)
+            cd("0")
+            print(folder)
+            for i in range(12):
+                compute_average_z(f"dump.lammpstrj.{i}", f"z_{i}.dat")
+            cd("../..")
+    if args.mode == 2:
+        print("Read variables data")
+        read_variable_folder("/scratch/wl45/feb_2018/week_of_feb12/constant_force")
+    if args.mode == 3:
+        pre = "/scratch/wl45/feb_2018/week_of_feb05/"
+        data_folder = "/scratch/wl45/feb_2018/week_of_feb12/all_data_folder/"
+        folder_list = ["rg_0.1_lipid_1.0_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_complete_temper_data(pre, data_folder, folder_list, rerun=-1, average_z=True)
+    if args.mode == 4:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(1):
+            freeEnergy_folder = f"freeEnergy_rg_0.1_lipid_1.0_mem_1_{sample_range_mode}/"
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            folder_list = ["rg_0.1_lipid_1.0_mem_1"]
+            # submode_list = ["_no_energy"]
+            # submode_list = ["", "only_500"]
+            # submode_list = ["350", "400", "450", "500", "550"]
+            temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    move_data2(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode, sub_mode_name=temp_mode, average_z=True)
+
+            cd(freeEnergy_folder)
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    cd(folder+temp_mode)
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        make_metadata(temps_list=temp_list,k=0.02)
+                        do("pulling_analysis.py -m {} --commons 0 --nsample 2500 --submode 5".format(mode))
+                        cd("..")
+                    cd("..")
+            cd("..")
+if args.day == "feb12":
+    if args.mode == 1:
+        print("how Constant force unfolding")
+        # start_from_list=["native", "extended", "topology"]
+        start_from_list=["native"]
+        # start_from_list=["extended"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [1]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[500]
+        memb_k_list = [1]
+        rg_list = [0.1]
+        # qbias_list = [0.25, 0.45, 0.65, 0.85]
+        # qbias_list = list(np.linspace(0.2,0.9,36))
+        # force_list = [0.22, 0.25, 0.28]
+        force_list = [0.18, 0.20, 0.21]
+        repeat = 20
+        variable_test2(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        pressure_list=pressure_list,
+                        rg_list=rg_list,
+                        mem_list=memb_k_list,
+                        mode_list=mode_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=0,simulation_base_steps=2e7)
+
 if args.day == "feb07":
     if args.mode == 1:
         print("Read variables data")
         read_variable_folder("/scratch/wl45/feb_2018/week_of_feb05/refolding_pressure_1.0")
-
+    if args.mode == 2:
+        simulation_list = glob.glob("dis_*")
+        print(simulation_list)
+        for dis in simulation_list:
+            cd(dis)
+            i = 0
+            i_plus_one = i +1
+            do(f"mkdir -p log{i}")
+            do(f"mv log.* log{i}/")
+            do(f"cp log{i}/log.lammps .")
+            do(f"cp x.* log{i}/")
+            continueRunConvertion(n=12)
+            do(f"mkdir {i_plus_one}")
+            do(f"sed 's/2xov_{i}/2xov_{i_plus_one}/g' run_{i}.slurm > run_{i_plus_one}.slurm")
+            do(f"sbatch run_{i_plus_one}.slurm")
+            cd("..")
 if args.day == "feb06":
     if args.mode == 1:
         print("Read variables data")

@@ -78,7 +78,7 @@ def make_metadata(k=1000.0, temps_list=["450"]):
             if t in temps_list:
                 target = "../{} {} {} {}\n".format(oneFile, t, kconstant, bias)
                 out.write(target)
-def readPMF(pre):
+def readPMF(pre, is2d=False):
     perturbation_table = {0:"original", 1:"p_mem",
                           2:"m_mem", 3:"p_lipid",
                           4:"m_lipid", 5:"p_go",
@@ -104,7 +104,10 @@ def readPMF(pre):
             upOrDown = perturbation_table[perturbation].split("_")[0]
         # print(location)
         name_list = ["f", "df", "e", "s"]
-        names = ["bin", "x"] + name_list
+        if is2d:
+            names = ["x", "y"] + name_list
+        else:
+            names = ["bin", "x"] + name_list
         for location in pmf_list:
             # print(location)
             temp = re.findall(r'pmf-(\d+)', location)
@@ -117,11 +120,15 @@ def readPMF(pre):
 
     return pd.concat(all_pmf_list).dropna().reset_index()
 
-def readPMF_2(pre):
-    mode_list = ["1d_dis", "1d_qw", "1d_z"]
+def readPMF_2(pre, is2d=False):
+    print("reading 1d dis, qw and z")
+    if is2d:
+        mode_list = ["2d_qw_dis", "2d_z_dis", "2d_z_qw"]
+    else:
+        mode_list = ["1d_dis", "1d_qw", "1d_z"]
     all_data_list =[]
     for mode in mode_list:
-        tmp = readPMF(mode).assign(mode=mode)
+        tmp = readPMF(mode, is2d).assign(mode=mode)
         all_data_list.append(tmp)
     return pd.concat(all_data_list).dropna().reset_index()
 
@@ -316,7 +323,7 @@ def process_complete_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, 
                 # data = data.drop(remove_columns, axis=1)
                 all_data_list.append(data)
             else:
-                for i in range(rerun):
+                for i in range(rerun+1):
                     location = one_simulation + f"/{i}/"
                     print(location)
                     data = read_complete_temper(location=location, n=n, rerun=i, qnqc=qnqc, average_z=average_z)
@@ -409,6 +416,7 @@ def read_simulation(location):
 
 def read_folder(location):
     runFolders = os.listdir(location+"/simulation")
+    runFolders = [f for f in runFolders if re.match(r'[0-9]+', f)]
     data_list = []
     for run in runFolders:
         tmp = read_simulation(location+"/simulation/"+run+"/0/").assign(Run=run)
@@ -417,6 +425,7 @@ def read_folder(location):
 
 def read_variable_folder(location):
     variables = glob.glob(os.path.join(location, "*_"))
+    print(variables)
     data_list = []
     for variableFolder in variables:
         tmp = variableFolder.split("/")[-1]
