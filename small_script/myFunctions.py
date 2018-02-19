@@ -82,7 +82,7 @@ def make_metadata(k=1000.0, temps_list=["450"]):
             if t in temps_list:
                 target = "../{} {} {} {}\n".format(oneFile, t, kconstant, bias)
                 out.write(target)
-def readPMF(pre, is2d=False):
+def readPMF(pre, is2d=False, force_list=["0.0", "0.1", "0.2"]):
     # perturbation_table = {0:"original", 1:"p_mem",
     #                       2:"m_mem", 3:"p_lipid",
     #                       4:"m_lipid", 5:"p_go",
@@ -110,7 +110,7 @@ def readPMF(pre, is2d=False):
             pmf_list = glob.glob(location)
             change = perturbation_table[perturbation].split("_")[-1]
             upOrDown = perturbation_table[perturbation].split("_")[0]
-        # print(location)
+        # print(pmf_list)
         name_list = ["f", "df", "e", "s"]
         if is2d:
             names = ["x", "y"] + name_list
@@ -135,7 +135,7 @@ def readPMF_2(pre, is2d=0, force_list=["0.0", "0.1", "0.2"]):
         print("reading 1d dis, qw and z")
     if is2d == 1:
         mode_list = ["2d_qw_dis", "2d_z_dis", "2d_z_qw"]
-    if is2d == 2:
+    elif is2d == 2:
         mode_list = ["quick"]
     else:
         mode_list = ["1d_dis", "1d_qw", "1d_z"]
