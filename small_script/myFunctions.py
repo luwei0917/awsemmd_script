@@ -27,10 +27,14 @@ def expand_grid(dictionary):
                         columns=dictionary.keys())
 
 def readPMF_basic(pre):
-    perturbation_table = {0:"original", 1:"p_mem",
-                          2:"m_mem", 3:"p_lipid",
-                          4:"m_lipid", 5:"p_go",
-                          6:"m_go", 7:"p_rg", 8:"m_rg"}
+    # perturbation_table = {0:"original", 1:"p_mem",
+    #                       2:"m_mem", 3:"p_lipid",
+    #                       4:"m_lipid", 5:"p_go",
+    #                       6:"m_go", 7:"p_rg", 8:"m_rg"}
+    perturbation_table = {0:"original", 1:"m_go",
+                          2:"p_go", 3:"m_lipid",
+                          4:"p_lipid", 5:"m_mem",
+                          6:"p_mem", 7:"m_rg", 8:"p_rg"}
     pmf_list = {
         "perturbation":list(perturbation_table.keys())
     }
@@ -78,11 +82,15 @@ def make_metadata(k=1000.0, temps_list=["450"]):
             if t in temps_list:
                 target = "../{} {} {} {}\n".format(oneFile, t, kconstant, bias)
                 out.write(target)
-def readPMF(pre, is2d=False, force_list=["0.0", "0.1", "0.2"]):
-    perturbation_table = {0:"original", 1:"p_mem",
-                          2:"m_mem", 3:"p_lipid",
-                          4:"m_lipid", 5:"p_go",
-                          6:"m_go", 7:"p_rg", 8:"m_rg"}
+def readPMF(pre, is2d=False):
+    # perturbation_table = {0:"original", 1:"p_mem",
+    #                       2:"m_mem", 3:"p_lipid",
+    #                       4:"m_lipid", 5:"p_go",
+    #                       6:"m_go", 7:"p_rg", 8:"m_rg"}
+    perturbation_table = {0:"original", 1:"m_go",
+                          2:"p_go", 3:"m_lipid",
+                          4:"p_lipid", 5:"m_mem",
+                          6:"p_mem", 7:"m_rg", 8:"p_rg"}
     pmf_list = {
         "perturbation":list(perturbation_table.keys()),
         "force":force_list

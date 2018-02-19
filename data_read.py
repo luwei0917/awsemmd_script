@@ -102,6 +102,8 @@ if args.mode != 6:
     data = data.drop(remove_columns, axis=1)
 
 
-destiny = f"/Users/weilu/Research/data/pulling/{datetime.datetime.today().strftime('%d_%h_%H%M%S'}_data_{label}.feather"
+destiny = f"{datetime.datetime.today().strftime('%d_%h')}_data_{label}.feather"
 print(destiny)
 data.to_feather(destiny)
+os.system(f"cp {destiny} /Users/weilu/Research/data/pulling/{destiny}")
+# destiny = f"/Users/weilu/Research/data/pulling/{datetime.datetime.today().strftime('%d_%h')}_data_{label}.feather"
