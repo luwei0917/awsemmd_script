@@ -101,7 +101,7 @@ for i in range(0,len(native_coords)):
     for j in range(0, len(native_coords)):
         rij = calc_dis(native_coords[i],native_coords[j])
         native_distances[i].append(rij)
-
+        print i, j, rij
 #create contact map
 native_contacts = zeros([len(native_distances),len(native_distances)],int)
 norm = zeros([len(native_distances)],int)
