@@ -47,7 +47,31 @@ if(args.test):
 else:
     do = os.system
     cd = os.chdir
-
+if args.day == "feb15":
+    if args.mode == 1:
+        with open("metadata", "w") as f:
+            dis_list = glob.glob("/Users/weilu/Research/server/feb_2018/week_of_feb05/rg_0.1_lipid_1.0_mem_1/simulation/dis_*")
+            for dis in dis_list:
+                for idx in range(12):
+                    fileName = dis + f"/1/data_{idx}.dat {idx}\n"
+                    f.write(fileName)
+    if args.mode == 2:
+        dis_list = glob.glob("dis_*")
+        for dis in dis_list:
+            cd(dis)
+            cd("1")
+            for i in range(12):
+                do("awk '{print $2}'" + f" wham.{i}.dat |  sed 's/,$//' > qw.{i}.dat")
+                do(f"paste qw.{i}.dat z_{i}.dat > data_{i}.dat")
+            cd("../..")
+    if args.mode == 3:
+        with open("metadata", "w") as f:
+            dis_list = glob.glob("/Users/weilu/Research/server/feb_2018/week_of_feb05/rg_0.1_lipid_1.0_mem_1/simulation/dis_*")
+            dis_list = ["/Users/weilu/Research/server/feb_2018/week_of_feb05/rg_0.1_lipid_1.0_mem_1/simulation/dis_60.0"]
+            for dis in dis_list:
+                for idx in range(12):
+                    fileName = dis + f"/1/data_{idx}.dat {idx}\n"
+                    f.write(fileName)
 if args.day == "feb14":
     if(args.mode == 1):
         print("add pdb")

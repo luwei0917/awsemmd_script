@@ -96,12 +96,12 @@ elif args.mode ==5:
             cd("../..")
     data = pd.concat(all_pmf_list).reset_index(drop=True)
 elif args.mode == 6:
-    data = readPMF_2(".", is2d=True)  # read all 2d
+    data = readPMF_2(".", is2d=2, force_list=["force_0.0"])  # read all 2d
 if args.mode != 6:
     remove_columns = ['bin']
     data = data.drop(remove_columns, axis=1)
 
 
-destiny = f"/Users/weilu/Research/data/pulling/{datetime.datetime.today().strftime('%d_%h')}_data_{label}.feather"
+destiny = f"/Users/weilu/Research/data/pulling/{datetime.datetime.today().strftime('%d_%h_%H%M%S'}_data_{label}.feather"
 print(destiny)
 data.to_feather(destiny)

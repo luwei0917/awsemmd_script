@@ -78,14 +78,14 @@ def make_metadata(k=1000.0, temps_list=["450"]):
             if t in temps_list:
                 target = "../{} {} {} {}\n".format(oneFile, t, kconstant, bias)
                 out.write(target)
-def readPMF(pre, is2d=False):
+def readPMF(pre, is2d=False, force_list=["0.0", "0.1", "0.2"]):
     perturbation_table = {0:"original", 1:"p_mem",
                           2:"m_mem", 3:"p_lipid",
                           4:"m_lipid", 5:"p_go",
                           6:"m_go", 7:"p_rg", 8:"m_rg"}
     pmf_list = {
         "perturbation":list(perturbation_table.keys()),
-        "force":["0.0", "0.1", "0.2"]
+        "force":force_list
     }
     pmf_list_data = expand_grid(pmf_list)
     all_pmf_list = []
@@ -120,15 +120,20 @@ def readPMF(pre, is2d=False):
 
     return pd.concat(all_pmf_list).dropna().reset_index()
 
-def readPMF_2(pre, is2d=False):
-    print("reading 1d dis, qw and z")
+def readPMF_2(pre, is2d=0, force_list=["0.0", "0.1", "0.2"]):
     if is2d:
+        print("reading 2d pmfs")
+    else:
+        print("reading 1d dis, qw and z")
+    if is2d == 1:
         mode_list = ["2d_qw_dis", "2d_z_dis", "2d_z_qw"]
+    if is2d == 2:
+        mode_list = ["quick"]
     else:
         mode_list = ["1d_dis", "1d_qw", "1d_z"]
     all_data_list =[]
     for mode in mode_list:
-        tmp = readPMF(mode, is2d).assign(mode=mode)
+        tmp = readPMF(mode, is2d, force_list).assign(mode=mode)
         all_data_list.append(tmp)
     return pd.concat(all_data_list).dropna().reset_index()
 
