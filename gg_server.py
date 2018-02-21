@@ -98,7 +98,7 @@ def continueRunConvertion(n=12, rerun=0):
     initial_steps = 20000000 * rerun_plus_one
     replace(fileName, "read_restart restart.extended", f"read_restart restart.$r.{initial_steps}")
     replace(fileName, "read_restart restart.native_topology", f"read_restart restart.$r.{initial_steps}")
-    replace(fileName, "0\/", "1\/")
+    replace(fileName, "0\/", f"{rerun_plus_one}\/")
     cmd = 'tail -n 1 log.lammps | cut -d" " -f2-'
     line = getFromTerminal(cmd).rstrip()
     replace(fileName, "reset_timestep	0", "variable w world " + line)
