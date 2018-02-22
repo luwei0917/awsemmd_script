@@ -567,6 +567,7 @@ def move_data(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2
         # t6["TotalE"] = 0
         dic = {"T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
         temps = list(dic.values())
+
         def convert(x):
             return dic[x]
         t6["Temp"] = t6["Temp"].apply(convert)
