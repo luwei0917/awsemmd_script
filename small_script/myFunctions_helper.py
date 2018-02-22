@@ -7,7 +7,7 @@ def dotproduct(v1, v2):
 def length(v):
     return math.sqrt(dotproduct(v, v))
 
-def read_lammps(lammps_file="dump.lammpstrj", center=False):
+def read_lammps(lammps_file="dump.lammpstrj", center=False, ca=True):
     nFrame = 0
     with open(lammps_file, "r") as lfile:
         for line in lfile:
@@ -63,8 +63,13 @@ def read_lammps(lammps_file="dump.lammpstrj", center=False):
                     y = (A[1][1] - A[1][0])*y + A[1][0]
                     z = (A[2][1] - A[2][0])*z + A[2][0]
                     # C alpha distance
-                    if i_atom % 3 == 1:
-                        atom = [x, y, z]
-                        atoms.append(atom)
+                    if ca:
+                        if i_atom % 3 == 1:
+                            atom = [x, y, z]
+                            atoms.append(atom)
+                    else:   # C beta or H in the case of GLY
+                        if i_atom % 3 == 0:
+                            atom = [x, y, z]
+                            atoms.append(atom)
         atoms_all_frames.append(atoms)
     return atoms_all_frames
