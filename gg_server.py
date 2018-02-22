@@ -153,6 +153,30 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun python3 ~/opt/server.py --qnqc -m {}
 '''
+if args.day == "feb22":
+    if args.mode == 1:
+        simulation_list = glob.glob("dis_*")
+        print(simulation_list)
+        for dis in simulation_list:
+            print(dis)
+            cd(dis)
+            i = 0
+            i_plus_one = i +1
+            do(f"mkdir -p log{i}")
+            do(f"mv log.* log{i}/")
+            do(f"cp log{i}/log.lammps .")
+            do(f"cp x.* log{i}/")
+            continueRunConvertion(n=12, rerun=i)
+            do(f"mkdir {i_plus_one}")
+
+            run_slurm = base_run_slurm.format(i_plus_one)
+            with open(f"run_{i_plus_one}.slurm", "w") as r:
+                r.write(run_slurm)
+            do(f"sbatch run_{i_plus_one}.slurm")
+
+            # do(f"sed 's/2xov_{i}/2xov_{i_plus_one}/g' run_{i}.slurm > run_{i_plus_one}.slurm")
+            # do(f"sbatch run_{i_plus_one}.slurm")
+            cd("..")
 
 if args.day == "feb19":
     if args.mode == 1:
