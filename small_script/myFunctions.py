@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import fileinput
 from itertools import product
+from Bio.PDB.PDBParser import PDBParser
 # compute cross Q for every pdb pair in one folder
 # parser = argparse.ArgumentParser(description="Compute cross q")
 # parser.add_argument("-m", "--mode",
@@ -25,6 +26,68 @@ from itertools import product
 def expand_grid(dictionary):
     return pd.DataFrame([row for row in product(*dictionary.values())],
                         columns=dictionary.keys())
+
+def compute_native_contacts(coords, MAX_OFFSET=4, DISTANCE_CUTOFF=9.5):
+    native_coords = np.array(coords)
+    a= native_coords[:,np.newaxis]
+    dis = np.sqrt(np.sum((a - native_coords)**2, axis=2))
+
+    n = len(dis)
+    remove_band = np.eye(n)
+    for i in range(1, MAX_OFFSET):
+        remove_band += np.eye(n, k=i)
+        remove_band += np.eye(n, k=-i)
+    dis[remove_band==1] = np.max(dis)
+    native_contacts = dis < DISTANCE_CUTOFF
+    return native_contacts.astype("int")
+
+def compute_contacts(coords, native_contacts, DISTANCE_CUTOFF=9.5):
+    native_coords = np.array(coords)
+    a= native_coords[:,np.newaxis]
+    dis = np.sqrt(np.sum((a - native_coords)**2, axis=2))
+    constacts = dis < DISTANCE_CUTOFF
+    constacts = constacts*native_contacts  # remove non native contacts
+    return np.sum(constacts, axis=1).astype("float")
+
+def compute_localQ_init(MAX_OFFSET=4, DISTANCE_CUTOFF=9.5):
+    from pathlib import Path
+    home = str(Path.home())
+    struct_id = '2xov'
+    filename = os.path.join(home, "opt/pulling/2xov.pdb")
+    p = PDBParser(PERMISSIVE=1)
+    s = p.get_structure(struct_id, filename)
+    chains = s[0].get_list()
+
+    # import pdb file
+    native_coords = []
+    for chain in chains:
+        dis = []
+        all_res = []
+        for res in chain:
+            is_regular_res = res.has_id('CA') and res.has_id('O')
+            res_id = res.get_id()[0]
+            if (res.get_resname()=='GLY'):
+                native_coords.append(res['CA'].get_coord())
+            elif (res_id==' ' or res_id=='H_MSE' or res_id=='H_M3L' or res_id=='H_CAS') and is_regular_res:
+                native_coords.append(res['CB'].get_coord())
+            else:
+                print('ERROR: irregular residue at %s!' % res)
+                exit()
+    native_contacts_table = compute_native_contacts(native_coords, MAX_OFFSET, DISTANCE_CUTOFF)
+
+    return native_contacts_table
+
+def compute_localQ(native_contacts_table, pre=".", ii=-1, MAX_OFFSET=4, DISTANCE_CUTOFF=9.5):
+    native_contacts = np.sum(native_contacts_table, axis=1).astype("float")
+    dump = read_lammps(os.path.join(pre, f"dump.lammpstrj.{ii}"), ca=False)
+    localQ_list = []
+    for atom in dump:
+        contacts = compute_contacts(np.array(atom), native_contacts_table, DISTANCE_CUTOFF=DISTANCE_CUTOFF)
+        c = np.divide(contacts, native_contacts, out=np.zeros_like(contacts), where=native_contacts!=0)
+        localQ_list.append(c)
+    data = pd.DataFrame(localQ_list)
+    data.columns = ["Res" + str(i+1) for i in data.columns]
+    data.to_csv(os.path.join(pre, f"localQ.{ii}.csv"), index=False)
 
 def readPMF_basic(pre):
     # perturbation_table = {0:"original", 1:"p_mem",
@@ -246,7 +309,7 @@ def check_and_correct_fragment_memory():
     os.system("mv fragsLAMW.mem fragsLAMW_back")
     os.system("mv tmp.mem fragsLAMW.mem")
 
-def read_complete_temper(n=4, location=".", rerun=-1, qnqc=False, average_z=False):
+def read_complete_temper(n=4, location=".", rerun=-1, qnqc=False, average_z=False, localQ=False):
     all_lipid_list = []
     for i in range(n):
         file = "lipid.{}.dat".format(i)
@@ -299,6 +362,9 @@ def read_complete_temper(n=4, location=".", rerun=-1, qnqc=False, average_z=Fals
         if average_z:
             z = pd.read_table(location+f"z_{i}.dat", names=["AverageZ"])[1:].reset_index(drop=True)
             wham = pd.concat([wham, z],axis=1)
+        if localQ:
+            all_localQ = pd.read_csv(location+f"localQ.{i}.csv")[1:].reset_index(drop=True)
+            wham = pd.concat([wham, all_localQ], axis=1)
         all_wham_list.append(wham)
     wham = pd.concat(all_wham_list)
     if rerun == -1:
@@ -317,7 +383,7 @@ def read_complete_temper(n=4, location=".", rerun=-1, qnqc=False, average_z=Fals
     t6 = t6.assign(TotalE=t6.Energy + t6.Lipid)
     return t6
 
-def process_complete_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False, average_z=False):
+def process_complete_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False, average_z=False, localQ=False):
     print("process temp data")
     for folder in folder_list:
         simulation_list = glob.glob(pre+folder+f"/simulation/{bias}_*")
@@ -331,7 +397,7 @@ def process_complete_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, 
             if rerun == -1:
                 location = one_simulation + "/0/"
                 print(location)
-                data = read_complete_temper(location=location, n=n, rerun=rerun, qnqc=qnqc, average_z=average_z)
+                data = read_complete_temper(location=location, n=n, rerun=rerun, qnqc=qnqc, average_z=average_z, localQ=localQ)
                 # remove_columns = ['Step', "Run"]
                 # data = data.drop(remove_columns, axis=1)
                 all_data_list.append(data)
@@ -339,7 +405,7 @@ def process_complete_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, 
                 for i in range(rerun+1):
                     location = one_simulation + f"/{i}/"
                     print(location)
-                    data = read_complete_temper(location=location, n=n, rerun=i, qnqc=qnqc, average_z=average_z)
+                    data = read_complete_temper(location=location, n=n, rerun=i, qnqc=qnqc, average_z=average_z, localQ=localQ)
                     # remove_columns = ['Step', "Run"]
                     # data = data.drop(remove_columns, axis=1)
                     all_data_list.append(data)
@@ -354,7 +420,7 @@ def process_complete_temper_data(pre, data_folder, folder_list, rerun=-1, n=12, 
 
 
 
-def move_data2(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2, sample_range_mode=0, biasName="dis", qnqc=False, average_z=False):
+def move_data2(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2, sample_range_mode=0, biasName="dis", qnqc=False, average_z=False, chosen_mode=0):
     print("move data")
     dic = {"T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
     # read in complete.feather
@@ -376,18 +442,23 @@ def move_data2(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.
             chosen_list = ["TotalE", "Qw", "Distance"]
             if average_z:
                 chosen_list += ["AverageZ"]
-            chosen = tmp[chosen_list]
-            chosen = chosen.assign(TotalE_perturb_mem_p=tmp.TotalE + kmem*tmp.Membrane,
-                                    TotalE_perturb_mem_m=tmp.TotalE - kmem*tmp.Membrane,
-                                    TotalE_perturb_lipid_p=tmp.TotalE + klipid*tmp.Lipid,
-                                    TotalE_perturb_lipid_m=tmp.TotalE - klipid*tmp.Lipid,
-                                    TotalE_perturb_go_p=tmp.TotalE + kgo*tmp["AMH-Go"],
-                                    TotalE_perturb_go_m=tmp.TotalE - kgo*tmp["AMH-Go"],
-                                    TotalE_perturb_rg_p=tmp.TotalE + krg*tmp.Rg,
-                                    TotalE_perturb_rg_m=tmp.TotalE - krg*tmp.Rg)
+            if chosen_mode == 0:
+                chosen = tmp[chosen_list]
+                chosen = chosen.assign(TotalE_perturb_mem_p=tmp.TotalE + kmem*tmp.Membrane,
+                                        TotalE_perturb_mem_m=tmp.TotalE - kmem*tmp.Membrane,
+                                        TotalE_perturb_lipid_p=tmp.TotalE + klipid*tmp.Lipid,
+                                        TotalE_perturb_lipid_m=tmp.TotalE - klipid*tmp.Lipid,
+                                        TotalE_perturb_go_p=tmp.TotalE + kgo*tmp["AMH-Go"],
+                                        TotalE_perturb_go_m=tmp.TotalE - kgo*tmp["AMH-Go"],
+                                        TotalE_perturb_rg_p=tmp.TotalE + krg*tmp.Rg,
+                                        TotalE_perturb_rg_m=tmp.TotalE - krg*tmp.Rg)
+            if chosen_mode == 1:
+                chosen_list += ["Res" + str(i+1) for i in range(181)]
+                chosen = tmp[chosen_list]
     #         print(tmp.count())
             chosen.to_csv(freeEnergy_folder+folder+sub_mode_name+f"/data/t_{temp}_{biasName}_{bias}.dat", sep=' ', index=False, header=False)
     # chosen
+
 def compute_average_z(dumpFile, outFile):
     # input dump, output z.dat
     z_list = []

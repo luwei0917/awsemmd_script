@@ -33,7 +33,7 @@ parser = argparse.ArgumentParser(description="Analysis code, need run multiple t
 # parser.add_argument("template", help="the name of template file")
 parser.add_argument("-t", "--test", help="test ", action="store_true", default=False)
 parser.add_argument("-d", "--debug", action="store_true", default=False)
-parser.add_argument("-l", "--label", default="1")
+parser.add_argument("-l", "--label")
 parser.add_argument("--dimension", type=int, default=2)
 parser.add_argument("-m", "--mode", type=int, default=0)
 parser.add_argument("--force", type=float, default=1.0)
@@ -102,7 +102,7 @@ if args.mode != 6:
     data = data.drop(remove_columns, axis=1)
 
 
-destiny = f"{datetime.datetime.today().strftime('%d_%h')}_data_{label}.feather"
+destiny = f"{label}_{datetime.datetime.today().strftime('%d_%h_%H%M%S')}.feather"
 print(destiny)
 data.to_feather(destiny)
 os.system(f"cp {destiny} /Users/weilu/Research/data/pulling/{destiny}")
