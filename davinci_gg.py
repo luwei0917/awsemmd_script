@@ -95,6 +95,105 @@ def scancel_jobs_in_folder(folder):
         print(line)
         do("scancel " + line)
     cd("..")
+
+quick_slurm = '''#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=00:30:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun python3 ~/opt/davinci_gg.py -d mar01 -m 2
+'''
+
+if args.day == "mar01":
+    if args.mode == 1:
+        cd("simulation")
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        sim_list = ["0", "1"]
+        for sim in sim_list:
+            for folder in simulation_list:
+                cd(folder)
+                cd(sim)
+                print(folder)
+                with open("computeZ.slurm", "w") as f:
+                    f.write(quick_slurm)
+                    # f.write(quick_slurm.replace("ctbp-common", "commons"))
+                do("sbatch computeZ.slurm")
+                cd("../..")
+    if args.mode ==2:
+        for i in range(12):
+            compute_average_z(f"dump.lammpstrj.{i}", f"z_{i}.dat")
+    if args.mode == 3:
+        pre = "/scratch/wl45/"
+        data_folder = "/scratch/wl45//all_data_folder/"
+        folder_list = ["rg_0.2_lipid_1.0_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_complete_temper_data(pre, data_folder, folder_list, rerun=1, average_z=True)
+    if args.mode == 4:
+        simulation_list = glob.glob("dis_*")
+        print(simulation_list)
+        for dis in simulation_list:
+            print(dis)
+            cd(dis)
+            i = 1
+            i_plus_one = i +1
+            do(f"mkdir -p log{i}")
+            do(f"mv log.* log{i}/")
+            do(f"cp log{i}/log.lammps .")
+            do(f"cp x.* log{i}/")
+
+            # continueRunConvertion(n=12, rerun=i)
+            # do(f"mkdir {i_plus_one}")
+
+            # run_slurm = base_run_slurm.format(i_plus_one)
+            # with open(f"run_{i_plus_one}.slurm", "w") as r:
+            #     r.write(run_slurm)
+            # do(f"sbatch run_{i_plus_one}.slurm")
+
+            # do(f"sed 's/2xov_{i}/2xov_{i_plus_one}/g' run_{i}.slurm > run_{i_plus_one}.slurm")
+            # do(f"sbatch run_{i_plus_one}.slurm")
+            cd("..")
+    if args.mode == 5:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(3):
+            freeEnergy_folder = f"freeEnergy_rg_0.1_lipid_1.0_mem_1_{sample_range_mode}/"
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            folder_list = ["rg_0.2_lipid_1.0_mem_1"]
+            # submode_list = ["_no_energy"]
+            # submode_list = ["", "only_500"]
+            # submode_list = ["350", "400", "450", "500", "550"]
+            temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    move_data2(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode, sub_mode_name=temp_mode, average_z=True)
+
+            cd(freeEnergy_folder)
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    cd(folder+temp_mode)
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        make_metadata(temps_list=temp_list,k=0.02)
+                        do("pulling_analysis.py -m {} --commons 0 --nsample 2500 --submode 5".format(mode))
+                        cd("..")
+                    cd("..")
+            cd("..")
 if args.day == "dec03":
     if args.mode == 1:
         temp_list = ["all"]
