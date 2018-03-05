@@ -187,9 +187,7 @@ for chain in chains:
 
 
 
-for i in range(0, len(ca_atoms_pdb)+1):
-    sigma.append( (1+i)**sigma_exp )
-    sigma_sq.append(sigma[-1]*sigma[-1])
+
 
 
 s = p.get_structure(struct_id2, pdb_file2)
@@ -208,6 +206,12 @@ for chain in chains:
             pdb_chain_id_2.append(ichain)
             pdb_residue_id_2[res.id[1]] = 1
 
+
+for i in range(0, len(ca_atoms_pdb)+1):
+    sigma.append( (1+i)**sigma_exp )
+    sigma_sq.append(sigma[-1]*sigma[-1])
+
+print(sigma_sq)
 
 if len(ca_atoms_pdb_2)>0:
     q = computeQ()
