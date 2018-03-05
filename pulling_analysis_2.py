@@ -151,7 +151,7 @@ if args.mode >= 9:
         if args.submode == 5 and args.mode == 14:
             arg = "-b 3 -e 1 -d 2 " + temp_arg
             arg += " -v1 4 -v1n 30 -v2 3 -v2n 30"
-        arg += " -ti 20 -st 340 -et 540 -ev 5-185 -pb y -ss y"
+        arg += " -ti 20 -st 380 -et 540 -ev 5-185 -pb y -ss y"
         with open("freeEnergy.slurm", "w") as f:
             f.write(freeEnergy.format(arg))
         do("sbatch freeEnergy.slurm")

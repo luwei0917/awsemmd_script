@@ -123,9 +123,12 @@ n_atoms = 0
 i_atom = 0
 item = ''
 step = 0
-ca_atoms_pdb = []
+ca_atoms_pdb = {}
 pdb_chain_id = []
-ca_atoms = []
+pdb_residue_id = {}
+ca_atoms_pdb_2 = {}
+pdb_chain_id_2 = []
+pdb_residue_id_2 = {}
 box = []
 A = []
 sigma = []
@@ -139,33 +142,32 @@ from Bio.PDB.PDBParser import PDBParser
 p = PDBParser(PERMISSIVE=1)
 
 def computeQ():
-    if len(ca_atoms)!=len(ca_atoms_pdb):
+    if len(ca_atoms_pdb_2)!=len(ca_atoms_pdb):
         print "Notice. Length mismatch!"
-        print "Pdb: ", len(ca_atoms_pdb), "trj: ", len(ca_atoms)
+        print "Pdb: ", len(ca_atoms_pdb), "trj: ", len(ca_atoms_pdb_2)
         # exit()
-    print("hi")
-    max_length = min(len(ca_atoms), len(ca_atoms_pdb))
+    # print("hi")
+    max_length = max(len(ca_atoms_pdb_2), len(ca_atoms_pdb))
     print(max_length)
-    ca_atoms = ca_atoms[:max_length]
+    # ca_atoms = ca_atoms[:max_length]
     # ca_atoms_pdb = ca_atoms_pdb[:max_length]
-    Q = {}
-    norm = {}
-    N = len(ca_atoms)
+    # print ca_atoms_pdb
+    # print ca_atoms_pdb_2
+    Q = 0
+    norm = 0
+    N = max_length
     for ia in range(0, N):
         for ja in range(ia+3, N):
-            if (splitq and pdb_chain_id[ia]==pdb_chain_id[ja]) or not splitq:
-                r = vabs(vector(ca_atoms[ia], ca_atoms[ja]))
-                rn = vabs(vector(ca_atoms_pdb[ia], ca_atoms_pdb[ja]))
-                dr = r - rn
-                if splitq: index = pdb_chain_id[ia]
-                else: index = 1
-                if not Q.has_key(index):
-                    Q[index] = 0.0
-                    norm[index] = 0
-                Q[index] = Q[index] + exp(-dr*dr/(2*sigma_sq[ja-ia]))
-                norm[index] = norm[index] + 1
-    for key in Q:
-        Q[key] = Q[key]/norm[key]
+            if (ia+1) in ca_atoms_pdb and (ja+1) in ca_atoms_pdb:
+                if (ia+1) in ca_atoms_pdb_2 and (ja+1) in ca_atoms_pdb_2:
+                        # print ia-pdbBegin+1, ja-pdbBegin+1
+                    # print ca_atoms_pdb[ia+1]
+                    rn = vabs(vector(ca_atoms_pdb[ia+1], ca_atoms_pdb[ja+1]))
+                    r = vabs(vector(ca_atoms_pdb_2[ia+1], ca_atoms_pdb_2[ja+1]))
+                    dr = r - rn
+                    Q = Q + exp(-dr * dr / (2 * sigma_sq[ja - ia]))
+                    norm = norm + 1
+    Q = Q / norm
     return Q
 
 s = p.get_structure(struct_id, pdb_file)
@@ -177,9 +179,13 @@ for chain in chains:
     for res in chain:
         is_regular_res = res.has_id('CA') and res.has_id('O')
         res_id = res.get_id()[0]
-        if (res_id==' ' or res_id=='H_MSE' or res_id=='H_M3L' or res_id=='H_CAS' ) and is_regular_res:
-            ca_atoms_pdb.append(res['CA'].get_coord())
+        if (res_id==' ' or res_id=='H_MSE' or res_id=='H_M3L' or res_id=='H_CAS') and is_regular_res:
+            residue_id = res.id[1]
+            ca_atoms_pdb[residue_id] = res['CA'].get_coord()
             pdb_chain_id.append(ichain)
+            pdb_residue_id[res.id[1]] = 1
+
+
 
 for i in range(0, len(ca_atoms_pdb)+1):
     sigma.append( (1+i)**sigma_exp )
@@ -196,11 +202,14 @@ for chain in chains:
         is_regular_res = res.has_id('CA') and res.has_id('O')
         res_id = res.get_id()[0]
         if (res_id==' ' or res_id=='H_MSE' or res_id=='H_M3L' or res_id=='H_CAS' ) and is_regular_res:
-            ca_atoms.append(res['CA'].get_coord())
+            # ca_atoms.append(res['CA'].get_coord())
+            residue_id_2 = res.id[1]
+            ca_atoms_pdb_2[residue_id_2] = res['CA'].get_coord()
+            pdb_chain_id_2.append(ichain)
+            pdb_residue_id_2[res.id[1]] = 1
 
 
-if len(ca_atoms)>0:
+if len(ca_atoms_pdb_2)>0:
     q = computeQ()
-    for key in q:
-        print str(round(q[key],3))
-    n_atoms = len(ca_atoms)
+    print str(round(q,3))
+    n_atoms = len(ca_atoms_pdb_2)

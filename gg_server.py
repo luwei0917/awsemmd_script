@@ -153,6 +153,62 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun python3 ~/opt/gg_server.py -d feb28 -m 2
 '''
+quick_slurm = '''#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=00:30:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun python3 ~/opt/davinci_gg.py -d mar01 -m 2
+'''
+
+
+if args.day == "mar03":
+    if args.mode == 1:
+        simulation_list = glob.glob("dis_*")
+        # simulation_list = ['dis_62.0', 'dis_48.0', 'dis_34.0', 'dis_36.0', 'dis_60.0', 'dis_40.0', 'dis_78.0', 'dis_74.0', 'dis_66.0', 'dis_52.0', 'dis_94.0', 'dis_82.0', 'dis_98.0', 'dis_68.0', 'dis_92.0', 'dis_64.0', 'dis_42.0', 'dis_58.0', 'dis_90.0', 'dis_100.0', 'dis_32.0']
+        print(simulation_list)
+        for dis in simulation_list:
+            print(dis)
+            cd(dis)
+            i = 1
+            i_plus_one = i +1
+            # do(f"mkdir -p log{i}")
+            # do(f"mv log.* log{i}/")
+            # do(f"cp log{i}/log.lammps .")
+            # do(f"cp x.* log{i}/")
+            continueRunConvertion(n=12, rerun=i)
+            do(f"mkdir {i_plus_one}")
+
+            run_slurm = base_run_slurm.format(i_plus_one)
+            with open(f"run_{i_plus_one}.slurm", "w") as r:
+                r.write(run_slurm)
+
+            # do(f"sbatch run_{i_plus_one}.slurm")
+
+            # do(f"sed 's/2xov_{i}/2xov_{i_plus_one}/g' run_{i}.slurm > run_{i_plus_one}.slurm")
+            do(f"sbatch run_{i_plus_one}.slurm")
+            cd("..")
+    if args.mode == 2:
+        cd("simulation")
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        sim_list = ["1"]
+        for sim in sim_list:
+            for folder in simulation_list:
+                cd(folder)
+                cd(sim)
+                print(folder)
+                with open("computeZ.slurm", "w") as f:
+                    # f.write(quick_slurm)
+                    f.write(quick_slurm.replace("ctbp-common", "commons"))
+                do("sbatch computeZ.slurm")
+                cd("../..")
 
 if args.day == "feb28":
     if args.mode == 1:
@@ -190,7 +246,7 @@ if args.day == "feb28":
         bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
         data_folder = "all_data_folder/"
         for sample_range_mode in range(2, 3):
-            freeEnergy_folder = f"compute_expected_localQ_{sample_range_mode}/"
+            freeEnergy_folder = f"2_compute_expected_localQ_{sample_range_mode}/"
             print(freeEnergy_folder)
             # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
             folder_list = ["expected_localQ"]
@@ -206,8 +262,8 @@ if args.day == "feb28":
         temp_list = ["all"]
         bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
         data_folder = "all_data_folder/"
-        for sample_range_mode in range(0, 2):
-            freeEnergy_folder = f"compute_expected_localQ_{sample_range_mode}/"
+        for sample_range_mode in range(2, 3):
+            freeEnergy_folder = f"2_compute_expected_localQ_{sample_range_mode}/"
             print(freeEnergy_folder)
             # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
             folder_list = ["expected_localQ"]
@@ -228,9 +284,34 @@ if args.day == "feb28":
                         do("mkdir -p " + name)
                         cd(name)
                         make_metadata(temps_list=temp_list,k=0.02)
-                        do("python3 ~/opt/pulling_analysis_2.py -m {} --commons 1 --nsample 2500 --submode 5".format(mode))
+                        do("python3 ~/opt/pulling_analysis_2.py -m {} --commons 0 --nsample 2500 --submode 5".format(mode))
                         cd("..")
                     cd("..")
+            cd("..")
+    if args.mode == 6:
+        # simulation_list = glob.glob("dis_*")
+        simulation_list = ['dis_62.0', 'dis_48.0', 'dis_34.0', 'dis_36.0', 'dis_60.0', 'dis_40.0', 'dis_78.0', 'dis_74.0', 'dis_66.0', 'dis_52.0', 'dis_94.0', 'dis_82.0', 'dis_98.0', 'dis_68.0', 'dis_92.0', 'dis_64.0', 'dis_42.0', 'dis_58.0', 'dis_90.0', 'dis_100.0', 'dis_32.0']
+        print(simulation_list)
+        for dis in simulation_list:
+            print(dis)
+            cd(dis)
+            i = 0
+            i_plus_one = i +1
+            # do(f"mkdir -p log{i}")
+            # do(f"mv log.* log{i}/")
+            # do(f"cp log{i}/log.lammps .")
+            # do(f"cp x.* log{i}/")
+            # continueRunConvertion(n=12, rerun=i)
+            # do(f"mkdir {i_plus_one}")
+
+            # run_slurm = base_run_slurm.format(i_plus_one)
+            # with open(f"run_{i_plus_one}.slurm", "w") as r:
+            #     r.write(run_slurm)
+
+            # do(f"sbatch run_{i_plus_one}.slurm")
+
+            # do(f"sed 's/2xov_{i}/2xov_{i_plus_one}/g' run_{i}.slurm > run_{i_plus_one}.slurm")
+            do(f"sbatch run_{i_plus_one}.slurm")
             cd("..")
 if args.day == "feb26":
     if args.mode == 1:
