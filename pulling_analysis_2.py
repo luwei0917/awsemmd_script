@@ -130,28 +130,31 @@ if args.mode >= 9:
         cd(folder_name)
         # do("make_metadata.py -m 1")
         do("cp ../metadatafile .")
-        if args.submode == 5 and args.mode == 9:
+        if args.mode == 9:
             arg = "-b 3 -e 1 -d 1 " + temp_arg
             arg += " -v1 3 -v1n 50"
 
-        if args.submode == 5 and args.mode == 10:
+        if args.mode == 10:
             arg = "-b 3 -e 1 -d 1 " + temp_arg
             arg += " -v1 2 -v1n 50"
-        if args.submode == 5 and args.mode == 11:
+        if args.mode == 11:
             arg = "-b 3 -e 1 -d 2 " + temp_arg
             arg += " -v1 3 -v1n 30 -v2 2 -v2n 30"
 
-        if args.submode == 5 and args.mode == 12:
+        if args.mode == 12:
             arg = "-b 3 -e 1 -d 1 " + temp_arg
             arg += " -v1 4 -v1n 50"
 
-        if args.submode == 5 and args.mode == 13:
+        if args.mode == 13:
             arg = "-b 3 -e 1 -d 2 " + temp_arg
             arg += " -v1 4 -v1n 30 -v2 2 -v2n 30"
-        if args.submode == 5 and args.mode == 14:
+        if args.mode == 14:
             arg = "-b 3 -e 1 -d 2 " + temp_arg
             arg += " -v1 4 -v1n 30 -v2 3 -v2n 30"
-        arg += " -ti 20 -st 380 -et 540 -ev 5-185 -pb y -ss y"
+        if args.submode == 5:
+            arg += " -ti 20 -st 380 ss-et 540 -ev 5-185 -pb y -ss y"
+        if args.submode == 1:
+            arg += " -ti 10 -st 350 -et 600 -p 5 -p 6 -p 7 -p 8 -p 9 -p 10 -p 11 -p 12 -pb y -ss y"
         with open("freeEnergy.slurm", "w") as f:
             f.write(freeEnergy.format(arg))
         do("sbatch freeEnergy.slurm")

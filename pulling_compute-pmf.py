@@ -525,8 +525,8 @@ if load_pickle == False:
                     bin_center_1 = pmf_variable_min_1 + pmf_variable_bin_width_1 * (i + 0.5)
                     bin_center_2 = pmf_variable_min_2 + pmf_variable_bin_width_2 * (j + 0.5)
                     bin_centers.append( (bin_center_1, bin_center_2) )
-        print("bin_center--------------")
-        print(bin_centers)
+        # print("bin_center--------------")
+        # print(bin_centers)
         if ndim == 1:
             for k in range(K):
                 N = N_k[k]

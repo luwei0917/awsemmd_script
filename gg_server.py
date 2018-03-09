@@ -164,10 +164,191 @@ quick_slurm = '''#!/bin/bash
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
 echo $SLURM_NODELIST
-srun python3 ~/opt/davinci_gg.py -d mar01 -m 2
+srun python3 ~/opt/gg_server.py -d mar03 -m 3
 '''
 
+if args.day == "mar08":
+    if args.mode == 3:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(1, 3):
+            freeEnergy_folder = f"first_freeEnergy_{sample_range_mode}/"
+            print(freeEnergy_folder)
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            folder_list = ["rerun_1_08_Mar_154259"]
+            # submode_list = ["_no_energy"]
+            # submode_list = ["", "only_500"]
+            # submode_list = ["350", "400", "450", "500", "550"]
 
+            temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    move_data2(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode, sub_mode_name=temp_mode, average_z=True, chosen_mode=0)
+            cd(freeEnergy_folder)
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    cd(folder+temp_mode)
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        make_metadata(temps_list=temp_list,k=0.02)
+                        do("python3 ~/opt/pulling_analysis_2.py -m {} --commons 0 --nsample 2500 --submode 1".format(mode))
+                        cd("..")
+                    cd("..")
+            cd("..")
+    if args.mode == 2:
+        pre = "/scratch/wl45/mar_2018/02_week/"
+        data_folder = "/scratch/wl45/mar_2018/02_week/all_data_folder/"
+        folder_list = ["rg_0.1_lipid_1.0_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_complete_temper_data_2(pre, data_folder, folder_list, rerun=2, average_z=True)
+    if args.mode == 1:
+        # cd("simulation")
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        sim_list = ["2"]
+        # sim_list = ["2"]
+        for sim in sim_list:
+            for folder in simulation_list:
+                cd(folder)
+                cd(sim)
+                print(folder)
+                with open("computeZ.slurm", "w") as f:
+                    # f.write(quick_slurm)
+                    f.write(quick_slurm.replace("ctbp-common", "commons"))
+                do("sbatch computeZ.slurm")
+                cd("../..")
+if args.day == "mar06":
+    if args.mode == 1:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(3, 5):
+            freeEnergy_folder = f"freeEnergy_{sample_range_mode}/"
+            print(freeEnergy_folder)
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            folder_list = ["rerun_2_06_Mar_225059"]
+            # submode_list = ["_no_energy"]
+            # submode_list = ["", "only_500"]
+            # submode_list = ["350", "400", "450", "500", "550"]
+
+            temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    move_data2(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode, sub_mode_name=temp_mode, average_z=True, chosen_mode=0)
+            cd(freeEnergy_folder)
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    cd(folder+temp_mode)
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        make_metadata(temps_list=temp_list,k=0.02)
+                        do("python3 ~/opt/pulling_analysis_2.py -m {} --commons 0 --nsample 2500 --submode 1".format(mode))
+                        cd("..")
+                    cd("..")
+            cd("..")
+if args.day == "mar05":
+    if args.mode == 5:
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        # simulation_list = ['dis_86.0', 'dis_84.0', 'dis_76.0', 'dis_72.0', 'dis_54.0', 'dis_70.0', 'dis_50.0', 'dis_56.0', 'dis_80.0', 'dis_30.0', 'dis_88.0', 'dis_44.0', 'dis_46.0', 'dis_96.0', 'dis_38.0']
+        print(simulation_list)
+        for dis in simulation_list:
+            print(dis)
+            cd(dis)
+            i = 2
+            i_plus_one = i +1
+            do(f"mkdir -p log{i}")
+            do(f"mv log.* log{i}/")
+            do(f"cp log{i}/log.lammps .")
+            do(f"cp x.* log{i}/")
+            # continueRunConvertion(n=12, rerun=i)
+            # do(f"mkdir {i_plus_one}")
+
+            # run_slurm = base_run_slurm.format(i_plus_one)
+            # with open(f"run_{i_plus_one}.slurm", "w") as r:
+            #     r.write(run_slurm)
+
+            # do(f"sbatch run_{i_plus_one}.slurm")
+
+            # do(f"sed 's/2xov_{i}/2xov_{i_plus_one}/g' run_{i}.slurm > run_{i_plus_one}.slurm")
+            # do(f"sbatch run_{i_plus_one}.slurm")
+            cd("..")
+    if args.mode == 4:
+        pre = "/scratch/wl45/feb_2018/week_of_feb19/"
+        data_folder = "/scratch/wl45/feb_2018/week_of_feb19/all_data_folder/"
+        folder_list = ["rg_0.1_lipid_1.0_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_complete_temper_data_2(pre, data_folder, folder_list, rerun=2, average_z=True)
+    if args.mode == 3:
+        bias = "dis"
+        # simulation_list = glob.glob(f"{bias}_*")
+        simulation_list = ['dis_86.0', 'dis_84.0', 'dis_76.0', 'dis_72.0', 'dis_54.0', 'dis_70.0', 'dis_50.0', 'dis_56.0', 'dis_80.0', 'dis_30.0', 'dis_88.0', 'dis_44.0', 'dis_46.0', 'dis_96.0', 'dis_38.0']
+        print(simulation_list)
+        for dis in simulation_list:
+            print(dis)
+            cd(dis)
+            i = 0
+            i_plus_one = i +1
+            # do(f"mkdir -p log{i}")
+            # do(f"mv log.* log{i}/")
+            # do(f"cp log{i}/log.lammps .")
+            # do(f"cp x.* log{i}/")
+            # continueRunConvertion(n=12, rerun=i)
+            # do(f"mkdir {i_plus_one}")
+
+            # run_slurm = base_run_slurm.format(i_plus_one)
+            # with open(f"run_{i_plus_one}.slurm", "w") as r:
+            #     r.write(run_slurm)
+
+            # do(f"sbatch run_{i_plus_one}.slurm")
+
+            # do(f"sed 's/2xov_{i}/2xov_{i_plus_one}/g' run_{i}.slurm > run_{i_plus_one}.slurm")
+            do(f"sbatch run_{i_plus_one}.slurm")
+            cd("..")
+    if args.mode == 1:
+        print("compute localQ")
+        # print(native_contacts_table)
+        # cd("simulation")
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        # sim_list = ["0"]
+        sim_list = ["0", "1"]
+        for sim in sim_list:
+            for folder in simulation_list:
+                cd(folder)
+                cd(sim)
+                print(folder)
+                with open("localQ.slurm", "w") as f:
+                    # f.write(localQ_slurm)
+                    f.write(localQ_slurm.replace("ctbp-common", "commons"))
+                do("sbatch localQ.slurm")
+                cd("../..")
+    if args.mode == 2:
+        pre = "/scratch/wl45/mar_2018/01_week/"
+        data_folder = "/scratch/wl45/mar_2018/01_week/all_data_folder/"
+        folder_list = ["rg_0.1_lipid_1.0_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_complete_temper_data_2(pre, data_folder, folder_list, rerun=1, average_z=True)
 if args.day == "mar03":
     if args.mode == 1:
         simulation_list = glob.glob("dis_*")
@@ -195,10 +376,11 @@ if args.day == "mar03":
             do(f"sbatch run_{i_plus_one}.slurm")
             cd("..")
     if args.mode == 2:
-        cd("simulation")
+        # cd("simulation")
         bias = "dis"
         simulation_list = glob.glob(f"{bias}_*")
-        sim_list = ["1"]
+        # sim_list = ["1"]
+        sim_list = ["2"]
         for sim in sim_list:
             for folder in simulation_list:
                 cd(folder)
@@ -209,7 +391,9 @@ if args.day == "mar03":
                     f.write(quick_slurm.replace("ctbp-common", "commons"))
                 do("sbatch computeZ.slurm")
                 cd("../..")
-
+    if args.mode ==3:
+        for i in range(12):
+            compute_average_z(f"dump.lammpstrj.{i}", f"z_{i}.dat")
 if args.day == "feb28":
     if args.mode == 1:
         # print(native_contacts_table)
