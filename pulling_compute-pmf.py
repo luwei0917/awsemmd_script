@@ -567,6 +567,7 @@ if load_pickle == False:
 
     # Map to reduced bin counts to eliminate empty bins.
     nonempty_bins = numpy.where(bin_counts > 0)[0]
+    # nonempty_bins = numpy.where(bin_counts > 10)[0]
     print "Non-empty bins:"
     print nonempty_bins
     nreduced_bins = len(nonempty_bins)

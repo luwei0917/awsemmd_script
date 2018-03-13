@@ -130,24 +130,9 @@ def readPMF_basic(pre):
 
     return pd.concat(all_pmf_list).dropna().reset_index()
 
-def make_metadata_2(cwd=".", k=1000.0, temps_list=["450"]):
-    files = glob.glob("../../data/*")
-    kconstant = k
-    with open("metadatafile", "w") as out:
-        for oneFile in files:
-            tmp = oneFile.split("/")[-1].replace('.dat', '')
-            t = tmp.split("_")[1]
-            bias = tmp.split("_")[3]
-            # print(tmp)
-            # if int(float(dis)) > 150:
-            #     continue
-            if t in temps_list:
-                target = "{} {} {} {}\n".format(oneFile, t, kconstant, bias)
-                out.write(target)
-
-def make_metadata(k=1000.0, temps_list=["450"]):
+def make_metadata_3(k=1000.0, temps_list=["450"], i=-1):
     cwd = os.getcwd()
-    files = glob.glob("../data/*")
+    files = glob.glob(f"../data_{i}/*")
     kconstant = k
     with open("metadatafile", "w") as out:
         for oneFile in files:
@@ -160,6 +145,8 @@ def make_metadata(k=1000.0, temps_list=["450"]):
             if t in temps_list:
                 target = "../{} {} {} {}\n".format(oneFile, t, kconstant, bias)
                 out.write(target)
+
+
 def readPMF(pre, is2d=False, force_list=["0.0", "0.1", "0.2"]):
     # perturbation_table = {0:"original", 1:"p_mem",
     #                       2:"m_mem", 3:"p_lipid",
@@ -360,8 +347,12 @@ def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=Fa
             qn = pd.read_table(location+f"qn_{i}", names=["qn"])[1:].reset_index(drop=True)
             qc2 = pd.read_table(location+f"qc2_{i}", names=["qc2"])[1:].reset_index(drop=True)
             wham = pd.concat([wham, qn, qc, qc2],axis=1)
+        # if average_z:
+        #     z = pd.read_table(location+f"z_{i}.dat", names=["AverageZ"])[1:].reset_index(drop=True)
+        #     wham = pd.concat([wham, z],axis=1)
         if average_z:
-            z = pd.read_table(location+f"z_{i}.dat", names=["AverageZ"])[1:].reset_index(drop=True)
+            z = pd.read_csv(location+f"z_complete_{i}.dat")[1:].reset_index(drop=True)
+            z.columns = z.columns.str.strip()
             wham = pd.concat([wham, z],axis=1)
         if localQ:
             all_localQ = pd.read_csv(location+f"localQ.{i}.csv")[1:].reset_index(drop=True)
@@ -385,8 +376,7 @@ def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=Fa
     return t3.sort_values(["Step", "Run"]).reset_index(drop=True)
 
 
-
-def process_complete_temper_data_2(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False, average_z=False, localQ=False):
+def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False, average_z=False, localQ=False, label=""):
     print("process temp data")
     dateAndTime = datetime.today().strftime('%d_%h_%H%M%S')
     for folder in folder_list:
@@ -416,18 +406,27 @@ def process_complete_temper_data_2(pre, data_folder, folder_list, rerun=-1, n=12
             # complete_data_list.append(data)
             #         temps = list(dic.keys())
             # complete_data = pd.concat(complete_data_list)
-            name = f"rerun_{i}_{dateAndTime}.feather"
-            data.reset_index(drop=True).to_feather(pre+folder+"/" + name)
-            os.system("cp "+pre+folder+"/" + name + " "+data_folder)
+            name = f"rerun_{2*i}_{dateAndTime}.feather"
+            data = data.reset_index(drop=True)
+            data.query(f'Step > {2*i}e7 & Step <= {2*i+1}e7').reset_index(drop=True).to_feather(pre+folder+"/" + name)
+            os.system("cp "+pre+folder+"/" + name + " "+data_folder+label+name)
+            name = f"rerun_{2*i+1}_{dateAndTime}.feather"
+            data = data.reset_index(drop=True)
+            data.query(f'Step > {2*i+1}e7 & Step <= {2*i+2}e7').reset_index(drop=True).to_feather(pre+folder+"/" + name)
+            os.system("cp "+pre+folder+"/" + name + " "+data_folder+label+name)
 
 
 
-def move_data2(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2, sample_range_mode=0, biasName="dis", qnqc=False, average_z=False, chosen_mode=0):
+def move_data4(data_folder, freeEnergy_folder, folder_list, sub_mode_name="", kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2, sample_range_mode=0, biasName="dis", qnqc=False, average_z=0, chosen_mode=0):
     print("move data")
     dic = {"T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
     # read in complete.feather
-    data = pd.read_feather(data_folder + folder +".feather")
-    os.system("mkdir -p "+freeEnergy_folder+folder+sub_mode_name+"/data")
+    data_list = []
+    for folder in folder_list:
+        tmp = pd.read_feather(data_folder + folder +".feather")
+        data_list.append(tmp)
+    data = pd.concat(data_list)
+    os.system("mkdir -p "+freeEnergy_folder+"/"+sub_mode_name+f"/data_{sample_range_mode}")
     for bias, oneBias in data.groupby("BiasTo"):
         for tempSymbol, oneTempAndBias in oneBias.groupby("Temp"):
             temp = dic[tempSymbol]
@@ -435,19 +434,25 @@ def move_data2(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.
                 continue
             print(f"t_{temp}_{biasName}_{bias}.dat")
             if sample_range_mode == 0:
+                queryCmd = 'Step > 0 & Step <= 1e7'
+            if sample_range_mode == 1:
                 queryCmd = 'Step > 1e7 & Step <= 2e7'
-            elif sample_range_mode == 1:
-                queryCmd ='Step > 2e7 & Step <= 3e7'
             elif sample_range_mode == 2:
-                queryCmd ='Step > 3e7 & Step <= 4e7'
+                queryCmd ='Step > 2e7 & Step <= 3e7'
             elif sample_range_mode == 3:
-                queryCmd ='Step > 4e7 & Step <= 5e7'
+                queryCmd ='Step > 3e7 & Step <= 4e7'
             elif sample_range_mode == 4:
+                queryCmd ='Step > 4e7 & Step <= 5e7'
+            elif sample_range_mode == 5:
                 queryCmd ='Step > 5e7 & Step <= 6e7'
+            elif sample_range_mode == -1:
+                queryCmd ='Step > 4e7 & Step <= 6e7'
             tmp = oneTempAndBias.query(queryCmd)
             chosen_list = ["TotalE", "Qw", "Distance"]
-            if average_z:
-                chosen_list += ["AverageZ"]
+            if average_z == 1:
+                chosen_list += ["abs_z_average"]
+            if average_z == 2:
+                chosen_list += ["z_h6"]
             if chosen_mode == 0:
                 chosen = tmp[chosen_list]
                 chosen = chosen.assign(TotalE_perturb_mem_p=tmp.TotalE + kmem*tmp.Membrane,
@@ -462,8 +467,7 @@ def move_data2(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.
                 chosen_list += ["Res" + str(i+1) for i in range(181)]
                 chosen = tmp[chosen_list]
     #         print(tmp.count())
-            chosen.to_csv(freeEnergy_folder+folder+sub_mode_name+f"/data/t_{temp}_{biasName}_{bias}.dat", sep=' ', index=False, header=False)
-    # chosen
+            chosen.to_csv(freeEnergy_folder+"/"+sub_mode_name+f"/data_{sample_range_mode}/t_{temp}_{biasName}_{bias}.dat", sep=' ', index=False, header=False)
 
 def compute_average_z(dumpFile, outFile):
     # input dump, output z.dat
@@ -476,6 +480,28 @@ def compute_average_z(dumpFile, outFile):
             z_list.append(z)
             f.write(str(z)+"\n")
 
+def compute_average_z_2(dumpFile, outFile):
+    # input dump, output z.dat
+    
+    helices_list = [(94,114), (147,168), (171, 192), (200, 217), (226, 241), (250, 269)]
+    with open(outFile, "w") as f:
+        a = read_lammps(dumpFile)
+        f.write("z_average, abs_z_average, z_h1, z_h2, z_h3, z_h4, z_h5, z_h6\n")
+        for atoms in a:
+            b = np.array(atoms)
+            z = b.mean(axis=0)[2]
+            f.write(str(z)+ ", ")
+            z = np.abs(b).mean(axis=0)[2]
+            f.write(str(z)+ ", ")           
+            for count, (i,j) in enumerate(helices_list):
+                i = i - 91
+                j = j - 91
+                z = np.mean(b[i:j], axis=0)[2]
+                if count == 5:
+                    f.write(str(z))
+                else:
+                    f.write(str(z)+ ", ")
+            f.write("\n")
 
 def read_simulation(location):
     file = "lipid.dat"
@@ -524,6 +550,166 @@ def read_variable_folder(location):
     name = f"{datetime.today().strftime('%d_%h_%H%M%S')}.feather"
     data.reset_index(drop=True).to_feather(name)
 # ----------------------------depreciated---------------------------------------
+def process_complete_temper_data_2(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False, average_z=False, localQ=False):
+    print("process temp data")
+    dateAndTime = datetime.today().strftime('%d_%h_%H%M%S')
+    for folder in folder_list:
+        simulation_list = glob.glob(pre+folder+f"/simulation/{bias}_*")
+        print(pre+folder+f"/simulation/{bias}_*")
+        os.system("mkdir -p " + pre+folder+"/data")
+        # this one only consider rerun >=0, for the case rerun=-1, move log.lammps to log0
+        for i in range(rerun+1):
+            all_data_list = []
+            for one_simulation in simulation_list:
+                bias_num = one_simulation.split("_")[-1]
+                print(bias_num, "!")
+
+                location = one_simulation + f"/{i}/"
+                print(location)
+                data = read_complete_temper_2(location=location, n=n, rerun=i, qnqc=qnqc, average_z=average_z, localQ=localQ)
+                print(data.shape)
+                # remove_columns = ['Step', "Run"]
+                # data = data.drop(remove_columns, axis=1)
+                all_data_list.append(data.assign(BiasTo=bias_num))
+
+            data = pd.concat(all_data_list).reset_index(drop=True)
+            # if localQ:
+            #     print("hi")
+            # else:
+            #     data.to_csv(os.path.join(pre, folder, f"data/rerun_{i}.csv"))
+            # complete_data_list.append(data)
+            #         temps = list(dic.keys())
+            # complete_data = pd.concat(complete_data_list)
+            name = f"rerun_{i}_{dateAndTime}.feather"
+            data.reset_index(drop=True).to_feather(pre+folder+"/" + name)
+            os.system("cp "+pre+folder+"/" + name + " "+data_folder)
+
+def move_data3(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2, sample_range_mode=0, biasName="dis", qnqc=False, average_z=0, chosen_mode=0):
+    print("move data")
+    dic = {"T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
+    # read in complete.feather
+    data = pd.read_feather(data_folder + folder +".feather")
+    os.system("mkdir -p "+freeEnergy_folder+"/"+sub_mode_name+f"/data_{sample_range_mode}")
+    for bias, oneBias in data.groupby("BiasTo"):
+        for tempSymbol, oneTempAndBias in oneBias.groupby("Temp"):
+            temp = dic[tempSymbol]
+            if float(temp) > 800:
+                continue
+            print(f"t_{temp}_{biasName}_{bias}.dat")
+            if sample_range_mode == 0:
+                queryCmd = 'Step > 0 & Step <= 1e7'
+            if sample_range_mode == 1:
+                queryCmd = 'Step > 1e7 & Step <= 2e7'
+            elif sample_range_mode == 2:
+                queryCmd ='Step > 2e7 & Step <= 3e7'
+            elif sample_range_mode == 3:
+                queryCmd ='Step > 3e7 & Step <= 4e7'
+            elif sample_range_mode == 4:
+                queryCmd ='Step > 4e7 & Step <= 5e7'
+            elif sample_range_mode == 5:
+                queryCmd ='Step > 5e7 & Step <= 6e7'
+            elif sample_range_mode == -1:
+                queryCmd ='Step > 4e7 & Step <= 6e7'
+            tmp = oneTempAndBias.query(queryCmd)
+            chosen_list = ["TotalE", "Qw", "Distance"]
+            if average_z == 1:
+                chosen_list += ["abs_z_average"]
+            if average_z == 2:
+                chosen_list += ["z_h6"]
+            if chosen_mode == 0:
+                chosen = tmp[chosen_list]
+                chosen = chosen.assign(TotalE_perturb_mem_p=tmp.TotalE + kmem*tmp.Membrane,
+                                        TotalE_perturb_mem_m=tmp.TotalE - kmem*tmp.Membrane,
+                                        TotalE_perturb_lipid_p=tmp.TotalE + klipid*tmp.Lipid,
+                                        TotalE_perturb_lipid_m=tmp.TotalE - klipid*tmp.Lipid,
+                                        TotalE_perturb_go_p=tmp.TotalE + kgo*tmp["AMH-Go"],
+                                        TotalE_perturb_go_m=tmp.TotalE - kgo*tmp["AMH-Go"],
+                                        TotalE_perturb_rg_p=tmp.TotalE + krg*tmp.Rg,
+                                        TotalE_perturb_rg_m=tmp.TotalE - krg*tmp.Rg)
+            if chosen_mode == 1:
+                chosen_list += ["Res" + str(i+1) for i in range(181)]
+                chosen = tmp[chosen_list]
+    #         print(tmp.count())
+            chosen.to_csv(freeEnergy_folder+"/"+sub_mode_name+f"/data_{sample_range_mode}/t_{temp}_{biasName}_{bias}.dat", sep=' ', index=False, header=False)
+
+
+def move_data2(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2, sample_range_mode=0, biasName="dis", qnqc=False, average_z=0, chosen_mode=0):
+    print("move data")
+    dic = {"T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
+    # read in complete.feather
+    data = pd.read_feather(data_folder + folder +".feather")
+    os.system("mkdir -p "+freeEnergy_folder+folder+sub_mode_name+"/data")
+    for bias, oneBias in data.groupby("BiasTo"):
+        for tempSymbol, oneTempAndBias in oneBias.groupby("Temp"):
+            temp = dic[tempSymbol]
+            if float(temp) > 800:
+                continue
+            print(f"t_{temp}_{biasName}_{bias}.dat")
+            if sample_range_mode == 0:
+                queryCmd = 'Step > 1e7 & Step <= 2e7'
+            elif sample_range_mode == 1:
+                queryCmd ='Step > 2e7 & Step <= 3e7'
+            elif sample_range_mode == 2:
+                queryCmd ='Step > 3e7 & Step <= 4e7'
+            elif sample_range_mode == 3:
+                queryCmd ='Step > 4e7 & Step <= 5e7'
+            elif sample_range_mode == 4:
+                queryCmd ='Step > 5e7 & Step <= 6e7'
+            elif sample_range_mode == -1:
+                queryCmd ='Step > 4e7 & Step <= 6e7'
+            tmp = oneTempAndBias.query(queryCmd)
+            chosen_list = ["TotalE", "Qw", "Distance"]
+            if average_z == 1:
+                chosen_list += ["abs_z_average"]
+            if average_z == 2:
+                chosen_list += ["z_h6"]
+            if chosen_mode == 0:
+                chosen = tmp[chosen_list]
+                chosen = chosen.assign(TotalE_perturb_mem_p=tmp.TotalE + kmem*tmp.Membrane,
+                                        TotalE_perturb_mem_m=tmp.TotalE - kmem*tmp.Membrane,
+                                        TotalE_perturb_lipid_p=tmp.TotalE + klipid*tmp.Lipid,
+                                        TotalE_perturb_lipid_m=tmp.TotalE - klipid*tmp.Lipid,
+                                        TotalE_perturb_go_p=tmp.TotalE + kgo*tmp["AMH-Go"],
+                                        TotalE_perturb_go_m=tmp.TotalE - kgo*tmp["AMH-Go"],
+                                        TotalE_perturb_rg_p=tmp.TotalE + krg*tmp.Rg,
+                                        TotalE_perturb_rg_m=tmp.TotalE - krg*tmp.Rg)
+            if chosen_mode == 1:
+                chosen_list += ["Res" + str(i+1) for i in range(181)]
+                chosen = tmp[chosen_list]
+    #         print(tmp.count())
+            chosen.to_csv(freeEnergy_folder+folder+sub_mode_name+f"/data/t_{temp}_{biasName}_{bias}.dat", sep=' ', index=False, header=False)
+    # chosen
+
+def make_metadata_2(cwd=".", k=1000.0, temps_list=["450"]):
+    files = glob.glob("../../data/*")
+    kconstant = k
+    with open("metadatafile", "w") as out:
+        for oneFile in files:
+            tmp = oneFile.split("/")[-1].replace('.dat', '')
+            t = tmp.split("_")[1]
+            bias = tmp.split("_")[3]
+            # print(tmp)
+            # if int(float(dis)) > 150:
+            #     continue
+            if t in temps_list:
+                target = "{} {} {} {}\n".format(oneFile, t, kconstant, bias)
+                out.write(target)
+
+def make_metadata(k=1000.0, temps_list=["450"]):
+    cwd = os.getcwd()
+    files = glob.glob("../data/*")
+    kconstant = k
+    with open("metadatafile", "w") as out:
+        for oneFile in files:
+            tmp = oneFile.split("/")[-1].replace('.dat', '')
+            t = tmp.split("_")[1]
+            bias = tmp.split("_")[3]
+            # print(tmp)
+            # if int(float(dis)) > 150:
+            #     continue
+            if t in temps_list:
+                target = "../{} {} {} {}\n".format(oneFile, t, kconstant, bias)
+                out.write(target)
 def read_complete_temper(n=4, location=".", rerun=-1, qnqc=False, average_z=False, localQ=False):
     all_lipid_list = []
     for i in range(n):

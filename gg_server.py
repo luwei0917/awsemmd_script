@@ -167,6 +167,502 @@ echo $SLURM_NODELIST
 srun python3 ~/opt/gg_server.py -d mar03 -m 3
 '''
 
+freeEnergy = """\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --mem-per-cpu=30G
+#SBATCH --time=23:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun python2 ~/opt/pulling_compute-pmf.py {}
+"""
+quick_template_slurm = '''#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=00:30:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun python3 ~/opt/gg_server.py {}
+'''
+
+
+if args.day == "mar12":
+    if args.mode == 10:
+        pre = "/scratch/wl45/feb_2018/week_of_feb19/"
+        data_folder = "/scratch/wl45/mar_2018/03_week/all_data_folder/"
+        folder_list = ["rg_0.1_lipid_1.0_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_complete_temper_data_3(pre, data_folder, folder_list, rerun=1, average_z=True, localQ=True, label="second_")
+    if args.mode == 9:
+        print("how Constant force refolding")
+        # start_from_list=["native", "extended", "topology"]
+        # start_from_list=["native"]
+        start_from_list=["extended"]
+        # start_from_list=["extended", "topology"]
+        mode_list = [3]  # lipid mediated interaction
+        # pressure_list = [0, 0.1, 1.0]
+        pressure_list = [1]
+        force_ramp_rate_list=[0.5]
+        temperature_list=[500]
+        memb_k_list = [1]
+        rg_list = [0.1]
+        # qbias_list = [0.25, 0.45, 0.65, 0.85]
+        # qbias_list = list(np.linspace(0.2,0.9,36))
+        # force_list = [0.22, 0.25, 0.28]
+        force_list = [0.0, 0.01, 0.02, 0.03, 0.05]
+        repeat = 20
+        variable_test2(temperature_list=temperature_list,
+                        start_from_list=start_from_list,
+                        pressure_list=pressure_list,
+                        rg_list=rg_list,
+                        mem_list=memb_k_list,
+                        mode_list=mode_list,
+                        force_ramp_rate_list=force_ramp_rate_list,
+                        force_list=force_list,
+                        repeat=repeat,
+                        commons=0,simulation_base_steps=2e7)
+    if args.mode == 8:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+
+        freeEnergy_folder = f"second_combined_expectedDistance_freeEnergy/"
+        print(freeEnergy_folder)
+        # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rerun_1_08_Mar_154259"]
+        # folder_list = [f"first_rerun_{sample_range_mode}_12_Mar_151630" for i in range(4,6)]
+        folder_list = [f"second_rerun_{i}_12_Mar_211030" for i in range(4,6)]
+        # submode_list = ["_no_energy"]
+        # submode_list = ["", "only_500"]
+        # submode_list = ["350", "400", "450", "500", "550"]
+
+        temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+        for temp_mode, temp_list in temp_dic.items():
+            move_data4(data_folder, freeEnergy_folder, folder_list, sample_range_mode=-1, sub_mode_name=temp_mode, average_z=2, chosen_mode=0)
+                
+
+        cd(freeEnergy_folder)
+        for temp_mode, temp_list in temp_dic.items():
+                cd(temp_mode)
+                for bias, mode in bias_list.items():
+                    # name = "low_t_" + bias
+                    name = bias
+                    print(name)
+                    do("rm -r "+name)
+                    do("mkdir -p " + name)
+                    cd(name)
+                    make_metadata_3(temps_list=temp_list,k=0.02, i=-1)
+                    nsample = len(folder_list)*2500
+                    do(f"python3 ~/opt/pulling_analysis_2.py -m {mode} --commons 1 --nsample {nsample} --submode 2")
+                    cd("..")
+                cd("..")
+        cd("..")
+    if args.mode == 7:
+        print("compute localQ")
+        # print(native_contacts_table)
+        # cd("simulation")
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        # sim_list = ["0"]
+        sim_list = ["2", "0", "1"]
+        for sim in sim_list:
+            for folder in simulation_list:
+                cd(folder)
+                cd(sim)
+                print(folder)
+                with open("localQ.slurm", "w") as f:
+                    # f.write(localQ_slurm)
+                    f.write(localQ_slurm.replace("ctbp-common", "commons"))
+                do("sbatch localQ.slurm")
+                cd("../..")
+    if args.mode == 6:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+
+        freeEnergy_folder = f"second_combined_z_6_freeEnergy/"
+        print(freeEnergy_folder)
+        # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rerun_1_08_Mar_154259"]
+        # folder_list = [f"first_rerun_{sample_range_mode}_12_Mar_151630" for i in range(4,6)]
+        folder_list = [f"second_rerun_{i}_12_Mar_211030" for i in range(4,6)]
+        # submode_list = ["_no_energy"]
+        # submode_list = ["", "only_500"]
+        # submode_list = ["350", "400", "450", "500", "550"]
+
+        temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+        for temp_mode, temp_list in temp_dic.items():
+            move_data4(data_folder, freeEnergy_folder, folder_list, sample_range_mode=-1, sub_mode_name=temp_mode, average_z=2, chosen_mode=0)
+                
+
+        cd(freeEnergy_folder)
+        for temp_mode, temp_list in temp_dic.items():
+                cd(temp_mode)
+                for bias, mode in bias_list.items():
+                    # name = "low_t_" + bias
+                    name = bias
+                    print(name)
+                    do("rm -r "+name)
+                    do("mkdir -p " + name)
+                    cd(name)
+                    make_metadata_3(temps_list=temp_list,k=0.02, i=-1)
+                    nsample = len(folder_list)*2500
+                    do(f"python3 ~/opt/pulling_analysis_2.py -m {mode} --commons 1 --nsample {nsample} --submode 1")
+                    cd("..")
+                cd("..")
+        cd("..")
+    if args.mode == 5:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(1, 6):
+            freeEnergy_folder = f"second_z_6_freeEnergy_{sample_range_mode}/"
+            print(freeEnergy_folder)
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            # folder_list = ["rerun_1_08_Mar_154259"]
+            # folder_list = [f"first_rerun_{sample_range_mode}_12_Mar_151630"]
+            folder_list = [f"second_rerun_{sample_range_mode}_12_Mar_211030"]
+            # submode_list = ["_no_energy"]
+            # submode_list = ["", "only_500"]
+            # submode_list = ["350", "400", "450", "500", "550"]
+
+            temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    move_data3(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode, sub_mode_name=temp_mode, average_z=2, chosen_mode=0)
+
+            cd(freeEnergy_folder)
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    cd(temp_mode)
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        make_metadata_3(temps_list=temp_list,k=0.02, i=sample_range_mode)
+                        do("python3 ~/opt/pulling_analysis_2.py -m {} --commons 1 --nsample 2500 --submode 1".format(mode))
+                        cd("..")
+                    cd("..")
+            cd("..")
+    if args.mode == 4:
+        pre = "/scratch/wl45/feb_2018/week_of_feb19/"
+        data_folder = "/scratch/wl45/mar_2018/03_week/all_data_folder/"
+        folder_list = ["rg_0.1_lipid_1.0_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_complete_temper_data_3(pre, data_folder, folder_list, rerun=2, average_z=True, label="second_")
+    if args.mode == 3:
+        print("compute localQ")
+        # print(native_contacts_table)
+        # cd("simulation")
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        # sim_list = ["0"]
+        sim_list = ["0", "1", "2"]
+        for sim in sim_list:
+            for folder in simulation_list:
+                cd(folder)
+                cd(sim)
+                print(folder)
+                with open("localQ.slurm", "w") as f:
+                    # f.write(localQ_slurm)
+                    f.write(localQ_slurm.replace("ctbp-common", "commons"))
+                do("sbatch localQ.slurm")
+                cd("../..")
+    if args.mode == 2:
+        pre = "/scratch/wl45/feb_2018/week_of_feb19/"
+        data_folder = "/scratch/wl45/mar_2018/03_week/all_data_folder/"
+        folder_list = ["rg_0.1_lipid_1.0_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_complete_temper_data_3(pre, data_folder, folder_list, rerun=2, average_z=True, label="first_")
+    if args.mode == 1:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(1, 6):
+            freeEnergy_folder = f"first_z_6_freeEnergy_{sample_range_mode}/"
+            print(freeEnergy_folder)
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            # folder_list = ["rerun_1_08_Mar_154259"]
+            folder_list = [f"first_rerun_{sample_range_mode}_12_Mar_151630"]
+            # submode_list = ["_no_energy"]
+            # submode_list = ["", "only_500"]
+            # submode_list = ["350", "400", "450", "500", "550"]
+
+            temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    move_data3(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode, sub_mode_name=temp_mode, average_z=2, chosen_mode=0)
+
+            cd(freeEnergy_folder)
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    cd(temp_mode)
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        make_metadata_3(temps_list=temp_list,k=0.02, i=sample_range_mode)
+                        do("python3 ~/opt/pulling_analysis_2.py -m {} --commons 1 --nsample 2500 --submode 1".format(mode))
+                        cd("..")
+                    cd("..")
+            cd("..")
+if args.day == "mar11":
+    if args.mode == 1:
+        pre = "/scratch/wl45/feb_2018/week_of_feb19/"
+        data_folder = "/scratch/wl45/feb_2018/week_of_feb19/all_data_folder/"
+        folder_list = ["rg_0.1_lipid_1.0_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_complete_temper_data_2(pre, data_folder, folder_list, rerun=2, average_z=True)
+    if args.mode == 2:
+        temp_list = ["all"]
+        bias_list = {"2d_z_qw":"13", "2d_z_dis":"14", "2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12"}
+        # bias_list = {"2d_z_qw":"13", "1d_dis":"9", "1d_qw":"10", "1d_z":"12"}
+        bias_list = {"2d_z_dis":"14", "2d_qw_dis":"11"}
+        data_folder = "all_data_folder/"
+        sample_range_mode = -1
+        freeEnergy_folder = f"z_6_freeEnergy_{sample_range_mode}/"
+        print(freeEnergy_folder)
+        # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+        folder_list = ["rerun_2_10_Mar_183455"]
+        # submode_list = ["_no_energy"]
+        # submode_list = ["", "only_500"]
+        # submode_list = ["350", "400", "450", "500", "550"]
+
+        # temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+        temp_dic = {"_400-500":["400", "450", "500"]}
+        for temp_mode, temp_list in temp_dic.items():
+            for folder in folder_list:
+                move_data2(data_folder, freeEnergy_folder, folder, sample_range_mode=-1, sub_mode_name=temp_mode, average_z=2, chosen_mode=0)
+        cd(freeEnergy_folder)
+        
+        for temp_mode, temp_list in temp_dic.items():
+            for folder in folder_list:
+                cd(folder+temp_mode)
+                for bias, mode in bias_list.items():
+                    # name = "low_t_" + bias
+                    name = bias
+                    print(name)
+                    do("rm -r "+name)
+                    do("mkdir -p " + name)
+                    cd(name)
+                    make_metadata(temps_list=temp_list,k=0.02)
+                    do("python3 ~/opt/pulling_analysis_2.py -m {} --commons 1 --nsample 5000 --submode 1".format(mode))
+                    cd("..")
+                cd("..")
+        cd("..")
+    if args.mode == 3:
+        temp_list = ["all"]
+        bias_list = {"2d_z_qw":"13", "2d_z_dis":"14", "2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12"}
+        # bias_list = {"2d_z_qw":"13", "1d_dis":"9", "1d_qw":"10", "1d_z":"12"}
+        # bias_list = {"2d_z_dis":"14", "2d_qw_dis":"11"}
+        data_folder = "all_data_folder/"
+        sample_range_mode = -1
+        freeEnergy_folder = f"second_z_6_freeEnergy_{sample_range_mode}/"
+        print(freeEnergy_folder)
+        # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+        folder_list = ["rerun_2_11_Mar_160738"]
+        # submode_list = ["_no_energy"]
+        # submode_list = ["", "only_500"]
+        # submode_list = ["350", "400", "450", "500", "550"]
+
+        # temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+        temp_dic = {"_400-500":["400", "450", "500"]}
+        for temp_mode, temp_list in temp_dic.items():
+            for folder in folder_list:
+                move_data2(data_folder, freeEnergy_folder, folder, sample_range_mode=-1, sub_mode_name=temp_mode, average_z=2, chosen_mode=0)
+        cd(freeEnergy_folder)
+        
+        for temp_mode, temp_list in temp_dic.items():
+            for folder in folder_list:
+                cd(folder+temp_mode)
+                for bias, mode in bias_list.items():
+                    # name = "low_t_" + bias
+                    name = bias
+                    print(name)
+                    do("rm -r "+name)
+                    do("mkdir -p " + name)
+                    cd(name)
+                    make_metadata(temps_list=temp_list,k=0.02)
+                    do("python3 ~/opt/pulling_analysis_2.py -m {} --commons 1 --nsample 5000 --submode 1".format(mode))
+                    cd("..")
+                cd("..")
+        cd("..")
+if args.day == "mar10":
+    if args.mode == 1:
+        commons = 1
+        # temp_list = temp_list = ["350", "400", "450"]
+        temp_list = temp_list = ["400"]
+        folder = "temp_default"
+        do("mkdir "+folder)
+        cd(folder)
+        make_metadata_2(temps_list=temp_list,k=0.02)
+        cmd = "-b 3 -e 1 -d 2 -f 0.05 -nsamples 2500 -v1 4 -v1n 30 -v2 2 -v2n 30 -ti 10 -st 380 -et 450 -ss y"
+        freeEnergy = freeEnergy.format(cmd)
+        if commons:
+            freeEnergy = freeEnergy.replace("ctbp-common", "commons")
+            freeEnergy = freeEnergy.replace("--time=23:00:00", "--time=08:00:00")
+        # create freeEnergy.slurm
+        with open("freeEnergy.slurm", "w") as f:
+            f.write(freeEnergy)
+        do("sbatch freeEnergy.slurm")
+        cd("..")
+    if args.mode == 2:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+        for sample_range_mode in range(3, 5):
+            freeEnergy_folder = f"first_freeEnergy_{sample_range_mode}/"
+            print(freeEnergy_folder)
+            # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+            # folder_list = ["rerun_1_08_Mar_154259"]
+            folder_list = ["rerun_2_09_Mar_154823"]
+            # submode_list = ["_no_energy"]
+            # submode_list = ["", "only_500"]
+            # submode_list = ["350", "400", "450", "500", "550"]
+
+            temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    move_data2(data_folder, freeEnergy_folder, folder, sample_range_mode=sample_range_mode, sub_mode_name=temp_mode, average_z=True, chosen_mode=0)
+            cd(freeEnergy_folder)
+            for temp_mode, temp_list in temp_dic.items():
+                for folder in folder_list:
+                    cd(folder+temp_mode)
+                    for bias, mode in bias_list.items():
+                        # name = "low_t_" + bias
+                        name = bias
+                        print(name)
+                        do("rm -r "+name)
+                        do("mkdir -p " + name)
+                        cd(name)
+                        make_metadata(temps_list=temp_list,k=0.02)
+                        do("python3 ~/opt/pulling_analysis_2.py -m {} --commons 0 --nsample 2500 --submode 1".format(mode))
+                        cd("..")
+                    cd("..")
+            cd("..")
+    if args.mode == 3:
+        compute_average_z("dump.lammpstrj.1", "z_test.dat")
+    if args.mode == 4:
+        # protocol_list = ["er", "awsemer", "frag", "raptor"]
+        protocol_list = ["raptor"]
+        protein_list = ["2xov"]
+        for protein in protein_list:
+            for protocol in protocol_list:
+                print("Work on protein: {}, protocol: {}".format(protein, protocol))
+                do("mkdir -p {}".format(protocol))
+                do("cp -r {} {}/".format(protein, protocol))
+                cd(protocol)
+                cd(protein)
+                fileName = "{}_multi.in".format(protein)
+                if protocol == "raptor":
+                    backbone_file = "fix_backbone_coeff_er.data"
+                    do("cp ~/opt/gremlin/protein/{}/raptor/go_rnativeC* .".format(protein))
+                else:
+                    backbone_file = "fix_backbone_coeff_{}.data".format(protocol)
+                    do("cp ~/opt/gremlin/protein/{}/gremlin/go_rnativeC* .".format(protein))
+                with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+                    for line in file:
+                        tmp = line
+                        tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
+                        print(tmp, end='')
+                cd("..")
+                do("run.py -m 0 -n 20 {}".format(protein))
+                cd("..")
+    if args.mode == 5:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+        sample_range_mode = -1
+        freeEnergy_folder = f"abs_first_freeEnergy_{sample_range_mode}/"
+        print(freeEnergy_folder)
+        # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+        folder_list = ["rerun_2_10_Mar_183455"]
+        # submode_list = ["_no_energy"]
+        # submode_list = ["", "only_500"]
+        # submode_list = ["350", "400", "450", "500", "550"]
+
+        # temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+        temp_dic = {"_400-500":["400", "450", "500"]}
+        for temp_mode, temp_list in temp_dic.items():
+            for folder in folder_list:
+                move_data2(data_folder, freeEnergy_folder, folder, sample_range_mode=-1, sub_mode_name=temp_mode, average_z=True, chosen_mode=0)
+        cd(freeEnergy_folder)
+        
+        for temp_mode, temp_list in temp_dic.items():
+            for folder in folder_list:
+                cd(folder+temp_mode)
+                for bias, mode in bias_list.items():
+                    # name = "low_t_" + bias
+                    name = bias
+                    print(name)
+                    do("rm -r "+name)
+                    do("mkdir -p " + name)
+                    cd(name)
+                    make_metadata(temps_list=temp_list,k=0.02)
+                    do("python3 ~/opt/pulling_analysis_2.py -m {} --commons 1 --nsample 5000 --submode 1".format(mode))
+                    cd("..")
+                cd("..")
+        cd("..")
+    if args.mode == 6:
+        compute_theta_for_each_helix("dump.lammpstrj.0")
+    if args.mode == 7:
+        for i in range(12):
+            compute_average_z_2(f"dump.lammpstrj.{i}", f"z_complete_{i}.dat")
+    if args.mode == 8:
+        # cd("simulation")
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        sim_list = ["0", "1"]
+        sim_list = ["2"]
+        for sim in sim_list:
+            for folder in simulation_list:
+                cd(folder)
+                cd(sim)
+                print(folder)
+                quick = quick_template_slurm.format("-d mar10 -m 7")
+                with open("computeZ.slurm", "w") as f:
+                    # f.write(quick_slurm)
+                    f.write(quick.replace("ctbp-common", "commons"))
+                do("sbatch computeZ.slurm")
+                cd("../..")
+    if args.mode == 9:
+        pre = "/scratch/wl45/mar_2018/02_week/"
+        data_folder = "/scratch/wl45/mar_2018/02_week/all_data_folder/"
+        folder_list = ["rg_0.1_lipid_1.0_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_complete_temper_data_2(pre, data_folder, folder_list, rerun=2, average_z=True)
 if args.day == "mar08":
     if args.mode == 3:
         temp_list = ["all"]
@@ -304,7 +800,7 @@ if args.day == "mar05":
         for dis in simulation_list:
             print(dis)
             cd(dis)
-            i = 0
+            i = 1
             i_plus_one = i +1
             # do(f"mkdir -p log{i}")
             # do(f"mv log.* log{i}/")
