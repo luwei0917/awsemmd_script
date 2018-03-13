@@ -110,6 +110,64 @@ echo $SLURM_NODELIST
 srun python3 ~/opt/davinci_gg.py -d mar01 -m 2
 '''
 
+if args.day == "mar05":
+    if args.mode == 1:
+        print("cp data files.")
+        protein_list = ["T0766", "1mba", "T0784", "T0792", "T0803", "T0815", "T0833", "T0251"]
+        for protein in protein_list:
+            # cmd = f"cp -r /work/cms16/xl23/shared/IAAWSEM/MC_DATA_28Feb2018/{protein}/AWSEM_energy/AWSEM_energy.log {protein}_awsem.log"
+            cmd = f"cp /work/cms16/xl23/shared/IAAWSEM/AWSEM_HO_Results/protein_pool/02282018/{protein.lower()}/iter/post-processing/noCST/qw/pca/lowTstructure/Qw.short.out {protein}_qw.txt"
+            do(cmd)
+            cmd = f"cp /work/cms16/xl23/shared/IAAWSEM/AWSEM_HO_Results/protein_pool/02282018/{protein.lower()}/iter/post-processing/noCST/qw/pca/lowTstructure/rmsd-angstrom.short.xvg {protein}_rmsd.txt"
+            do(cmd)
+if args.day == "mar03":
+    if args.mode == 1:
+        print("cp data files.")
+        protein_list = ["T0766", "1mba", "T0784", "T0792", "T0803", "T0815", "T0833", "T0251"]
+        for protein in protein_list:
+            # cmd = f"cp -r /work/cms16/xl23/shared/IAAWSEM/MC_DATA_28Feb2018/{protein}/AWSEM_energy/AWSEM_energy.log {protein}_awsem.log"
+            cmd = f"cp /work/cms16/xl23/shared/IAAWSEM/AWSEM_HO_Results/protein_pool/02282018/{protein.lower()}/iter/post-processing/noCST/qw/pca/lowTstructure/rwplusScore.short.txt {protein}_rw.txt"
+
+            do(cmd)
+    if args.mode == 2:
+        a = pd.read_csv("/scratch/wl45/structure_selector_mar03/old_best_by_prediction.csv")
+        a = a.assign(index=a.Step-1)
+        for name, data in a.groupby("Name"):
+            if name == "T0251":
+                nn = "T251"
+            else:
+                nn = name
+            print(name)
+            do(f"mkdir {name}")
+        #     print(data["index"])
+            for i in data["index"]:
+                do(f"cp /work/cms16/xl23/shared/IAAWSEM/MC_DATA_24Aug/{nn.upper()}/lowTstructure/lowTstructure{i}.pdb {name}/chosen_{i}.pdb")
+    if args.mode == 3:
+        a = pd.read_csv("/scratch/wl45/structure_selector_mar03/best_by_prediction_correction.csv")
+        # a = a.assign(index=a.Step-1)
+        for name, data in a.groupby("Name"):
+            if name == "T0251":
+                nn = "T251"
+            else:
+                nn = name
+            print(name)
+            do(f"mkdir {name}")
+        #     print(data["index"])
+            for i in data["index"]:
+                do(f"cp /work/cms16/xl23/shared/IAAWSEM/MC_DATA_28Feb2018/{nn}/lowTstructure/lowTstructure{i}.pdb {name}/pca_chosen_{i}.pdb")
+    if args.mode == 4:
+        a = pd.read_csv("/scratch/wl45/structure_selector_mar03/best_by_prediction_based_on_new.csv")
+        # a = a.assign(index=a.Step-1)
+        for name, data in a.groupby("Name"):
+            if name == "1MBA":
+                nn = "1mba"
+            else:
+                nn = name
+            print(name)
+            do(f"mkdir {name}_new")
+        #     print(data["index"])
+            for i in data["index"]:
+                do(f"cp /work/cms16/xl23/shared/IAAWSEM/MC_DATA_28Feb2018/{nn}/lowTstructure/lowTstructure{i}.pdb {name}_new/pca_chosen_{i}.pdb")
 if args.day == "mar01":
     if args.mode == 1:
         cd("simulation")
