@@ -113,7 +113,7 @@ srun python2 ~/opt/pulling_compute-pmf.py {}
 
 if args.commons:
     freeEnergy = freeEnergy.replace("ctbp-common", "commons")
-    freeEnergy = freeEnergy.replace("--time=23:00:00", "--time=08:00:00")
+    # freeEnergy = freeEnergy.replace("--time=23:00:00", "--time=08:00:00")
 
 
 if args.mode >= 9:
@@ -152,7 +152,7 @@ if args.mode >= 9:
             arg = "-b 3 -e 1 -d 2 " + temp_arg
             arg += " -v1 4 -v1n 30 -v2 3 -v2n 30"
         if args.submode == 5:
-            arg += " -ti 20 -st 380 ss-et 540 -ev 5-185 -pb y -ss y"
+            arg += " -ti 20 -st 380 -et 540 -ev 5-185 -pb y -ss y"
         if args.submode == 1:
             arg += " -ti 10 -st 350 -et 600 -p 5 -p 6 -p 7 -p 8 -p 9 -p 10 -p 11 -p 12 -pb y -ss y"
         if args.submode == 2:

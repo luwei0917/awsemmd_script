@@ -447,7 +447,10 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, sub_mode_name="", km
                 queryCmd ='Step > 5e7 & Step <= 6e7'
             elif sample_range_mode == -1:
                 queryCmd ='Step > 4e7 & Step <= 6e7'
-            tmp = oneTempAndBias.query(queryCmd)
+            if sample_range_mode == -2:
+                tmp = oneTempAndBias
+            else:
+                tmp = oneTempAndBias.query(queryCmd)
             chosen_list = ["TotalE", "Qw", "Distance"]
             if average_z == 1:
                 chosen_list += ["abs_z_average"]

@@ -187,8 +187,8 @@ quick_template_slurm = '''#!/bin/bash
 #SBATCH --account=ctbp-common
 #SBATCH --partition=ctbp-common
 #SBATCH --ntasks=1
-#SBATCH --mem-per-cpu=1G
-#SBATCH --time=00:30:00
+#SBATCH --mem-per-cpu=20G
+#SBATCH --time=01:30:00
 #SBATCH --mail-user=luwei0917@gmail.com
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
@@ -198,6 +198,90 @@ srun python3 ~/opt/gg_server.py {}
 
 
 if args.day == "mar12":
+    if args.mode == 14:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+
+        freeEnergy_folder = f"second_combined_expectedLocalQ_freeEnergy/"
+        print(freeEnergy_folder)
+        # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rerun_1_08_Mar_154259"]
+        # folder_list = [f"first_rerun_{sample_range_mode}_12_Mar_151630" for i in range(4,6)]
+        folder_list = [f"second_rerun_{i}_13_Mar_041016" for i in range(4,6)]
+        # submode_list = ["_no_energy"]
+        # submode_list = ["", "only_500"]
+        # submode_list = ["350", "400", "450", "500", "550"]
+
+        temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+        cd(freeEnergy_folder)
+        for temp_mode, temp_list in temp_dic.items():
+                cd(temp_mode)
+                for bias, mode in bias_list.items():
+                    # name = "low_t_" + bias
+                    name = bias
+                    print(name)
+                    do("rm -r "+name)
+                    do("mkdir -p " + name)
+                    cd(name)
+                    make_metadata_3(temps_list=temp_list,k=0.02, i=-1)
+                    nsample = len(folder_list)*2500
+                    do(f"python3 ~/opt/pulling_analysis_2.py -m {mode} --commons 0 --nsample {nsample} --submode 5")
+                    cd("..")
+                cd("..")
+        cd("..")
+    if args.mode == 13:
+        print("Set up simulation and go")
+        with open("quick.slurm", "w") as f:
+            # f.write(localQ_slurm)
+            quick_template_slurm = quick_template_slurm.format("-d mar12 -m 12")
+            f.write(quick_template_slurm.replace("ctbp-common", "commons"))
+        do("sbatch quick.slurm")
+        cd("../..")
+    if args.mode == 12:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+
+        freeEnergy_folder = f"second_combined_expectedLocalQ_freeEnergy/"
+        print(freeEnergy_folder)
+        # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rerun_1_08_Mar_154259"]
+        # folder_list = [f"first_rerun_{sample_range_mode}_12_Mar_151630" for i in range(4,6)]
+        folder_list = [f"second_rerun_{i}_13_Mar_041016" for i in range(4,6)]
+        # submode_list = ["_no_energy"]
+        # submode_list = ["", "only_500"]
+        # submode_list = ["350", "400", "450", "500", "550"]
+
+        temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+        for temp_mode, temp_list in temp_dic.items():
+            move_data4(data_folder, freeEnergy_folder, folder_list, sample_range_mode=-1, sub_mode_name=temp_mode, average_z=2, chosen_mode=1)
+                
+
+        # cd(freeEnergy_folder)
+        # for temp_mode, temp_list in temp_dic.items():
+        #         cd(temp_mode)
+        #         for bias, mode in bias_list.items():
+        #             # name = "low_t_" + bias
+        #             name = bias
+        #             print(name)
+        #             do("rm -r "+name)
+        #             do("mkdir -p " + name)
+        #             cd(name)
+        #             make_metadata_3(temps_list=temp_list,k=0.02, i=-1)
+        #             nsample = len(folder_list)*2500
+        #             do(f"python3 ~/opt/pulling_analysis_2.py -m {mode} --commons 1 --nsample {nsample} --submode 5")
+        #             cd("..")
+        #         cd("..")
+        # cd("..")
+    if args.mode == 11:
+        print("Process temper")
+        with open("quick.slurm", "w") as f:
+            # f.write(localQ_slurm)
+            quick_template_slurm = quick_template_slurm.format("-d mar12 -m 10")
+            f.write(quick_template_slurm.replace("ctbp-common", "commons"))
+        do("sbatch quick.slurm")
+        cd("../..")
     if args.mode == 10:
         pre = "/scratch/wl45/feb_2018/week_of_feb19/"
         data_folder = "/scratch/wl45/mar_2018/03_week/all_data_folder/"
@@ -206,7 +290,7 @@ if args.day == "mar12":
         # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
         #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
         #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
-        process_complete_temper_data_3(pre, data_folder, folder_list, rerun=1, average_z=True, localQ=True, label="second_")
+        process_complete_temper_data_3(pre, data_folder, folder_list, rerun=2, average_z=True, localQ=True, label="second_")
     if args.mode == 9:
         print("how Constant force refolding")
         # start_from_list=["native", "extended", "topology"]
@@ -3593,111 +3677,111 @@ if args.day == "sep06":
                         repeat=3,
                         temperature_list=temperature_list,
                         commons=0)
-if args.mode == 20:
-    rg_list = [0]
-    temperature_list = [200]
-    variable_test(rg_list=rg_list, repeat=40, temperature_list=temperature_list, commons=True)
+# if args.mode == 20:
+#     rg_list = [0]
+#     temperature_list = [200]
+#     variable_test(rg_list=rg_list, repeat=40, temperature_list=temperature_list, commons=True)
 
 
-if args.mode == 19:
-    rg_list = [0]
-    temperature_list = [175, 200, 225, 250]
-    variable_test(rg_list=rg_list, repeat=20, temperature_list=temperature_list, commons=True)
+# if args.mode == 19:
+#     rg_list = [0]
+#     temperature_list = [175, 200, 225, 250]
+#     variable_test(rg_list=rg_list, repeat=20, temperature_list=temperature_list, commons=True)
 
-if args.mode == 18:
-    rg_list = [0, 0.1, 0.2, 1]
-    memb_k_list = [0, 1, 2, 4]
-    pressure_list = [0, 0.1, 0.2, 0.4, 0.8, 1, 2]
-    # rg_list = [0.1]
-    # memb_k_list = [1]
-    # pressure_list = [0.1, 1]
-    variable_test(rg_list=rg_list, memb_k_list=memb_k_list, pressure_list=pressure_list, repeat=2)
+# if args.mode == 18:
+#     rg_list = [0, 0.1, 0.2, 1]
+#     memb_k_list = [0, 1, 2, 4]
+#     pressure_list = [0, 0.1, 0.2, 0.4, 0.8, 1, 2]
+#     # rg_list = [0.1]
+#     # memb_k_list = [1]
+#     # pressure_list = [0.1, 1]
+#     variable_test(rg_list=rg_list, memb_k_list=memb_k_list, pressure_list=pressure_list, repeat=2)
 
-if args.mode == 17:
-    # protocol_list = ["er", "awsemer", "frag", "raptor"]
-    protocol_list = ["awsemer", "frag"]
-    protein_list = ["1occ"]
-    for protein in protein_list:
-        for protocol in protocol_list:
-            print("Work on protein: {}, protocol: {}".format(protein, protocol))
-            if protocol == "raptor":
-                do("cp ~/opt/gremlin/protein/1occ/raptor/go_rnativeC* {}/".format(protein))
-            else:
-                do("cp ~/opt/gremlin/protein/1occ/gremlin/go_rnativeC* {}/".format(protein))
-            do("mkdir -p {}".format(protocol))
-            do("cp -r {} {}/".format(protein, protocol))
-            cd(protocol)
-            cd(protein)
-            fileName = "{}_multi.in".format(protein)
-            if protocol == "raptor":
-                backbone_file = "fix_backbone_coeff_er.data"
-                do("cp ~/opt/gremlin/protein/{}/raptor/go_rnativeC* .".format(protein))
-            else:
-                backbone_file = "fix_backbone_coeff_{}.data".format(protocol)
-                do("cp ~/opt/gremlin/protein/{}/gremlin/go_rnativeC* .".format(protein))
-            with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
-                for line in file:
-                    tmp = line
-                    tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
-                    print(tmp, end='')
-            cd("..")
-            do("run.py -m 0 -n 20 {}".format(protein))
-            cd("..")
+# if args.mode == 17:
+#     # protocol_list = ["er", "awsemer", "frag", "raptor"]
+#     protocol_list = ["awsemer", "frag"]
+#     protein_list = ["1occ"]
+#     for protein in protein_list:
+#         for protocol in protocol_list:
+#             print("Work on protein: {}, protocol: {}".format(protein, protocol))
+#             if protocol == "raptor":
+#                 do("cp ~/opt/gremlin/protein/1occ/raptor/go_rnativeC* {}/".format(protein))
+#             else:
+#                 do("cp ~/opt/gremlin/protein/1occ/gremlin/go_rnativeC* {}/".format(protein))
+#             do("mkdir -p {}".format(protocol))
+#             do("cp -r {} {}/".format(protein, protocol))
+#             cd(protocol)
+#             cd(protein)
+#             fileName = "{}_multi.in".format(protein)
+#             if protocol == "raptor":
+#                 backbone_file = "fix_backbone_coeff_er.data"
+#                 do("cp ~/opt/gremlin/protein/{}/raptor/go_rnativeC* .".format(protein))
+#             else:
+#                 backbone_file = "fix_backbone_coeff_{}.data".format(protocol)
+#                 do("cp ~/opt/gremlin/protein/{}/gremlin/go_rnativeC* .".format(protein))
+#             with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+#                 for line in file:
+#                     tmp = line
+#                     tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
+#                     print(tmp, end='')
+#             cd("..")
+#             do("run.py -m 0 -n 20 {}".format(protein))
+#             cd("..")
 
-if args.mode == 16:
-    rg_list = [0, 0.1, 0.2, 0.4, 0.5, 1, 2, 4]
-    variable_test(rg_list=rg_list, repeat=1, commons=True)
+# if args.mode == 16:
+#     rg_list = [0, 0.1, 0.2, 0.4, 0.5, 1, 2, 4]
+#     variable_test(rg_list=rg_list, repeat=1, commons=True)
 
-if(args.mode == 15):
-    print("create directory_list")
-    with open("directory_list", "w") as f:
-        for i in range(40):
-            # print(os.getcwd())
-            location = os.getcwd() + "/../"
-            f.write(location+str(i)+"/0\n")
-    do("cp ../../2xov/2xov.pdb .")
-    do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov directory_list out")
-if(args.mode == 14):
-    print("Extract qw and distance info.")
-    for i in range(100):
-        cd(str(i))
-        cd("0")
-        do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
-        do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > distance.dat")
-        cd("../..")
+# if(args.mode == 15):
+#     print("create directory_list")
+#     with open("directory_list", "w") as f:
+#         for i in range(40):
+#             # print(os.getcwd())
+#             location = os.getcwd() + "/../"
+#             f.write(location+str(i)+"/0\n")
+#     do("cp ../../2xov/2xov.pdb .")
+#     do("python2 ~/opt/small_script/CalcLocalDistanceStats.py 2xov directory_list out")
+# if(args.mode == 14):
+#     print("Extract qw and distance info.")
+#     for i in range(100):
+#         cd(str(i))
+#         cd("0")
+#         do("awk '{print $2}' wham.dat |  sed 's/,$//' | sed 1d > qw.dat")
+#         do("awk '{print $2}' addforce.dat |  sed 's/,$//' | sed 1d > distance.dat")
+#         cd("../..")
 
-if args.mode == 13:
-    rg_list = [0, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2]
-    memb_k_list = [0, 1, 2, 4, 8]
-    variable_test(rg_list=rg_list, memb_k_list=memb_k_list)
-if args.mode == 12:
-    rg_list = [0.1, 0.2, 0.4, 0.8, 1.6, 3.2]
-    variable_test(rg_list=rg_list)
-if args.mode == 11:
-    zim_type_list = ["aug04", "aug26"]
-    membrane_width_list = [30, 28.8]
-    for zim in zim_type_list:
-        for width in membrane_width_list:
-            folder = "zim_{}_width_{}".format(zim, width)
-            do("mkdir -p {}".format(folder))
-            cd(folder)
-            do("cp -r ../2xov .")
-            cd("2xov")
-            fixFile = "fix_backbone_coeff_single.data"
-            with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
-                for line in file:
-                    print(line.replace("WIDTH", str(width)), end='')
-            do("cp zim_{} zim".format(zim))
-            cd("..")
-            do("run.py -n 2 2xov")
-            cd("..")
-if args.mode == 10:
-    distance_list = np.linspace(166, 180, 15)
-    for distance in distance_list:
-        folder = "dis_{}".format(distance)
-        cd(folder)
-        do("sbatch run_0.slurm")
-        cd("..")
+# if args.mode == 13:
+#     rg_list = [0, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2]
+#     memb_k_list = [0, 1, 2, 4, 8]
+#     variable_test(rg_list=rg_list, memb_k_list=memb_k_list)
+# if args.mode == 12:
+#     rg_list = [0.1, 0.2, 0.4, 0.8, 1.6, 3.2]
+#     variable_test(rg_list=rg_list)
+# if args.mode == 11:
+#     zim_type_list = ["aug04", "aug26"]
+#     membrane_width_list = [30, 28.8]
+#     for zim in zim_type_list:
+#         for width in membrane_width_list:
+#             folder = "zim_{}_width_{}".format(zim, width)
+#             do("mkdir -p {}".format(folder))
+#             cd(folder)
+#             do("cp -r ../2xov .")
+#             cd("2xov")
+#             fixFile = "fix_backbone_coeff_single.data"
+#             with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
+#                 for line in file:
+#                     print(line.replace("WIDTH", str(width)), end='')
+#             do("cp zim_{} zim".format(zim))
+#             cd("..")
+#             do("run.py -n 2 2xov")
+#             cd("..")
+# if args.mode == 10:
+#     distance_list = np.linspace(166, 180, 15)
+#     for distance in distance_list:
+#         folder = "dis_{}".format(distance)
+#         cd(folder)
+#         do("sbatch run_0.slurm")
+#         cd("..")
 # if args.mode == 9:
 #     cmd = "python3 ~/opt/small_script/find_distance.py"
 #     run_slurm = base_slurm.format(cmd)
