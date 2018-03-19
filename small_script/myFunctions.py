@@ -130,7 +130,8 @@ def readPMF_basic(pre):
 
     return pd.concat(all_pmf_list).dropna().reset_index()
 
-def make_metadata_3(k=1000.0, temps_list=["450"], i=-1):
+def make_metadata_3(k=1000.0, temps_list=["450"], i=-1, biasLow=None, biasHigh=None):
+    print("make metadata")
     cwd = os.getcwd()
     files = glob.glob(f"../data_{i}/*")
     kconstant = k
@@ -139,6 +140,12 @@ def make_metadata_3(k=1000.0, temps_list=["450"], i=-1):
             tmp = oneFile.split("/")[-1].replace('.dat', '')
             t = tmp.split("_")[1]
             bias = tmp.split("_")[3]
+            if biasLow:
+                if float(bias) < biasLow:
+                    continue
+            if biasHigh:
+                if float(bias) > biasHigh:
+                    continue
             # print(tmp)
             # if int(float(dis)) > 150:
             #     continue
@@ -311,7 +318,7 @@ def check_and_correct_fragment_memory():
     os.system("mv fragsLAMW.mem fragsLAMW_back")
     os.system("mv tmp.mem fragsLAMW.mem")
 
-def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=False, localQ=False):
+def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=False, localQ=False, disReal=False):
     all_data_list = []
     for i in range(n):
         file = "lipid.{}.dat".format(i)
@@ -350,6 +357,11 @@ def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=Fa
         # if average_z:
         #     z = pd.read_table(location+f"z_{i}.dat", names=["AverageZ"])[1:].reset_index(drop=True)
         #     wham = pd.concat([wham, z],axis=1)
+        if disReal:
+            tmp = pd.read_csv(location+f"distance_{i}.dat")[1:].reset_index(drop=True).drop('Steps', axis=1)
+            # print(tmp)
+            tmp.columns = tmp.columns.str.strip()
+            wham = pd.concat([wham, tmp],axis=1)
         if average_z:
             z = pd.read_csv(location+f"z_complete_{i}.dat")[1:].reset_index(drop=True)
             z.columns = z.columns.str.strip()
@@ -376,7 +388,7 @@ def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=Fa
     return t3.sort_values(["Step", "Run"]).reset_index(drop=True)
 
 
-def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False, average_z=False, localQ=False, label=""):
+def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False, average_z=False, disReal=False, localQ=False, label=""):
     print("process temp data")
     dateAndTime = datetime.today().strftime('%d_%h_%H%M%S')
     for folder in folder_list:
@@ -392,7 +404,7 @@ def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12
 
                 location = one_simulation + f"/{i}/"
                 print(location)
-                data = read_complete_temper_2(location=location, n=n, rerun=i, qnqc=qnqc, average_z=average_z, localQ=localQ)
+                data = read_complete_temper_2(location=location, n=n, rerun=i, qnqc=qnqc, average_z=average_z, localQ=localQ, disReal=disReal)
                 print(data.shape)
                 # remove_columns = ['Step', "Run"]
                 # data = data.drop(remove_columns, axis=1)
@@ -419,7 +431,7 @@ def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12
 
 def move_data4(data_folder, freeEnergy_folder, folder_list, sub_mode_name="", kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2, sample_range_mode=0, biasName="dis", qnqc=False, average_z=0, chosen_mode=0):
     print("move data")
-    dic = {"T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
+    dic = {"T_defined":300, "T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
     # read in complete.feather
     data_list = []
     for folder in folder_list:
@@ -450,12 +462,23 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, sub_mode_name="", km
             if sample_range_mode == -2:
                 tmp = oneTempAndBias
             else:
-                tmp = oneTempAndBias.query(queryCmd)
-            chosen_list = ["TotalE", "Qw", "Distance"]
+                tmp = oneTempAndBias.query(queryCmd).reset_index()
+            if average_z < 5:
+                chosen_list = ["TotalE", "Qw", "Distance"]
+            elif average_z == 5:
+                chosen_list = ["TotalE", "Qw", "DisReal"]
+                chosen_list += ["z_h6"]
             if average_z == 1:
                 chosen_list += ["abs_z_average"]
-            if average_z == 2:
+            if average_z == 2 or average_z == 3:
                 chosen_list += ["z_h6"]
+            if average_z == 3:
+                chosen_list += ["DisReal"]
+            if average_z == 4:
+                tmp["z_h5_and_h6"] = tmp["z_h5"] + tmp["z_h6"]
+                chosen_list += ["z_h5_and_h6"]
+                chosen_list += ["DisReal"]
+
             if chosen_mode == 0:
                 chosen = tmp[chosen_list]
                 chosen = chosen.assign(TotalE_perturb_mem_p=tmp.TotalE + kmem*tmp.Membrane,
@@ -506,6 +529,89 @@ def compute_average_z_2(dumpFile, outFile):
                     f.write(str(z)+ ", ")
             f.write("\n")
 
+def read_simulation_2(location=".", i=-1, qnqc=False, average_z=False, localQ=False, disReal=False, **kwargs):
+    file = "lipid.dat"
+    lipid = pd.read_csv(location+file)
+    lipid.columns = lipid.columns.str.strip()
+    remove_columns = ['Steps']
+    lipid = lipid.drop(remove_columns, axis=1)
+
+    file = "rgs.dat"
+    rgs = pd.read_csv(location+file)
+    rgs.columns = rgs.columns.str.strip()
+    remove_columns = ['Steps']
+    rgs = rgs.drop(remove_columns, axis=1)
+
+    file = "energy.dat"
+    energy = pd.read_csv(location+file)
+    energy.columns = energy.columns.str.strip()
+    energy = energy[["AMH-Go", "Membrane", "Rg"]]
+    file = "addforce.dat"
+    dis = pd.read_csv(location+file)
+    dis.columns = dis.columns.str.strip()
+    remove_columns = ['Steps', 'AddedForce', 'Dis12', 'Dis34', 'Dis56']
+    dis.drop(remove_columns, axis=1,inplace=True)
+
+
+    file = "wham.dat"
+    wham = pd.read_csv(location+file).assign(Run=i)
+    wham.columns = wham.columns.str.strip()
+    remove_columns = ['Rg', 'Tc']
+    wham = wham.drop(remove_columns, axis=1)
+    if qnqc:
+        qc = pd.read_table(location+f"qc", names=["qc"])[1:].reset_index(drop=True)
+        qn = pd.read_table(location+f"qn", names=["qn"])[1:].reset_index(drop=True)
+        qc2 = pd.read_table(location+f"qc2", names=["qc2"])[1:].reset_index(drop=True)
+        wham = pd.concat([wham, qn, qc, qc2],axis=1)
+    # if average_z:
+    #     z = pd.read_table(location+f"z_{i}.dat", names=["AverageZ"])[1:].reset_index(drop=True)
+    #     wham = pd.concat([wham, z],axis=1)
+    if disReal:
+        tmp = pd.read_csv(location+f"distance.dat")[1:].reset_index(drop=True).drop('Steps', axis=1)
+        # print(tmp)
+        tmp.columns = tmp.columns.str.strip()
+        wham = pd.concat([wham, tmp],axis=1)
+    if average_z:
+        z = pd.read_csv(location+f"z_complete.dat")[1:].reset_index(drop=True)
+        z.columns = z.columns.str.strip()
+        wham = pd.concat([wham, z],axis=1)
+    if localQ:
+        all_localQ = pd.read_csv(location+f"localQ.csv")[1:].reset_index(drop=True)
+        wham = pd.concat([wham, all_localQ], axis=1)
+
+    data = pd.concat([wham, dis, energy, rgs, lipid], axis=1)
+    t3 = data.assign(TotalE=data.Energy + data.Lipid)
+    return t3.reset_index(drop=True)
+
+def read_folder(location, match="", **kwargs):
+    runFolders = os.listdir(location+"/simulation")
+    if match == "qbias":
+        runFolders = [f for f in runFolders if re.match(r'qbias_[0-9]+', f)]
+    else:
+        runFolders = [f for f in runFolders if re.match(r'[0-9]+', f)]
+    print(runFolders)
+    data_list = []
+    for run in runFolders:
+        tmp = read_simulation_2(location+"/simulation/"+run+"/0/", **kwargs).assign(Run=run)
+        data_list.append(tmp)
+    return pd.concat(data_list).reset_index(drop=True)
+
+def read_variable_folder(location, match="*_", **kwargs):
+    variables = glob.glob(os.path.join(location, match))
+    print(variables)
+    data_list = []
+    for variableFolder in variables:
+        tmp = variableFolder.split("/")[-1]
+        data_list.append(read_folder(variableFolder, **kwargs).assign(Folder=tmp))
+    data = pd.concat(data_list)
+    name = f"{datetime.today().strftime('%d_%h_%H%M%S')}.feather"
+    data.reset_index(drop=True).to_feather(name)
+
+
+# ----------------------------depreciated---------------------------------------
+
+
+
 def read_simulation(location):
     file = "lipid.dat"
     lipid = pd.read_csv(location+file)
@@ -533,26 +639,7 @@ def read_simulation(location):
     data = data.assign(TotalE=data.Energy + data.Lipid)
     return data
 
-def read_folder(location):
-    runFolders = os.listdir(location+"/simulation")
-    runFolders = [f for f in runFolders if re.match(r'[0-9]+', f)]
-    data_list = []
-    for run in runFolders:
-        tmp = read_simulation(location+"/simulation/"+run+"/0/").assign(Run=run)
-        data_list.append(tmp)
-    return pd.concat(data_list)
 
-def read_variable_folder(location):
-    variables = glob.glob(os.path.join(location, "*_"))
-    print(variables)
-    data_list = []
-    for variableFolder in variables:
-        tmp = variableFolder.split("/")[-1]
-        data_list.append(read_folder(variableFolder).assign(Folder=tmp))
-    data = pd.concat(data_list)
-    name = f"{datetime.today().strftime('%d_%h_%H%M%S')}.feather"
-    data.reset_index(drop=True).to_feather(name)
-# ----------------------------depreciated---------------------------------------
 def process_complete_temper_data_2(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False, average_z=False, localQ=False):
     print("process temp data")
     dateAndTime = datetime.today().strftime('%d_%h_%H%M%S')

@@ -35,7 +35,7 @@ parser.add_argument("--dimension", type=int, default=2)
 parser.add_argument("-m", "--mode", type=int, default=1)
 parser.add_argument("-s", "--save", action="store_true", default=False)
 parser.add_argument("-r", "--reproduce", default=None)
-parser.add_argument("--force", type=float, default=1.0)
+parser.add_argument("--force", type=int, default=0)
 parser.add_argument("-p", "--patch", type=int, default=1)
 parser.add_argument("--commons", type=int, default=0)
 parser.add_argument("--nsample", type=int, default=2500)
@@ -115,49 +115,58 @@ if args.commons:
     freeEnergy = freeEnergy.replace("ctbp-common", "commons")
     # freeEnergy = freeEnergy.replace("--time=23:00:00", "--time=08:00:00")
 
-
-if args.mode >= 9:
-    print("two d")
-    nsample = args.nsample
-    # force_list = [0.0, 0.1, 0.2]
+print("two d")
+nsample = args.nsample
+if args.force == 0:
     force_list = [0.0]
-    # force_list = [0.0, 0.1, 0.2]
-    for force in force_list:
-        # force = 1
-        temp_arg = "-f {} -nsamples {}".format(force, nsample)
-        folder_name = "force_{}".format(force)
-        do("mkdir -p "+folder_name)
-        cd(folder_name)
-        # do("make_metadata.py -m 1")
-        do("cp ../metadatafile .")
-        if args.mode == 9:
-            arg = "-b 3 -e 1 -d 1 " + temp_arg
-            arg += " -v1 3 -v1n 50"
+elif args.force == 1:
+    force_list = [0.05, 0.02, 0.1, 0.2, 0.0]
+# force_list = [0.0, 0.1, 0.2]
 
-        if args.mode == 10:
-            arg = "-b 3 -e 1 -d 1 " + temp_arg
-            arg += " -v1 2 -v1n 50"
-        if args.mode == 11:
-            arg = "-b 3 -e 1 -d 2 " + temp_arg
-            arg += " -v1 3 -v1n 30 -v2 2 -v2n 30"
+# force_list = [0.0, 0.1, 0.2]
+for force in force_list:
+    # force = 1
+    temp_arg = "-f {} -nsamples {}".format(force, nsample)
+    folder_name = "force_{}".format(force)
+    do("mkdir -p "+folder_name)
+    cd(folder_name)
+    # do("make_metadata.py -m 1")
+    do("cp ../metadatafile .")
+    if args.mode ==1:
+        arg = "-b 2 -e 1 -d 1 " + temp_arg
+        arg += " -v1 2 -v1n 50"
+    if args.mode == 9:
+        arg = "-b 3 -e 1 -d 1 " + temp_arg
+        arg += " -v1 3 -v1n 50"
 
-        if args.mode == 12:
-            arg = "-b 3 -e 1 -d 1 " + temp_arg
-            arg += " -v1 4 -v1n 50"
+    if args.mode == 10:
+        arg = "-b 3 -e 1 -d 1 " + temp_arg
+        arg += " -v1 2 -v1n 50"
+    if args.mode == 11:
+        arg = "-b 3 -e 1 -d 2 " + temp_arg
+        arg += " -v1 3 -v1n 30 -v2 2 -v2n 30"
 
-        if args.mode == 13:
-            arg = "-b 3 -e 1 -d 2 " + temp_arg
-            arg += " -v1 4 -v1n 30 -v2 2 -v2n 30"
-        if args.mode == 14:
-            arg = "-b 3 -e 1 -d 2 " + temp_arg
-            arg += " -v1 4 -v1n 30 -v2 3 -v2n 30"
-        if args.submode == 5:
-            arg += " -ti 20 -st 380 -et 540 -ev 5-185 -pb y -ss y"
-        if args.submode == 1:
-            arg += " -ti 10 -st 350 -et 600 -p 5 -p 6 -p 7 -p 8 -p 9 -p 10 -p 11 -p 12 -pb y -ss y"
-        if args.submode == 2:
-            arg += " -ti 10 -st 350 -et 600 -ev 3 -pb y -ss y"
-        with open("freeEnergy.slurm", "w") as f:
-            f.write(freeEnergy.format(arg))
-        do("sbatch freeEnergy.slurm")
-        cd("..")
+    if args.mode == 12:
+        arg = "-b 3 -e 1 -d 1 " + temp_arg
+        arg += " -v1 4 -v1n 50"
+
+    if args.mode == 13:
+        arg = "-b 3 -e 1 -d 2 " + temp_arg
+        arg += " -v1 4 -v1n 30 -v2 2 -v2n 30"
+    if args.mode == 14:
+        arg = "-b 3 -e 1 -d 2 " + temp_arg
+        arg += " -v1 4 -v1n 30 -v2 3 -v2n 30"
+    if args.submode == 5:
+        arg += " -ti 20 -st 380 -et 540 -ev 5-185 -pb y -ss y"
+    if args.submode == 1:
+        arg += " -ti 10 -st 350 -et 600 -p 5 -p 6 -p 7 -p 8 -p 9 -p 10 -p 11 -p 12 -pb y -ss y"
+    if args.submode == 2:
+        arg += " -ti 10 -st 350 -et 600 -ev 3 -pb y -ss y"
+    if args.submode == 3:
+        arg += " -ti 10 -st 400 -et 600 -ev 5 -pb y -ss y"
+    if args.submode == 4:
+        arg += " -ti 10 -st 250 -et 500"
+    with open("freeEnergy.slurm", "w") as f:
+        f.write(freeEnergy.format(arg))
+    do("sbatch freeEnergy.slurm")
+    cd("..")

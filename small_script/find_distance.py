@@ -15,7 +15,7 @@ import numpy as np
 # compute cross Q for every pdb pair in one folder
 parser = argparse.ArgumentParser(description="Compute cross q")
 parser.add_argument("-m", "--mode",
-                    type=int, default=1)
+                    type=int, default=-1)
 args = parser.parse_args()
 # if args.mode == 1:
 #
@@ -23,7 +23,10 @@ target_residue_i = 1
 target_residue_j = 181
 nFrame = 0
 found = False
-lammps_file = "dump.lammpstrj"
+if args.mode == -1:
+    lammps_file = "dump.lammpstrj"
+else:
+    lammps_file = f"dump.lammpstrj.{args.mode}"
 target_xi_list = []
 target_yi_list = []
 target_zi_list = []
@@ -96,7 +99,12 @@ xj = np.array(target_xj_list)
 yj = np.array(target_yj_list)
 zj = np.array(target_zj_list)
 dis = np.sqrt((xi - xj)**2 + (yi - yj)**2 + (zi - zj)**2)
-with open("distance.dat", "w") as f:
-    f.write("Steps, Distance\n")
+if args.mode == -1:
+    disName = "distance.dat"
+else:
+    disName = f"distance_{args.mode}.dat"
+
+with open(disName, "w") as f:
+    f.write("Steps, DisReal\n")
     for i, d in enumerate(dis):
         f.write("{}, {}\n".format(i*4000, d))

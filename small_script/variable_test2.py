@@ -43,7 +43,8 @@ def variable_test2(k_list=[1],
                       temperature_list=[300],
                       start_from_list=["native"],
                       simulation_model_list=["go"],
-                      simulation_base_steps=1e7):
+                      simulation_base_steps=1e7,
+                      change_list=[0]):
     inputs = locals()
     tmp = {}  # some none list one are not important
     # variables that changing determines the name of folder
@@ -80,12 +81,13 @@ def variable_test2(k_list=[1],
         simulation_model = row["simulation_model_list"]
         start_from = row["start_from_list"]
         qbias = row["qbias_list"]
+        change = row["change_list"]
         for name in folder_name_list:
             tmp = row[name]
             folder_name_template += name.replace("_list", "")+f"_{tmp}_"
         # print(folder_name_template)
         if folder_name_template == "":
-            folder_name_template = "simulation"
+            folder_name_template = "test"
         print(folder_name_template)
 
         do("mkdir "+folder_name_template)
@@ -127,6 +129,7 @@ def variable_test2(k_list=[1],
                 tmp = tmp.replace("MY_RG", str(rg))
                 tmp = tmp.replace("RATE", str(force_ramp_rate))
                 tmp = tmp.replace("SIMULATION_STEPS", str(int(simulation_steps)))
+                tmp = tmp.replace("CHANGE", str(int(change)))
                 # tmp = tmp.replace("SIMULATION_STEPS", str(int(simulation_steps/force_ramp_rate)))
                 print(tmp, end='')
         cd("..")
