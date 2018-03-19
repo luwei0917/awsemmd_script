@@ -71,19 +71,21 @@ def replace(TARGET, FROM, TO):
 def getFromTerminal(CMD):
     return subprocess.Popen(CMD,stdout=subprocess.PIPE,shell=True).communicate()[0].decode()
 
-def continueRunConvertion():
-    do("cp 2xov_0.in 2xov_1.in")
-    fileName = "2xov_1.in"
-    replace(fileName, "variable r world 0 1 2 3 4 5 6 7 8 9 10 11", "")
-    replace(fileName, "# read_restart restart.25000000", "variable r world 0 1 2 3 4 5 6 7 8 9 10 11")
-    replace(fileName, "read_restart restart.extended", "read_restart restart.$r.20000000")
-    replace(fileName, "read_restart restart.native_topology", "read_restart restart.$r.20000000")
-    replace(fileName, "0\/", "1\/")
+def continueRunConvertion(n=12, rerun=0):
+    rerun_plus_one = rerun + 1
+    do(f"cp 2xov_0.in 2xov_{rerun_plus_one}.in")
+    fileName = f"2xov_{rerun_plus_one}.in"
+    replace(fileName, "variable r world "+ " ".join(str(i) for i in list(range(n))), "")
+    replace(fileName, "# read_restart restart.25000000", "variable r world "+ " ".join(str(i) for i in list(range(n))))
+    initial_steps = 20000000 * rerun_plus_one
+    replace(fileName, "read_restart restart.extended", f"read_restart restart.$r.{initial_steps}")
+    replace(fileName, "read_restart restart.native_topology", f"read_restart restart.$r.{initial_steps}")
+    replace(fileName, "0\/", f"{rerun_plus_one}\/")
     cmd = 'tail -n 1 log.lammps | cut -d" " -f2-'
     line = getFromTerminal(cmd).rstrip()
     replace(fileName, "reset_timestep	0", "variable w world " + line)
     replace(fileName, "fix     xbias all colvars colvars.x output x", "fix     xbias all colvars colvars.x output x.$r")
-    cmd = 'grep "temper" 2xov_1.in'
+    cmd = f'grep "temper" 2xov_{rerun_plus_one}.in'
     line = getFromTerminal(cmd).rstrip()
     replace(fileName, line, line + " $w")
 
@@ -107,9 +109,150 @@ quick_slurm = '''#!/bin/bash
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
 echo $SLURM_NODELIST
-srun python3 ~/opt/davinci_gg.py -d mar01 -m 2
+srun python3 ~/opt/davinci_gg.py -d mar13 -m 5
 '''
 
+localQ_slurm = '''#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=00:30:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun python3 ~/opt/davinci_gg.py -d mar13 -m 3
+'''
+
+
+if args.day == "mar13":
+    if args.mode == 7:
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        # simulation_list = ['dis_86.0', 'dis_84.0', 'dis_76.0', 'dis_72.0', 'dis_54.0', 'dis_70.0', 'dis_50.0', 'dis_56.0', 'dis_80.0', 'dis_30.0', 'dis_88.0', 'dis_44.0', 'dis_46.0', 'dis_96.0', 'dis_38.0']
+        print(simulation_list)
+        for dis in simulation_list:
+            print(dis)
+            cd(dis)
+            i = 1
+            i_plus_one = i +1
+            # do(f"mkdir -p log{i}")
+            # do(f"mv log.* log{i}/")
+            # do(f"cp log{i}/log.lammps .")
+            # do(f"cp x.* log{i}/")
+            continueRunConvertion(n=12, rerun=i)
+            do(f"mkdir {i_plus_one}")
+            do(f"sed 's/2xov_{i}/2xov_{i_plus_one}/g' run_{i}.slurm > run_{i_plus_one}.slurm")
+            do(f"sbatch run_{i_plus_one}.slurm")
+            cd("..")
+    if args.mode == 6:
+        temp_list = ["all"]
+        bias_list = {"2d_qw_dis":"11", "1d_dis":"9", "1d_qw":"10", "1d_z":"12", "2d_z_qw":"13", "2d_z_dis":"14"}
+        data_folder = "all_data_folder/"
+
+        freeEnergy_folder = f"third_combined_expectedDistance_freeEnergy/"
+        print(freeEnergy_folder)
+        # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rerun_1_08_Mar_154259"]
+        # folder_list = [f"first_rerun_{sample_range_mode}_12_Mar_151630" for i in range(4,6)]
+        # folder_list = [f"second_rerun_{i}_12_Mar_211030" for i in range(2,4)]
+        folder_list = [f"third_rerun_{i}_14_Mar_015209" for i in range(2,4)]
+        # submode_list = ["_no_energy"]
+        # submode_list = ["", "only_500"]
+        # submode_list = ["350", "400", "450", "500", "550"]
+
+        temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+        for temp_mode, temp_list in temp_dic.items():
+            move_data4(data_folder, freeEnergy_folder, folder_list, sample_range_mode=-2, sub_mode_name=temp_mode, average_z=2, chosen_mode=0)
+
+
+        cd(freeEnergy_folder)
+        for temp_mode, temp_list in temp_dic.items():
+                cd(temp_mode)
+                for bias, mode in bias_list.items():
+                    # name = "low_t_" + bias
+                    name = bias
+                    print(name)
+                    do("rm -r "+name)
+                    do("mkdir -p " + name)
+                    cd(name)
+                    make_metadata_3(temps_list=temp_list,k=0.02, i=-2)
+                    nsample = len(folder_list)*2500
+                    do(f"python3 ~/opt/pulling_analysis_2.py -m {mode} --commons 0 --nsample {nsample} --submode 2")
+                    cd("..")
+                cd("..")
+        cd("..")
+    if args.mode ==5:
+        for i in range(12):
+            compute_average_z_2(f"dump.lammpstrj.{i}", f"z_complete_{i}.dat")
+    if args.mode == 4:
+        print("compute localQ")
+        # print(native_contacts_table)
+        # cd("simulation")
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        # sim_list = ["0"]
+        sim_list = ["0", "1"]
+        for sim in sim_list:
+            for folder in simulation_list:
+                cd(folder)
+                cd(sim)
+                print(folder)
+                with open("localQ.slurm", "w") as f:
+                    f.write(localQ_slurm)
+                    # f.write(localQ_slurm.replace("ctbp-common", "commons"))
+                do("sbatch localQ.slurm")
+                cd("../..")
+    if args.mode == 3:
+        native_contacts_table = compute_localQ_init()
+        for i in range(12):
+            compute_localQ(native_contacts_table, pre=".", ii=i)
+    if args.mode == 2:
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        sim_list = ["0", "1"]
+        for sim in sim_list:
+            for folder in simulation_list:
+                cd(folder)
+                cd(sim)
+                print(folder)
+                with open("computeZ.slurm", "w") as f:
+                    f.write(quick_slurm)
+                    # f.write(quick_slurm.replace("ctbp-common", "commons"))
+                do("sbatch computeZ.slurm")
+                cd("../..")
+    if args.mode == 1:
+        pre = "/scratch/wl45/"
+        data_folder = "/scratch/wl45/all_data_folder/"
+        folder_list = ["rg_0.1_lipid_1.0_mem_1"]
+        # folder_list = ["23oct/memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rgWidth_memb_3_rg_0.1_lipid_1_extended",
+        #                 "rgWidth_memb_3_rg_0.1_lipid_1_topology",
+        #                 "expand_distance_rgWidth_memb_3_rg_0.1_lipid_1_extended"]
+        process_complete_temper_data_3(pre, data_folder, folder_list, rerun=1, average_z=True, localQ=True, label="third_")
+if args.day == "mar09":
+    if args.mode == 1:
+        bias = "dis"
+        simulation_list = glob.glob(f"{bias}_*")
+        # simulation_list = ['dis_86.0', 'dis_84.0', 'dis_76.0', 'dis_72.0', 'dis_54.0', 'dis_70.0', 'dis_50.0', 'dis_56.0', 'dis_80.0', 'dis_30.0', 'dis_88.0', 'dis_44.0', 'dis_46.0', 'dis_96.0', 'dis_38.0']
+        print(simulation_list)
+        for dis in simulation_list:
+            print(dis)
+            cd(dis)
+            i = 0
+            i_plus_one = i +1
+            do(f"mkdir -p log{i}")
+            do(f"mv log.* log{i}/")
+            do(f"cp log{i}/log.lammps .")
+            do(f"cp x.* log{i}/")
+            continueRunConvertion(n=12, rerun=i)
+            do(f"mkdir {i_plus_one}")
+
+            do(f"sed 's/2xov_{i}/2xov_{i_plus_one}/g' run_{i}.slurm > run_{i_plus_one}.slurm")
+            do(f"sbatch run_{i_plus_one}.slurm")
+            cd("..")
 if args.day == "mar05":
     if args.mode == 1:
         print("cp data files.")
