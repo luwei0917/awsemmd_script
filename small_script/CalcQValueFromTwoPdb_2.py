@@ -165,6 +165,7 @@ def computeQ():
                     rn = vabs(vector(ca_atoms_pdb[ia+1], ca_atoms_pdb[ja+1]))
                     r = vabs(vector(ca_atoms_pdb_2[ia+1], ca_atoms_pdb_2[ja+1]))
                     dr = r - rn
+
                     Q = Q + exp(-dr * dr / (2 * sigma_sq[ja - ia]))
                     norm = norm + 1
     Q = Q / norm
@@ -206,12 +207,10 @@ for chain in chains:
             pdb_chain_id_2.append(ichain)
             pdb_residue_id_2[res.id[1]] = 1
 
-
-for i in range(0, len(ca_atoms_pdb)+1):
+n = max(len(ca_atoms_pdb_2), len(ca_atoms_pdb))
+for i in range(0, n+1):
     sigma.append( (1+i)**sigma_exp )
     sigma_sq.append(sigma[-1]*sigma[-1])
-
-print(sigma_sq)
 
 if len(ca_atoms_pdb_2)>0:
     q = computeQ()

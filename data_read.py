@@ -96,7 +96,7 @@ elif args.mode ==5:
             cd("../..")
     data = pd.concat(all_pmf_list).reset_index(drop=True)
 elif args.mode == 6:
-    data = readPMF_2(".", is2d=True)  # read all 2d
+    data = readPMF_2(".", is2d=1)  # read all 2d
 if args.mode != 6:
     remove_columns = ['bin']
     data = data.drop(remove_columns, axis=1)

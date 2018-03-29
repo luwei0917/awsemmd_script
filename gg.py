@@ -47,6 +47,49 @@ if(args.test):
 else:
     do = os.system
     cd = os.chdir
+
+
+# def pick_structure():
+#     with open("show.tcl", "w") as f:
+#         structure_index = 1
+#         f.write("mol new structure_%s.pdb\n" % structure_index)
+#         f.write("mol modcolor 0 [molinfo top] Index\n")
+#         f.write("mol modstyle 0 [molinfo top] NewCartoon 0.300000 10.000000 4.100000 0\n")
+def pick_structure_generate_show_script(n=2):
+    with open("show.pml", "w") as f:
+        for structure_index in range(0, n):
+            f.write("load structure_%s.pdb\n" % structure_index)
+            f.write("cealign structure_0, structure_%s\n" % structure_index)
+            f.write("spectrum count, rainbow_rev, structure_%s, byres=1\n" % structure_index)
+        f.write("hide lines, all\n")
+        f.write("show cartoon, all\n")
+        f.write("hide nonbonded, all\n")
+
+if args.day == "mar26":
+    cmd_pre = "python2 ~/opt/script/BuildAllAtomsFromLammps.py"
+    location_pre = "/Users/weilu/Research/server/mar_2018/sixth/rg_0.15_lipid_1.0_mem_1_go_0.8/simulation"
+    # cmd = cmd_pre + " " + location + " structure_2 4080 -seq ~/opt/pulling/2xov.seq"
+    sample = pd.read_csv("/Users/weilu/Research/server/mar_2018/05_week/pick_structure/sample.csv", index_col=0)
+    rerun = 1
+    for index, row in sample.iterrows():
+        BiasTo = row["BiasTo"]
+        Run = row["Run"]
+        Frame = row["Frame"]
+        print(BiasTo, Run, Frame)
+
+        location = location_pre + f"/dis_{BiasTo}/{rerun}/dump.lammpstrj.{int(Run)}"
+        cmd = cmd_pre + " " + location + f" structure_{index} {int(Frame)} -seq ~/opt/pulling/2xov.seq"
+        print(cmd)
+        do(cmd)
+    pick_structure_generate_show_script(n=len(sample))
+if args.day == "mar04":
+    if args.mode == 1:
+        dic = {"T0784":"3u6g", "T0792":"3rcoa", "T0815":"3fh1", "T0833":"4r8o", "T251":"1j0f", "T0803":"4pe2"}
+        protein = "T0803"
+        model = dic[protein] + "_part_enhanced"
+        do(f"sed '/TER/d' {model}.pdb > {model}_remove_ter.pdb")
+        do(f"python2 ~/opt/small_script/CalcQValueFromTwoPdb_2.py {protein}.pdb {model}_remove_ter.pdb | tail -n 1 > qw")
+        do(f"~/opt/TMalign/TMscore {model}_remove_ter.pdb {protein}.pdb | grep 'Structure1' -A8 > RMSD_and_GDT")
 if args.day == "feb15":
     if args.mode == 1:
         with open("metadata", "w") as f:
