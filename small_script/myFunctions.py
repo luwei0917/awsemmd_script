@@ -136,7 +136,7 @@ def make_metadata_3(k=1000.0, temps_list=["450"], i=-1, biasLow=None, biasHigh=N
     files = glob.glob(f"../data_{i}/*")
     kconstant = k
     with open("metadatafile", "w") as out:
-        for oneFile in files:
+        for oneFile in sorted(files):
             tmp = oneFile.split("/")[-1].replace('.dat', '')
             t = tmp.split("_")[1]
             bias = tmp.split("_")[3]
@@ -396,7 +396,7 @@ def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12
         print(pre+folder+f"/simulation/{bias}_*")
         os.system("mkdir -p " + pre+folder+"/data")
         # this one only consider rerun >=0, for the case rerun=-1, move log.lammps to log0
-        for i in range(rerun+1):
+        for i in range(rerun, -1, -1):
             all_data_list = []
             for one_simulation in simulation_list:
                 bias_num = one_simulation.split("_")[-1]
@@ -429,9 +429,15 @@ def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12
 
 
 
-def move_data4(data_folder, freeEnergy_folder, folder_list, sub_mode_name="", kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2, sample_range_mode=0, biasName="dis", qnqc=False, average_z=0, chosen_mode=0):
+def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, sub_mode_name="", kmem=0.2, klipid=0.1, kgo=0.1, krg=0.2, sample_range_mode=0, biasName="dis", qnqc=False, average_z=0, chosen_mode=0):
     print("move data")
-    dic = {"T_defined":300, "T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
+    # dic = {"T_defined":300, "T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
+    if temp_dict_mode == 1:
+        dic = {"T0":280, "T1":300, "T2":320, "T3":350, "T4":375, "T5":400, "T6":450, "T7":500, "T8":550, "T9":600, "T10":650, "T11":700}
+    if temp_dict_mode == 2:
+        dic = {"T0":280, "T1":290, "T2":300, "T3":315, "T4":335, "T5":355, "T6":380, "T7":410, "T8":440, "T9":470, "T10":500, "T11":530}
+    if temp_dict_mode == 3:
+        dic = {"T0":280, "T1":290, "T2":300, "T3":310, "T4":320, "T5":335, "T6":350, "T7":365, "T8":380, "T9":410, "T10":440, "T11":470}
     # read in complete.feather
     data_list = []
     for folder in folder_list:
@@ -492,9 +498,24 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, sub_mode_name="", km
             if chosen_mode == 1:
                 chosen_list += ["Res" + str(i+1) for i in range(181)]
                 chosen = tmp[chosen_list]
+            if chosen_mode == 2:
+                chosen_list += ["Res" + str(i+1) for i in range(181)]
+                chosen = tmp[chosen_list]
+                chosen = chosen.assign(TotalE_perturb_go_m=tmp.TotalE - kgo*tmp["AMH-Go"],
+                                        TotalE_perturb_go_p=tmp.TotalE + kgo*tmp["AMH-Go"],
+                                        TotalE_perturb_lipid_m=tmp.TotalE - klipid*tmp.Lipid,
+                                        TotalE_perturb_lipid_p=tmp.TotalE + klipid*tmp.Lipid,
+                                        TotalE_perturb_mem_m=tmp.TotalE - kmem*tmp.Membrane,
+                                        TotalE_perturb_mem_p=tmp.TotalE + kmem*tmp.Membrane,
+                                        TotalE_perturb_rg_m=tmp.TotalE - krg*tmp.Rg,
+                                        TotalE_perturb_rg_p=tmp.TotalE + krg*tmp.Rg)
     #         print(tmp.count())
             chosen.to_csv(freeEnergy_folder+"/"+sub_mode_name+f"/data_{sample_range_mode}/t_{temp}_{biasName}_{bias}.dat", sep=' ', index=False, header=False)
 
+    # perturbation_table = {0:"original", 1:"m_go",
+    #                       2:"p_go", 3:"m_lipid",
+    #                       4:"p_lipid", 5:"m_mem",
+    #                       6:"p_mem", 7:"m_rg", 8:"p_rg"}
 def compute_average_z(dumpFile, outFile):
     # input dump, output z.dat
     z_list = []

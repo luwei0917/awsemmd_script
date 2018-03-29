@@ -102,10 +102,10 @@ def variable_test2(k_list=[1],
                     print(line.replace("MY_QBIAS", str(qbias)), end='')
         if simulation_model == "go":
             fixFile = "fix_backbone_coeff_go.data"
-            simulation_steps = simulation_base_steps/force_ramp_rate
+            simulation_steps = simulation_base_steps
         if simulation_model == "single":
             fixFile = "fix_backbone_coeff_single.data"
-            simulation_steps = 5e6/force_ramp_rate
+            simulation_steps = 5e6
 
         if start_from == "native":
             start_from_input = "read_data data.2xov"

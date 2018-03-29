@@ -40,6 +40,7 @@ parser.add_argument("-p", "--patch", type=int, default=1)
 parser.add_argument("--commons", type=int, default=0)
 parser.add_argument("--nsample", type=int, default=2500)
 parser.add_argument("--submode", type=int, default=-1)
+parser.add_argument("--subsubmode", type=int, default=-1)
 args = parser.parse_args()
 
 if(args.reproduce):
@@ -121,6 +122,8 @@ if args.force == 0:
     force_list = [0.0]
 elif args.force == 1:
     force_list = [0.05, 0.02, 0.1, 0.2, 0.0]
+elif args.force == 2:
+    force_list = [0.2]
 # force_list = [0.0, 0.1, 0.2]
 
 # force_list = [0.0, 0.1, 0.2]
@@ -135,10 +138,10 @@ for force in force_list:
     if args.mode ==1:
         arg = "-b 2 -e 1 -d 1 " + temp_arg
         arg += " -v1 2 -v1n 50"
+
     if args.mode == 9:
         arg = "-b 3 -e 1 -d 1 " + temp_arg
         arg += " -v1 3 -v1n 50"
-
     if args.mode == 10:
         arg = "-b 3 -e 1 -d 1 " + temp_arg
         arg += " -v1 2 -v1n 50"
@@ -156,16 +159,43 @@ for force in force_list:
     if args.mode == 14:
         arg = "-b 3 -e 1 -d 2 " + temp_arg
         arg += " -v1 4 -v1n 30 -v2 3 -v2n 30"
-    if args.submode == 5:
-        arg += " -ti 20 -st 380 -et 540 -ev 5-185 -pb y -ss y"
+
+
     if args.submode == 1:
         arg += " -ti 10 -st 350 -et 600 -p 5 -p 6 -p 7 -p 8 -p 9 -p 10 -p 11 -p 12 -pb y -ss y"
     if args.submode == 2:
         arg += " -ti 10 -st 350 -et 600 -ev 3 -pb y -ss y"
+    if args.submode == 22:
+        arg += " -ti 10 -st 250 -et 350 -ev 3 -pb y"
+    if args.submode == 23:
+        # arg += " -ti 10 -st 260 -et 280 -ev 5-65 -pb y"
+        if args.subsubmode != -1:
+            start = 5 + args.subsubmode * 10
+            end = start + 9
+            if args.subsubmode == 17:
+                end += 1
+            arg += f" -ti 10 -st 260 -et 280 -ev {start}-{end} -pb y"
+    if args.submode == 24:
+        # arg += " -ti 10 -st 260 -et 280 -ev 5-65 -pb y"
+        if args.subsubmode != -1:
+            start = 5 + args.subsubmode * 5
+            end = start + 4
+            if args.subsubmode == 35:
+                end += 1
+            arg += f" -ti 10 -st 260 -et 280 -ev {start}-{end} -pb y"
+            #  -p 186 -p 187 -p 188 -p 189 -p 190 -p 191 -p 192 -p 193
+    # if args.submode == 24:
+    #     arg += " -ti 10 -st 260 -et 280 -ev 66-116 -pb y"
+    if args.submode == 25:
+        arg += " -ti 10 -st 260 -et 280 -ev 117-185 -pb y"
     if args.submode == 3:
         arg += " -ti 10 -st 400 -et 600 -ev 5 -pb y -ss y"
     if args.submode == 4:
         arg += " -ti 10 -st 250 -et 500"
+    if args.submode == 5:
+        arg += " -ti 20 -st 380 -et 540 -ev 5-185 -pb y -ss y"
+    if args.submode == 6:
+        arg += " -ti 2 -st 256 -et 264 -p 5 -p 6 -p 7 -p 8 -p 9 -p 10 -p 11 -p 12 -pb y"
     with open("freeEnergy.slurm", "w") as f:
         f.write(freeEnergy.format(arg))
     do("sbatch freeEnergy.slurm")
