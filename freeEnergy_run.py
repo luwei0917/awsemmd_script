@@ -83,7 +83,7 @@ else:
 # echo $SLURM_NODELIST
 # srun /home/wl45/build/awsem_new_membrane/src/lmp_serial -in 2xov_{}.in
 # '''
-if args.mode == 2:
+if args.mode == 2 or args.mode == 4:
     run_slurm = '''\
 #!/bin/bash
 #SBATCH --job-name=CTBP_WL
@@ -99,6 +99,7 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_serial -in 2xov_{}.in
 '''
+
 if args.mode == 3:
     run_slurm = '''\
 #!/bin/bash
@@ -133,6 +134,9 @@ srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 12x1 -in 2xov_{}.i
 # echo $SLURM_NODELIST
 # srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 12x1 -in 2xov_{}.in
 # '''
+
+
+
 if args.mode == 5:
     run_slurm = '''\
 #!/bin/bash
@@ -253,7 +257,7 @@ if args.mode == 4:
     # qbias_list = [i*0.02 for i in range(50)]
     for ii in range(50):
         qbias = ii*0.02
-        folder_name = "{}".format(ii)
+        folder_name = "qbias_{}".format(ii)
         do("cp -r ../2xov " + folder_name)
         cd(folder_name)
         # fixFile = "fix_backbone_coeff_go.data"
@@ -303,11 +307,11 @@ if args.mode <= 3 or args.mode ==5:
         do("cp -r ../2xov " + folder_name)
         cd(folder_name)
         # fixFile = "fix_backbone_coeff_go.data"
-        fixFile = "colvars.x"
+        # fixFile = "colvars.x"
+        fixFile = "2xov_multi.in"
         with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
             for line in file:
                 print(line.replace("DISTANCE", str(dis)), end='')
-
         do("cp 2xov_multi.in 2xov_{}.in".format(i))
         with fileinput.FileInput("2xov_{}.in".format(i), inplace=True, backup='.bak') as file:
             for line in file:

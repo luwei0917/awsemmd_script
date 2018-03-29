@@ -1,10 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/pythons
 
 # ----------------------------------------------------------------------
 # Copyright (2010) Aram Davtyan and Garegin Papoian
 
 # Papoian's Group, University of Maryland at Collage Park
-# http://papoian.chem.umd.edu/
+# http://papoian.chem.umd.edu/s
 
 # Last Update: 03/04/2011
 # ----------------------------------------------------------------------
