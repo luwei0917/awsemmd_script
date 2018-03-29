@@ -1,0 +1,337 @@
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from scipy.interpolate import griddata
+from scipy.interpolate import interp2d
+import sys
+import argparse
+import os
+import numpy as np
+from numpy.random import uniform
+import pandas as pd
+from itertools import product
+import datetime
+import glob
+import re
+from numpy import ma
+import networkx as nx
+plt.rcParams['axes.labelsize'] = 14
+plt.rcParams['xtick.labelsize'] = 12
+plt.rcParams['ytick.labelsize'] = 12
+# plt.rcParams['figure.figsize'] = (10,5)
+# plt.rcParams['figure.figsize'] = (10,5.625)   # 16:9
+plt.rcParams['figure.figsize'] = (10,6.180)    # golden ratio
+# plt.rcParams['figure.figsize'] = (10*2,6.180*2)    #golden ratio
+
+def show_images_all(all_data, temp=450, zmax=20, xlabel="xlabel", ylabel="ylabel", mode="2d_z_qw", force=0.2):
+    plt.close('all')
+    nrows = 4
+    fig, ax = plt.subplots(nrows=nrows,ncols=3, figsize=(10*3,6.180*nrows), dpi=200)
+    x = 1
+    y = 2
+    z = 3
+    zmin = 0
+    zmax=20
+    titlefontsize = 28
+    test = all_data.query(f"mode == '{mode}'").query(f"temp == '{temp}'").query(f"force == '{force}'")
+    origin = test.query("perturbation == 'original'")
+    one_change_data = test.query("change == 'rg'")
+    up = one_change_data.query("upOrDown == 'p'")
+    down = one_change_data.query("upOrDown == 'm'")
+    plot_data = [down, origin, up]
+    dic_upOrDown = {0:"down", 1:"origin", 2:"up"}
+    test = test.query("change != 'none'")
+    for idx, (change, one_change_data) in enumerate(test.groupby("change")):
+        up = one_change_data.query("upOrDown == 'p'")
+        down = one_change_data.query("upOrDown == 'm'")
+        plot_data = [down, origin, up]
+        for image_idx, pddata in enumerate(plot_data):
+            data = pddata[["index", "x","y","f"]].values
+    #         print(data)
+            data = data[~np.isnan(data).any(axis=1)] # remove rows with nan
+            data = data[~(data[:,z] > zmax)] # remove rows of data for z not in [zmin zmax]
+            data = data[~(data[:,z] < zmin)]
+
+            xi = np.linspace(min(data[:,x]), max(data[:,x]), 20)
+            yi = np.linspace(min(data[:,y]), max(data[:,y]), 20)
+            zi = griddata((data[:,x], data[:,y]), data[:,z], (xi[None,:], yi[:,None]), method='linear')
+            # plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
+            jet = cm = plt.get_cmap('jet')
+    #         print(jet)
+            # plt.contourf(xi, yi, zi, 20, cmap='rainbow')
+    #         plt.figure()
+            cs = ax[idx,image_idx].contourf(xi, yi, zi, 30, cmap='jet')
+            # plt.xlim(xmin, xmax)
+            cs.set_clim(zmin, zmax)
+    #         fig.clim()
+            ax[idx,image_idx].set_title(f"{change}: {dic_upOrDown[image_idx]}", fontsize=titlefontsize)
+        fig.colorbar(cs, ax=ax[idx,2], shrink=1)
+#     fig.colorbar()
+    fig.suptitle(f'temp = {temp}', y=1.02, fontsize=titlefontsize*1.5)
+#     fig.subplots_adjust(top=1.02)
+    fig.tight_layout()
+
+def getxyz(data, res=30, zmin=0, zmax=20, x=1, y=2, z=3):
+    data = data[~np.isnan(data).any(axis=1)]  # remove rows with nan
+    data = data[~(data[:,z] > zmax)]  # remove rows of data for z not in [zmin zmax]
+    data = data[~(data[:,z] < zmin)]
+
+    xi = np.linspace(min(data[:,x]), max(data[:,x]), res)
+    yi = np.linspace(min(data[:,y]), max(data[:,y]), res)
+    zi = griddata((data[:,x], data[:,y]), data[:,z], (xi[None,:], yi[:,None]), method='linear')
+    return (xi,yi,zi)
+
+def plot2d(location, temp="450", zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title="", outname=None):
+    titlefontsize = 28
+    data = np.loadtxt(location)
+    xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax)
+    # plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
+    jet = cm = plt.get_cmap('jet')
+    print(jet)
+    # plt.contourf(xi, yi, zi, 20, cmap='rainbow')
+    plt.figure()
+    plt.contourf(xi, yi, zi, 30, cmap='jet')
+    # plt.xlim(xmin, xmax)
+    plt.clim(zmin, zmax)
+    plt.colorbar()
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title, y=1.02, fontsize=titlefontsize)
+    # plt.tight_layout()
+    # plt.axis('equal')
+    # plt.axes().set_aspect('equal')
+    # plt.axes().set_aspect('scaled')
+    if outname:
+        plt.savefig(outname, dpi=300, bbox_inches='tight')
+    # plt.show()
+    return (xi,yi,zi)
+
+def plot2d_side_by_side(location1, location2, zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title="", outname=None):
+    fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(20, 6.18))
+    titlefontsize = 28
+    # plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
+    jet = cm = plt.get_cmap('jet')
+    # print(jet)
+    # plt.contourf(xi, yi, zi, 20, cmap='rainbow')
+    data = np.loadtxt(location1)
+    xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax)
+    g = ax1.contourf(xi, yi, zi, 30, cmap='jet')
+    # plt.xlim(xmin, xmax)
+    g.set_clim(zmin, zmax)
+    # plt.colorbar()
+
+    ax1.set_xlabel(xlabel)
+    ax1.set_ylabel(ylabel)
+    # ax1.title(title, y=1.02, fontsize=titlefontsize)
+    data = np.loadtxt(location2)
+    xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax)
+    g = ax2.contourf(xi, yi, zi, 30, cmap='jet')
+    g.set_clim(zmin, zmax)
+    cbaxes = fig.add_axes([0.95, 0.1, 0.03, 0.8])
+    plt.colorbar(g, cax=cbaxes)
+    # plt.colorbar(g, ax=ax2)
+    # plt.tight_layout()
+
+
+def get_localQ(location, path, start=0, span=10):
+    data = pd.read_table(location, sep='\s+', skiprows=1, names=["x", "y"] + ["Q" +str(i) for i in range(start, start+span)])
+    d = data.dropna().values
+    res = 30
+    xi = np.linspace(min(d[:,0]), max(d[:,0]), res)
+    yi = np.linspace(min(d[:,1]), max(d[:,1]), res)
+    xv, yv = np.meshgrid(xi, yi)
+    zi = griddata((d[:,0], d[:,1]), d[:,2:], (xv, yv), method='linear')
+    nested_lst_of_tuples = [tuple(l) for l in path]
+    tt = np.array([zi[l] for l in nested_lst_of_tuples])
+    return tt
+
+def shortest_path(location, temp="450", start=(4,5), end=-1, res=30, zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title="", save=False, plot1d=True, plot2d=True):
+    data = np.loadtxt(location)
+    xi, yi, zi = getxyz(data, res=res, zmin=zmin, zmax=zmax)
+    zi = np.where(np.isnan(zi), 50, zi)
+    V = ma.masked_array(zi, zi>40)
+    G = nx.Graph()
+
+    def func(u, v, d):
+        node_u_wt = G.nodes[u].get('node_weight', 1)
+        node_v_wt = G.nodes[v].get('node_weight', 1)
+    #     edge_wt = d.get('weight', 1)
+        edge_wt = 0
+        return node_u_wt/2 + node_v_wt/2 + edge_wt
+    n = len(xi)
+    if end == -1:
+        end = (n-5, n-5)
+    # add nodes
+    for i in range(n+1):
+        for j in range(n+1):
+            G.add_node((i,j))
+    #         G.nodes[(i, j)]['node_weight'] = zi[i][j]
+            try:
+                G.nodes[(i, j)]['node_weight'] = np.exp(zi[i][j])
+    #             if zi[i][j] < 17:
+    #                 G.nodes[(i, j)]['node_weight'] = zi[i][j]/10
+    #             else:
+    #                 G.nodes[(i, j)]['node_weight'] = zi[i][j]
+            except IndexError:
+                pass
+    # add edges
+    # connectivity = [(1,0), (0,1)]
+    # connectivity = [(-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0)]
+    connectivity = [(i,j) for i in [-1, 0, 1] for j in [-1, 0, 1] if (not (i == j == 0))]
+    for i in range(n+1):
+        for j in range(n+1):
+            for (x,y) in connectivity:
+                try:
+                    G.add_edge((i,j), (i+x,j+y), weight=zi[i][j] + zi[i+x][j+y])
+                except IndexError:
+                    pass
+    source = np.unravel_index(V.argmin(), V.shape)
+    P = nx.dijkstra_path(G,start, end, weight=func)
+    # P = nx.single_source_dijkstra(G,(4,5), weight=func)
+    # P = nx.single_source_dijkstra(G,source, (4,5), weight=func)
+    path = np.asarray(P)
+    if plot2d:
+        plt.contourf(xi, yi, V, 30, cmap='jet')
+        plt.plot(xi[path[:,1]], yi[path[:,0]], 'r.-')
+        plt.clim(zmin, zmax)
+        plt.colorbar()
+    if save:
+        plt.savefig("/Users/weilu/papers/figures/2d_z6_qw.png", dpi=300)
+    f_on_path = [zi[tuple(p)] for p in reversed(path)]
+    if plot1d:
+        plt.figure()
+        plt.plot(f_on_path)
+        plt.ylim([0,25])
+        if save:
+            plt.savefig("/Users/weilu/papers/figures/shortest_path.png", dpi=300)
+    return (path, f_on_path)
+
+def plotPath(location, zmin=0, zmax=20, xlabel="xlabel", ylabel="ylabel", title="", outname=None):
+    titlefontsize = 28
+    data = np.loadtxt(location)
+    xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax)
+    # plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
+    jet = cm = plt.get_cmap('jet')
+    print(jet)
+    # plt.contourf(xi, yi, zi, 20, cmap='rainbow')
+    zi = np.where(np.isnan(zi), 50, zi)
+    V = ma.masked_array(zi, zi>40)
+    D, P = dijkstra(V)
+    source = np.unravel_index(V.argmin(), V.shape)
+    # source = (17,35)
+    # print(P)
+    # print(P)
+    path = shortestPath(source, (3,3), P)
+    # path = shortestPath((30,33), (3,3), P)
+    plt.contourf(xi, yi, V, 30, cmap='jet')
+    # plt.plot(path[:,1], path[:,0], 'r.-')
+    plt.plot(xi[path[:,1]], yi[path[:,0]], 'r.-')
+    # plt.xlim(xmin, xmax)
+    plt.clim(zmin, zmax)
+    plt.colorbar()
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title, y=1.02, fontsize=titlefontsize)
+    # plt.tight_layout()
+    # plt.axis('equal')
+    # plt.axes().set_aspect('equal')
+    # plt.axes().set_aspect('scaled')
+    if outname:
+        plt.savefig(outname, dpi=300, bbox_inches='tight')
+    # plt.show()
+
+def plotPath1d(location, zmin=0, zmax=20, xlabel="xlabel", ylabel="ylabel", title="", outname=None):
+    titlefontsize = 28
+    data = np.loadtxt(location)
+    xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax)
+    # plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
+    jet = cm = plt.get_cmap('jet')
+    print(jet)
+    # plt.contourf(xi, yi, zi, 20, cmap='rainbow')
+    zi = np.where(np.isnan(zi), 50, zi)
+    V = ma.masked_array(zi, zi>40)
+    D, P = dijkstra(V)
+    source = np.unravel_index(V.argmin(), V.shape)
+    # source = (17,35)
+    # print(P)
+    path = shortestPath(source, (3,3), P)
+    f_on_path = [zi[tuple(p)] for p in path]
+    # f_on_path = f_on_path[::-1]
+    plt.figure()
+    plt.plot(f_on_path)
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title, y=1.02, fontsize=titlefontsize)
+    # plt.tight_layout()
+    # plt.axis('equal')
+    # plt.axes().set_aspect('equal')
+    # plt.axes().set_aspect('scaled')
+    if outname:
+        plt.savefig(outname, dpi=300, bbox_inches='tight')
+    # plt.show()
+
+# # https://bougui505.github.io/2016/08/31/compute_the_shortest_path_on_a_grid_using_python.html
+# def dijkstra(V):
+#     mask = V.mask
+#     visit_mask = mask.copy() # mask visited cells
+#     m = np.ones_like(V) * np.inf
+#     connectivity = [(i,j) for i in [-1, 0, 1] for j in [-1, 0, 1] if (not (i == j == 0))]
+#     cc = np.unravel_index(V.argmin(), m.shape) # current_cell
+#     m[cc] = 0
+#     P = {}  # dictionary of predecessors
+#     # while (~visit_mask).sum() > 0:
+#     for _ in range(V.size):
+#         # print cc
+#         neighbors = [tuple(e) for e in np.asarray(cc) - connectivity
+#                      if e[0] > 0 and e[1] > 0 and e[0] < V.shape[0] and e[1] < V.shape[1]]
+#         neighbors = [ e for e in neighbors if not visit_mask[e] ]
+#         tentative_distance = np.asarray([V[e]-V[cc] for e in neighbors])
+#         for i,e in enumerate(neighbors):
+#             d = tentative_distance[i] + m[cc]
+#             if d < m[e]:
+#                 m[e] = d
+#                 P[e] = cc
+#         visit_mask[cc] = True
+#         m_mask = ma.masked_array(m, visit_mask)
+#         cc = np.unravel_index(m_mask.argmin(), m.shape)
+#     return m, P
+
+# def shortestPath(start, end, P):
+#     Path = []
+#     step = end
+#     while 1:
+#         Path.append(step)
+#         if step == start:
+#             break
+#         step = P[step]
+#     Path.reverse()
+#     return np.asarray(Path)
+
+
+# def plot2d(location, temp="450", zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title="", outname=None):
+#     titlefontsize = 28
+#     filename = location + f"pmf-{temp}.dat"
+#     data = np.loadtxt(filename)
+#     xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax)
+#     # plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
+#     jet = cm = plt.get_cmap('jet')
+#     print(jet)
+#     # plt.contourf(xi, yi, zi, 20, cmap='rainbow')
+#     plt.figure()
+#     plt.contourf(xi, yi, zi, 30, cmap='jet')
+#     # plt.xlim(xmin, xmax)
+#     plt.clim(zmin, zmax)
+#     plt.colorbar()
+
+#     plt.xlabel(xlabel)
+#     plt.ylabel(ylabel)
+#     plt.title(title, y=1.02, fontsize=titlefontsize)
+#     # plt.tight_layout()
+#     # plt.axis('equal')
+#     # plt.axes().set_aspect('equal')
+#     # plt.axes().set_aspect('scaled')
+#     if outname:
+#         plt.savefig(outname, dpi=300, bbox_inches='tight')
+#     # plt.show()
