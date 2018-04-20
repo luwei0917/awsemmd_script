@@ -16,11 +16,24 @@ import numpy as np
 parser = argparse.ArgumentParser(description="Compute cross q")
 parser.add_argument("-m", "--mode",
                     type=int, default=-1)
+parser.add_argument("-t", "--targetMode",
+                    type=int, default=0)
+parser.add_argument("protein", default="2xov", help="the name of protein")
 args = parser.parse_args()
 # if args.mode == 1:
 #
-target_residue_i = 1
-target_residue_j = 181
+
+if args.protein == "2xov":
+    if args.targetMode == 0:
+        target_residue_i = 1
+        target_residue_j = 181
+    elif args.targetMode == 1:
+        target_residue_i = 136
+        target_residue_j = 181
+elif args.protein == "tmhc2":
+    if args.targetMode == 0:
+        target_residue_i = 1
+        target_residue_j = 156
 nFrame = 0
 found = False
 if args.mode == -1:
@@ -99,12 +112,20 @@ xj = np.array(target_xj_list)
 yj = np.array(target_yj_list)
 zj = np.array(target_zj_list)
 dis = np.sqrt((xi - xj)**2 + (yi - yj)**2 + (zi - zj)**2)
+
+if args.targetMode == 0:
+    extra = ""
+elif args.targetMode == 1:
+    extra = "_h56"
 if args.mode == -1:
-    disName = "distance.dat"
+    disName = f"distance{extra}.dat"
 else:
-    disName = f"distance_{args.mode}.dat"
+    disName = f"distance{extra}_{args.mode}.dat"
 
 with open(disName, "w") as f:
-    f.write("Steps, DisReal\n")
+    if args.targetMode == 0:
+        f.write("Steps, DisReal\n")
+    elif args.targetMode == 1:
+        f.write("Steps, Dis_h56\n")
     for i, d in enumerate(dis):
         f.write("{}, {}\n".format(i*4000, d))

@@ -318,7 +318,7 @@ def check_and_correct_fragment_memory():
     os.system("mv fragsLAMW.mem fragsLAMW_back")
     os.system("mv tmp.mem fragsLAMW.mem")
 
-def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=False, localQ=False, disReal=False):
+def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=False, localQ=False, disReal=False, dis_h56=False):
     all_data_list = []
     for i in range(n):
         file = "lipid.{}.dat".format(i)
@@ -362,6 +362,11 @@ def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=Fa
             # print(tmp)
             tmp.columns = tmp.columns.str.strip()
             wham = pd.concat([wham, tmp],axis=1)
+        if dis_h56:
+            tmp = pd.read_csv(location+f"distance_h56_{i}.dat")[1:].reset_index(drop=True).drop('Steps', axis=1)
+            # print(tmp)
+            tmp.columns = tmp.columns.str.strip()
+            wham = pd.concat([wham, tmp],axis=1)
         if average_z:
             z = pd.read_csv(location+f"z_complete_{i}.dat")[1:].reset_index(drop=True)
             z.columns = z.columns.str.strip()
@@ -388,7 +393,7 @@ def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=Fa
     return t3.sort_values(["Step", "Run"]).reset_index(drop=True)
 
 
-def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False, average_z=False, disReal=False, localQ=False, label=""):
+def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False, average_z=False, disReal=False, dis_h56=False, localQ=False, label=""):
     print("process temp data")
     dateAndTime = datetime.today().strftime('%d_%h_%H%M%S')
     for folder in folder_list:
@@ -433,7 +438,7 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
     print("move data")
     # dic = {"T_defined":300, "T0":350, "T1":400, "T2":450, "T3":500, "T4":550, "T5":600, "T6":650, "T7":700, "T8":750, "T9":800, "T10":900, "T11":1000}
     if temp_dict_mode == 1:
-        dic = {"T0":280, "T1":300, "T2":320, "T3":350, "T4":375, "T5":400, "T6":450, "T7":500, "T8":550, "T9":600, "T10":650, "T11":700}
+        dic = {"T0":280, "T1":300, "T2":325, "T3":350, "T4":375, "T5":400, "T6":450, "T7":500, "T8":550, "T9":600, "T10":650, "T11":700}
     if temp_dict_mode == 2:
         dic = {"T0":280, "T1":290, "T2":300, "T3":315, "T4":335, "T5":355, "T6":380, "T7":410, "T8":440, "T9":470, "T10":500, "T11":530}
     if temp_dict_mode == 3:
@@ -463,6 +468,10 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
                 queryCmd ='Step > 4e7 & Step <= 5e7'
             elif sample_range_mode == 5:
                 queryCmd ='Step > 5e7 & Step <= 6e7'
+            elif sample_range_mode == 6:
+                queryCmd ='Step > 6e7 & Step <= 7e7'
+            elif sample_range_mode == 7:
+                queryCmd ='Step > 7e7 & Step <= 8e7'
             elif sample_range_mode == -1:
                 queryCmd ='Step > 4e7 & Step <= 6e7'
             if sample_range_mode == -2:

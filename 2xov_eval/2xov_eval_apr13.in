@@ -63,25 +63,25 @@ fix     radialconstraint_6 h6 spring/rg/cylindricalZdependent 0.15 0.0 0.4 12# k
 
 fix		  4 alpha_carbons backbone beta_atoms oxygens fix_backbone_coeff_go.data 2xov.seq
 
-fix     lipid1 h1 spring/lipidFluctuations couple h2 1.0 1 1 30 0 0.4
-fix     lipid2 h1 spring/lipidFluctuations couple h3 1.0 1 1 30 0 0.4
-fix     lipid3 h1 spring/lipidFluctuations couple h4 1.0 1 1 30 0 0.4
-fix     lipid4 h1 spring/lipidFluctuations couple h5 1.0 1 1 30 0 0.4
-fix     lipid5 h1 spring/lipidFluctuations couple h6 1.0 1 1 30 0 0.4
+fix     lipid1 h1 spring/lipidMediated couple h2 1.0 1 1 30 0 0.4 DMPC.dat
+fix     lipid2 h1 spring/lipidMediated couple h3 1.0 1 1 30 0 0.4 DMPC.dat
+fix     lipid3 h1 spring/lipidMediated couple h4 1.0 1 1 30 0 0.4 DMPC.dat
+fix     lipid4 h1 spring/lipidMediated couple h5 1.0 1 1 30 0 0.4 DMPC.dat
+fix     lipid5 h1 spring/lipidMediated couple h6 1.0 1 1 30 0 0.4 DMPC.dat
 
-fix     lipid6 h2 spring/lipidFluctuations couple h3 1.0 1 1 30 0 0.4
-fix     lipid7 h2 spring/lipidFluctuations couple h4 1.0 1 1 30 0 0.4
-fix     lipid8 h2 spring/lipidFluctuations couple h5 1.0 1 1 30 0 0.4
-fix     lipid9 h2 spring/lipidFluctuations couple h6 1.0 1 1 30 0 0.4
+fix     lipid6 h2 spring/lipidMediated couple h3 1.0 1 1 30 0 0.4 DMPC.dat
+fix     lipid7 h2 spring/lipidMediated couple h4 1.0 1 1 30 0 0.4 DMPC.dat
+fix     lipid8 h2 spring/lipidMediated couple h5 1.0 1 1 30 0 0.4 DMPC.dat
+fix     lipid9 h2 spring/lipidMediated couple h6 1.0 1 1 30 0 0.4 DMPC.dat
 
-fix     lipid10 h3 spring/lipidFluctuations couple h4 1.0 1 1 30 0 0.4
-fix     lipid11 h3 spring/lipidFluctuations couple h5 1.0 1 1 30 0 0.4
-fix     lipid12 h3 spring/lipidFluctuations couple h6 1.0 1 1 30 0 0.4
+fix     lipid10 h3 spring/lipidMediated couple h4 1.0 1 1 30 0 0.4 DMPC.dat
+fix     lipid11 h3 spring/lipidMediated couple h5 1.0 1 1 30 0 0.4 DMPC.dat
+fix     lipid12 h3 spring/lipidMediated couple h6 1.0 1 1 30 0 0.4 DMPC.dat
 
-fix     lipid13 h4 spring/lipidFluctuations couple h5 1.0 1 1 30 0 0.4
-fix     lipid14 h4 spring/lipidFluctuations couple h6 1.0 1 1 30 0 0.4
+fix     lipid13 h4 spring/lipidMediated couple h5 1.0 1 1 30 0 0.4 DMPC.dat
+fix     lipid14 h4 spring/lipidMediated couple h6 1.0 1 1 30 0 0.4 DMPC.dat
 
-fix     lipid15 h5 spring/lipidFluctuations couple h6 1.0 1 1 30 0 0.4
+fix     lipid15 h5 spring/lipidMediated couple h6 1.0 1 1 30 0 0.4 DMPC.dat
 
 # fix	pressure all spring/rg/cylindricalCapped 2 12 0.4 # rg0, k_bin
 # fix 9 all spring tether 0.1 NULL NULL 0.0 0.0
@@ -196,4 +196,4 @@ fix pulloneside all print 4000 "${step}, ${dis}, ${F_total}, ${dis12}, ${dis34},
 fix energy all print 4000 "${step}, ${E_chain}, ${E_chi}, ${E_rama}, ${E_water}, ${E_helix}, ${E_amhgo}, ${E_fmem}, ${E_membrane}, ${E_P3}, ${E_bond}, ${E_excl}, ${rg_energy}" file energy.dat screen no title "Steps,    Chain,           Chi,             Rama,            Water,          Helix,           AMH-Go,       Frag_Mem,          Membrane,          VTotal,      Ebond,     Epair,     Rg"
 fix wham all print 4000 "${step}, ${qw}, ${rg}, ${tc}, ${E_P}" file wham.dat screen no title "Steps, Qw, Rg, Tc, Energy"
 
-rerun ../dump.lammpstrj.MY_RUN dump x y z
+rerun ../dump.lammpstrj.MY_RUN first 20004000 dump x y z

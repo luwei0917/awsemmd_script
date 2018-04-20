@@ -103,7 +103,7 @@ freeEnergy = """\
 #SBATCH --partition=ctbp-common
 #SBATCH --ntasks=1
 #SBATCH --threads-per-core=1
-#SBATCH --mem-per-cpu=30G
+#SBATCH --mem-per-cpu=20G
 #SBATCH --time=23:00:00
 #SBATCH --mail-user=luwei0917@gmail.com
 #SBATCH --mail-type=FAIL
@@ -124,6 +124,8 @@ elif args.force == 1:
     force_list = [0.05, 0.02, 0.1, 0.2, 0.0]
 elif args.force == 2:
     force_list = [0.2]
+elif args.force == 2:
+    force_list = [0.2, 0.3, 0.4]
 # force_list = [0.0, 0.1, 0.2]
 
 # force_list = [0.0, 0.1, 0.2]

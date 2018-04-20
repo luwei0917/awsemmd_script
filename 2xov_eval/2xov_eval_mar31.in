@@ -196,4 +196,4 @@ fix pulloneside all print 4000 "${step}, ${dis}, ${F_total}, ${dis12}, ${dis34},
 fix energy all print 4000 "${step}, ${E_chain}, ${E_chi}, ${E_rama}, ${E_water}, ${E_helix}, ${E_amhgo}, ${E_fmem}, ${E_membrane}, ${E_P3}, ${E_bond}, ${E_excl}, ${rg_energy}" file energy.dat screen no title "Steps,    Chain,           Chi,             Rama,            Water,          Helix,           AMH-Go,       Frag_Mem,          Membrane,          VTotal,      Ebond,     Epair,     Rg"
 fix wham all print 4000 "${step}, ${qw}, ${rg}, ${tc}, ${E_P}" file wham.dat screen no title "Steps, Qw, Rg, Tc, Energy"
 
-rerun ../dump.lammpstrj.MY_RUN dump x y z
+rerun ../dump.lammpstrj.MY_RUN first 20004000 dump x y z

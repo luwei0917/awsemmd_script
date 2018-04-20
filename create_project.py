@@ -39,7 +39,8 @@ do("~/opt/fasta2pdb.py "+proteinName)
 do("python2 ~/opt/script/GetCACADistancesFile.py crystal_structure native.dat")
 do("python2 ~/opt/script/GetCACoordinatesFromPDB.py crystal_structure nativecoords.dat")
 do("cp native.dat rnative.dat")  # q bias need rnative
-do("python2 ~/opt/Pdb2Gro.py {0}.pdb amh-go.gro".format(proteinName))
+# do("python2 ~/opt/Pdb2Gro.py {0}.pdb amh-go.gro".format(proteinName))
+do("python2 ~/opt/Pdb2Gro.py crystal_structure.pdb amh-go.gro")
 ## ssweight
 do("stride crystal_structure.pdb > ssweight.stride")
 do("python2 ~/opt/script/stride2ssweight.py > ssweight")

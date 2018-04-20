@@ -26,7 +26,7 @@ parser.add_argument("--nick", action="store_true", default=False)
 
 args = parser.parse_args()
 protein_name = args.template.strip('/')
-
+template = protein_name
 if(args.debug):
     do = print
     cd = print
@@ -226,6 +226,7 @@ if args.mode == 5:
     # distance_list = np.linspace(30, 180, 51)
     # distance_list = np.linspace(30, 140, 56)
     distance_list = np.linspace(30, 100, 36)
+    # distance_list = np.linspace(100, 340, 41)
 # rg_list = [0, 1, 5, 10]
 # force_list = [2.0]
 # memb_k_list = [0, 1, 5, 10]
@@ -304,29 +305,29 @@ if args.mode <= 3 or args.mode ==5:
     cd("simulation")
     for dis in distance_list:
         folder_name = "dis_{}".format(dis)
-        do("cp -r ../2xov " + folder_name)
+        do(f"cp -r ../{template} " + folder_name)
         cd(folder_name)
         # fixFile = "fix_backbone_coeff_go.data"
         # fixFile = "colvars.x"
-        fixFile = "2xov_multi.in"
+        fixFile = f"{template}_multi.in"
         with fileinput.FileInput(fixFile, inplace=True, backup='.bak') as file:
             for line in file:
                 print(line.replace("DISTANCE", str(dis)), end='')
-        do("cp 2xov_multi.in 2xov_{}.in".format(i))
-        with fileinput.FileInput("2xov_{}.in".format(i), inplace=True, backup='.bak') as file:
+        do(f"cp {template}_multi.in {template}_{i}.in")
+        with fileinput.FileInput(f"{template}_{i}.in", inplace=True, backup='.bak') as file:
             for line in file:
                 print(line.replace("START_FROM", start_from), end='')
         do(  # replace SIMULATION_STEPS with specific steps
             "sed -i.bak 's/NUMBER/'" +
             str(int(i)) +
-            "'/g' 2xov_{}.in".format(i))
-        do("mkdir -p {}".format(i))
+            f"'/g' {template}_{i}.in")
+        do(f"mkdir -p {i}")
         do(  # replace RANDOM with a radnom number
             "sed -i.bak 's/RANDOM/'" +
             str(randint(1, 10**6)) +
             "'/g' *.in")
-        with open("run_{}.slurm".format(i), "w") as r:
-            r.write(run_slurm.format(i))
+        with open(f"run_{i}.slurm", "w") as r:
+            r.write(run_slurm.format(i).replace("2xov", template))
 
         do("sbatch " + "run_{}.slurm".format(i))
         cd("..")
