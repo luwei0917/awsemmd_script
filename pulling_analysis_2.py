@@ -161,7 +161,9 @@ for force in force_list:
     if args.mode == 14:
         arg = "-b 3 -e 1 -d 2 " + temp_arg
         arg += " -v1 4 -v1n 30 -v2 3 -v2n 30"
-
+    if args.mode == 15:
+        arg = "-b 3 -e 1 -d 2 " + temp_arg
+        arg += " -v1 4 -v1n 30 -v2 5 -v2n 30"
 
     if args.submode == 1:
         arg += " -ti 10 -st 350 -et 600 -p 5 -p 6 -p 7 -p 8 -p 9 -p 10 -p 11 -p 12 -pb y -ss y"
@@ -190,6 +192,8 @@ for force in force_list:
     #     arg += " -ti 10 -st 260 -et 280 -ev 66-116 -pb y"
     if args.submode == 25:
         arg += " -ti 10 -st 260 -et 280 -ev 117-185 -pb y"
+    if args.submode == 26:
+        arg += " -ti 10 -st 250 -et 350 -ev 5-8 -pb y"
     if args.submode == 3:
         arg += " -ti 10 -st 400 -et 600 -ev 5 -pb y -ss y"
     if args.submode == 4:

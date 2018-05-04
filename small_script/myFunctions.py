@@ -392,7 +392,6 @@ def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=Fa
     t3 = t2.assign(TotalE=t2.Energy + t2.Lipid)
     return t3.sort_values(["Step", "Run"]).reset_index(drop=True)
 
-
 def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False, average_z=False, disReal=False, dis_h56=False, localQ=False, label=""):
     print("process temp data")
     dateAndTime = datetime.today().strftime('%d_%h_%H%M%S')
@@ -409,7 +408,7 @@ def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12
 
                 location = one_simulation + f"/{i}/"
                 print(location)
-                data = read_complete_temper_2(location=location, n=n, rerun=i, qnqc=qnqc, average_z=average_z, localQ=localQ, disReal=disReal)
+                data = read_complete_temper_2(location=location, n=n, rerun=i, qnqc=qnqc, average_z=average_z, localQ=localQ, disReal=disReal, dis_h56=dis_h56)
                 print(data.shape)
                 # remove_columns = ['Step', "Run"]
                 # data = data.drop(remove_columns, axis=1)
@@ -519,6 +518,19 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
                                         TotalE_perturb_rg_m=tmp.TotalE - krg*tmp.Rg,
                                         TotalE_perturb_rg_p=tmp.TotalE + krg*tmp.Rg)
     #         print(tmp.count())
+            if chosen_mode == 3:
+                chosen_list += ["AMH-Go", "Lipid", "Membrane", "Rg"]
+                chosen = tmp[chosen_list]
+            if chosen_mode == 4:
+                chosen_list += ["Dis_h56"]
+                chosen = tmp[chosen_list]
+            if chosen_mode == 5:
+                chosen_list += ["Dis_h56"]
+                chosen = tmp[chosen_list]
+                chosen = chosen.assign(TotalE_perturb_go_m=tmp.TotalE/10,
+                                        TotalE_perturb_go_p=0,
+                                        Go=tmp["AMH-Go"])
+
             chosen.to_csv(freeEnergy_folder+"/"+sub_mode_name+f"/data_{sample_range_mode}/t_{temp}_{biasName}_{bias}.dat", sep=' ', index=False, header=False)
 
     # perturbation_table = {0:"original", 1:"m_go",
@@ -538,7 +550,7 @@ def compute_average_z(dumpFile, outFile):
 
 def compute_average_z_2(dumpFile, outFile):
     # input dump, output z.dat
-    
+
     helices_list = [(94,114), (147,168), (171, 192), (200, 217), (226, 241), (250, 269)]
     with open(outFile, "w") as f:
         a = read_lammps(dumpFile)
@@ -548,7 +560,7 @@ def compute_average_z_2(dumpFile, outFile):
             z = b.mean(axis=0)[2]
             f.write(str(z)+ ", ")
             z = np.abs(b).mean(axis=0)[2]
-            f.write(str(z)+ ", ")           
+            f.write(str(z)+ ", ")
             for count, (i,j) in enumerate(helices_list):
                 i = i - 91
                 j = j - 91

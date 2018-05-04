@@ -83,6 +83,8 @@ rotate x by 90.000000
 scale by 1.200000
 
 animate speed 1.000000
+color Labels Bonds black
+
 #animate speed 0.168831
 #animate forward
 #animate goto 450
