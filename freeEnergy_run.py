@@ -140,7 +140,7 @@ srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 12x1 -in 2xov_{}.i
 if args.mode == 5:
     run_slurm = '''\
 #!/bin/bash
-#SBATCH --job-name=CTBP_WL
+#SBATCH --job-name=CTBP
 #SBATCH --account=ctbp-common
 #SBATCH --partition=ctbp-common
 #SBATCH --nodes=1
