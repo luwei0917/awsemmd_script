@@ -151,7 +151,7 @@ if args.mode == 5:
 #SBATCH --mail-type=FAIL
 echo "My job ran on:"
 echo $SLURM_NODELIST
-srun /projects/pw8/wl45/lmp_mpi_may04 -p 12x1 -in 2xov_{}.in
+srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_mpi -p 12x1 -in 2xov_{}.in
 '''
 
 if args.mode == 6:
