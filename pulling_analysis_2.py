@@ -126,6 +126,8 @@ elif args.force == 2:
     force_list = [0.2]
 elif args.force == 2:
     force_list = [0.2, 0.3, 0.4]
+elif args.force == 3:
+    force_list = [0.13, 0.14, 0.15, 0.16]
 # force_list = [0.0, 0.1, 0.2]
 
 # force_list = [0.0, 0.1, 0.2]
@@ -158,6 +160,7 @@ for force in force_list:
     if args.mode == 13:
         arg = "-b 3 -e 1 -d 2 " + temp_arg
         arg += " -v1 4 -v1n 30 -v2 2 -v2n 30"
+
     if args.mode == 14:
         arg = "-b 3 -e 1 -d 2 " + temp_arg
         arg += " -v1 4 -v1n 30 -v2 3 -v2n 30"
@@ -165,12 +168,15 @@ for force in force_list:
         arg = "-b 3 -e 1 -d 2 " + temp_arg
         arg += " -v1 4 -v1n 30 -v2 5 -v2n 30"
 
+    if args.mode == 16:  # energy at 6
+        arg = "-b 3 -e 6 -d 2 " + temp_arg
+        arg += " -v1 4 -v1n 30 -v2 2 -v2n 30"
     if args.submode == 1:
         arg += " -ti 10 -st 350 -et 600 -p 5 -p 6 -p 7 -p 8 -p 9 -p 10 -p 11 -p 12 -pb y -ss y"
     if args.submode == 2:
         arg += " -ti 10 -st 350 -et 600 -ev 3 -pb y -ss y"
     if args.submode == 22:
-        arg += " -ti 10 -st 250 -et 350 -ev 3 -pb y"
+        arg += " -ti 10 -st 290 -et 350 -ev 3 -pb y"
     if args.submode == 23:
         # arg += " -ti 10 -st 260 -et 280 -ev 5-65 -pb y"
         if args.subsubmode != -1:

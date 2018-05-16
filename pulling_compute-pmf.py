@@ -486,7 +486,7 @@ if load_pickle == False:
             u_kln[k,l,0:N] = beta * (U_kn[0][k,0:N])
             for i in range(nbiases):
                 U_bias = (biasing_strengths[i][l]/2.0) * (biasing_variable_kn[i][k,0:N] - biasing_values[i][l])**2 + (biasing_variable_kn[i][k,0:N]-25.1)*force   # biasing potential for this sample
-
+                # U_bias = (biasing_variable_kn[i][l,0:N]-25.1)*force   # biasing potential for this sample
                 # print "------"
                 # print biasing_strengths[i][l]/2.0
                 # print biasing_values[i][l]
@@ -496,6 +496,8 @@ if load_pickle == False:
                 # print (biasing_strengths[i][l]/2.0) * (biasing_variable_kn[i][k,0:10] - biasing_values[i][l])**2
                 # print "------"
                 # print (biasing_variable_kn[i][k,0:10]-25.1)*force
+                # print biasing_variable_kn[i][k,0:10]
+                # print kT
                 # print "------"
 
                 u_kln[k,l,0:N] += beta * (U_bias)

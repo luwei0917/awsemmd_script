@@ -226,7 +226,8 @@ if args.mode == 5:
     # distance_list = np.linspace(30, 180, 51)
     # distance_list = np.linspace(30, 140, 56)
     # distance_list = np.linspace(30, 100, 36)
-    distance_list = np.linspace(100, 340, 41)
+    # distance_list = np.linspace(40, 110, 36)
+    distance_list = np.linspace(110, 350, 41)
     # distance_list = np.linspace(30, )
 # rg_list = [0, 1, 5, 10]
 # force_list = [2.0]

@@ -318,7 +318,7 @@ def check_and_correct_fragment_memory():
     os.system("mv fragsLAMW.mem fragsLAMW_back")
     os.system("mv tmp.mem fragsLAMW.mem")
 
-def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=False, localQ=False, disReal=False, dis_h56=False):
+def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=False, localQ=False, disReal=False, dis_h56=False, goEnergy=False):
     all_data_list = []
     for i in range(n):
         file = "lipid.{}.dat".format(i)
@@ -374,7 +374,11 @@ def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=Fa
         if localQ:
             all_localQ = pd.read_csv(location+f"localQ.{i}.csv")[1:].reset_index(drop=True)
             wham = pd.concat([wham, all_localQ], axis=1)
-
+        if goEnergy:
+            tmp = pd.read_csv(location+f"Go_{i}/goEnergy.dat")[1:].reset_index(drop=True).drop('Steps', axis=1)
+            # print(tmp)
+            tmp.columns = tmp.columns.str.strip()
+            wham = pd.concat([wham, tmp],axis=1)
         data = pd.concat([wham, dis, energy, rgs, lipid], axis=1)
 
         # lipid = lipid[["Steps","Lipid","Run"]]
@@ -392,7 +396,7 @@ def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=Fa
     t3 = t2.assign(TotalE=t2.Energy + t2.Lipid)
     return t3.sort_values(["Step", "Run"]).reset_index(drop=True)
 
-def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12, bias="dis", qnqc=False, average_z=False, disReal=False, dis_h56=False, localQ=False, label=""):
+def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, end=-1, n=12, bias="dis", qnqc=False, average_z=False, disReal=False, dis_h56=False, localQ=False, goEnergy=False, label=""):
     print("process temp data")
     dateAndTime = datetime.today().strftime('%d_%h_%H%M%S')
     for folder in folder_list:
@@ -400,7 +404,7 @@ def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12
         print(pre+folder+f"/simulation/{bias}_*")
         os.system("mkdir -p " + pre+folder+"/data")
         # this one only consider rerun >=0, for the case rerun=-1, move log.lammps to log0
-        for i in range(rerun, -1, -1):
+        for i in range(rerun, end, -1):
             all_data_list = []
             for one_simulation in simulation_list:
                 bias_num = one_simulation.split("_")[-1]
@@ -408,7 +412,7 @@ def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, n=12
 
                 location = one_simulation + f"/{i}/"
                 print(location)
-                data = read_complete_temper_2(location=location, n=n, rerun=i, qnqc=qnqc, average_z=average_z, localQ=localQ, disReal=disReal, dis_h56=dis_h56)
+                data = read_complete_temper_2(location=location, n=n, rerun=i, qnqc=qnqc, average_z=average_z, localQ=localQ, disReal=disReal, dis_h56=dis_h56, goEnergy=goEnergy)
                 print(data.shape)
                 # remove_columns = ['Step', "Run"]
                 # data = data.drop(remove_columns, axis=1)
@@ -442,6 +446,8 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
         dic = {"T0":280, "T1":290, "T2":300, "T3":315, "T4":335, "T5":355, "T6":380, "T7":410, "T8":440, "T9":470, "T10":500, "T11":530}
     if temp_dict_mode == 3:
         dic = {"T0":280, "T1":290, "T2":300, "T3":310, "T4":320, "T5":335, "T6":350, "T7":365, "T8":380, "T9":410, "T10":440, "T11":470}
+    if temp_dict_mode == 4:
+        dic = {"T0":300, "T1":335, "T2":373, "T3":417, "T4":465, "T5":519, "T6":579, "T7":645, "T8":720, "T9":803, "T10":896, "T11":1000}
     # read in complete.feather
     data_list = []
     for folder in folder_list:
@@ -492,7 +498,6 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
                 tmp["z_h5_and_h6"] = tmp["z_h5"] + tmp["z_h6"]
                 chosen_list += ["z_h5_and_h6"]
                 chosen_list += ["DisReal"]
-
             if chosen_mode == 0:
                 chosen = tmp[chosen_list]
                 chosen = chosen.assign(TotalE_perturb_mem_p=tmp.TotalE + kmem*tmp.Membrane,
@@ -530,7 +535,14 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
                 chosen = chosen.assign(TotalE_perturb_go_m=tmp.TotalE/10,
                                         TotalE_perturb_go_p=0,
                                         Go=tmp["AMH-Go"])
-
+            if chosen_mode == 6:
+                chosen_list += ["Dis_h56"]
+                chosen = tmp[chosen_list]
+                chosen = chosen.assign(TotalE_1=tmp.TotalE + 0.1*tmp.AMH,
+                                        TotalE_2=tmp.TotalE + 0.2*tmp.AMH,
+                                        TotalE_3=tmp.TotalE + 0.5*tmp.AMH,
+                                        TotalE_4=tmp.TotalE + tmp.AMH,
+                                        TotalE_5=tmp.AMH)
             chosen.to_csv(freeEnergy_folder+"/"+sub_mode_name+f"/data_{sample_range_mode}/t_{temp}_{biasName}_{bias}.dat", sep=' ', index=False, header=False)
 
     # perturbation_table = {0:"original", 1:"m_go",
