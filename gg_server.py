@@ -430,6 +430,8 @@ if args.day == "common":
         compute_disReal(temper=True, bias="dis_", sim_list=[i], queue=queue)
         compute_disReal(temper=True, targetMode=1, bias="dis_", sim_list=[i], queue=queue)
         compute_completeZ(temper=True, bias="dis_", sim_list=[i], queue=queue)
+if args.day == "may16":
+    print('test')
 if args.day == "may15":
     if args.mode == 1:
         temp_list = ["all"]
