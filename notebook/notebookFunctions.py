@@ -22,6 +22,28 @@ plt.rcParams['ytick.labelsize'] = 12
 plt.rcParams['figure.figsize'] = (10,6.180)    # golden ratio
 # plt.rcParams['figure.figsize'] = (10*2,6.180*2)    #golden ratio
 
+def temperature_exchange_table(data):
+    b = data.groupby(["Run", "Temp"])["Step"].count().reset_index()
+    c = b.pivot(index="Run", columns="Temp", values="Step").reset_index(drop=True)
+    return c
+
+def summarise_temperature_exchange_table(data):
+    tmp = temperature_exchange_table(data)
+    return (1 - np.isnan(tmp)).sum(axis=1)
+
+def select(t, i=100):
+    return t.groupby(["BiasTo", "Run"])["DisReal"].describe().query(f"count > {i}")
+
+def raw_2d_plot(location):
+    data = np.loadtxt(location)
+    x = data[:,1]
+    y = data[:,2]
+    z = data[:,3]
+    plt.scatter(x,y, c=z, cmap='rainbow')
+    # plt.gray()
+    plt.colorbar()
+    return data
+
 def show_images_all(all_data, temp=450, zmax=20, xlabel="xlabel", ylabel="ylabel", mode="2d_z_qw", force=0.2):
     plt.close('all')
     nrows = 4
@@ -47,8 +69,8 @@ def show_images_all(all_data, temp=450, zmax=20, xlabel="xlabel", ylabel="ylabel
         for image_idx, pddata in enumerate(plot_data):
             data = pddata[["index", "x","y","f"]].values
     #         print(data)
-            data = data[~np.isnan(data).any(axis=1)] # remove rows with nan
-            data = data[~(data[:,z] > zmax)] # remove rows of data for z not in [zmin zmax]
+            data = data[~np.isnan(data).any(axis=1)]  # remove rows with nan
+            data = data[~(data[:,z] > zmax)]  # remove rows of data for z not in [zmin zmax]
             data = data[~(data[:,z] < zmin)]
 
             xi = np.linspace(min(data[:,x]), max(data[:,x]), 20)
@@ -71,7 +93,12 @@ def show_images_all(all_data, temp=450, zmax=20, xlabel="xlabel", ylabel="ylabel
     fig.tight_layout()
 
 def getxyz(data, res=30, zmin=0, zmax=20, x=1, y=2, z=3):
+    # data = np.where(np.isnan(data), zmax, data)
     data = data[~np.isnan(data).any(axis=1)]  # remove rows with nan
+    if zmin == -1:
+        zmin = data[:,3].min()
+    if zmax == -1:
+        zmax = data[:,3].max()
     data = data[~(data[:,z] > zmax)]  # remove rows of data for z not in [zmin zmax]
     data = data[~(data[:,z] < zmin)]
 
@@ -80,18 +107,99 @@ def getxyz(data, res=30, zmin=0, zmax=20, x=1, y=2, z=3):
     zi = griddata((data[:,x], data[:,y]), data[:,z], (xi[None,:], yi[:,None]), method='linear')
     return (xi,yi,zi)
 
-def plot2d(location, temp="450", zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title="", outname=None):
+def getxyz_2(data, res=30, zmin=0, zmax=20, x=1, y=2, z=3):
+    # data = np.where(np.isnan(data), zmax, data)
+    data = data[~np.isnan(data).any(axis=1)]  # remove rows with nan
+    if zmin == -1:
+        zmin = data[:,3].min()
+    if zmax == -1:
+        zmax = data[:,3].max()
+    data = data[~(data[:,z] > zmax)]  # remove rows of data for z not in [zmin zmax]
+    data = data[~(data[:,z] < zmin)]
+
+    xi = np.linspace(min(data[:,x]), max(data[:,x]), res)
+    yi = np.linspace(min(data[:,y]), max(data[:,y]), res)
+
+    # fill in those nan with zmax
+    tmp = np.ones((res**2, 4))*zmax
+    pos = 0
+    count = 0
+    for i in range(res):
+        for j in range(res):
+            tmp[pos,0] = pos
+            tmp[pos,1] = xi[i]
+            tmp[pos,2] = yi[j]
+            if count < data.shape[0] and pos == int(data[count, 0]):
+                tmp[pos,3] = data[count, z]
+                count += 1
+            pos += 1
+    zi = griddata((tmp[:,x], tmp[:,y]), tmp[:,z], (xi[None,:], yi[:,None]), method='linear')
+    return (xi,yi,zi)
+
+def getxyz_3(data, res=30, zmin=0, zmax=20, x=1, y=2, z=3):
+    # data = np.where(np.isnan(data), zmax, data)
+    data = data[~np.isnan(data).any(axis=1)]  # remove rows with nan
+    if zmin == -1:
+        zmin = data[:,3].min()
+    if zmax == -1:
+        zmax = data[:,3].max()
+    data = data[~(data[:,z] > zmax)]  # remove rows of data for z not in [zmin zmax]
+    data = data[~(data[:,z] < zmin)]
+
+    xi = np.linspace(min(data[:,x]), max(data[:,x]), res)
+    yi = np.linspace(min(data[:,y]), max(data[:,y]), res)
+
+    # construct complete res*res array
+    tmp = np.ones((res**2, 4))*np.nan
+    pos = 0
+    count = 0
+    for i in range(res):
+        for j in range(res):
+            tmp[pos,0] = pos
+            tmp[pos,1] = xi[i]
+            tmp[pos,2] = yi[j]
+            if count < data.shape[0] and pos == int(data[count, 0]):
+                tmp[pos,3] = data[count, z]
+                count += 1
+            pos += 1
+
+    # Assign zmax around for each point if it is nan before.
+    new_tmp = tmp.copy()
+    pos = 0
+    count = 0
+    for i in range(res):
+        for j in range(res):
+            if not np.isnan(tmp[pos,3]):
+                new_tmp[pos] = tmp[pos]
+                right_neighbour = i*res + (j+1)
+                if j < res-1 and np.isnan(tmp[right_neighbour,3]):
+                    new_tmp[right_neighbour, 3] = zmax
+                left_neighbour = i*res + (j-1)
+                if j>0 and np.isnan(tmp[left_neighbour,3]):
+                    new_tmp[left_neighbour, 3] = zmax
+                up_neighbour = (i+1)*res + j
+                if i < res-1 and np.isnan(tmp[up_neighbour,3]):
+                    new_tmp[up_neighbour, 3] = zmax
+                down_neighbour = (i-1)*res + j
+                if i > 0 and np.isnan(tmp[down_neighbour,3]):
+                    new_tmp[down_neighbour, 3] = zmax
+            pos += 1
+    tmp = new_tmp[~np.isnan(new_tmp).any(axis=1)]
+    zi = griddata((tmp[:,x], tmp[:,y]), tmp[:,z], (xi[None,:], yi[:,None]), method='linear')
+    return (xi,yi,zi)
+
+def plot2d(location, temp="450", res=30, zmin=0, zmax=30, z=3, xlabel="xlabel", ylabel="ylabel", title="", outname=None):
     titlefontsize = 28
     data = np.loadtxt(location)
-    xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax)
+    xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax,res=res, z=z)
     # plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
     jet = cm = plt.get_cmap('jet')
     print(jet)
     # plt.contourf(xi, yi, zi, 20, cmap='rainbow')
     plt.figure()
-    plt.contourf(xi, yi, zi, 30, cmap='jet')
+    plt.contourf(xi, yi, zi, res, cmap='jet')
     # plt.xlim(xmin, xmax)
-    plt.clim(zmin, zmax)
+    # plt.clim(zmin, zmax)
     plt.colorbar()
 
     plt.xlabel(xlabel)
@@ -145,12 +253,20 @@ def get_localQ(location, path, start=0, span=10):
     tt = np.array([zi[l] for l in nested_lst_of_tuples])
     return tt
 
-def shortest_path(location, temp="450", start=(4,5), end=-1, res=30, zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title="", save=False, plot1d=True, plot2d=True):
+def shortest_path(location, temp="450", start=(4,5), end=-1, block=-1, res=30, zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title="", save=False, plot1d=True, plot2d=True):
     data = np.loadtxt(location)
-    xi, yi, zi = getxyz(data, res=res, zmin=zmin, zmax=zmax)
+    xi, yi, zi = getxyz_3(data, res=res, zmin=zmin, zmax=zmax)
     zi = np.where(np.isnan(zi), 50, zi)
+
+    if block != -1:
+        x_low = np.searchsorted(xi, block[0])
+        x_high = np.searchsorted(xi, block[1])
+        y_low = np.searchsorted(yi, block[2])
+        y_high = np.searchsorted(yi, block[3])
+        zi[y_low:y_high, x_low:x_high] = 50
     V = ma.masked_array(zi, zi>40)
     G = nx.Graph()
+
 
     def func(u, v, d):
         node_u_wt = G.nodes[u].get('node_weight', 1)
@@ -181,29 +297,34 @@ def shortest_path(location, temp="450", start=(4,5), end=-1, res=30, zmin=0, zma
     for i in range(n+1):
         for j in range(n+1):
             for (x,y) in connectivity:
-                try:
-                    G.add_edge((i,j), (i+x,j+y), weight=zi[i][j] + zi[i+x][j+y])
-                except IndexError:
-                    pass
+                if i+x >= 0 and j+y >=0:
+                    try:
+                        G.add_edge((i,j), (i+x,j+y), weight=zi[i][j] + zi[i+x][j+y])
+                        # G.add_edge((i,j), (i+x,j+y), weight=0)
+                    except IndexError:
+                        pass
+                        # G.add_edge((i,j), (i+x,j+y), weight=max(zi))
     source = np.unravel_index(V.argmin(), V.shape)
     P = nx.dijkstra_path(G,start, end, weight=func)
     # P = nx.single_source_dijkstra(G,(4,5), weight=func)
     # P = nx.single_source_dijkstra(G,source, (4,5), weight=func)
     path = np.asarray(P)
     if plot2d:
-        plt.contourf(xi, yi, V, 30, cmap='jet')
+        plt.contourf(xi, yi, V, res, cmap='jet')
         plt.plot(xi[path[:,1]], yi[path[:,0]], 'r.-')
         plt.clim(zmin, zmax)
         plt.colorbar()
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
     if save:
-        plt.savefig("/Users/weilu/papers/figures/2d_z6_qw.png", dpi=300)
+        plt.savefig("/Users/weilu/Dropbox/GlpG_paper_2018/figures/2d_z6_qw.png", dpi=300)
     f_on_path = [zi[tuple(p)] for p in reversed(path)]
     if plot1d:
         plt.figure()
         plt.plot(f_on_path)
-        plt.ylim([0,25])
-        if save:
-            plt.savefig("/Users/weilu/papers/figures/shortest_path.png", dpi=300)
+        plt.ylim([0,zmax])
+        # if save:
+        #     plt.savefig("/Users/weilu/papers/figures/shortest_path.png", dpi=300)
     return (path, f_on_path)
 
 def plotPath(location, zmin=0, zmax=20, xlabel="xlabel", ylabel="ylabel", title="", outname=None):
@@ -271,6 +392,55 @@ def plotPath1d(location, zmin=0, zmax=20, xlabel="xlabel", ylabel="ylabel", titl
     if outname:
         plt.savefig(outname, dpi=300, bbox_inches='tight')
     # plt.show()
+
+
+def two_scales(ax1, time, data1, data2, c1, c2):
+    """
+
+    Parameters
+    ----------
+    ax : axis
+        Axis to put two scales on
+
+    time : array-like
+        x-axis values for both datasets
+
+    data1: array-like
+        Data for left hand scale
+
+    data2 : array-like
+        Data for right hand scale
+
+    c1 : color
+        Color for line 1
+
+    c2 : color
+        Color for line 2
+
+    Returns
+    -------
+    ax : axis
+        Original axis
+    ax2 : axis
+        New twin axis
+    """
+    ax2 = ax1.twinx()
+
+    ax1.plot(time, data1, color=c1)
+    ax1.set_xlabel('')
+    ax1.set_ylabel('FreeEnergy (kT)')
+
+    ax2.plot(time, data2, color=c2)
+    ax2.set_ylabel('Expected End-to-End distance (Å)')
+    # print("hi")
+    return ax1, ax2
+
+# Change color of each axis
+def color_y_axis(ax, color):
+    """Color your axes."""
+    for t in ax.get_yticklabels():
+        t.set_color(color)
+    return None
 
 # # https://bougui505.github.io/2016/08/31/compute_the_shortest_path_on_a_grid_using_python.html
 # def dijkstra(V):
