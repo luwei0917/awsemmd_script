@@ -14,6 +14,7 @@ import glob
 import re
 from numpy import ma
 import networkx as nx
+import scipy
 plt.rcParams['axes.labelsize'] = 14
 plt.rcParams['xtick.labelsize'] = 12
 plt.rcParams['ytick.labelsize'] = 12
@@ -92,7 +93,23 @@ def show_images_all(all_data, temp=450, zmax=20, xlabel="xlabel", ylabel="ylabel
 #     fig.subplots_adjust(top=1.02)
     fig.tight_layout()
 
-def getxyz(data, res=30, zmin=0, zmax=20, x=1, y=2, z=3):
+def getBound(location, res=30, zmin=0, zmax=20, x=1, y=2, z=3):
+    # data = np.where(np.isnan(data), zmax, data)
+    data = np.loadtxt(location)
+    data = data[~np.isnan(data).any(axis=1)]  # remove rows with nan
+    if zmin == -1:
+        zmin = data[:,3].min()
+    if zmax == -1:
+        zmax = data[:,3].max()
+    data = data[~(data[:,z] > zmax)]  # remove rows of data for z not in [zmin zmax]
+    data = data[~(data[:,z] < zmin)]
+    xmin = min(data[:,x])
+    xmax = max(data[:,x])
+    ymin = min(data[:,y])
+    ymax = max(data[:,y])
+    return(xmin,xmax,ymin,ymax)
+
+def getxyz(data, res=30, zmin=0, zmax=20, x=1, y=2, z=3, xmin=-1,xmax=-1,ymin=-1,ymax=-1):
     # data = np.where(np.isnan(data), zmax, data)
     data = data[~np.isnan(data).any(axis=1)]  # remove rows with nan
     if zmin == -1:
@@ -101,9 +118,14 @@ def getxyz(data, res=30, zmin=0, zmax=20, x=1, y=2, z=3):
         zmax = data[:,3].max()
     data = data[~(data[:,z] > zmax)]  # remove rows of data for z not in [zmin zmax]
     data = data[~(data[:,z] < zmin)]
-
-    xi = np.linspace(min(data[:,x]), max(data[:,x]), res)
-    yi = np.linspace(min(data[:,y]), max(data[:,y]), res)
+    if xmin == -1:
+        xi = np.linspace(min(data[:,x]), max(data[:,x]), res)
+    else:
+        xi = np.linspace(xmin, xmax, res)
+    if ymin == -1:
+        yi = np.linspace(min(data[:,y]), max(data[:,y]), res)
+    else:
+        yi = np.linspace(ymin, ymax, res)
     zi = griddata((data[:,x], data[:,y]), data[:,z], (xi[None,:], yi[:,None]), method='linear')
     return (xi,yi,zi)
 
@@ -188,16 +210,21 @@ def getxyz_3(data, res=30, zmin=0, zmax=20, x=1, y=2, z=3):
     zi = griddata((tmp[:,x], tmp[:,y]), tmp[:,z], (xi[None,:], yi[:,None]), method='linear')
     return (xi,yi,zi)
 
-def plot2d(location, temp="450", res=30, zmin=0, zmax=30, z=3, xlabel="xlabel", ylabel="ylabel", title="", outname=None):
+def plot2d(location, path, temp="450", res=30, zmin=0, zmax=30, z=3, xlabel="xlabel", ylabel="ylabel", title="", outname=None, **kargs):
     titlefontsize = 28
     data = np.loadtxt(location)
-    xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax,res=res, z=z)
+    xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax,res=res, z=z, **kargs)
+    # V = ma.masked_array(zi, zi>40)
+    # zi = np.where(np.isnan(zi), 1e6, zi)
+    f_on_path = [zi[tuple(p)] for p in reversed(path)]
     # plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
     jet = cm = plt.get_cmap('jet')
     print(jet)
     # plt.contourf(xi, yi, zi, 20, cmap='rainbow')
     plt.figure()
     plt.contourf(xi, yi, zi, res, cmap='jet')
+    plt.plot(xi[path[:,1]], yi[path[:,0]], 'r.-')
+
     # plt.xlim(xmin, xmax)
     # plt.clim(zmin, zmax)
     plt.colorbar()
@@ -212,9 +239,10 @@ def plot2d(location, temp="450", res=30, zmin=0, zmax=30, z=3, xlabel="xlabel", 
     if outname:
         plt.savefig(outname, dpi=300, bbox_inches='tight')
     # plt.show()
-    return (xi,yi,zi)
+    # return (xi,yi,zi)
+    return f_on_path
 
-def plot2d_side_by_side(location1, location2, zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title="", outname=None):
+def plot2d_side_by_side(location1, location2, zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title1="", title2="", outname=None):
     fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(20, 6.18))
     titlefontsize = 28
     # plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
@@ -230,10 +258,11 @@ def plot2d_side_by_side(location1, location2, zmin=0, zmax=30, xlabel="xlabel", 
 
     ax1.set_xlabel(xlabel)
     ax1.set_ylabel(ylabel)
-    # ax1.title(title, y=1.02, fontsize=titlefontsize)
+    ax1.set_title(title1, y=1.02, fontsize=titlefontsize)
     data = np.loadtxt(location2)
     xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax)
     g = ax2.contourf(xi, yi, zi, 30, cmap='jet')
+    ax2.set_title(title2, y=1.02, fontsize=titlefontsize)
     g.set_clim(zmin, zmax)
     cbaxes = fig.add_axes([0.95, 0.1, 0.03, 0.8])
     plt.colorbar(g, cax=cbaxes)
@@ -253,9 +282,11 @@ def get_localQ(location, path, start=0, span=10):
     tt = np.array([zi[l] for l in nested_lst_of_tuples])
     return tt
 
-def shortest_path(location, temp="450", start=(4,5), end=-1, block=-1, res=30, zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title="", save=False, plot1d=True, plot2d=True):
+
+
+def shortest_path_2(location, temp="450", start=(4,5), end=-1, block=-1, res=30, zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title="AverageZ_Dis", save=False, plot1d=1, plot2d=True):
     data = np.loadtxt(location)
-    xi, yi, zi = getxyz_3(data, res=res, zmin=zmin, zmax=zmax)
+    xi, yi, zi = getxyz(data, res=res, zmin=zmin, zmax=zmax)
     zi = np.where(np.isnan(zi), 50, zi)
 
     if block != -1:
@@ -265,6 +296,122 @@ def shortest_path(location, temp="450", start=(4,5), end=-1, block=-1, res=30, z
         y_high = np.searchsorted(yi, block[3])
         zi[y_low:y_high, x_low:x_high] = 50
     V = ma.masked_array(zi, zi>40)
+    G = nx.Graph()
+
+    def func(u, v, d):
+        node_u_wt = G.nodes[u].get('node_weight', 1)
+        node_v_wt = G.nodes[v].get('node_weight', 1)
+    #     edge_wt = d.get('weight', 1)
+        edge_wt = 0
+        return node_u_wt/2 + node_v_wt/2 + edge_wt
+    n = len(xi)
+    if end == -1:
+        end = (n-5, n-5)
+    # add nodes
+    for i in range(n+1):
+        for j in range(n+1):
+            G.add_node((i,j))
+    #         G.nodes[(i, j)]['node_weight'] = zi[i][j]
+            try:
+                G.nodes[(i, j)]['node_weight'] = np.exp(zi[i][j])
+    #             if zi[i][j] < 17:
+    #                 G.nodes[(i, j)]['node_weight'] = zi[i][j]/10
+    #             else:
+    #                 G.nodes[(i, j)]['node_weight'] = zi[i][j]
+            except IndexError:
+                pass
+    # add edges
+    # connectivity = [(1,0), (0,1)]
+    # connectivity = [(-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0)]
+    connectivity = [(i,j) for i in [-1, 0, 1] for j in [-1, 0, 1] if (not (i == j == 0))]
+    for i in range(n+1):
+        for j in range(n+1):
+            for (x,y) in connectivity:
+                if i+x >= 0 and j+y >=0:
+                    try:
+                        G.add_edge((i,j), (i+x,j+y), weight=zi[i][j] + zi[i+x][j+y])
+                        # G.add_edge((i,j), (i+x,j+y), weight=0)
+                    except IndexError:
+                        pass
+                        # G.add_edge((i,j), (i+x,j+y), weight=max(zi))
+    source = np.unravel_index(V.argmin(), V.shape)
+    P = nx.dijkstra_path(G,start, end, weight=func)
+    # P = nx.single_source_dijkstra(G,(4,5), weight=func)
+    # P = nx.single_source_dijkstra(G,source, (4,5), weight=func)
+    path = np.asarray(P)
+    if plot2d:
+        plt.contourf(xi, yi, V, res, cmap='jet')
+        plt.plot(xi[path[:,1]], yi[path[:,0]], 'r.-')
+
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.clim(zmin, zmax)
+        plt.colorbar()
+        # plt.ylim(-8, 0)
+        # plt.xlim(50, 70)
+        # plt.clim(0, 20)
+        # plt.colorbar()
+    if save:
+        plt.savefig(f"/Users/weilu/Dropbox/GlpG_paper_2018/figures/2d_{title}.png", dpi=300)
+    f_on_path = [zi[tuple(p)] for p in reversed(path)]
+    x_on_path = [xi[tuple(p)[1]] for p in reversed(path)]
+    if plot1d == 2:
+        plt.figure()
+        x_on_path = np.array(x_on_path)
+        d = pd.DataFrame(data={"x":x_on_path, "y":f_on_path})
+        # mean the dupliation
+        d = d.groupby("x").mean().reset_index().values
+        x_smooth = np.linspace(d[:,0].min(), d[:,0].max(), 200)
+        spl1 = scipy.interpolate.interp1d(d[:,0], d[:,1], kind="cubic")
+        plt.plot(x_smooth, spl1(x_smooth))
+        plt.xlabel("End to end distance(Å)")
+        plt.ylabel("Free energy(kT)")
+        # plt.plot(f_on_path)
+        # plt.ylim([0,zmax])
+        if save:
+            plt.savefig(f"/Users/weilu/Dropbox/GlpG_paper_2018/figures/1d_path_{title}.png", dpi=300)
+    if plot1d == 1:
+        plt.figure()
+        # x = np.array(range(len(f_on_path)))
+        x = np.arange(len(f_on_path))
+        x_smooth = np.linspace(x.min(), x.max(), 200)
+        spl = scipy.interpolate.interp1d(x, f_on_path, kind="cubic")
+        plt.plot(x_smooth, spl(x_smooth))
+        # plt.plot(f_on_path)
+        plt.ylim([0,zmax])
+        if save:
+            plt.savefig(f"/Users/weilu/Dropbox/GlpG_paper_2018/figures/1d_path_{title}.png", dpi=300)
+    return (path, f_on_path)
+
+def plot_shortest_path(location, path, res=30, zmin=0, zmax=30, z=3, xlabel="xlabel", ylabel="ylabel", title="", save=False, plot1d=True, plot2d=True, **kargs):
+    data = np.loadtxt(location)
+    xi, yi, zi = getxyz(data, res=res, zmin=zmin, zmax=zmax, z=z, **kargs)
+    zi = np.where(np.isnan(zi), 50, zi)
+    V = ma.masked_array(zi, zi>40)
+    f_on_path = [zi[tuple(p)] for p in reversed(path)]
+    if plot2d:
+        plt.contourf(xi, yi, V, res, cmap='jet')
+        plt.plot(xi[path[:,1]], yi[path[:,0]], 'r.-')
+        plt.clim(zmin, zmax)
+        # plt.colorbar()
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+    if save:
+        plt.savefig(f"/Users/weilu/Dropbox/GlpG_paper_2018/figures/{title}.png", dpi=300)
+    return (path, f_on_path)
+
+def shortest_path(location, temp="450", start=(4,5), end=-1, block=-1, res=30, zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title="", save=False, plot1d=True, plot2d=True):
+    data = np.loadtxt(location)
+    xi, yi, zi = getxyz_3(data, res=res, zmin=zmin, zmax=zmax)
+    zi = np.where(np.isnan(zi), 50, zi)
+    V = ma.masked_array(zi, zi>40)
+    if block != -1:
+        x_low = np.searchsorted(xi, block[0])
+        x_high = np.searchsorted(xi, block[1])
+        y_low = np.searchsorted(yi, block[2])
+        y_high = np.searchsorted(yi, block[3])
+        zi[y_low:y_high, x_low:x_high] = 50
+
     G = nx.Graph()
 
 
@@ -431,7 +578,8 @@ def two_scales(ax1, time, data1, data2, c1, c2):
     ax1.set_ylabel('FreeEnergy (kT)')
 
     ax2.plot(time, data2, color=c2)
-    ax2.set_ylabel('Expected End-to-End distance (Å)')
+    ax2.set_ylabel('Expected Value')
+    # ax2.set_ylabel('Expected End-to-End distance (Å)')
     # print("hi")
     return ax1, ax2
 

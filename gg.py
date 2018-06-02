@@ -61,10 +61,71 @@ def pick_structure_generate_show_script(n=2):
             f.write("load structure_%s.pdb\n" % structure_index)
             f.write("cealign structure_0, structure_%s\n" % structure_index)
             f.write("spectrum count, rainbow_rev, structure_%s, byres=1\n" % structure_index)
-        f.write("hide lines, all\n")
-        f.write("show cartoon, all\n")
-        f.write("hide nonbonded, all\n")
+        # f.write("hide lines, all\n")
+        # f.write("show cartoon, all\n")
+        # f.write("hide nonbonded, all\n")
+if args.day == "may28":
+    cmd_pre = "python2 ~/opt/script/BuildAllAtomsFromLammps.py"
+    # location_pre = "/Users/weilu/Research/server/apr_2018/sixth/rg_0.15_lipid_1.0_mem_1_go_0.8/simulation"
+    location_pre = "/Users/weilu/Research/server/may_2018/second/simulation"
+    # location_pre = "/Users/weilu/Research/server/may_2018/second_long/simulation"
+    # cmd = cmd_pre + " " + location + " structure_2 4080 -seq ~/opt/pulling/2xov.seq"
+    tt = pd.read_csv("/Users/weilu/Research/data/low_e_jun01_h56.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Research/data/low_e_jun01_h34.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Research/data/low_e_jun01_h12.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Research/data/low_e_jun01_out.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Research/data/low_e_jun01_pre.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Research/data/low_e_jun01_transition.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Research/data/low_e_jun01_post_transition.csv", index_col=0)
+    # rerun = 1
+    sample = tt.sample(5).reset_index(drop=True)
+    # sample["Frame"] = ((sample["Step"] - 2e7*rerun)/4000).astype("int")
+    sample["rerun"] = (sample["Step"] // 2e7).astype(int)
+    sample["Frame"] = ((sample["Step"] % 2e7)/4000).astype("int")
+    for index, row in sample.iterrows():
+        BiasTo = row["BiasTo"]
+        Run = row["Run"]
+        Frame = row["Frame"]
+        rerun = row["rerun"]
+        print(BiasTo, Run, Frame)
 
+        location = location_pre + f"/dis_{BiasTo}/{rerun}/dump.lammpstrj.{int(Run)}"
+        cmd = cmd_pre + " " + location + f" structure_{index} {int(Frame)} -seq ~/opt/pulling/2xov.seq"
+        print(cmd)
+        do(cmd)
+    pick_structure_generate_show_script(n=len(sample))
+if args.day == "may22":
+    cmd_pre = "python2 ~/opt/script/BuildAllAtomsFromLammps.py"
+    # location_pre = "/Users/weilu/Research/server/apr_2018/sixth/rg_0.15_lipid_1.0_mem_1_go_0.8/simulation"
+    location_pre = "/Users/weilu/Research/server/may_2018/second/simulation"
+    # cmd = cmd_pre + " " + location + " structure_2 4080 -seq ~/opt/pulling/2xov.seq"
+    # tt = pd.read_csv("/Users/weilu/Research/server/barrier.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Research/server/high_go.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Research/server/rerun3.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Research/data/t373_narrow.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Research/data/t373_super_narrow.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Research/data/selected.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Research/data/selected2.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Research/data/selected_all.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Research/data/constrain_qw.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Research/data/constrain_qw_temp.csv", index_col=0)
+    # rerun = 1
+    sample = tt.sample(5).reset_index(drop=True)
+    # sample["Frame"] = ((sample["Step"] - 2e7*rerun)/4000).astype("int")
+    sample["rerun"] = (sample["Step"] // 2e7).astype(int)
+    sample["Frame"] = ((sample["Step"] % 2e7)/4000).astype("int")
+    for index, row in sample.iterrows():
+        BiasTo = row["BiasTo"]
+        Run = row["Run"]
+        Frame = row["Frame"]
+        rerun = row["rerun"]
+        print(BiasTo, Run, Frame)
+
+        location = location_pre + f"/dis_{BiasTo}/{rerun}/dump.lammpstrj.{int(Run)}"
+        cmd = cmd_pre + " " + location + f" structure_{index} {int(Frame)} -seq ~/opt/pulling/2xov.seq"
+        print(cmd)
+        do(cmd)
+    pick_structure_generate_show_script(n=len(sample))
 if args.day == "may13":
     protein_list = ["T0949", "T0950"]
     for protein in protein_list:
