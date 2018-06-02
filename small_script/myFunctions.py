@@ -318,7 +318,7 @@ def check_and_correct_fragment_memory():
     os.system("mv fragsLAMW.mem fragsLAMW_back")
     os.system("mv tmp.mem fragsLAMW.mem")
 
-def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=False, localQ=False, disReal=False, dis_h56=False, goEnergy=False):
+def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=False, localQ=False, disReal=False, dis_h56=False, goEnergy=False, goEnergy3H=False, goEnergy4H=False):
     all_data_list = []
     for i in range(n):
         file = "lipid.{}.dat".format(i)
@@ -379,6 +379,16 @@ def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=Fa
             # print(tmp)
             tmp.columns = tmp.columns.str.strip()
             wham = pd.concat([wham, tmp],axis=1)
+        if goEnergy3H:
+            nEnergy = pd.read_csv(location+f"Go_3helix_{i}/goEnergy.dat")[1:].reset_index(drop=True).drop('Steps', axis=1)
+            # print(tmp)
+            nEnergy.columns = nEnergy.columns.str.strip()
+            wham = pd.concat([wham, nEnergy],axis=1)
+        if goEnergy4H:
+            nEnergy = pd.read_csv(location+f"Go_4helix_{i}/goEnergy.dat")[1:].reset_index(drop=True).drop('Steps', axis=1)
+            # print(tmp)
+            nEnergy.columns = nEnergy.columns.str.strip()
+            wham = pd.concat([wham, nEnergy],axis=1)
         data = pd.concat([wham, dis, energy, rgs, lipid], axis=1)
 
         # lipid = lipid[["Steps","Lipid","Run"]]
@@ -396,7 +406,7 @@ def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=Fa
     t3 = t2.assign(TotalE=t2.Energy + t2.Lipid)
     return t3.sort_values(["Step", "Run"]).reset_index(drop=True)
 
-def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, end=-1, n=12, bias="dis", qnqc=False, average_z=False, disReal=False, dis_h56=False, localQ=False, goEnergy=False, label=""):
+def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, end=-1, n=12, bias="dis", qnqc=False, average_z=False, disReal=False, dis_h56=False, localQ=False, goEnergy=False, goEnergy3H=False, goEnergy4H=False, label=""):
     print("process temp data")
     dateAndTime = datetime.today().strftime('%d_%h_%H%M%S')
     for folder in folder_list:
@@ -412,7 +422,7 @@ def process_complete_temper_data_3(pre, data_folder, folder_list, rerun=-1, end=
 
                 location = one_simulation + f"/{i}/"
                 print(location)
-                data = read_complete_temper_2(location=location, n=n, rerun=i, qnqc=qnqc, average_z=average_z, localQ=localQ, disReal=disReal, dis_h56=dis_h56, goEnergy=goEnergy)
+                data = read_complete_temper_2(location=location, n=n, rerun=i, qnqc=qnqc, average_z=average_z, localQ=localQ, disReal=disReal, dis_h56=dis_h56, goEnergy=goEnergy, goEnergy3H=goEnergy3H, goEnergy4H=goEnergy4H)
                 print(data.shape)
                 # remove_columns = ['Step', "Run"]
                 # data = data.drop(remove_columns, axis=1)
@@ -543,6 +553,78 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
                                         TotalE_3=tmp.TotalE + 0.5*tmp.AMH,
                                         TotalE_4=tmp.TotalE + tmp.AMH,
                                         TotalE_5=tmp.AMH)
+            if chosen_mode == 7:
+                chosen_list += ["Dis_h56"]
+                chosen = tmp[chosen_list]
+                chosen = chosen.assign(TotalE_1=tmp.TotalE + 0.1*tmp.AMH_3H,
+                                        TotalE_2=tmp.TotalE + 0.2*tmp.AMH_3H,
+                                        TotalE_3=tmp.TotalE + 0.5*tmp.AMH_3H,
+                                        TotalE_4=tmp.TotalE + tmp.AMH_3H,
+                                        TotalE_5=tmp.TotalE + 0.1*tmp.AMH,
+                                        TotalE_6=tmp.TotalE + 0.2*tmp.AMH)
+            if chosen_mode == 8:
+                # chosen_list += ["Dis_h56"]
+                chosen_list += ["z_average"]
+                chosen = tmp[chosen_list]
+                chosen = chosen.assign(TotalE_1=tmp.TotalE + 0.1*tmp.AMH_4H,
+                                        TotalE_2=tmp.TotalE + 0.2*tmp.AMH_4H,
+                                        TotalE_3=tmp.TotalE + 0.5*tmp.AMH_4H,
+                                        TotalE_4=tmp.TotalE + 0.1*tmp.AMH_3H,
+                                        TotalE_5=tmp.TotalE + 0.2*tmp.AMH_3H,
+                                        TotalE_6=tmp.TotalE + 0.5*tmp.AMH_3H)
+            if chosen_mode == 9:
+                # chosen_list += ["Dis_h56"]
+                chosen_list += ["z_average"]
+                chosen = tmp[chosen_list]
+                chosen = chosen.assign(TotalE_1=tmp.TotalE + 0.1*tmp.AMH_4H,
+                                        TotalE_2=tmp.TotalE + 0.2*tmp.AMH_4H,
+                                        TotalE_3=tmp.TotalE + 0.5*tmp.AMH_4H)
+                chosen = chosen.assign(TotalE_perturb_go_m=chosen.TotalE_2 - kgo*tmp["AMH-Go"],
+                                        TotalE_perturb_go_p=chosen.TotalE_2 + kgo*tmp["AMH-Go"],
+                                        TotalE_perturb_lipid_m=chosen.TotalE_2 - klipid*tmp.Lipid,
+                                        TotalE_perturb_lipid_p=chosen.TotalE_2 + klipid*tmp.Lipid,
+                                        TotalE_perturb_mem_m=chosen.TotalE_2 - kmem*tmp.Membrane,
+                                        TotalE_perturb_mem_p=chosen.TotalE_2 + kmem*tmp.Membrane,
+                                        TotalE_perturb_rg_m=chosen.TotalE_2 - krg*tmp.Rg,
+                                        TotalE_perturb_rg_p=chosen.TotalE_2 + krg*tmp.Rg)
+            if chosen_mode == 10:
+                # chosen_list += ["Dis_h56"]
+                chosen_list += ["z_average"]
+                chosen = tmp[chosen_list]
+                chosen = chosen.assign(TotalE_1=tmp.TotalE + 0.1*tmp.AMH_4H,
+                                        TotalE_2=tmp.TotalE + 0.2*tmp.AMH_4H,
+                                        TotalE_3=tmp.TotalE + 0.5*tmp.AMH_4H)
+                chosen = chosen.assign(TotalE_perturb_1lipid_m1=chosen.TotalE_2 - 0.1*tmp.Lipid,
+                                        TotalE_perturb_1lipid_p1=chosen.TotalE_2 + 0.1*tmp.Lipid,
+                                        TotalE_perturb_2lipid_m2=chosen.TotalE_2 - 0.2*tmp.Lipid,
+                                        TotalE_perturb_2lipid_p2=chosen.TotalE_2 + 0.2*tmp.Lipid,
+                                        TotalE_perturb_3lipid_m3=chosen.TotalE_2 - 0.3*tmp.Lipid,
+                                        TotalE_perturb_3lipid_p3=chosen.TotalE_2 + 0.3*tmp.Lipid,
+                                        TotalE_perturb_4lipid_m4=chosen.TotalE_2 - 0.5*tmp.Lipid,
+                                        TotalE_perturb_4lipid_p4=chosen.TotalE_2 + 0.5*tmp.Lipid,
+                                        TotalE_perturb_5go=tmp["AMH-Go"],
+                                        TotalE_perturb_5lipid=tmp.Lipid,
+                                        TotalE_perturb_5mem=tmp.Membrane,
+                                        TotalE_perturb_5rg=tmp.Rg)
+            if chosen_mode == 11:
+                # chosen_list += ["Dis_h56"]
+                chosen_list += ["z_average"]
+                chosen = tmp[chosen_list]
+                chosen = chosen.assign(TotalE_1=tmp.TotalE + 1.1*0.1*tmp.AMH_4H + 0.1*tmp["AMH-Go"],
+                                        TotalE_2=tmp.TotalE + 1.1*0.2*tmp.AMH_4H + 0.1*tmp["AMH-Go"],
+                                        TotalE_3=tmp.TotalE + 1.1*0.5*tmp.AMH_4H + 0.1*tmp["AMH-Go"])
+                chosen = chosen.assign(TotalE_perturb_1lipid_m1=chosen.TotalE_2 - 0.1*tmp.Lipid,
+                                        TotalE_perturb_1lipid_p1=chosen.TotalE_2 + 0.1*tmp.Lipid,
+                                        TotalE_perturb_2lipid_m2=chosen.TotalE_2 - 0.2*tmp.Lipid,
+                                        TotalE_perturb_2lipid_p2=chosen.TotalE_2 + 0.2*tmp.Lipid,
+                                        TotalE_perturb_3lipid_m3=chosen.TotalE_2 - 0.1*tmp.Membrane,
+                                        TotalE_perturb_3lipid_p3=chosen.TotalE_2 + 0.1*tmp.Membrane,
+                                        TotalE_perturb_4lipid_m4=chosen.TotalE_2 - 0.2*tmp.Membrane,
+                                        TotalE_perturb_4lipid_p4=chosen.TotalE_2 + 0.2*tmp.Membrane,
+                                        TotalE_perturb_5go=tmp["AMH-Go"],
+                                        TotalE_perturb_5lipid=tmp.Lipid,
+                                        TotalE_perturb_5mem=tmp.Membrane,
+                                        TotalE_perturb_5rg=tmp.Rg)
             chosen.to_csv(freeEnergy_folder+"/"+sub_mode_name+f"/data_{sample_range_mode}/t_{temp}_{biasName}_{bias}.dat", sep=' ', index=False, header=False)
 
     # perturbation_table = {0:"original", 1:"m_go",
