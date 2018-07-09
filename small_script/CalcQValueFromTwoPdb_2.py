@@ -203,10 +203,14 @@ for chain in chains:
         if (res_id==' ' or res_id=='H_MSE' or res_id=='H_M3L' or res_id=='H_CAS' ) and is_regular_res:
             # ca_atoms.append(res['CA'].get_coord())
             residue_id_2 = res.id[1]
-            ca_atoms_pdb_2[residue_id_2] = res['CA'].get_coord()
-            pdb_chain_id_2.append(ichain)
-            pdb_residue_id_2[res.id[1]] = 1
-
+            if residue_id_2 in pdb_residue_id:
+                print residue_id_2
+                ca_atoms_pdb_2[residue_id_2] = res['CA'].get_coord()
+                pdb_chain_id_2.append(ichain)
+                pdb_residue_id_2[res.id[1]] = 1
+            else:
+                print "no: " + str(residue_id_2)
+print "------"
 n = max(len(ca_atoms_pdb_2), len(ca_atoms_pdb))
 for i in range(0, n+1):
     sigma.append( (1+i)**sigma_exp )

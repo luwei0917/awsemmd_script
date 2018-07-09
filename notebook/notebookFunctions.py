@@ -312,6 +312,9 @@ def shortest_path_2(location, temp="450", start=(4,5), end=-1, block=-1, res=30,
         for j in range(n+1):
             G.add_node((i,j))
     #         G.nodes[(i, j)]['node_weight'] = zi[i][j]
+            # print(G)
+            # continue
+            # print("Hi")
             try:
                 G.nodes[(i, j)]['node_weight'] = np.exp(zi[i][j])
     #             if zi[i][j] < 17:
