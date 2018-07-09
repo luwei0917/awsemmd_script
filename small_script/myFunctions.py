@@ -508,6 +508,12 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
                 tmp["z_h5_and_h6"] = tmp["z_h5"] + tmp["z_h6"]
                 chosen_list += ["z_h5_and_h6"]
                 chosen_list += ["DisReal"]
+            if average_z == 6:
+                chosen_list = ["TotalE", "Qw", "DisReal"]
+                # chosen_list += ["z_h5_and_h6"]
+                chosen_list += ["z_h5"]
+                chosen_list += ["z_h6"]
+                chosen_list += ["Dis_h56"]
             if chosen_mode == 0:
                 chosen = tmp[chosen_list]
                 chosen = chosen.assign(TotalE_perturb_mem_p=tmp.TotalE + kmem*tmp.Membrane,
@@ -579,14 +585,14 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
                 chosen = chosen.assign(TotalE_1=tmp.TotalE + 0.1*tmp.AMH_4H,
                                         TotalE_2=tmp.TotalE + 0.2*tmp.AMH_4H,
                                         TotalE_3=tmp.TotalE + 0.5*tmp.AMH_4H)
-                chosen = chosen.assign(TotalE_perturb_go_m=chosen.TotalE_2 - kgo*tmp["AMH-Go"],
+                chosen = chosen.assign(TotalE_perturb_go_m=chosen.TotalE_2 - tmp.Lipid - tmp.Membrane - tmp.Rg,
                                         TotalE_perturb_go_p=chosen.TotalE_2 + kgo*tmp["AMH-Go"],
-                                        TotalE_perturb_lipid_m=chosen.TotalE_2 - klipid*tmp.Lipid,
-                                        TotalE_perturb_lipid_p=chosen.TotalE_2 + klipid*tmp.Lipid,
-                                        TotalE_perturb_mem_m=chosen.TotalE_2 - kmem*tmp.Membrane,
-                                        TotalE_perturb_mem_p=chosen.TotalE_2 + kmem*tmp.Membrane,
-                                        TotalE_perturb_rg_m=chosen.TotalE_2 - krg*tmp.Rg,
-                                        TotalE_perturb_rg_p=chosen.TotalE_2 + krg*tmp.Rg)
+                                        TotalE_perturb_lipid_m=chosen.TotalE_2 - tmp.Lipid,
+                                        TotalE_perturb_lipid_p=chosen.TotalE_2 + tmp.Lipid,
+                                        TotalE_perturb_mem_m=chosen.TotalE_2 - tmp.Membrane,
+                                        TotalE_perturb_mem_p=chosen.TotalE_2 + tmp.Membrane,
+                                        TotalE_perturb_rg_m=chosen.TotalE_2 - tmp.Rg,
+                                        TotalE_perturb_rg_p=chosen.TotalE_2 + tmp.Rg)
             if chosen_mode == 10:
                 # chosen_list += ["Dis_h56"]
                 chosen_list += ["z_average"]
@@ -625,6 +631,11 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
                                         TotalE_perturb_5lipid=tmp.Lipid,
                                         TotalE_perturb_5mem=tmp.Membrane,
                                         TotalE_perturb_5rg=tmp.Rg)
+            if chosen_mode == 12:
+                chosen = tmp[chosen_list]
+                # chosen["z_h56"] = (chosen["z_h5"] + chosen["z_h6"])/2
+                chosen = chosen.assign(TotalE_2=tmp.TotalE + 0.2*tmp.AMH_4H,
+                                        z_h56=(tmp.z_h5 + tmp.z_h6)/2)
             chosen.to_csv(freeEnergy_folder+"/"+sub_mode_name+f"/data_{sample_range_mode}/t_{temp}_{biasName}_{bias}.dat", sep=' ', index=False, header=False)
 
     # perturbation_table = {0:"original", 1:"m_go",

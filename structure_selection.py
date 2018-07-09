@@ -82,6 +82,8 @@ srun {}
 # name = "T0958"
 # name = "T0960"
 name = "T0959"
+name = "T0966"
+
 if args.mode == 1:
     # name = "T0953S1"
     do(f"scp -r wl45@davinci.rice.edu:/scratch/xl23/casp13/human/result/{name}/post-processing {name}")

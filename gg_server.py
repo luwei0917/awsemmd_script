@@ -460,6 +460,298 @@ if args.day == "common":
         compute_disReal(temper=True, targetMode=1, bias="dis_", sim_list=[i], queue=queue)
         compute_completeZ(temper=True, bias="dis_", sim_list=[i], queue=queue)
 
+
+if args.day == "jun21":
+    if args.mode == 1:
+        temp_list = ["all"]
+        data_folder = "all_data_folder/"
+        bias_list = {"2d_z_qw":"13", "1d_dis":"9", "2d_z_dis":"14", "2d_qw_dis":"11", "1d_qw":"10", "1d_z":"12"}
+        bias_list = {"2d_zAverage_dis":"17", "2d_z_qw":"13"}
+        bias_list = {"2d_zAverage_dis":"17"}
+        # bias_list = {"1d_dis56":"9", "2d_dis56_z56":"14", "1d_z56":"11"}
+        bias_list = {"1d_dis56":"91", "1d_h5":"92", "1d_h6":"93", "1d_h56":"94", "2d_dis56_h56":"18"}
+        # bias_list = {"2d_z_qw_enhance":"16", "2d_z_qw":"13", "1d_dis":"9"}  # z and Dis_h56
+        i = -2
+        # freeEnergy_folder = f"sixth_i235d/"
+        # freeEnergy_folder = f"sixth_i255d/"
+        # freeEnergy_folder = f"sixth_long/"
+        freeEnergy_folder = f"second_start_extended_dis56_z56"
+        print(freeEnergy_folder)
+        # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rerun_1_08_Mar_154259"]
+        # folder_list = [f"first_rerun_{sample_range_mode}_12_Mar_151630" for i in range(4,6)]
+        # folder_list = [f"sixth_i235drerun_3_03_Apr_220358"]
+        # folder_list = [f"sixth_i255drerun_3_04_Apr_145735"]
+        folder_list = [f"second_start_extended_combined_may19"]
+        # submode_list = ["_no_energy"]
+        # submode_list = ["", "only_500"]
+        # submode_list = ["350", "400", "450", "500", "550"]
+
+        # temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+        # temp_dic = {"_280-350":["300", "335", "373"]}
+        temp_dic = {"_280-350":["335", "373", "417"]}
+        # temp_dic = {"_280-350":["280", "290", "300", "315", "335"]}
+        # dic = {"T0":280, "T1":300, "T2":320, "T3":350, "T4":375, "T5":400
+        # temp_dic = {"_280-350":["280", "290", "300", "310", "320", "335", "350"]}
+        for temp_mode, temp_list in temp_dic.items():
+            move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=4, sample_range_mode=i, sub_mode_name=temp_mode, average_z=6, chosen_mode=12)  # chosen_mode 4 use Dis_h56
+
+        cd(freeEnergy_folder)
+        for temp_mode, temp_list in temp_dic.items():
+                cd(temp_mode)
+                for bias, mode in bias_list.items():
+                    # name = "low_t_" + bias
+                    name = str(bias)
+                    print(name)
+                    do("rm -r "+name)
+                    do("mkdir -p " + name)
+                    cd(name)
+                    make_metadata_3(temps_list=temp_list,k=0.02, i=i)
+                    # nsample = len(folder_list)*2500
+                    nsample = len(folder_list)*5000
+                    do(f"python3 ~/opt/pulling_analysis_2.py -m {mode} --commons 1 --nsample {nsample} --submode 27 --force 9")
+                    cd("..")
+                cd("..")
+        cd("..")
+def pick_structure_generate_show_script(n=2):
+    with open("show.pml", "w") as f:
+        for structure_index in range(0, n):
+            f.write("load structure_%s.pdb\n" % structure_index)
+            f.write("cealign structure_0, structure_%s\n" % structure_index)
+            f.write("spectrum count, rainbow_rev, structure_%s, byres=1\n" % structure_index)
+        # f.write("hide lines, all\n")
+        # f.write("show cartoon, all\n")
+        # f.write("hide nonbonded, all\n")
+
+if args.day == "jun23":
+    if args.mode == 2:
+        cmd_pre = "python2 ~/opt/script/BuildAllAtomsFromLammps.py"
+        # location_pre = "/Users/weilu/Research/server/apr_2018/sixth/rg_0.15_lipid_1.0_mem_1_go_0.8/simulation"
+
+        # location_pre = "/Users/weilu/Research/server/may_2018/second_long/simulation"
+        # cmd = cmd_pre + " " + location + " structure_2 4080 -seq ~/opt/pulling/2xov.seq"
+        pick_list = ["low_e_jun23"]
+        for picked in pick_list:
+            do(f"mkdir {picked}")
+            cd(picked)
+            tt = pd.read_csv(f"/scratch/wl45/jun_2018/{picked}.csv", index_col=0)
+            sample = tt.reset_index(drop=True)
+            # sample["Frame"] = ((sample["Step"] - 2e7*rerun)/4000).astype("int")
+            sample["rerun"] = (sample["Step"] // 2e7).astype(int)
+            sample["Frame"] = ((sample["Step"] % 2e7)/4000).astype("int")
+            for index, row in sample.iterrows():
+                BiasTo = row["BiasTo"]
+                Run = row["Run"]
+                Frame = row["Frame"]
+                rerun = row["rerun"]
+                print(BiasTo, Run, Frame)
+
+                # try:
+                location_pre = "/scratch/wl45/may_2018/second/simulation"
+                location = location_pre + f"/dis_{BiasTo}/{rerun}/dump.lammpstrj.{int(Run)}"
+                cmd = cmd_pre + " " + location + f" structure_{index} {int(Frame)} -seq ~/opt/pulling/2xov.seq"
+                hasProblem = do(cmd)
+                if hasProblem == 0:
+                    continue
+                print(do(cmd))
+                    # print(cmd)
+                # except IOError:
+                # print("-----------hi------------")
+                location_pre = "/scratch/wl45/may_2018/second_long/simulation"
+                location = location_pre + f"/dis_{BiasTo}/{rerun}/dump.lammpstrj.{int(Run)}"
+                cmd2 = cmd_pre + " " + location + f" structure_{index} {int(Frame)} -seq ~/opt/pulling/2xov.seq"
+                do(cmd2)
+                    # print(cmd2)
+            pick_structure_generate_show_script(n=len(sample))
+            cd("..")
+
+if args.day == "jun17":
+    if args.mode == 2:
+        cmd_pre = "python2 ~/opt/script/BuildAllAtomsFromLammps.py"
+        # location_pre = "/Users/weilu/Research/server/apr_2018/sixth/rg_0.15_lipid_1.0_mem_1_go_0.8/simulation"
+
+        # location_pre = "/Users/weilu/Research/server/may_2018/second_long/simulation"
+        # cmd = cmd_pre + " " + location + " structure_2 4080 -seq ~/opt/pulling/2xov.seq"
+        pick_list = ["low_e_jun01_h56", "low_e_jun01_h34", "low_e_jun01_h12", "low_e_jun01_out", "low_e_jun01_pre",
+                        "low_e_jun01_transition", "low_e_jun01_post_transition"]
+        pick_list = ["low_e_path1", "low_e_path2"]
+        for picked in pick_list:
+            do(f"mkdir {picked}")
+            cd(picked)
+            tt = pd.read_csv(f"/scratch/wl45/jun_2018/{picked}.csv", index_col=0)
+            sample = tt.reset_index(drop=True)
+            # sample["Frame"] = ((sample["Step"] - 2e7*rerun)/4000).astype("int")
+            sample["rerun"] = (sample["Step"] // 2e7).astype(int)
+            sample["Frame"] = ((sample["Step"] % 2e7)/4000).astype("int")
+            for index, row in sample.iterrows():
+                BiasTo = row["BiasTo"]
+                Run = row["Run"]
+                Frame = row["Frame"]
+                rerun = row["rerun"]
+                print(BiasTo, Run, Frame)
+
+                # try:
+                location_pre = "/scratch/wl45/may_2018/second/simulation"
+                location = location_pre + f"/dis_{BiasTo}/{rerun}/dump.lammpstrj.{int(Run)}"
+                cmd = cmd_pre + " " + location + f" structure_{index} {int(Frame)} -seq ~/opt/pulling/2xov.seq"
+                hasProblem = do(cmd)
+                if hasProblem == 0:
+                    continue
+                print(do(cmd))
+                    # print(cmd)
+                # except IOError:
+                # print("-----------hi------------")
+                location_pre = "/scratch/wl45/may_2018/second_long/simulation"
+                location = location_pre + f"/dis_{BiasTo}/{rerun}/dump.lammpstrj.{int(Run)}"
+                cmd2 = cmd_pre + " " + location + f" structure_{index} {int(Frame)} -seq ~/opt/pulling/2xov.seq"
+                do(cmd2)
+                    # print(cmd2)
+            pick_structure_generate_show_script(n=len(sample))
+            cd("..")
+
+        # tt = pd.read_csv("/scratch/wl45/jun_2018/low_e_jun01_h56.csv", index_col=0)
+        # tt = pd.read_csv("/scratch/wl45/jun_2018/low_e_jun01_h34.csv", index_col=0)
+        # tt = pd.read_csv("/scratch/wl45/jun_2018/low_e_jun01_h12.csv", index_col=0)
+        # tt = pd.read_csv("/scratch/wl45/jun_2018/low_e_jun01_out.csv", index_col=0)
+        # tt = pd.read_csv("/scratch/wl45/jun_2018/low_e_jun01_pre.csv", index_col=0)
+        # tt = pd.read_csv("/scratch/wl45/jun_2018/low_e_jun01_transition.csv", index_col=0)
+        # tt = pd.read_csv("/scratch/wl45/jun_2018/low_e_jun01_post_transition.csv", index_col=0)
+        # # rerun = 1
+        # # sample = tt.sample(5).reset_index(drop=True)
+        # ample = tt.reset_index(drop=True)
+        # # sample["Frame"] = ((sample["Step"] - 2e7*rerun)/4000).astype("int")
+        # sample["rerun"] = (sample["Step"] // 2e7).astype(int)
+        # sample["Frame"] = ((sample["Step"] % 2e7)/4000).astype("int")
+        # for index, row in sample.iterrows():
+        #     BiasTo = row["BiasTo"]
+        #     Run = row["Run"]
+        #     Frame = row["Frame"]
+        #     rerun = row["rerun"]
+        #     print(BiasTo, Run, Frame)
+
+        #     location = location_pre + f"/dis_{BiasTo}/{rerun}/dump.lammpstrj.{int(Run)}"
+        #     cmd = cmd_pre + " " + location + f" structure_{index} {int(Frame)} -seq ~/opt/pulling/2xov.seq"
+        #     print(cmd)
+        #     do(cmd)
+        # pick_structure_generate_show_script(n=len(sample))
+    if args.mode == 1:
+        data = pd.read_feather("/scratch/wl45/may_2018/03_week/all_data_folder/second_start_extended_combined_may19.feather")
+        data = data.reset_index(drop=True)
+        # data["BiasedEnergy"] = data["TotalE"] + 0.2*data["AMH_4H"]
+        data["BiasedEnergy"] = data["Lipid"] + data["Rg"] + data["Membrane"] + data["AMH-Go"] + 0.2*data["AMH_4H"]
+        data["BiasEnergy"] = 0.02 * (data["BiasTo"] - data["DisReal"])**2
+        data["Energy_with_all_bias"] = data["BiasEnergy"] + data["BiasedEnergy"]
+
+        t_pos = data.query("TempT == 373 and DisReal > 52 and DisReal < 57 and z_average > -4 and z_average < 0").reset_index(drop=True)
+        chosen = t_pos.query("Lipid1 < -0.5").sort_values("Energy_with_all_bias").head(n=20)
+        # chosen = t_pos.sort_values("Energy_with_all_bias").head(n=20)
+        chosen.to_csv("low_e_jun01_pre.csv")
+
+        t_pos = data.query("TempT == 373 and DisReal > 57 and DisReal <63 and z_average > -5 and z_average < -2").reset_index(drop=True)
+        chosen = t_pos.query("Lipid1 < -0.5 and Lipid10 < -0.5").sort_values("Energy_with_all_bias").head(n=20)
+        # chosen = t_pos.sort_values("Energy_with_all_bias").head(n=20)
+        chosen.to_csv("low_e_jun01_transition.csv")
+
+        t_pos = data.query("TempT == 373 and DisReal > 63 and DisReal <72 and z_average > -6 and z_average < -3").reset_index(drop=True)
+        chosen = t_pos.query("Lipid1 < -0.5").sort_values("Energy_with_all_bias").head(n=20)
+        # chosen = t_pos.sort_values("Energy_with_all_bias").head(n=20)
+        chosen.to_csv("low_e_jun01_post_transition.csv")
+
+        t_pos = data.query("TempT == 373 and DisReal > 80 and DisReal < 100 and z_average > -8 and z_average < -4").reset_index(drop=True)
+        chosen = t_pos.query("Lipid1 < -0.5").sort_values("Energy_with_all_bias").head(n=20)
+        chosen.to_csv("low_e_jun01_h56.csv")
+
+        t_pos = data.query("TempT == 373 and DisReal > 140 and DisReal < 180 and z_average > -14 and z_average < -8").reset_index(drop=True)
+        chosen = t_pos.sort_values("Energy_with_all_bias").head(n=20)
+        chosen.to_csv("low_e_jun01_h34.csv")
+
+        t_pos = data.query("TempT == 373 and DisReal > 220 and DisReal < 250 and z_average > -14 and z_average < -10").reset_index(drop=True)
+        chosen = t_pos.sort_values("Energy_with_all_bias").head(n=20)
+        chosen.to_csv("low_e_jun01_h12.csv")
+
+        t_pos = data.query("TempT == 373 and DisReal > 260 and z_average < -16").reset_index(drop=True)
+        chosen = t_pos.sort_values("Energy_with_all_bias").head(n=20)
+        chosen.to_csv("low_e_jun01_out.csv")
+if args.day == "jun12":
+    if args.mode == 1:
+        temp_list = ["all"]
+        data_folder = "all_data_folder/"
+        bias_list = {"2d_z_qw":"13", "1d_dis":"9", "2d_z_dis":"14", "2d_qw_dis":"11", "1d_qw":"10", "1d_z":"12"}
+        bias_list = {"2d_zAverage_dis":"17", "2d_z_qw":"13"}
+        bias_list = {"2d_zAverage_dis":"17"}
+        # bias_list = {"2d_z_qw_enhance":"16", "2d_z_qw":"13", "1d_dis":"9"}  # z and Dis_h56
+        i = -2
+        # freeEnergy_folder = f"sixth_i235d/"
+        # freeEnergy_folder = f"sixth_i255d/"
+        # freeEnergy_folder = f"sixth_long/"
+        freeEnergy_folder = f"second_start_extended"
+        print(freeEnergy_folder)
+        # folder_list = ["memb_3_rg_0.1_lipid_1_extended"]
+        # folder_list = ["rerun_1_08_Mar_154259"]
+        # folder_list = [f"first_rerun_{sample_range_mode}_12_Mar_151630" for i in range(4,6)]
+        # folder_list = [f"sixth_i235drerun_3_03_Apr_220358"]
+        # folder_list = [f"sixth_i255drerun_3_04_Apr_145735"]
+        folder_list = [f"second_start_extended_combined_may19"]
+        # submode_list = ["_no_energy"]
+        # submode_list = ["", "only_500"]
+        # submode_list = ["350", "400", "450", "500", "550"]
+
+        # temp_dic = {"_350-550":["350", "400", "450", "500", "550"]}
+        # temp_dic = {"_280-350":["300", "335", "373"]}
+        temp_dic = {"_280-350":["335", "373", "417"]}
+        # temp_dic = {"_280-350":["280", "290", "300", "315", "335"]}
+        # dic = {"T0":280, "T1":300, "T2":320, "T3":350, "T4":375, "T5":400
+        # temp_dic = {"_280-350":["280", "290", "300", "310", "320", "335", "350"]}
+        for temp_mode, temp_list in temp_dic.items():
+            move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=4, sample_range_mode=i, sub_mode_name=temp_mode, average_z=5, chosen_mode=9)  # chosen_mode 4 use Dis_h56
+
+        cd(freeEnergy_folder)
+        for temp_mode, temp_list in temp_dic.items():
+                cd(temp_mode)
+                for bias, mode in bias_list.items():
+                    # name = "low_t_" + bias
+                    name = str(bias)
+                    print(name)
+                    do("rm -r "+name)
+                    do("mkdir -p " + name)
+                    cd(name)
+                    make_metadata_3(temps_list=temp_list,k=0.02, i=i)
+                    # nsample = len(folder_list)*2500
+                    nsample = len(folder_list)*5000
+                    do(f"python3 ~/opt/pulling_analysis_2.py -m {mode} --commons 1 --nsample {nsample} --submode 21 --force 8")
+                    cd("..")
+                cd("..")
+        cd("..")
+
+
+if args.day == "jun10":
+    protein_list = ["T0833", "T0815", "T0803", "T0766"]
+    for protein in protein_list:
+        # do(f"mkdir {protein}")
+        # cd(protein)
+        do(f"scp wl45@davinci.rice.edu:/work/cms16/xl23/shared/IAAWSEM/AWSEM_HO_Results/protein_pool/06042018/{protein.lower()}/iter/post-processing/Qw.out {protein}/")
+        do(f"scp wl45@davinci.rice.edu:/work/cms16/xl23/shared/IAAWSEM/AWSEM_HO_Results/protein_pool/06042018/{protein.lower()}/iter/rmsd/fromScwrl/totrmsd-angstrom.xvg {protein}/")
+        # do(f"scp -r wl45@davinci.rice.edu:/work/cms16/xl23/shared/IAAWSEM/MC_DATA_28Feb2018/{protein}/AWSEM_energy_update AWSEM_energy")
+        # do(f"scp -r wl45@davinci.rice.edu:/work/cms16/xl23/shared/IAAWSEM/MC_DATA_28Feb2018/{protein}/lowTstructure_update lowTstructure")
+        # cd("..")
+
+if args.day == "jun09":
+    a = pd.read_csv("../selected.csv")
+    for name, one in a.groupby("Name"):
+        ii = 0
+        for i, tmp in one.iterrows():
+            print(i, name, tmp["Step"])
+            do(f"cp ../{name}/lowTstructure/lowTstructure{tmp['Step']}.pdb {name}_{ii}.pdb")
+            ii += 1
+
+if args.day == "jun08":
+    protein_list = ["T0833", "T0815", "T0803", "T0766"]
+    for protein in protein_list:
+        do(f"mkdir {protein}")
+        cd(protein)
+        do(f"scp -r wl45@davinci.rice.edu:/work/cms16/xl23/shared/IAAWSEM/MC_DATA_28Feb2018/{protein}/AWSEM_energy_update AWSEM_energy")
+        do(f"scp -r wl45@davinci.rice.edu:/work/cms16/xl23/shared/IAAWSEM/MC_DATA_28Feb2018/{protein}/lowTstructure_update lowTstructure")
+        cd("..")
 if args.day == "may24":
     if args.mode == 1:
         temp_list = ["all"]

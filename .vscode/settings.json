@@ -11,5 +11,6 @@
     ],
     "editor.trimAutoWhitespace": true,
     "files.trimTrailingWhitespace": true,  
-    "python.linting.enabled": true
+    "python.linting.enabled": true,
+    "python.pythonPath": "${workspaceFolder}/anaconda3/bin/python"
 }

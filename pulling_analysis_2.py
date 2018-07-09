@@ -136,6 +136,10 @@ elif args.force == 6:
     force_list = [0.1, 0.13, 0.07]
 elif args.force == 7:
     force_list = [0.1, 0.15, 0.2, 0.25]
+elif args.force == 8:
+    force_list = [0.1, 0.2, 0.0]
+elif args.force == 9:
+    force_list = [0.1, 0.0]
 # force_list = [0.0, 0.1, 0.2]
 
 # force_list = [0.0, 0.1, 0.2]
@@ -154,6 +158,18 @@ for force in force_list:
     if args.mode == 9:
         arg = "-b 3 -e 1 -d 1 " + temp_arg
         arg += " -v1 3 -v1n 50"
+    if args.mode == 91:
+        arg = "-b 3 -e 1 -d 1 " + temp_arg
+        arg += " -v1 6 -v1n 50"
+    if args.mode == 92:
+        arg = "-b 3 -e 1 -d 1 " + temp_arg
+        arg += " -v1 4 -v1n 50"
+    if args.mode == 93:
+        arg = "-b 3 -e 1 -d 1 " + temp_arg
+        arg += " -v1 5 -v1n 50"
+    if args.mode == 94:
+        arg = "-b 3 -e 1 -d 1 " + temp_arg
+        arg += " -v1 8 -v1n 50"
     if args.mode == 10:
         arg = "-b 3 -e 1 -d 1 " + temp_arg
         arg += " -v1 2 -v1n 50"
@@ -182,7 +198,9 @@ for force in force_list:
     if args.mode == 17:
         arg = "-b 3 -e 1 -d 2 " + temp_arg
         arg += " -v1 3 -v1n 40 -v2 5 -v2n 40"
-
+    if args.mode == 18:
+        arg = "-b 3 -e 1 -d 2 " + temp_arg
+        arg += " -v1 6 -v1n 40 -v2 8 -v2n 40"
     if args.submode == 1:
         arg += " -ti 10 -st 350 -et 600 -p 5 -p 6 -p 7 -p 8 -p 9 -p 10 -p 11 -p 12 -pb y -ss y"
     if args.submode == 2:
@@ -216,6 +234,8 @@ for force in force_list:
         arg += " -ti 10 -st 260 -et 280 -ev 117-185 -pb y"
     if args.submode == 26:
         arg += " -ti 10 -st 250 -et 350 -ev 5-8 -pb y"
+    if args.submode == 27:
+        arg += " -ti 10 -st 360 -et 390 -p 7 -ss y"
     if args.submode == 3:
         arg += " -ti 10 -st 400 -et 600 -ev 5 -pb y -ss y"
     if args.submode == 4:
