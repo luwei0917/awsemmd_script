@@ -27,6 +27,37 @@ def expand_grid(dictionary):
     return pd.DataFrame([row for row in product(*dictionary.values())],
                         columns=dictionary.keys())
 
+
+def duplicate_pdb(From, To, offset_x=0, offset_y=0, offset_z=0, new_chain="B"):
+    with open(To, "w") as out:
+        with open(From, "r") as f:
+            for line in f:
+                tmp = list(line)
+                atom = line[0:4]
+                atomSerialNumber = line[6:11]
+                atomName = line[12:16]
+                atomResidueName = line[17:20]
+                chain = line[21]
+                residueNumber = line[22:26]
+                # change chain A to B
+                # new_chain = "B"
+                tmp[21] = new_chain
+                if atom == "ATOM":
+                    x = float(line[30:38])
+                    y = float(line[38:46])
+                    z = float(line[46:54])
+
+                    # add 40 to the x
+                    new_x = x + offset_x
+                    new_y = y + offset_y
+
+
+                    tmp[30:38] = "{:8.3f}".format(new_x)
+                    tmp[38:46] = "{:8.3f}".format(new_y)
+
+                a = "".join(tmp)
+                out.write(a)
+
 def compute_native_contacts(coords, MAX_OFFSET=4, DISTANCE_CUTOFF=9.5):
     native_coords = np.array(coords)
     a= native_coords[:,np.newaxis]

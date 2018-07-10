@@ -52,7 +52,7 @@ if not os.path.exists(pdbDir) or not os.path.exists(fLibDir) or not os.path.exis
     sys.exit()
 
 # set up out
-LAMWmatch = open('fragsLAMW_2LHC.mem', 'w')
+LAMWmatch = open('frags.mem', 'w')
 LAMWmatch.write('[Target]' + "\n")
 LAMWmatch.write("query" + "\n\n" + '[Memories]' + "\n")
 log_match = open('log.mem', 'w')

@@ -48,6 +48,10 @@ else:
     do = os.system
     cd = os.chdir
 
+if args.day == "jul10":
+    duplicate_pdb("one_abeta42.pdb", "tmp.pdb", offset_x=40.0, new_chain="B")
+    do("cp one_abeta42.pdb crystal_structure.pdb")
+    do("cat tmp.pdb >> crystal_structure.pdb")
 
 # def pick_structure():
 #     with open("show.tcl", "w") as f:
