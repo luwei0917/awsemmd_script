@@ -25,9 +25,9 @@ parser.add_argument("--restart", type=int, default=0,
                     help="start from? default: 0")
 parser.add_argument("--runs", type=int, default=1,
                     help="then do how many runs?, default: 1")
-parser.add_argument("-s", "--steps", type=int, default=5,
-                    help="How many steps in unit of million,\
-                    per run, default: 5")
+parser.add_argument("-s", "--steps", type=int, default=50,
+                    help="How many steps in unit of hundred thousand(not millions),\
+                    per run, default: 50")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("-m", "--mode", type=int, default=2)
 parser.add_argument("-i", "--inplace", action="store_true", default=False)
@@ -42,6 +42,23 @@ if(args.debug):
 else:
     do = os.system
     cd = os.chdir
+
+if args.mode == 3:
+    run_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=1-00:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun /home/wl45/build/lammps-16Mar18/src/lmp_serial -in {}_{}.in
+    '''
 
 if args.mode == 2:
     run_slurm = '''\
@@ -84,7 +101,7 @@ proteinName = args.protein.strip("/.")
 def set_up():
     seed(datetime.now())
     with open("my_loop_submit.bash", "w") as f:
-        steps = args.steps*1e6
+        steps = args.steps*1e5
         runs = args.runs
         restart = args.restart
         for ii in range(runs):
@@ -100,6 +117,8 @@ def set_up():
                 start_from = "read_data data.{}".format(proteinName)
                 if args.start == "extended":
                     start_from = "read_restart restart.extended"
+                if args.start == "crystal":
+                    start_from = "read_data data.crystal"
             else:
                 start_from = "read_restart restart." + str(int(steps*i))
             do("cp {0}_multi.in {0}_{1}.in".format(proteinName, i))
@@ -107,7 +126,10 @@ def set_up():
             # backbone_file = "fix_backbone_coeff_{}.data".format(args.name)
             with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
                 for line in file:
-                    tmp = line.replace("START_FROM", start_from)
+                    tmp = line.replace("read_data data.crystal", "START_FROM")  # remove in future.
+                    tmp = tmp.replace("langevin 800 800", "langevin 300 300")  # change temp, remove in future
+                    tmp = tmp.replace("langevin 800 300", "langevin 300 300")  # change temp, remove in future
+                    tmp = tmp.replace("START_FROM", start_from)
                     tmp = tmp.replace("MY_FORCE", str(args.force))
                     # tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
                     if i == 0:

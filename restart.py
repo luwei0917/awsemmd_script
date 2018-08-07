@@ -37,7 +37,7 @@ parser.add_argument("-o", "--offAuto", help="turn off from Read from \
 args = parser.parse_args()
 # TODO:
 # add clean command.
-# test analysis, and fullfill missing anaylsis.
+# test analysis, and fullfill missing analysis.
 
 # protein_name = args.template.split('_', 1)[-1].strip('/')
 n = args.number

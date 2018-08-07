@@ -460,7 +460,9 @@ if args.day == "common":
         compute_disReal(temper=True, targetMode=1, bias="dis_", sim_list=[i], queue=queue)
         compute_completeZ(temper=True, bias="dis_", sim_list=[i], queue=queue)
 
-
+if args.day == "aug04":
+    if args.mode == 1:
+        do("run.py -n 10 --restart 1 -s 9 -m 3 abeta42_12/")
 if args.day == "jun21":
     if args.mode == 1:
         temp_list = ["all"]
