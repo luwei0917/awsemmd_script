@@ -35,7 +35,7 @@ proteinName = args.protein
 
 do("~/opt/script/pdb2fasta.sh crystal_structure.pdb > {0}.fasta".format(proteinName))
 size = myPersonalFunctions.length_from_fasta("{0}.fasta".format(proteinName))
-if False:  # used for go model
+if True:  # used for go model
     do("~/opt/fasta2pdb.py "+proteinName)
     do("python2 ~/opt/script/GetCACADistancesFile.py crystal_structure native.dat")
     do("python2 ~/opt/script/GetCACoordinatesFromPDB.py crystal_structure nativecoords.dat")
@@ -107,4 +107,4 @@ if args.membrane:
 if args.frag:
     do("cp ~/opt/database/cullpdb_pc80_* .")
     do("python2 ~/opt/script/MultCha_prepFrags_index.py \
-    cullpdb_pc80_res3.0_R1.0_d160504_chains29712 abeta42_2.fasta 20 1 9 > logfile")
+    cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 1 9 > logfile" % proteinName)

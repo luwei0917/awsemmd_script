@@ -50,10 +50,12 @@ def duplicate_pdb(From, To, offset_x=0, offset_y=0, offset_z=0, new_chain="B"):
                     # add 40 to the x
                     new_x = x + offset_x
                     new_y = y + offset_y
+                    new_z = z + offset_z
 
 
                     tmp[30:38] = "{:8.3f}".format(new_x)
                     tmp[38:46] = "{:8.3f}".format(new_y)
+                    tmp[46:54] = "{:8.3f}".format(new_z)
 
                 a = "".join(tmp)
                 out.write(a)

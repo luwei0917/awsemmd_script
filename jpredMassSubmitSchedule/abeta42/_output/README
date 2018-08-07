@@ -1,0 +1,23 @@
+Filename                                Description
+--------                                -----------
+jp_9IiLEei.align                        PSIBLAST alignment with gaps and redundancy removed in FASTA format
+jp_9IiLEei.als                          Alscript command file. Used to generate PS/PDF outputjp_9IiLEei.blast.gz                     PSIBLAST output (compressed)
+jp_9IiLEei.coils.csv                    The output from coils in CSV format
+jp_9IiLEei.coilseq.lupas_14             The output from coils using a window length of 14
+jp_9IiLEei.coilseq.lupas_21             The output from coils using a window length of 21
+jp_9IiLEei.coilseq.lupas_28             The output from coils using a window length of 28
+jp_9IiLEei.concise                      The prediction in pseudo-CSV format, including the coiled-coil prediction, solvent accessiblity and the sequence alignment
+jp_9IiLEei.concise.blc                  A BLC file of the prediction and alignment
+jp_9IiLEei.concise.pdf                  A PDF file of the prediction and alignment
+jp_9IiLEei.fasta                        Input query sequence in FASTA format
+jp_9IiLEei.full_MSA.fasta               The full multuple sequence alignment before JPred filters. Gaps/insertions shown. FASTA format.
+jp_9IiLEei.hmm                          The HHMer2 profile of the alignment
+jp_9IiLEei.html                         A HTML file of the prediction and alignment
+jp_9IiLEei.input                        Your raw input
+jp_9IiLEei.jalview                      A Jalview annotation file to be read in with the .align file to view the predictions in Jalview
+jp_9IiLEei.jnet                         The output from Jnet
+jp_9IiLEei.profile                      PSIBLAST profile
+jp_9IiLEei.pssm                         PSIBLAST PSSM in a format for Jnet
+jp_9IiLEei.seq                          Your sequence
+jp_9IiLEei.simple.html                  The brief HTML output of the query sequence and prediction only
+jp_9IiLEei.svg.html                     A Jalview generated SVG file with summary of the results.

@@ -1,0 +1,11 @@
+--2018-07-11 16:48:48--  http://www.compbio.dundee.ac.uk/jpred4/results/jp_Anb1Ucl/jp_Anb1Ucl.jnet
+Resolving www.compbio.dundee.ac.uk (www.compbio.dundee.ac.uk)... 134.36.67.203
+Connecting to www.compbio.dundee.ac.uk (www.compbio.dundee.ac.uk)|134.36.67.203|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 1668 (1.6K) [text/plain]
+Saving to: ‘jp_Anb1Ucl.jnet’
+
+     0K .                                                     100%  145M=0s
+
+2018-07-11 16:48:48 (145 MB/s) - ‘jp_Anb1Ucl.jnet’ saved [1668/1668]
+

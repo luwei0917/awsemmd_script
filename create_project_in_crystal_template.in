@@ -6,8 +6,8 @@ timestep 5
 
 dimension	3
 
-boundary s s s
-#boundary p p p
+# boundary s s s
+boundary p p p
 
 neighbor	10 bin
 neigh_modify	delay 5
@@ -96,19 +96,21 @@ variable E_K     equal ke
 variable E_total equal v_E_P+v_E_K
 
 
+fix               1 all nve
+fix               2 all langevin 800 800 10000.0 RANDOM
 
-
-dump		1 all atom 1000 dump.lammpstrj
+dump		1 all atom 1000 NUMBER/dump.lammpstrj
+dump		2 all custom 1000 NUMBER/dump.unwraped id type xsu ysu zsu
 dump_modify	1 sort id
 
-fix energy all print 1000 "${step}, ${E_chain}, ${E_shake}, ${E_chi}, ${E_rama}, ${E_excluded}, ${E_dssp}, ${E_pap}, ${E_water}, ${E_burial}, ${E_helix}, ${E_amhgo}, ${E_fmem}, ${E_vecFM}, ${E_membrane}, ${E_ssb}, ${E_P3}, ${E_bond}, ${E_excl}" file energy.dat screen no title "Steps,    Chain,           Shake,           Chi,             Rama,            Excluded,        DSSP,            P_AP,            Water,           Burial,          Helix,           AMH-Go,       Frag_Mem,        Vec_FM,          Membrane,        SSB,          VTotal,      Ebond,     Epair"
-fix         	wham all print 1000 "${step}, ${qw}, ${rg}, ${tc}, ${E_P}" file wham.dat screen no title "Steps, Qw, Rg, Tc, Energy"
+fix energy all print 1000 "${step}, ${E_chain}, ${E_chi}, ${E_rama}, ${E_water}, ${E_helix}, ${E_amhgo}, ${E_fmem}, ${E_membrane}, ${E_P3}, ${E_bond}, ${E_excl}" file NUMBER/energy.dat screen no title "Steps,    Chain,           Chi,             Rama,            Water,          Helix,           AMH-Go,       Frag_Mem,          Membrane,          VTotal,      Ebond,     Epair"
+fix         	wham all print 1000 "${step}, ${qw}, ${rg}, ${tc}, ${E_P3}" file NUMBER/wham.dat screen no title "Steps, Qw, Rg, Tc, Energy"
 
+restart         100000 restart
 
-
-run		1000
-
-fix               1 all nve
-fix               2 all langevin 100 100 10000.0 RANDOM
-# reset_timestep	0
 run		100000
+
+unfix 2
+fix               2 all langevin 800 300 10000.0 RANDOM
+# reset_timestep	0
+run		800000

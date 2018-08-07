@@ -48,10 +48,83 @@ else:
     do = os.system
     cd = os.chdir
 
+if args.day == "aug04":
+    if args.mode == 1:
+        do("rm crystal_structure.pdb")
+        to = "tmp1.pdb"
+        table = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        count = 0
+        for i in range(2):
+            for j in range(3):
+                duplicate_pdb("one_abeta42.pdb", to, offset_x=i*40.0, offset_y=j*40.0, offset_z=30.0, new_chain=table[count])
+                do(f"cat {to} >> crystal_structure.pdb")
+                count += 1
+    if args.mode == 2:
+        do("create_project.py abeta42_6 --frag --crystal --globular")
+        do("cp ~/opt/abeta/ssweight_weihua ssweight")
+        do("cp ~/opt/abeta/zim12 zim")
+        do("cp ~/opt/abeta/seq.gamma .")
+        do("cp ~/opt/abeta/fix_backbone_coeff.data .")
+        do("cp data.crystal data.abeta42_6")
+    if args.mode == 3:
+        do("python3 ~/opt/small_script/PBC_fixer.py")
+        do("movie.py abeta42_6 -d new.dump")
+
+if args.day == "jul31":
+    if args.mode == 1:
+        do("rm crystal_structure.pdb")
+        to = "tmp1.pdb"
+        table = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        count = 0
+        for i in range(4):
+            for j in range(3):
+                duplicate_pdb("one_abeta42.pdb", to, offset_x=i*40.0, offset_y=j*40.0, offset_z=30.0, new_chain=table[count])
+                do(f"cat {to} >> crystal_structure.pdb")
+                count += 1
+    if args.mode == 2:
+        do("create_project.py abeta42_12 --frag --crystal --globular")
+        do("cp ~/opt/abeta/ssweight_weihua ssweight")
+        do("cp ~/opt/abeta/zim12 zim")
+        do("cp ~/opt/abeta/seq.gamma .")
+        do("cp ~/opt/abeta/fix_backbone_coeff.data .")
+        do("cp data.crystal data.abeta42_12")
+    if args.mode == 3:
+        do("python3 ~/opt/small_script/PBC_fixer.py")
+        do("movie.py abeta42_12 -d new.dump")
+if args.day == "jul20":
+    if args.mode == 1:
+        do("rm crystal_structure.pdb")
+        to = "tmp1.pdb"
+        table = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        count = 0
+        for i in range(4):
+            for j in range(3):
+                duplicate_pdb("one_abeta42.pdb", to, offset_x=i*40.0, offset_y=j*40.0, offset_z=30.0, new_chain=table[count])
+                do(f"cat {to} >> crystal_structure.pdb")
+                count += 1
+
+if args.day == "jul11":
+    if args.mode == 1:
+        do("rm crystal_structure.pdb")
+        to = "tmp1.pdb"
+        table = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        count = 0
+        for i in range(4):
+            for j in range(3):
+                duplicate_pdb("one_abeta42.pdb", to, offset_x=i*40.0, offset_y=j*40.0, offset_z=60.0, new_chain=table[count])
+                do(f"cat {to} >> crystal_structure.pdb")
+                count += 1
 if args.day == "jul10":
-    duplicate_pdb("one_abeta42.pdb", "tmp.pdb", offset_x=40.0, new_chain="B")
-    do("cp one_abeta42.pdb crystal_structure.pdb")
-    do("cat tmp.pdb >> crystal_structure.pdb")
+    if args.mode == 1:
+        duplicate_pdb("one_abeta42.pdb", "tmp.pdb", offset_x=40.0, offset_z=60.0, new_chain="B")
+        do("cp one_abeta42.pdb crystal_structure.pdb")
+        do("cat tmp.pdb >> crystal_structure.pdb")
+    if args.mode == 2:
+        do("create_project.py abeta42_2 --frag --crystal --globular")
+    if args.mode == 3:
+        duplicate_pdb("one_abeta42.pdb", "crystal_structure.pdb", offset_x=0.0, offset_z=60.0, new_chain="A")
+    if args.mode == 4:
+        do("create_project.py abeta42 --frag --crystal --globular")
 
 # def pick_structure():
 #     with open("show.tcl", "w") as f:

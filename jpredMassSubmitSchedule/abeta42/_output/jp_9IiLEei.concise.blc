@@ -1,0 +1,67 @@
+>QUERY
+>UniRef90_G3NGM2
+>UniRef90_W5MXT3
+>UniRef90_F1C7C1
+>UniRef90_O57394
+>UniRef90_V8PCH2
+>UniRef90_Q7ZXQ0
+>UniRef90_UPI000440C4BB
+>UniRef90_F1R8S2
+>UniRef90_H2LYH0
+>
+>
+>
+>lupas_21
+>lupas_14
+>lupas_28
+>jnet
+>conf
+>sol25
+>sol5
+>sol0
+>jhmm
+>jpssm
+ * iteration 1
+ DEEDEDDDDE       9     
+ ASTTTASTIT       9     
+ EEEEEEEEEG       8     
+ FEEEFYYEED       7     
+ RRRRQRRRRR       3     
+ HQHQQHHRHQ       3     
+ DSSSDDDSNS       1     
+ SATTSSAAAA       4    H
+ GGGEGGAGGS       0    H
+ YYYYYYYYYF      H1B   H
+ EEEEEEEEDE      H1   EH
+ VVVVVVVVVV      H1B  EH
+ HYRHHHH RY      H2   EH
+ HHHHHHHHDH      H2    H
+ QQQQQQQQKE       0    H
+ KKKKKKKKRK      E0   EH
+ LLLLLLLQLR      E3B  EH
+ VVVVVVVVMV      E0BB EE
+ FFFFFFFFFL      E2B  EE
+ FFFFFFFYLL      E3BB EE
+ AAAAPAAAAS       1B   E
+ EEEEKEDEEE       3     
+ DDDDDDEDDD       6     
+ VVVVVVVMMV       7B    
+ GGGGGGGGGG       8B    
+ SSSSSSSSSS       8     
+ NNNNNNNNNN       8     
+ K                7     
+ G                2B    
+ A               E4B  EE
+ I               E5BB EE
+ I               E5BB EE
+ G               E2B  EE
+ L               H0BB EH
+ M               H2B  HH
+ V               H1B   H
+ G                2B   H
+ G                1     
+ V                0   E 
+ V               E2   EE
+ I                2     
+ A                9     
+ *

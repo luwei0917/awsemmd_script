@@ -1,0 +1,11 @@
+--2018-07-11 16:38:17--  http://www.compbio.dundee.ac.uk/jpred4/results/jp_9IiLEei/jp_9IiLEei.tar.gz
+Resolving www.compbio.dundee.ac.uk (www.compbio.dundee.ac.uk)... 134.36.67.203
+Connecting to www.compbio.dundee.ac.uk (www.compbio.dundee.ac.uk)|134.36.67.203|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 33390 (33K) [application/x-gzip]
+Saving to: ‘jp_9IiLEei.tar.gz’
+
+     0K .......... .......... .......... ..                   100% 82.1K=0.4s
+
+2018-07-11 16:38:17 (82.1 KB/s) - ‘jp_9IiLEei.tar.gz’ saved [33390/33390]
+
