@@ -270,14 +270,14 @@ def shrinkage(n=552, shrink_size=6, max_frame=2000, fileName="dump.lammpstrj"):
                     count += 1
                     out.write(line)
 
-def compute_theta_for_each_helix(dumpName="../dump.lammpstrj.0"):
+def compute_theta_for_each_helix(output="angles.csv", dumpName="../dump.lammpstrj.0"):
     print("This is for 2xov only")
     helices_list = [(94,114), (147,168), (171, 192), (200, 217), (226, 241), (250, 269)]
     atoms_all_frames = read_lammps(dumpName)
     # print(atoms[0])
     # print(len(atoms), len(atoms[0]))
     # helices_angles_all_frames = []
-    with open("angles.csv", "w") as out:
+    with open(output, "w") as out:
         out.write("Frame, Helix, Angle\n")
         for ii, frame in enumerate(atoms_all_frames):
             # helices_angles = []
@@ -397,9 +397,13 @@ def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=Fa
             wham = pd.concat([wham, tmp],axis=1)
         if dis_h56:
             tmp = pd.read_csv(location+f"distance_h56_{i}.dat")[1:].reset_index(drop=True).drop('Steps', axis=1)
+            tmp1 = pd.read_csv(location+f"distance_h12_{i}.dat")[1:].reset_index(drop=True).drop('Steps', axis=1)
+            tmp2 = pd.read_csv(location+f"distance_h34_{i}.dat")[1:].reset_index(drop=True).drop('Steps', axis=1)
             # print(tmp)
             tmp.columns = tmp.columns.str.strip()
-            wham = pd.concat([wham, tmp],axis=1)
+            tmp1.columns = tmp1.columns.str.strip()
+            tmp2.columns = tmp2.columns.str.strip()
+            wham = pd.concat([wham, tmp, tmp1, tmp2],axis=1)
         if average_z:
             z = pd.read_csv(location+f"z_complete_{i}.dat")[1:].reset_index(drop=True)
             z.columns = z.columns.str.strip()
@@ -523,7 +527,7 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
             elif sample_range_mode == -1:
                 queryCmd ='Step > 4e7 & Step <= 6e7'
             if sample_range_mode == -2:
-                tmp = oneTempAndBias
+                tmp = oneTempAndBias.reset_index(drop=True)
             else:
                 tmp = oneTempAndBias.query(queryCmd).reset_index()
             if average_z < 5:
@@ -543,9 +547,21 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
                 chosen_list += ["DisReal"]
             if average_z == 6:
                 chosen_list = ["TotalE", "Qw", "DisReal"]
-                # chosen_list += ["z_h5_and_h6"]
+                tmp["z_h5_and_h6"] = tmp["z_h5"] + tmp["z_h6"]
+                chosen_list += ["z_h5_and_h6"]
                 chosen_list += ["z_h5"]
                 chosen_list += ["z_h6"]
+                chosen_list += ["Dis_h56"]
+            if average_z == 7:
+                chosen_list = ["TotalE", "Qw", "DisReal"]
+                tmp["z_h56"] = tmp["z_h5"] + tmp["z_h6"]
+                tmp["z_h14"] = tmp["z_h1"] + tmp["z_h2"] + tmp["z_h3"] + tmp["z_h4"]
+                chosen_list += ["z_h14"]
+                chosen_list += ["z_h56"]
+                chosen_list += ["z_h5"]
+                chosen_list += ["z_h6"]
+                chosen_list += ["Dis_h12"]
+                chosen_list += ["Dis_h34"]
                 chosen_list += ["Dis_h56"]
             if chosen_mode == 0:
                 chosen = tmp[chosen_list]
@@ -618,14 +634,18 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
                 chosen = chosen.assign(TotalE_1=tmp.TotalE + 0.1*tmp.AMH_4H,
                                         TotalE_2=tmp.TotalE + 0.2*tmp.AMH_4H,
                                         TotalE_3=tmp.TotalE + 0.5*tmp.AMH_4H)
-                chosen = chosen.assign(TotalE_perturb_go_m=chosen.TotalE_2 - tmp.Lipid - tmp.Membrane - tmp.Rg,
-                                        TotalE_perturb_go_p=chosen.TotalE_2 + kgo*tmp["AMH-Go"],
-                                        TotalE_perturb_lipid_m=chosen.TotalE_2 - tmp.Lipid,
-                                        TotalE_perturb_lipid_p=chosen.TotalE_2 + tmp.Lipid,
-                                        TotalE_perturb_mem_m=chosen.TotalE_2 - tmp.Membrane,
-                                        TotalE_perturb_mem_p=chosen.TotalE_2 + tmp.Membrane,
-                                        TotalE_perturb_rg_m=chosen.TotalE_2 - tmp.Rg,
-                                        TotalE_perturb_rg_p=chosen.TotalE_2 + tmp.Rg)
+                chosen = chosen.assign(TotalE_perturb_1go_m=chosen.TotalE_2 - kgo*tmp["AMH-Go"],
+                                        TotalE_perturb_1go_p=chosen.TotalE_2 + kgo*tmp["AMH-Go"],
+                                        TotalE_perturb_2lipid_m=chosen.TotalE_2 - tmp.Lipid,
+                                        TotalE_perturb_2lipid_p=chosen.TotalE_2 + tmp.Lipid,
+                                        TotalE_perturb_3mem_m=chosen.TotalE_2 - tmp.Membrane,
+                                        TotalE_perturb_3mem_p=chosen.TotalE_2 + tmp.Membrane,
+                                        TotalE_perturb_4rg_m=chosen.TotalE_2 - tmp.Rg,
+                                        TotalE_perturb_4rg_p=chosen.TotalE_2 + tmp.Rg,
+                                        TotalE_perturb_5go=tmp["AMH-Go"],
+                                        TotalE_perturb_5lipid=tmp.Lipid,
+                                        TotalE_perturb_5mem=tmp.Membrane,
+                                        TotalE_perturb_5rg=tmp.Rg)
             if chosen_mode == 10:
                 # chosen_list += ["Dis_h56"]
                 chosen_list += ["z_average"]
@@ -669,6 +689,15 @@ def move_data4(data_folder, freeEnergy_folder, folder_list, temp_dict_mode=1, su
                 # chosen["z_h56"] = (chosen["z_h5"] + chosen["z_h6"])/2
                 chosen = chosen.assign(TotalE_2=tmp.TotalE + 0.2*tmp.AMH_4H,
                                         z_h56=(tmp.z_h5 + tmp.z_h6)/2)
+            if chosen_mode == 13:
+                chosen_list += ["z_average"]
+                chosen = tmp[chosen_list]
+                # chosen["z_h56"] = (chosen["z_h5"] + chosen["z_h6"])/2
+                force = 0.1
+                chosen = chosen.assign(TotalE_2=tmp.TotalE + 0.2*tmp.AMH_4H - (tmp.DisReal - 25.1)*force,
+                                        TotalE_3=tmp.TotalE - (tmp.DisReal - 25.1)*force,
+                                        TotalE_4=tmp.TotalE + 0.2*tmp.AMH_4H,
+                                        TotalE_5=tmp.TotalE + 0.2*tmp.AMH_4H - (tmp.DisReal)*force)
             chosen.to_csv(freeEnergy_folder+"/"+sub_mode_name+f"/data_{sample_range_mode}/t_{temp}_{biasName}_{bias}.dat", sep=' ', index=False, header=False)
 
     # perturbation_table = {0:"original", 1:"m_go",

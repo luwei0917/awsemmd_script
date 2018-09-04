@@ -140,6 +140,8 @@ elif args.force == 8:
     force_list = [0.1, 0.2, 0.0]
 elif args.force == 9:
     force_list = [0.1, 0.0]
+elif args.force == 10:
+    force_list = [0.0, 0.05, 0.1, 0.2, 0.3]
 # force_list = [0.0, 0.1, 0.2]
 
 # force_list = [0.0, 0.1, 0.2]
@@ -200,7 +202,29 @@ for force in force_list:
         arg += " -v1 3 -v1n 40 -v2 5 -v2n 40"
     if args.mode == 18:
         arg = "-b 3 -e 1 -d 2 " + temp_arg
-        arg += " -v1 6 -v1n 40 -v2 8 -v2n 40"
+        arg += " -v1 4 -v1n 40 -v2 7 -v2n 40"
+    if args.mode == 20:
+        arg = "-b 3 -e 1 -d 2 " + temp_arg
+        # arg += " -v1 3 -v1n 40 -v2 8 -v2n 40"
+        arg += " -v1 8 -v1n 40 -v2 3 -v2n 40"
+    if args.mode == 21:
+        arg = "-b 3 -e 1 -d 2 " + temp_arg
+        arg += " -v1 3 -v1n 40 -v2 5 -v2n 40"
+    if args.mode == 22:
+        arg = "-b 3 -e 1 -d 2 " + temp_arg
+        arg += " -v1 3 -v1n 40 -v2 11 -v2n 40"
+    if args.mode == 23:
+        arg = "-b 3 -e 1 -d 2 " + temp_arg
+        arg += " -v1 10 -v1n 40 -v2 5 -v2n 40"
+    if args.mode == 24:
+        arg = "-b 3 -e 1 -d 2 " + temp_arg
+        arg += " -v1 8 -v1n 40 -v2 4 -v2n 40"
+    if args.mode == 25:
+        arg = "-b 3 -e 1 -d 2 " + temp_arg
+        arg += " -v1 9 -v1n 40 -v2 4 -v2n 40"
+    if args.mode == 26:
+        arg = "-b 3 -e 1 -d 2 " + temp_arg
+        arg += " -v1 10 -v1n 40 -v2 4 -v2n 40"
     if args.submode == 1:
         arg += " -ti 10 -st 350 -et 600 -p 5 -p 6 -p 7 -p 8 -p 9 -p 10 -p 11 -p 12 -pb y -ss y"
     if args.submode == 2:
@@ -236,6 +260,16 @@ for force in force_list:
         arg += " -ti 10 -st 250 -et 350 -ev 5-8 -pb y"
     if args.submode == 27:
         arg += " -ti 10 -st 360 -et 390 -p 7 -ss y"
+    if args.submode == 28:
+        arg += " -ti 10 -st 360 -et 390 -p 9 -p 10 -ss y"
+    if args.submode == 29:
+        arg += " -ti 10 -st 330 -et 420 -p 10 -ss y -pb y -ev 20-23"
+    if args.submode == 30:
+        arg += " -ti 10 -st 330 -et 420 -p 13 -ss y -pb y -ev 23-26"
+    if args.submode == 31:
+        arg += " -ti 1 -st 373 -et 374 -p 6 -p 7 -p 8 -p 9 -ss y"
+    if args.submode == 32:
+        arg += " -ti 3 -st 370 -et 373 -p 6 -p 7 -p 8 -p 9 -ss y"
     if args.submode == 3:
         arg += " -ti 10 -st 400 -et 600 -ev 5 -pb y -ss y"
     if args.submode == 4:
