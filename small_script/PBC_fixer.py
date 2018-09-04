@@ -19,9 +19,11 @@ parser = argparse.ArgumentParser(description="This code read the dump file.\
 
 parser.add_argument("-s", "--source", help="from", default="dump.unwraped")
 parser.add_argument("-d", "--destination", help="to", default="new.dump")
+parser.add_argument("-n", "--number",
+                    type=int, default=12, help="chain number default 12")
 args = parser.parse_args()
 
-chain_num = 12
+chain_num = args.number
 # def check(a):
 #     print(a)
 
@@ -89,9 +91,9 @@ with open(to_file, "w") as out:
                 data = pd.DataFrame(data, columns=["n", "atomType", "x", "y", "z"])
 
                 for direction in ["x", "y", "z"]:
-                    if (data[direction] > 1.1).all():
+                    while (data[direction] > 1.05).all():
                         data[direction] = data[direction] - 1
-                    if (data[direction] < -0.1).all():
+                    while (data[direction] < -0.05).all():
                         data[direction] = data[direction] + 1
                 for i, row in data.iterrows():
                     out.write(f'{int(row["n"])} {int(row["atomType"])} {row["x"]} {row["y"]} {row["z"]} \n')

@@ -242,7 +242,7 @@ def plot2d(location, path, temp="450", res=30, zmin=0, zmax=30, z=3, xlabel="xla
     # return (xi,yi,zi)
     return f_on_path
 
-def plot2d_side_by_side(location1, location2, zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title1="", title2="", outname=None):
+def plot2d_side_by_side(location1, location2, zmin=0, zmax=30, xlabel="xlabel", ylabel="ylabel", title1="", title2="", outname=None,mode=1):
     fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(20, 6.18))
     titlefontsize = 28
     # plt.contour(xi, yi, zi, 50, linewidths=0.25,colors='k')
@@ -251,6 +251,9 @@ def plot2d_side_by_side(location1, location2, zmin=0, zmax=30, xlabel="xlabel", 
     # plt.contourf(xi, yi, zi, 20, cmap='rainbow')
     data = np.loadtxt(location1)
     xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax)
+    if mode == 2:
+        xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax, x=2,y=1)
+        yi = yi/2
     g = ax1.contourf(xi, yi, zi, 30, cmap='jet')
     # plt.xlim(xmin, xmax)
     g.set_clim(zmin, zmax)
@@ -261,8 +264,13 @@ def plot2d_side_by_side(location1, location2, zmin=0, zmax=30, xlabel="xlabel", 
     ax1.set_title(title1, y=1.02, fontsize=titlefontsize)
     data = np.loadtxt(location2)
     xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax)
+    if mode == 2:
+        xi, yi, zi = getxyz(data, zmin=zmin, zmax=zmax, x=2,y=1)
+        yi = yi/2
     g = ax2.contourf(xi, yi, zi, 30, cmap='jet')
     ax2.set_title(title2, y=1.02, fontsize=titlefontsize)
+    ax2.set_xlabel(xlabel)
+    ax2.set_ylabel(ylabel)
     g.set_clim(zmin, zmax)
     cbaxes = fig.add_axes([0.95, 0.1, 0.03, 0.8])
     plt.colorbar(g, cax=cbaxes)
@@ -370,7 +378,7 @@ def shortest_path_2(location, temp="450", start=(4,5), end=-1, block=-1, res=30,
         plt.xlabel("End to end distance(Å)")
         plt.ylabel("Free energy(kT)")
         # plt.plot(f_on_path)
-        # plt.ylim([0,zmax])
+        plt.ylim([0,zmax])
         if save:
             plt.savefig(f"/Users/weilu/Dropbox/GlpG_paper_2018/figures/1d_path_{title}.png", dpi=300)
     if plot1d == 1:
@@ -384,7 +392,9 @@ def shortest_path_2(location, temp="450", start=(4,5), end=-1, block=-1, res=30,
         plt.ylim([0,zmax])
         if save:
             plt.savefig(f"/Users/weilu/Dropbox/GlpG_paper_2018/figures/1d_path_{title}.png", dpi=300)
-    return (path, f_on_path)
+    # return (path, f_on_path)
+    # return (x_on_path, f_on_path)
+    return (path, f_on_path, x_on_path)
 
 def plot_shortest_path(location, path, res=30, zmin=0, zmax=30, z=3, xlabel="xlabel", ylabel="ylabel", title="", save=False, plot1d=True, plot2d=True, **kargs):
     data = np.loadtxt(location)
@@ -467,7 +477,8 @@ def shortest_path(location, temp="450", start=(4,5), end=-1, block=-1, res=30, z
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
     if save:
-        plt.savefig("/Users/weilu/Dropbox/GlpG_paper_2018/figures/2d_z6_qw.png", dpi=300)
+        plt.savefig("/Users/weilu/Dropbox/GlpG_paper_2018/figures/56_z_dis.png", dpi=300)
+        # plt.savefig("/Users/weilu/Dropbox/GlpG_paper_2018/figures/2d_z6_qw.png", dpi=300)
     f_on_path = [zi[tuple(p)] for p in reversed(path)]
     if plot1d:
         plt.figure()

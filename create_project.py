@@ -29,7 +29,10 @@ else:
 
 proteinName = args.protein
 
-
+# print(args)
+with open('commandline_args.txt', 'w') as f:
+    f.write(' '.join(sys.argv))
+    f.write('\n')
 
 # get fasta, pdb, seq file redy
 
@@ -46,10 +49,10 @@ if True:  # used for go model
 do("stride crystal_structure.pdb > ssweight.stride")
 do("python2 ~/opt/script/stride2ssweight.py > ssweight")
 
-## below used for old zim file
-# do("grep -E 'CB|CA  GLY' crystal_structure.pdb > cbs.data")
-# do("""awk '{if($9>15) print "1"; else if($9<-15) print "3"; else print "2"}'  cbs.data  > zim""")
-
+# below used for zimPosition file
+if args.membrane:
+    do("grep -E 'CB|CA  GLY' crystal_structure.pdb > cbs.data")
+    do("""awk '{if($9>15) print "1"; else if($9<-15) print "3"; else print "2"}'  cbs.data  > zimPosition""")
 
 # create "in" file
 alpha_carbons = " ".join([str(i) for i in list(range(1, size*3+1, 3))])

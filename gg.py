@@ -48,6 +48,100 @@ else:
     do = os.system
     cd = os.chdir
 
+# def pick_structure():
+#     with open("show.tcl", "w") as f:
+#         structure_index = 1
+#         f.write("mol new structure_%s.pdb\n" % structure_index)
+#         f.write("mol modcolor 0 [molinfo top] Index\n")
+#         f.write("mol modstyle 0 [molinfo top] NewCartoon 0.300000 10.000000 4.100000 0\n")
+def pick_structure_generate_show_script(n=2):
+    with open("show.pml", "w") as f:
+        for structure_index in range(0, n):
+            f.write("load structure_%s.pdb\n" % structure_index)
+            f.write("cealign structure_0, structure_%s\n" % structure_index)
+            f.write("spectrum count, rainbow_rev, structure_%s, byres=1\n" % structure_index)
+        # f.write("hide lines, all\n")
+        # f.write("show cartoon, all\n")
+        # f.write("hide nonbonded, all\n")
+
+if args.day == "aug15":
+    cmd_pre = "python2 ~/opt/script/BuildAllAtomsFromLammps.py"
+    # location_pre = "/Users/weilu/Research/server/apr_2018/sixth/rg_0.15_lipid_1.0_mem_1_go_0.8/simulation"
+    location_pre = "/Users/weilu/Research/server/may_2018/second/simulation"
+    # location_pre = "/Users/weilu/Research/server/may_2018/second_long/simulation"
+    location_pre = "/Volumes/Wei_backup/GlpG/may_2018_back/second/simulation"
+    # location_pre = "/Volumes/Wei_backup/GlpG/may_2018_back/second_long/simulation"
+    # cmd = cmd_pre + " " + location + " structure_2 4080 -seq ~/opt/pulling/2xov.seq"
+
+    # tt = pd.read_csv("/Users/weilu/Research/server/jun_2018/low_e_jun01_h56.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Research/server/jun_2018/low_e_jun01_h34.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Research/server/jun_2018/low_e_jun01_h12.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Research/server/jun_2018/low_e_jun01_out.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Research/server/jun_2018/low_e_jun01_pre.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Research/server/jun_2018/low_e_jun01_transition.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Research/server/jun_2018/low_e_jun01_post_transition.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Desktop/56_highest_barrier.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Desktop/56.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Desktop/56_pick.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Desktop/56_pick_2.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Desktop/56_pick_3.csv", index_col=0)  # near native
+    # tt = pd.read_csv("/Users/weilu/Desktop/56_pick_4.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Desktop/aug_no_perturb.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Desktop/aug_no_perturb_inter.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Desktop/aug_no_perturb_inter_2.csv", index_col=0)
+    tt = pd.read_csv("/Users/weilu/Desktop/native.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Desktop/aug_no_perturb_trans.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Desktop/aug_no_perturb_trans_2.csv", index_col=0)
+    # tt = pd.read_csv("/Users/weilu/Desktop/aug_no_perturb_path.csv", index_col=0)
+    # rerun = 1
+    # sample = tt.sample(5).reset_index(drop=True)
+    sample = tt.reset_index(drop=True)
+    # sample["Frame"] = ((sample["Step"] - 2e7*rerun)/4000).astype("int")
+    sample["rerun"] = (sample["Step"] // 2e7).astype(int)
+    sample["Frame"] = ((sample["Step"] % 2e7)/4000).astype("int")
+    for index, row in sample.iterrows():
+        BiasTo = row["BiasTo"]
+        Run = row["Run"]
+        Frame = row["Frame"]
+        rerun = row["rerun"]
+        print(BiasTo, Run, Frame)
+
+        location = location_pre + f"/dis_{BiasTo}/{rerun}/dump.lammpstrj.{int(Run)}"
+        cmd = cmd_pre + " " + location + f" structure_{index} {int(Frame)} -seq ~/opt/pulling/2xov.seq"
+        print(cmd)
+        do(cmd)
+    pick_structure_generate_show_script(n=len(sample))
+
+if args.day == "aug10":
+    name = "abeta42_2"
+    rowN = 2
+    columnN = 1
+    if args.mode == 1:
+        do("rm crystal_structure.pdb")
+        to = "tmp1.pdb"
+
+        table = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        count = 0
+        for i in range(rowN):
+            for j in range(columnN):
+                duplicate_pdb("one_abeta42.pdb", to, offset_x=i*40.0, offset_y=j*40.0, offset_z=30.0, new_chain=table[count])
+                do(f"cat {to} >> crystal_structure.pdb")
+                count += 1
+    if args.mode == 2:
+        do(f"create_project.py {name} --frag --crystal --globular")
+        do("cp ~/opt/abeta/ssweight_weihua ssweight")
+        # do("cp ~/opt/abeta/zim12 zim")
+        do("rm zim")
+        for i in range(rowN*columnN):
+            do("cat ~/opt/abeta/zim >> zim")
+        do("cp ~/opt/abeta/seq.gamma .")
+        do("cp ~/opt/abeta/fix_backbone_coeff.data .")
+        do(f"cp data.crystal data.{name}")
+    if args.mode == 3:
+        do("python3 ~/opt/small_script/PBC_fixer.py")
+        do(f"movie.py {name} -d new.dump")
+
+
 if args.day == "aug04":
     if args.mode == 1:
         do("rm crystal_structure.pdb")
@@ -126,21 +220,6 @@ if args.day == "jul10":
     if args.mode == 4:
         do("create_project.py abeta42 --frag --crystal --globular")
 
-# def pick_structure():
-#     with open("show.tcl", "w") as f:
-#         structure_index = 1
-#         f.write("mol new structure_%s.pdb\n" % structure_index)
-#         f.write("mol modcolor 0 [molinfo top] Index\n")
-#         f.write("mol modstyle 0 [molinfo top] NewCartoon 0.300000 10.000000 4.100000 0\n")
-def pick_structure_generate_show_script(n=2):
-    with open("show.pml", "w") as f:
-        for structure_index in range(0, n):
-            f.write("load structure_%s.pdb\n" % structure_index)
-            f.write("cealign structure_0, structure_%s\n" % structure_index)
-            f.write("spectrum count, rainbow_rev, structure_%s, byres=1\n" % structure_index)
-        # f.write("hide lines, all\n")
-        # f.write("show cartoon, all\n")
-        # f.write("hide nonbonded, all\n")
 
 if args.day == "may28":
     cmd_pre = "python2 ~/opt/script/BuildAllAtomsFromLammps.py"

@@ -88,8 +88,7 @@ srun {}\n'''
 def replace(TARGET, FROM, TO):
     do("sed -i.bak 's/{}/{}/g' {}".format(FROM,TO,TARGET))
 
-def getFromTerminal(CMD):
-    return subprocess.Popen(CMD,stdout=subprocess.PIPE,shell=True).communicate()[0].decode()
+
 
 def continueRunConvertion(n=12, rerun=0, name="2xov", convert_read_data=False):
     rerun_plus_one = rerun + 1
@@ -112,34 +111,7 @@ def continueRunConvertion(n=12, rerun=0, name="2xov", convert_read_data=False):
     replace(fileName, line, line + " $w")
 
 
-def read_hydrophobicity_scale(seq, isNew=False):
-    seq_dataFrame = pd.DataFrame({"oneLetterCode":list(seq)})
-    HFscales = pd.read_table("~/opt/small_script/Whole_residue_HFscales.txt")
-    if not isNew:
-    # Octanol Scale
-        code = {"GLY" : "G", "ALA" : "A", "LEU" : "L", "ILE" : "I",
-                "ARG+" : "R", "LYS+" : "K", "MET" : "M", "CYS" : "C",
-                "TYR" : "Y", "THR" : "T", "PRO" : "P", "SER" : "S",
-                "TRP" : "W", "ASP-" : "D", "GLU-" : "E", "ASN" : "N",
-                "GLN" : "Q", "PHE" : "F", "HIS+" : "H", "VAL" : "V",
-                "M3L" : "K", "MSE" : "M", "CAS" : "C" }
-    else:
-        code = {"GLY" : "G", "ALA" : "A", "LEU" : "L", "ILE" : "I",
-                "ARG+" : "R", "LYS+" : "K", "MET" : "M", "CYS" : "C",
-                "TYR" : "Y", "THR" : "T", "PRO" : "P", "SER" : "S",
-                "TRP" : "W", "ASP-" : "D", "GLU-" : "E", "ASN" : "N",
-                "GLN" : "Q", "PHE" : "F", "HIS0" : "H", "VAL" : "V",
-                "M3L" : "K", "MSE" : "M", "CAS" : "C" }
-    HFscales_with_oneLetterCode = HFscales.assign(oneLetterCode = HFscales.AA.str.upper().map(code)).dropna()
-    data = seq_dataFrame.merge(HFscales_with_oneLetterCode, on="oneLetterCode", how="left")
-    return data
 
-def create_zim(seqFile, isNew=False):
-    a = seqFile
-    seq = getFromTerminal("cat " + a).rstrip()
-    data = read_hydrophobicity_scale(seq, isNew=isNew)
-    z = data["DGwoct"].values
-    np.savetxt("zim", z, fmt="%.2f")
 
 def rerun(extra="", mode=0, useNewTable=False):
     print(mode)
