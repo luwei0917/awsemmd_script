@@ -30,6 +30,14 @@ if args.protein == "2xov":
     elif args.targetMode == 1:
         target_residue_i = 136
         target_residue_j = 181
+    elif args.targetMode == 2:
+        # Helix 3,4
+        target_residue_i = 80
+        target_residue_j = 131
+    elif args.targetMode == 3:
+        # Helix 1,2
+        target_residue_i = 1
+        target_residue_j = 80
 elif args.protein == "tmhc2":
     if args.targetMode == 0:
         target_residue_i = 1
@@ -117,6 +125,10 @@ if args.targetMode == 0:
     extra = ""
 elif args.targetMode == 1:
     extra = "_h56"
+elif args.targetMode == 2:
+    extra = "_h34"
+elif args.targetMode == 3:
+    extra = "_h12"
 if args.mode == -1:
     disName = f"distance{extra}.dat"
 else:
@@ -127,5 +139,9 @@ with open(disName, "w") as f:
         f.write("Steps, DisReal\n")
     elif args.targetMode == 1:
         f.write("Steps, Dis_h56\n")
+    elif args.targetMode == 2:
+        f.write("Steps, Dis_h34\n")
+    elif args.targetMode == 3:
+        f.write("Steps, Dis_h12\n")
     for i, d in enumerate(dis):
         f.write("{}, {}\n".format(i*4000, d))
