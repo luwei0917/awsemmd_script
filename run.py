@@ -29,7 +29,7 @@ parser.add_argument("-s", "--steps", type=int, default=50,
                     help="How many steps in unit of hundred thousand(not millions),\
                     per run, default: 50")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
-parser.add_argument("-m", "--mode", type=int, default=2)
+parser.add_argument("-m", "--mode", type=int, default=4)
 parser.add_argument("-i", "--inplace", action="store_true", default=False)
 parser.add_argument("-f", "--force", type=float, default=1.0)
 parser.add_argument("--start", default="native")
@@ -43,6 +43,30 @@ else:
     do = os.system
     cd = os.chdir
 
+with open('commandline_args.txt', 'a') as f:
+    f.write(' '.join(sys.argv))
+    f.write('\n')
+
+
+if args.mode == 4:
+    run_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=1-00:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+#SBATCH --constraint=skylake
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun /home/wl45/build/sep03/src/lmp_serial -in {}_{}.in
+    '''
+
+# SBATCH --constraint=skylake
 if args.mode == 3:
     run_slurm = '''\
 #!/bin/bash
@@ -55,6 +79,7 @@ if args.mode == 3:
 #SBATCH --time=1-00:00:00
 #SBATCH --mail-user=luwei0917@gmail.com
 #SBATCH --mail-type=FAIL
+#SBATCH --constraint=skylake
 echo "My job ran on:"
 echo $SLURM_NODELIST
 srun /home/wl45/build/lammps-16Mar18/src/lmp_serial -in {}_{}.in
@@ -97,6 +122,14 @@ srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_serial -in {}_{}.in
 
 if args.commons == 1:
     run_slurm = run_slurm.replace("ctbp-common", "commons")
+# run with scavenge
+if args.commons == 2:
+    run_slurm = run_slurm.replace("--partition=ctbp-common", "--partition=scavenge")
+    run_slurm = run_slurm.replace("--account=ctbp-common", "--account=commons")
+    run_slurm = run_slurm.replace("#SBATCH --constraint=skylake", "")
+    run_slurm = run_slurm.replace("--time=1-00:00:00", "--time=04:00:00")
+
+
 proteinName = args.protein.strip("/.")
 def set_up():
     seed(datetime.now())

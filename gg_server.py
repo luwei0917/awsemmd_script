@@ -85,6 +85,23 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun {}\n'''
 
+
+scavenge_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=commons
+#SBATCH --partition=scavenge
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=04:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun {}\n'''
+
+
 def replace(TARGET, FROM, TO):
     do("sed -i.bak 's/{}/{}/g' {}".format(FROM,TO,TARGET))
 
@@ -435,6 +452,219 @@ if args.day == "common":
         compute_disReal(temper=True, targetMode=2, bias="dis_", sim_list=[i], queue=queue)
         compute_disReal(temper=True, targetMode=3, bias="dis_", sim_list=[i], queue=queue)
 
+def removeResXfromlist():
+    with open(f"database/cath-dataset-nonredundant-S20Clean.list", "w") as out2:
+        with open(f"database/cath-dataset-nonredundant-S20Clean.atom.fa", "w") as out:
+            with open("database/cath-dataset-nonredundant-S20.atom.fa", "r") as f:
+                count = 0
+                for l in f:
+                    if count % 2 == 0:
+                        #extract protein id
+                        assert(l[0] == ">")
+            #             print(l)
+                        tmp = l
+                        name = re.search('>cath\|(.*)\|(\w{7})\/(.*)', l).group(2)
+            #             name = "test"
+            #             print(name)
+                    else:
+                        assert(l[0] != ">")
+            #             print(l)
+                        if "X" in l:
+                            pass
+                        else:
+                            out.write(tmp)
+                            out.write(l)
+                            out2.write(name+"\n")
+                    count += 1
+
+def removeExtraName():
+    '''
+    remove The 'B' or possible 'A' at position 16
+    for example, chagne from
+    ATOM    193  CB BMET A  30     -20.305 -21.245 -45.095  0.50 10.77
+    to
+    ATOM    193  CB  MET A  30     -20.305 -21.245 -45.095  0.50 10.77
+    '''
+    p_list = glob.glob("database/dompdb_origin/*")
+    for name in p_list:
+        toName = name.replace("dompdb_origin", "dompdb_cleaned")
+        with open(toName, "w") as out:
+            with open(name, "r") as f:
+                for l in f:
+                    tmp = list(l)
+                    tmp[16] = " "
+                    out.write("".join(tmp))
+
+
+def isComplete(a):
+    for model in a:
+        for chain in model:
+            for res in chain:
+    #             print(res)
+                try:
+                    if res["CA"] is not None:
+                        pass
+                    if res.get_resname() == "GLY" or res["CB"] is not None:
+                        pass
+                    if res["N"] is not None:
+                        pass
+                    if res["C"] is not None:
+                        pass
+                except:
+                    print(res)
+                    return 0
+    return 1
+if args.day == "oct25":
+    if args.mode == 1:
+        with open("database/cath-dataset-nonredundant-S20Clean.list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        while pos < len(content):
+            with open(f"proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(50):
+                    if pos < len(content):
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i-1)
+    if args.mode == 2:
+        removeExtraName()
+    if args.mode == 3:
+        p_list = glob.glob("database/dompdb/*")
+        for p in p_list:
+            from pyCodeLib import *
+            import warnings
+            warnings.filterwarnings('ignore')
+            a = parse_pdb(p[:-4])
+            if isComplete(a):
+                pass
+            else:
+                print(p)
+    if args.mode == 4:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # I may want to just extract good part, instead of remove completely.
+        with open(f"database/cath-dataset-nonredundant-S20Clean.list", "w") as out2:
+            with open(f"database/cath-dataset-nonredundant-S20Clean.atom.fa", "w") as out:
+                with open("database/list_back/cath-dataset-nonredundant-S20Clean.atom.fa", "r") as f:
+                    count = 0
+                    for l in f:
+                        if count % 2 == 0:
+                            #extract protein id
+                            assert(l[0] == ">")
+                #             print(l)
+                            tmp = l
+                            name = re.search('>cath\|(.*)\|(\w{7})\/(.*)', l).group(2)
+                #             name = "test"
+                #             print(name)
+                        else:
+                            assert(l[0] != ">")
+                #             print(l)
+                            a = parse_pdb(f"database/dompdb/{name}")
+                            if "X" in l:
+                                pass
+                            elif not isComplete(a):
+                                pass
+                            else:
+                                out.write(tmp)
+                                out.write(l)
+                                out2.write(name+"\n")
+                        count += 1
+if args.day == "oct24":
+    if args.mode == 1:
+        # clean up
+        # do("rm database/S20_seq/*")
+        do("rm *.out")
+        do("rm *.slurm")
+        # do("rm database/dompdb/*")
+        do("rm -r decoys/*")
+        do("rm gammas/*")
+        do("rm phis/*")
+    if args.mode == 2:
+        for i in range(285):
+            with open(f"run_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py proteins_name_list_{i}.txt"))
+            do(f"sbatch run_{i}.slurm")
+    if args.mode == 3:
+        with open("proteins_name_list_56.txt") as f:
+            content = f.readlines()
+        # you may also want to remove whitespace characters like `\n` at the end of each line
+        name_list = [x.strip() for x in content]
+        for n in name_list:
+            do(f"echo {n}")
+            # do(f"grep 'CA' database/dompdb/{n}.pdb | wc")
+            # do(f"grep 'CA' database/dompdb/{n}.pdb | wc")
+            do(f"grep 'UNK' database/dompdb/{n}.pdb")
+    if args.mode == 4:
+        # clean up the database list
+        removeResXfromlist()
+    if args.mode == 5:
+        # debug list 56
+        with open("proteins_name_list_56.txt") as f:
+            content = f.readlines()
+        # you may also want to remove whitespace characters like `\n` at the end of each line
+        pos = 0
+        for i in range(40):
+            with open(f"test_list_{i}.txt", "w") as out:
+                for ii in range(5):
+                    if pos < len(content):
+                        out.write(content[pos])
+                    pos += 1
+    if args.mode == 6:
+        for i in range(40):
+            with open(f"run_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python3 compute_phis.py test_list_{i}.txt"))
+            do(f"sbatch run_{i}.slurm")
+
+
+if args.day == "oct14":
+    if args.mode == 1:
+        for i in range(300):
+            with open(f"run_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python2 ../randomGen.py t_{i}.csv -n 2e6"))
+            do(f"sbatch run_{i}.slurm")
+
+
+if args.day == "sep21":
+    if args.mode == 1:
+        pdb_list = glob.glob(f"lowTstructure*.pdb")
+        n = len(pdb_list)
+        n_in_thousand = (n // 1000) + 1
+        print(n)
+        i = 0
+        for i in range(10):
+            for thousand in range(n_in_thousand):
+                # computeMutualQ(i, j, thousand, n)
+                do(f"cp run_template.slurm run_{i}_{thousand}.slurm")
+                with fileinput.FileInput(f"run_{i}_{thousand}.slurm", inplace=True, backup='.bak') as file:
+                    for line in file:
+                        tmp = line.replace("FROM", str(i))
+                        tmp = tmp.replace("NUMBER", str(n))
+                        tmp = tmp.replace("THOUSAND", str(thousand))
+                        # tmp = BETA_ATOMS
+                        print(tmp, end='')
+                do(f"sbatch run_{i}_{thousand}.slurm")
+if args.day == "sep20":
+    if args.mode == 1:
+        name_list = ["tr894", "tr882", "tr594", "tr869", "tr898", "tr862", "tr877", "tr872", "tr885", "tr866", "tr868", "tr884", "tr895", "tr896", "tr870", "tr921", "tr922", "tr891", "tr948"]
+        for name in name_list:
+            do(f"mkdir {name}")
+            # do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/{name}/PCselection/* {name}/")
+            do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/PCselection/{name}/* {name}/")
+
+if args.day == "sep16":
+    if args.mode == 1:
+        name_list = ["tr894", "tr882", "tr594", "tr869", "tr898", "tr862", "tr877", "tr872", "tr885", "tr866", "tr868", "tr884", "tr895", "tr896", "tr870", "tr921", "tr922", "tr891", "tr948"]
+        for name in name_list:
+            do(f"mkdir {name}")
+            cd(name)
+            do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/{name}/towardsPC1/awsem_energy/bias.log .")
+            do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/{name}/towardsPC1/awsem_energy/awsem.log .")
+            do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/{name}/towardsPC1/awsem_energy/rwplusScore.txt .")
+            do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/{name}/towardsPC1/awsem_energy/rmsd-angstrom.xvg .")
+            cd("..")
 
 if args.day == "aug29":
     if args.mode == 1:
@@ -650,6 +880,10 @@ if args.day == "aug15":
                     cd("..")
                 cd("..")
         cd("..")
+
+
+
+'''
 if args.day == "aug11":
     if args.mode == 1:
         temp_list = ["all"]
@@ -2689,6 +2923,11 @@ if args.day == "apr30":
                     cd("..")
                 cd("..")
         cd("..")
+
+
+
+
+
 if args.day == "apr27":
     if args.mode == 1:
         rerun(extra="DMPC", mode=1)
@@ -9651,3 +9890,7 @@ def continue_run():
 #         os.system("cp chosen.pdb ../../../{}/".format(result_folder) + folder+"/best_q/"+str(i)+".pdb")
 #         os.chdir("../..")
 #     os.chdir("..")
+
+
+
+'''

@@ -139,7 +139,7 @@ sigma_sq = []
 
 from Bio.PDB.PDBParser import PDBParser
 
-p = PDBParser(PERMISSIVE=1)
+p = PDBParser(PERMISSIVE=1, QUIET=True)
 
 def computeQ():
     if len(ca_atoms_pdb_2)!=len(ca_atoms_pdb):
@@ -218,5 +218,6 @@ for i in range(0, n+1):
 
 if len(ca_atoms_pdb_2)>0:
     q = computeQ()
-    print str(round(q,3))
+    # print str(round(q,3)),
+    sys.stdout.write(str(round(q,3)) + " ")
     n_atoms = len(ca_atoms_pdb_2)
