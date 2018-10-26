@@ -57,7 +57,7 @@ if len(sys.argv)!=4 and len(sys.argv)!=3:
 
 from Bio.PDB.PDBParser import PDBParser
 
-p = PDBParser(PERMISSIVE=1)
+p = PDBParser(PERMISSIVE=1,QUIET=True)
 
 pdb_file = sys.argv[1]
 pdb_id = pdb_file

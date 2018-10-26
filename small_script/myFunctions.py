@@ -37,15 +37,15 @@ def read_hydrophobicity_scale(seq, isNew=False):
                 "TYR" : "Y", "THR" : "T", "PRO" : "P", "SER" : "S",
                 "TRP" : "W", "ASP-" : "D", "GLU-" : "E", "ASN" : "N",
                 "GLN" : "Q", "PHE" : "F", "HIS+" : "H", "VAL" : "V",
-                "M3L" : "K", "MSE" : "M", "CAS" : "C" }
+                "M3L" : "K", "MSE" : "M", "CAS" : "C"}
     else:
         code = {"GLY" : "G", "ALA" : "A", "LEU" : "L", "ILE" : "I",
                 "ARG+" : "R", "LYS+" : "K", "MET" : "M", "CYS" : "C",
                 "TYR" : "Y", "THR" : "T", "PRO" : "P", "SER" : "S",
                 "TRP" : "W", "ASP-" : "D", "GLU-" : "E", "ASN" : "N",
                 "GLN" : "Q", "PHE" : "F", "HIS0" : "H", "VAL" : "V",
-                "M3L" : "K", "MSE" : "M", "CAS" : "C" }
-    HFscales_with_oneLetterCode = HFscales.assign(oneLetterCode = HFscales.AA.str.upper().map(code)).dropna()
+                "M3L" : "K", "MSE" : "M", "CAS" : "C"}
+    HFscales_with_oneLetterCode = HFscales.assign(oneLetterCode=HFscales.AA.str.upper().map(code)).dropna()
     data = seq_dataFrame.merge(HFscales_with_oneLetterCode, on="oneLetterCode", how="left")
     return data
 

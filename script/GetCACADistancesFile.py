@@ -39,7 +39,7 @@ if len(sys.argv)==1:
 
 from Bio.PDB.PDBParser import PDBParser
 
-p = PDBParser(PERMISSIVE=1)
+p = PDBParser(PERMISSIVE=1,QUIET=True)
 
 struct_id = sys.argv[1]
 filename = struct_id + ".pdb"

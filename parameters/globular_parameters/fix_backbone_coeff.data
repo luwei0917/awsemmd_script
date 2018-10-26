@@ -221,7 +221,7 @@ local density offset
 kappa
 center of the membrane-pore (x, y, z)
 pore type (only 0)
-lenght of the membrane
+length of the membrane
 pore size
 distortion of the pore (from 0 to 100)
 gamma values

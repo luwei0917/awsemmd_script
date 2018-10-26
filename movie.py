@@ -18,7 +18,7 @@ parser.add_argument("-m", "--mode",
                     type=int, default=2)
 parser.add_argument("--submode",
                     type=int, default=-1)
-
+parser.add_argument("--fix", help="convert pdb period box, number of chain", type=int, default=-1)
 args = parser.parse_args()
 # render Tachyon frame450.dat '/Applications/VMD 1.9.2.app/Contents/vmd/tachyon_MACOSXX86' -aasamples 12 %s -format TARGA -o frame450.tga -res 2000 2000
 
@@ -28,6 +28,8 @@ cd = os.chdir
 
 protein_name = args.protein.split('.')[0]
 
+if args.fix >= 0:
+    do(f"python ~/opt/small_script/PBC_fixer.py -n {args.fix}")
 if args.mode == 3:
     # do("python3 ~/opt/small_script/delete_lammps_frame.py")
     if args.submode == -1:
@@ -69,8 +71,9 @@ if args.mode == 2:
         # do("cp ~/opt/plot_scripts/2xov_movie_bicelle.tcl .")
         # do("cp ~/opt/plot_scripts/movie_bicelle_no_smooth.tcl .")
         # do("cp ~/opt/plot_scripts/2xov_movie_bicelle_no_smooth.tcl .")
-        do(f"cp ~/opt/plot_scripts/{protein_name}.tcl .")
-        do(f"cp ~/opt/plot_scripts/{protein_name}_no_smooth.tcl .")
+        # do(f"cp ~/opt/plot_scripts/{protein_name}.tcl .")
+        # do(f"cp ~/opt/plot_scripts/{protein_name}_no_smooth.tcl .")
+        do(f"cp ~/opt/plot_scripts/{protein_name}* .")
         do("cp ~/opt/plot_scripts/movie.tcl .")
     else:
         x = os.listdir()
