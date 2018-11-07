@@ -64,6 +64,37 @@ def pick_structure_generate_show_script(n=2):
         # f.write("show cartoon, all\n")
         # f.write("hide nonbonded, all\n")
 
+
+if args.day == "nov02":
+    name = "abeta42_2"
+    rowN = 2
+    columnN = 1
+    if args.mode == 1:
+        do("rm crystal_structure.pdb")
+        to = "tmp1.pdb"
+
+        table = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        count = 0
+        for i in range(rowN):
+            for j in range(columnN):
+                duplicate_pdb("one_abeta42.pdb", to, offset_x=i*40.0, offset_y=j*40.0, offset_z=50.0*j, new_chain=table[count])
+                do(f"cat {to} >> crystal_structure.pdb")
+                count += 1
+    if args.mode == 2:
+        do(f"create_project.py {name} --frag --crystal --globular")
+        do("cp ~/opt/abeta/ssweight_weihua ssweight")
+        # do("cp ~/opt/abeta/zim12 zim")
+        do("rm zim")
+        for i in range(rowN*columnN):
+            do("cat ~/opt/abeta/zim >> zim")
+            do("cat ~/opt/abeta/zim >> zimPosition")
+        do("cp ~/opt/abeta/seq.gamma .")
+        do("cp ~/opt/abeta/fix_backbone_coeff.data .")
+        do(f"cp data.crystal data.{name}")
+    if args.mode == 3:
+        do("python3 ~/opt/small_script/PBC_fixer.py")
+        do(f"movie.py {name} -d new.dump")
+
 if args.day == "oct15":
     name = "abeta42_1"
     rowN = 1

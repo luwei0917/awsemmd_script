@@ -61,6 +61,7 @@ do("python2 ~/opt/script/stride2ssweight.py > ssweight")
 
 # below used for zim and zimPosition file
 if args.membrane or args.hybrid:
+    do(f"cp data.crystal data.{proteinName}")
     do("grep -E 'CB|CA  GLY' crystal_structure.pdb > cbs.data")
     do("""awk '{if($9>15) print "1"; else if($9<-15) print "3"; else print "2"}'  cbs.data  > zimPosition""")
     if args.crystal:
