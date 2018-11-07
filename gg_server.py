@@ -500,7 +500,6 @@ def isComplete(a):
     for model in a:
         for chain in model:
             for res in chain:
-    #             print(res)
                 try:
                     if res["CA"] is not None:
                         pass
@@ -514,16 +513,76 @@ def isComplete(a):
                     print(res)
                     return 0
     return 1
+
+if args.day == "oct26":
+    if args.mode == 1:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        complete_proteins = "database/cath-dataset-nonredundant-S20Clean.list"
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='shuffle', num_decoys=1000, noise_filtering=True, jackhmmer=False)
+        # individual_gammas_randomized_decoy=read_all_gammas("phi_list.txt", complete_proteins, training_decoy_method="shuffle", noise_filtering=True)
+    if args.mode == 2:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        complete_proteins = "database/test.list"
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='shuffle', num_decoys=1000, noise_filtering=True, jackhmmer=False)
+        # individual_gammas_randomized_decoy=read_all_gammas("phi_list.txt", complete_proteins, training_decoy_method="shuffle", noise_filtering=True)
+
+
+
+
+if args.day == "nov01":
+    if args.mode == 1:
+        with open("database/cath-dataset-nonredundant-S20Clean.list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(30):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i-1)
+    if args.mode == 2:
+        # clean up
+        # do("rm database/S20_seq/*")
+        # do("rm database/dompdb/*")
+        do("mkdir -p decoys")
+        do("mkdir -p gammas")
+        do("mkdir -p phis")
+    if args.mode == 3:
+        for i in range(475):
+            with open(f"run_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py proteins_name_list_{i}.txt"))
+            do(f"sbatch run_{i}.slurm")
+    if args.mode == 4:
+        # clean up
+        # do("rm database/S20_seq/*")
+        do("rm *.out")
+        do("rm *.slurm")
+        # do("rm database/dompdb/*")
+        do("rm -r decoys/*")
+        do("rm gammas/*")
+        do("rm -r phis")
+        do("mkdir -p phis")
+
 if args.day == "oct25":
     if args.mode == 1:
         with open("database/cath-dataset-nonredundant-S20Clean.list") as f:
             content = f.readlines()
         pos = 0
         i = 0
-        while pos < len(content):
+        n = len(content)
+        while pos < n:
             with open(f"proteins_name_list_{i}.txt", "w") as out:
                 for ii in range(50):
-                    if pos < len(content):
+                    if pos < n:
                         out.write(content[pos])
                     pos += 1
                 i += 1
@@ -572,6 +631,7 @@ if args.day == "oct25":
                                 out.write(l)
                                 out2.write(name+"\n")
                         count += 1
+
 if args.day == "oct24":
     if args.mode == 1:
         # clean up
@@ -621,7 +681,7 @@ if args.day == "oct24":
 
 if args.day == "oct14":
     if args.mode == 1:
-        for i in range(300):
+        for i in range(400):
             with open(f"run_{i}.slurm", "w") as out:
                 out.write(scavenge_slurm.format(f"python2 ../randomGen.py t_{i}.csv -n 2e6"))
             do(f"sbatch run_{i}.slurm")

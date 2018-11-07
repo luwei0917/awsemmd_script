@@ -633,6 +633,41 @@ def calculate_cb_density(res_list, neighbor_list, min_seq_sep=2):
     return density
 
 
+def phi_density_mediated_contact_well(res_list, neighbor_list, parameter_list):
+    r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    r_min = float(r_min)
+    r_max = float(r_max)
+    kappa = float(kappa)
+    min_seq_sep = int(min_seq_sep)
+    density_threshold = float(density_threshold)
+    density_kappa = float(density_kappa)
+    phi_mediated_contact_well = np.zeros((2, 20,20))
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance(res1, res2)
+                phi_mediated_contact_well[0][res1type][res2type] += interaction_well(rij, r_min, r_max, kappa)
+                phi_mediated_contact_well[1][res1type][res2type] += interaction_well(rij, r_min, r_max, kappa)
+                if not res1type == res2type:
+                    phi_mediated_contact_well[0][res2type][res1type] += interaction_well(rij, r_min, r_max, kappa)
+                    phi_mediated_contact_well[1][res2type][res1type] += interaction_well(rij, r_min, r_max, kappa)
+
+    phis_to_return = []
+    for i in range(2):
+        for j in range(20):
+            for k in range(j, 20):
+                phis_to_return.append(phi_mediated_contact_well[i][j][k])
+    return phis_to_return
+
+
 def phi_protein_mediated_contact_well(res_list_tmonly, res_list_entire, neighbor_list, parameter_list, TCRmodeling=False):
     r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
     cb_density = calculate_cb_density(res_list_entire, neighbor_list)
@@ -912,6 +947,7 @@ def evaluate_phis_for_protein_Wei(protein, phi_list, decoy_method, max_decoys, t
         for phi, parameters in phi_list:
             phiF = globals()[phi]
             parameters_string = get_parameters_string(parameters)
+            print(phi, parameters, parameters_string)
             # check to see if the decoys are already generated
             number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)))
             if not number_of_lines_in_file >= 1:
@@ -1373,7 +1409,7 @@ def calculate_A_B_and_gamma_decoy_structures_provided(native_training_set_file, 
 def calculate_A_B_and_gamma_xl23(training_set_file, phi_list_file_name, decoy_method, num_decoys, noise_filtering=True, jackhmmer=False):
     phi_list = read_phi_list(phi_list_file_name)
     training_set = read_column_from_file(training_set_file, 1)
-
+    print(len(training_set))
     # Find out how many total phi_i there are and get full parameter string
     total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
         phi_list, training_set)
@@ -1450,8 +1486,10 @@ def calculate_A_B_and_gamma_xl23(training_set_file, phi_list_file_name, decoy_me
         np.savetxt(filtered_lamb_file_name, filtered_lamb, fmt='%1.5f')
 
         P_file_name = file_prefix + '_P'
-        P_file = open(P_file_name, 'w')
-        np.savetxt(P_file, P, fmt='%1.5f')
+        # print(P)
+        # P_file = open(P_file_name, 'wb')
+        # np.savetxt(P_file, P, fmt='%1.5f')
+        np.savetxt(P_file_name, P, fmt='%1.5f')
 
         lamb_file_name = file_prefix + '_lamb'
 #        lamb_file = open(lamb_file_name, 'w')
