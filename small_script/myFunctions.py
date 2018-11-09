@@ -17,6 +17,11 @@ import pandas as pd
 import fileinput
 from itertools import product
 from Bio.PDB.PDBParser import PDBParser
+
+from Bio.PDB import PDBList
+from pdbfixer import PDBFixer
+from simtk.openmm.app import PDBFile
+
 # compute cross Q for every pdb pair in one folder
 # parser = argparse.ArgumentParser(description="Compute cross q")
 # parser.add_argument("-m", "--mode",
@@ -849,6 +854,70 @@ def read_variable_folder(location, match="*_", **kwargs):
     data = pd.concat(data_list)
     name = f"{datetime.today().strftime('%d_%h_%H%M%S')}.feather"
     data.reset_index(drop=True).to_feather(name)
+
+
+def downloadPdb(pdb_list):
+    os.system("mkdir -p original_pdbs")
+    for pdb_id in pdb_list:
+        pdb = f"{pdb_id.lower()[:4]}"
+        pdbFile = pdb+".pdb"
+        if not os.path.isfile("original_pdbs/"+pdbFile):
+            pdbl = PDBList()
+            name = pdbl.retrieve_pdb_file(pdb, pdir='.', file_format='pdb')
+        os.system(f"mv {name} original_pdbs/{pdbFile}")
+
+
+
+def cleanPdb(pdb_list):
+    os.system("mkdir -p cleaned_pdbs")
+    for pdb_id in pdb_list:
+        pdb = f"{pdb_id.lower()[:4]}"
+        if len(pdb_id) == 5:
+            chain = pdb_id[4].upper()
+        else:
+            assert(len(pdb_id) == 4)
+            chain = "A"
+        pdbFile = pdb+".pdb"
+        # clean pdb
+        fixer = PDBFixer(filename="original_pdbs/"+pdbFile)
+        # remove unwanted chains
+        chains = list(fixer.topology.chains())
+        chains_to_remove = [i for i, x in enumerate(chains) if x.id != chain]
+        fixer.removeChains(chains_to_remove)
+
+        fixer.findMissingResidues()
+        # add missing residues in the middle of a chain, not ones at the start or end of the chain.
+        chains = list(fixer.topology.chains())
+        keys = fixer.missingResidues.keys()
+        # print(keys)
+        for key in list(keys):
+            chain = chains[key[0]]
+            if key[1] == 0 or key[1] == len(list(chain.residues())):
+                del fixer.missingResidues[key]
+
+        fixer.findNonstandardResidues()
+        fixer.replaceNonstandardResidues()
+        fixer.removeHeterogens(False)
+        fixer.findMissingAtoms()
+        fixer.addMissingAtoms()
+        fixer.addMissingHydrogens(7.0)
+        PDBFile.writeFile(fixer.topology, fixer.positions, open("cleaned_pdbs/"+pdbFile, 'w'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ----------------------------depreciated---------------------------------------

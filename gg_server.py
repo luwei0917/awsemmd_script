@@ -514,23 +514,6 @@ def isComplete(a):
                     return 0
     return 1
 
-if args.day == "oct26":
-    if args.mode == 1:
-        from pyCodeLib import *
-        import warnings
-        warnings.filterwarnings('ignore')
-        complete_proteins = "database/cath-dataset-nonredundant-S20Clean.list"
-        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='shuffle', num_decoys=1000, noise_filtering=True, jackhmmer=False)
-        # individual_gammas_randomized_decoy=read_all_gammas("phi_list.txt", complete_proteins, training_decoy_method="shuffle", noise_filtering=True)
-    if args.mode == 2:
-        from pyCodeLib import *
-        import warnings
-        warnings.filterwarnings('ignore')
-        complete_proteins = "database/test.list"
-        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='shuffle', num_decoys=1000, noise_filtering=True, jackhmmer=False)
-        # individual_gammas_randomized_decoy=read_all_gammas("phi_list.txt", complete_proteins, training_decoy_method="shuffle", noise_filtering=True)
-
-
 
 
 if args.day == "nov01":
@@ -571,6 +554,24 @@ if args.day == "nov01":
         do("rm gammas/*")
         do("rm -r phis")
         do("mkdir -p phis")
+
+if args.day == "oct26":
+    if args.mode == 1:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        complete_proteins = "database/cath-dataset-nonredundant-S20Clean.list"
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='shuffle', num_decoys=1000, noise_filtering=True, jackhmmer=False)
+        # individual_gammas_randomized_decoy=read_all_gammas("phi_list.txt", complete_proteins, training_decoy_method="shuffle", noise_filtering=True)
+    if args.mode == 2:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        complete_proteins = "database/test.list"
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='shuffle', num_decoys=1000, noise_filtering=True, jackhmmer=False)
+        # individual_gammas_randomized_decoy=read_all_gammas("phi_list.txt", complete_proteins, training_decoy_method="shuffle", noise_filtering=True)
+
+
 
 if args.day == "oct25":
     if args.mode == 1:
