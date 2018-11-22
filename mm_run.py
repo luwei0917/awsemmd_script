@@ -11,11 +11,21 @@ import imp
 from time import sleep
 import fileinput
 
+if(platform.system() == 'Darwin'):  # Mac system (local machine)
+    OPENAWSEM_LOCATION = "/Users/weilu/openmmawsem/"
+elif(platform.system() == 'Linux'):
+    OPENAWSEM_LOCATION = '/projects/pw8/wl45/openmmawsem/'
+else:
+    print("system unknown")
+sys.path.insert(0, OPENAWSEM_LOCATION)
+from openmmawsem import *
+
+
 # from run_parameter import *
 parser = argparse.ArgumentParser(
     description="This is a python3 script to\
     automatic copy the template file, \
-    run simulation and analysis")
+    run simulations")
 
 parser.add_argument("protein", help="The name of the protein")
 parser.add_argument("--name", default="simulation", help="Name of the simulation")
@@ -195,21 +205,78 @@ def batch_run():
     else:
         print("system unkown")
 
-if(args.inplace):
-    print("inplace")
-    set_up()
-    # batch_run()
-    do("~/build/brian/z_dependence/lmp_serial -in {}_multi.in".format(proteinName))
-else:
-    n = args.number
-    cwd = os.getcwd()
-    for i in range(n):
-        if args.restart == 0:
-            do("mkdir -p " + args.name)
-            do("cp -r {} {}/{}".format(proteinName, args.name, i))
-        cd(args.name + "/"+str(i))
-        set_up()
-        batch_run()
-        cd(cwd)
+# if(args.inplace):
+#     print("inplace")
+#     set_up()
+#     # batch_run()
+#     do("~/build/brian/z_dependence/lmp_serial -in {}_multi.in".format(proteinName))
+# else:
+#     n = args.number
+#     cwd = os.getcwd()
+#     for i in range(n):
+#         if args.restart == 0:
+#             do("mkdir -p " + args.name)
+#             do("cp -r {} {}/{}".format(proteinName, args.name, i))
+#         cd(args.name + "/"+str(i))
+#         set_up()
+#         batch_run()
+#         cd(cwd)
 
 # print("hello world")
+
+
+simulation_platform = "CPU"  # OpenCL, CUDA, CPU, or Reference
+platform = Platform.getPlatformByName(simulation_platform)
+print(f"{simulation_platform}: {platform.getPropertyDefaultValue('Threads')} threads")
+pdb_id = '1r69'
+pdb = f"{pdb_id}.pdb"
+chain='A'
+
+input_pdb_filename, cleaned_pdb_filename = prepare_pdb(pdb, chain)
+ensure_atom_order(input_pdb_filename)
+getSeqFromCleanPdb(input_pdb_filename, chains='A')
+
+def add_chain_to_pymol_pdb(location):
+    # location = "/Users/weilu/Research/server/nov_2018/openMM/random_start/1r69.pdb"
+    with open("tmp", "w") as out:
+        with open(location, "r") as f:
+            for line in f:
+                info = list(line)
+                if len(info) > 21:
+                    info[21] = "A"
+                out.write("".join(info))
+    os.system(f"mv tmp {location}")
+
+
+reporter_frequency = 4000
+oa = OpenMMAWSEMSystem(input_pdb_filename, k_awsem=1.0, xml_filename=OPENAWSEM_LOCATION+"awsem.xml") # k_awsem is an overall scaling factor that will affect the relevant temperature scales
+
+# apply forces
+forces = [
+    oa.con_term(),
+    oa.chain_term(),
+    oa.chi_term(),
+    oa.excl_term(),
+    oa.rama_term(),
+    oa.rama_proline_term(),
+    oa.contact_term(),
+    # oa.direct_term(),
+    # oa.burial_term(),
+    # oa.mediated_term(),
+    oa.fragment_memory_term(frag_location_pre="./")
+]
+oa.addForces(forces)
+
+# start simulation
+collision_rate = 5.0 / picoseconds
+
+integrator = LangevinIntegrator(300*kelvin, 1/picosecond, 2*femtoseconds)
+simulation = Simulation(oa.pdb.topology, oa.system, integrator, platform)
+simulation.context.setPositions(oa.pdb.positions) # set the initial positions of the atoms
+# simulation.context.setVelocitiesToTemperature(300*kelvin) # set the initial velocities of the atoms according to the desired starting temperature
+simulation.minimizeEnergy() # first, minimize the energy to a local minimum to reduce any large forces that might be present
+simulation.reporters.append(StateDataReporter(stdout, reporter_frequency, step=True, potentialEnergy=True, temperature=True)) # output energy and temperature during simulation
+simulation.reporters.append(PDBReporter("movie.pdb", reporter_frequency)) # output PDBs of simulated structures
+simulation.step(int(1e5))
+# simulation.reporters.append(CheckpointReporter(checkpoint_file, checkpoint_reporter_frequency)) # save progress during the simulation
+

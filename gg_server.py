@@ -515,6 +515,42 @@ def isComplete(a):
     return 1
 
 
+if args.day == "nov20":
+    if args.mode == 3:
+        name_list = ["tr894", "tr882", "tr594", "tr869", "tr898", "tr862", "tr877", "tr872", "tr885", "tr866", "tr868", "tr884", "tr895", "tr896", "tr870", "tr921", "tr922", "tr891", "tr948", "tr947"]
+        for name in name_list:
+            do(f"mkdir {name}")
+            # do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/{name}/PCselection/* {name}/")
+            do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/PCselection/{name}/* {name}/")
+    if args.mode == 2:
+        name_list = ["tr894", "tr882", "tr594", "tr869", "tr898", "tr862", "tr877", "tr872", "tr885", "tr866", "tr868", "tr884", "tr895", "tr896", "tr870", "tr921", "tr922", "tr891", "tr948"]
+        for name in name_list:
+            do(f"mkdir {name}")
+            cd(name)
+            do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/{name}/towardsPC1/awsem_energy/bias.log .")
+            do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/{name}/towardsPC1/awsem_energy/awsem.log .")
+            do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/{name}/towardsPC1/awsem_energy/rwplusScore.txt .")
+            do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/{name}/towardsPC1/awsem_energy/rmsd-angstrom.xvg .")
+            cd("..")
+    if args.mode == 1:
+        name_list = ["tr894", "tr882", "tr594", "tr869", "tr898", "tr862", "tr877", "tr872", "tr885", "tr866", "tr868", "tr884", "tr895", "tr896", "tr870", "tr921", "tr922", "tr891", "tr948"]
+        for name in name_list:
+            do(f"mkdir {name}")
+            # do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/{name}/PCselection/* {name}/")
+            do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/PCselection/{name}/* {name}/")
+if args.day == "nov09":
+    pdb_list = "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", ")
+    if args.mode == 1:
+        cd("all_simulations")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            if name == "2fha" or name == "1mba":
+                steps = 20
+            else:
+                steps = 40
+            cd(name)
+            do(f"run.py -n 20 {name} --commons 2 -s {steps} --runs 3")
+            cd("..")
 
 if args.day == "nov01":
     if args.mode == 1:
@@ -684,7 +720,7 @@ if args.day == "oct14":
     if args.mode == 1:
         for i in range(400):
             with open(f"run_{i}.slurm", "w") as out:
-                out.write(scavenge_slurm.format(f"python2 ../randomGen.py t_{i}.csv -n 2e6"))
+                out.write(scavenge_slurm.format(f"python2 ../randomGen_nov19.py t_{i}.csv -n 2e6"))
             do(f"sbatch run_{i}.slurm")
 
 
