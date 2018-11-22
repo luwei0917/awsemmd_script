@@ -64,6 +64,59 @@ def pick_structure_generate_show_script(n=2):
         # f.write("show cartoon, all\n")
         # f.write("hide nonbonded, all\n")
 
+if args.day == "nov22":
+    pdb_list = "1BRR".split(", ")
+    if args.mode == 1:
+        downloadPdb(pdb_list)
+        cleanPdb(pdb_list, chain="ABC")
+    if args.mode == 2:
+        do("mkdir -p all_simulations")
+        cd("all_simulations")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {name}/{name}")
+            cd(f"{name}/{name}")
+            do("pwd")
+            do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+            do(f"create_project.py {name} --globular --frag")
+            # do(f"create_project.py {name} --globular")
+            cd("../..")
+
+if args.day == "nov12":
+    pdb_list = "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", ")
+    if args.mode == 1:
+        downloadPdb(pdb_list)
+        cleanPdb(pdb_list)
+    if args.mode == 2:
+        do("mkdir -p all_simulations")
+        cd("all_simulations")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {name}/{name}")
+            cd(f"{name}/{name}")
+            do("pwd")
+            do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+            do(f"create_project.py {name} --globular --frag")
+            cd("../..")
+
+
+if args.day == "nov09":
+    pdb_list = "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", ")
+    if args.mode == 1:
+        downloadPdb(pdb_list)
+        cleanPdb(pdb_list)
+    if args.mode == 2:
+        do("mkdir -p all_simulations")
+        cd("all_simulations")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {name}/{name}")
+            cd(f"{name}/{name}")
+            do("pwd")
+            do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+            do(f"create_project.py {name} --globular")
+            cd("../..")
+
 
 if args.day == "nov02":
     name = "abeta42_2"

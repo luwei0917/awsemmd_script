@@ -114,7 +114,7 @@ frag_table_well_width
 fm_energy_debug_flag
 fm_sigma_exp
 
-[Fragment_Memory_Table]
+[Fragment_Memory_Table]-
 0.01
 frags.mem
 uniform.gamma

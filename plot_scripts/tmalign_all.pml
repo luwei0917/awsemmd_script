@@ -1,4 +1,4 @@
-load result_all_atm
+load result_all_atm.pdb
 select a, c. A
 cmd.show("cartoon"   ,"all")
 util.color_deep("gray90", 'all')

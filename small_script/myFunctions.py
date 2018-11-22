@@ -864,25 +864,28 @@ def downloadPdb(pdb_list):
         if not os.path.isfile("original_pdbs/"+pdbFile):
             pdbl = PDBList()
             name = pdbl.retrieve_pdb_file(pdb, pdir='.', file_format='pdb')
-        os.system(f"mv {name} original_pdbs/{pdbFile}")
+            os.system(f"mv {name} original_pdbs/{pdbFile}")
 
 
 
-def cleanPdb(pdb_list):
+def cleanPdb(pdb_list, chain=None):
     os.system("mkdir -p cleaned_pdbs")
     for pdb_id in pdb_list:
         pdb = f"{pdb_id.lower()[:4]}"
-        if len(pdb_id) == 5:
-            chain = pdb_id[4].upper()
+        if chain is None:
+            if len(pdb_id) == 5:
+                Chosen_chain = pdb_id[4].upper()
+            else:
+                assert(len(pdb_id) == 4)
+                Chosen_chain = "A"
         else:
-            assert(len(pdb_id) == 4)
-            chain = "A"
+            Chosen_chain = chain
         pdbFile = pdb+".pdb"
         # clean pdb
         fixer = PDBFixer(filename="original_pdbs/"+pdbFile)
         # remove unwanted chains
         chains = list(fixer.topology.chains())
-        chains_to_remove = [i for i, x in enumerate(chains) if x.id != chain]
+        chains_to_remove = [i for i, x in enumerate(chains) if x.id not in Chosen_chain]
         fixer.removeChains(chains_to_remove)
 
         fixer.findMissingResidues()
@@ -897,7 +900,7 @@ def cleanPdb(pdb_list):
 
         fixer.findNonstandardResidues()
         fixer.replaceNonstandardResidues()
-        fixer.removeHeterogens(False)
+        fixer.removeHeterogens(keepWater=False)
         fixer.findMissingAtoms()
         fixer.addMissingAtoms()
         fixer.addMissingHydrogens(7.0)

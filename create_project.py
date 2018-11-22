@@ -37,17 +37,20 @@ with open('commandline_args.txt', 'w') as f:
     f.write(' '.join(sys.argv))
     f.write('\n')
 
+# get fasta, pdb, seq file ready
+do("~/opt/script/pdb2fasta.sh crystal_structure.pdb > {0}.fasta".format(proteinName))
+size = myPersonalFunctions.length_from_fasta("{0}.fasta".format(proteinName))
+
 ## start with crystal structure
 do("python2 ~/opt/script/PDBToCoordinates.py crystal_structure crystal.coord")
 do("python2 ~/opt/small_script/coord2data.py crystal.coord data.crystal -b")
-if False:
+if not args.crystal:
+    do("~/opt/fasta2pdb.py "+proteinName)
     do("python2 ~/opt/script/PDBToCoordinates.py {0} {0}.coord".format(proteinName))
     do("python2 ~/opt/small_script/coord2data.py {0}.coord data.{0} -b".format(proteinName))
 
 
-# get fasta, pdb, seq file ready
-do("~/opt/script/pdb2fasta.sh crystal_structure.pdb > {0}.fasta".format(proteinName))
-size = myPersonalFunctions.length_from_fasta("{0}.fasta".format(proteinName))
+
 if True:  # used for go model
     # do("~/opt/fasta2pdb.py "+proteinName)
     do("python2 ~/opt/script/GetCACADistancesFile.py crystal_structure native.dat")

@@ -73,12 +73,12 @@ else:
 
 cg = True
 
-xlo = -50.0
-xhi = 50.0
-ylo = -50.0
-yhi = 50.0
-zlo = -50.0
-zhi = 50.0
+xlo = -1000.0
+xhi = 1000.0
+ylo = -1000.0
+yhi = 1000.0
+zlo = -1000.0
+zhi = 1000.0
 masses = [12.0, 14.0, 16.0, 12.0, 1.0]
 if cg and not go:
     masses = [27.0, 14.0, 28.0, 60.0, 2.0]

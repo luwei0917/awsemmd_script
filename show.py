@@ -51,7 +51,9 @@ if args.submode == -1:
     do("~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq {}".format(protein_name, frame))
 else:
     do("~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj.{} awsem {}.seq {}".format(args.submode, protein_name, frame))
+
 do("~/opt/TMalign/TMalign awsem.pdb {}.pdb -o result".format(protein_name))
+do("cp result_all_atm result_all_atm.pdb")
 do("grep 'TM-score=' result > tmscore.dat")
 # Seq_ID=n_identical/n_aligned
 do("cat tmscore.dat")
