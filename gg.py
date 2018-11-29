@@ -64,6 +64,25 @@ def pick_structure_generate_show_script(n=2):
         # f.write("show cartoon, all\n")
         # f.write("hide nonbonded, all\n")
 
+
+if args.day == "nov23":
+    pdb_list = "5a63".split(", ")
+    if args.mode == 1:
+        downloadPdb(pdb_list)
+        cleanPdb(pdb_list, chain="ABC")
+    if args.mode == 2:
+        do("mkdir -p all_simulations")
+        cd("all_simulations")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {name}/{name}")
+            cd(f"{name}/{name}")
+            do("pwd")
+            do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+            do(f"create_project.py {name} --globular --frag")
+            # do(f"create_project.py {name} --globular")
+            cd("../..")
+
 if args.day == "nov22":
     pdb_list = "1BRR".split(", ")
     if args.mode == 1:

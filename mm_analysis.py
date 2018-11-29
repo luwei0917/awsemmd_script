@@ -29,7 +29,7 @@ parser.add_argument("--crystal", action="store_true", default=False)
 parser.add_argument("--membrane", action="store_true", default=False)
 parser.add_argument("--globular", action="store_true", default=False)
 parser.add_argument("--hybrid", action="store_true", default=False)
-
+parser.add_argument("-c", "--chain", type=str, default="A")
 
 args = parser.parse_args()
 
@@ -41,7 +41,7 @@ else:
     cd = os.chdir
 
 proteinName = pdb_id = args.protein
-chain='A'
+chain=args.chain.upper()
 pdb = f"{pdb_id}.pdb"
 
 # print(args)
@@ -55,7 +55,7 @@ input_pdb_filename, cleaned_pdb_filename = prepare_pdb("crystal_structure.pdb", 
 
 
 pdb_trajectory = read_trajectory_pdb_positions("movie.pdb")
-oa = OpenMMAWSEMSystem(input_pdb_filename, k_awsem=1.0, xml_filename=OPENAWSEM_LOCATION+"awsem.xml") # k_awsem is an overall scaling factor that will affect the relevant temperature scales
+oa = OpenMMAWSEMSystem(input_pdb_filename, chains=chain, k_awsem=1.0, xml_filename=OPENAWSEM_LOCATION+"awsem.xml") # k_awsem is an overall scaling factor that will affect the relevant temperature scales
 
 # apply forces
 # forceGroupTable_Rev = {11:"Con", 12:"Chain", 13:"Chi", 14:"Excluded", 15:"Rama", 16:"Direct",
@@ -64,13 +64,14 @@ forceGroupTable = {"Con":11, "Chain":12, "Chi":13, "Excluded":14, "Rama":15, "Di
                     "Burial":17, "Mediated":18, "Contact":18, "Fragment":19, "Total":list(range(11, 20)),
                     "Water":[16, 18], "Q":1}
 forces = [
-    oa.q_value("crystal_structure-cleaned.pdb", chain),
+    oa.q_value("crystal_structure-cleaned.pdb"),
     oa.con_term(),
     oa.chain_term(),
     oa.chi_term(),
     oa.excl_term(),
     oa.rama_term(),
     oa.rama_proline_term(),
+    oa.rama_ssweight_term(),
     oa.contact_term(),
     oa.fragment_memory_term(frag_location_pre="./")
 ]

@@ -23,6 +23,7 @@ parser = argparse.ArgumentParser(
     the project template as fast as possible. Written by Wei Lu."
 )
 parser.add_argument("protein", help="The name of the protein")
+parser.add_argument("-c", "--chain", default="A", help="chains to be simulated, could be for example 'abc'.")
 parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("--frag", action="store_true", default=False)
 parser.add_argument("--crystal", action="store_true", default=False)
@@ -42,7 +43,9 @@ else:
 
 proteinName = pdb_id = args.protein
 # chain='A'
-chain='ABC'
+# chain='ABC'
+chain = args.chain.upper()
+
 pdb = f"{pdb_id}.pdb"
 
 # print(args)
@@ -57,6 +60,7 @@ ensure_atom_order(input_pdb_filename)
 # get fasta, pdb, seq file ready
 getSeqFromCleanPdb(input_pdb_filename, chains=chain)
 if not args.crystal:
+    do(f"cp crystal_structure.fasta {pdb_id}.fasta")
     do("~/opt/fasta2pdb.py "+proteinName)
 else:
     do(f"cp crystal_structure.pdb {pdb}")
