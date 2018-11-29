@@ -515,6 +515,64 @@ def isComplete(a):
     return 1
 
 
+if args.day == "nov25":
+    if args.mode == 6:
+        for i in range(180, 256):
+            with open(f"run_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python2 ../top_fix_pick.py -i {i}"))
+            do(f"sbatch run_{i}.slurm")
+    if args.mode == 5:
+        for i in range(256):
+            with open(f"run_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python2 ../top_fix_random.py -i {i}"))
+            do(f"sbatch run_{i}.slurm")
+    if args.mode == 1:
+        for i in range(400):
+            with open(f"run_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python2 ../randomGen_nov25.py t_{i}.csv -n 1e7"))
+            do(f"sbatch run_{i}.slurm")
+    if args.mode == 2:
+        for i in range(400):
+            with open(f"run_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python2 ../geneticAlgorithm_fast.py"))
+            do(f"sbatch run_{i}.slurm")
+    if args.mode == 3:
+        a = pd.read_csv("../rr_nov25.csv", index_col=0)
+        size = len(a)
+        N = 200
+        n = int(size/N)+1
+        cc = 0
+        for i in range(N):
+            if cc+n >= size:
+                end = size-1
+            else:
+                end = cc+n
+            start = cc
+            with open(f"run_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python2 ../playAgainstEachOther.py -s {start} -e {end}"))
+            do(f"sbatch run_{i}.slurm")
+            cc += n
+    if args.mode == 4:
+        a = pd.read_csv("../rr_2_nov25.csv", index_col=0)
+        size = len(a)
+        N = 20
+        n = int(size/N)+1
+        cc = 0
+        for i in range(N):
+            if cc+n >= size:
+                end = size-1
+            else:
+                end = cc+n
+            start = cc
+            with open(f"run_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python2 ../playAgainstEachOther.py -s {start} -e {end}"))
+            do(f"sbatch run_{i}.slurm")
+            cc += n
+
+        # for i in range(100):
+        #     with open(f"run_{i}.slurm", "w") as out:
+        #         out.write(scavenge_slurm.format(f"python2 ../geneticAlgorithm.py"))
+        #     do(f"sbatch run_{i}.slurm")
 if args.day == "nov20":
     if args.mode == 3:
         name_list = ["tr894", "tr882", "tr594", "tr869", "tr898", "tr862", "tr877", "tr872", "tr885", "tr866", "tr868", "tr884", "tr895", "tr896", "tr870", "tr921", "tr922", "tr891", "tr948", "tr947"]

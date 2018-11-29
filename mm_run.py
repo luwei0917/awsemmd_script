@@ -44,6 +44,7 @@ parser.add_argument("-i", "--inplace", action="store_true", default=False)
 parser.add_argument("-f", "--force", type=float, default=1.0)
 parser.add_argument("--start", default="native")
 parser.add_argument("--commons", type=int, default=0)
+parser.add_argument("-c", "--chain", type=str, default="A")
 args = parser.parse_args()
 
 if(args.debug):
@@ -227,10 +228,11 @@ def batch_run():
 
 simulation_platform = "CPU"  # OpenCL, CUDA, CPU, or Reference
 platform = Platform.getPlatformByName(simulation_platform)
+platform.setPropertyDefaultValue("Threads", "1")
 print(f"{simulation_platform}: {platform.getPropertyDefaultValue('Threads')} threads")
-pdb_id = '1r69'
+proteinName = pdb_id = args.protein
+chain=args.chain.upper()
 pdb = f"{pdb_id}.pdb"
-chain='A'
 
 input_pdb_filename, cleaned_pdb_filename = prepare_pdb(pdb, chain)
 ensure_atom_order(input_pdb_filename)
@@ -259,6 +261,7 @@ forces = [
     oa.excl_term(),
     oa.rama_term(),
     oa.rama_proline_term(),
+    oa.rama_ssweight_term(),
     oa.contact_term(),
     # oa.direct_term(),
     # oa.burial_term(),
