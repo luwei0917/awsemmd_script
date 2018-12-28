@@ -45,13 +45,13 @@ chain=args.chain.upper()
 pdb = f"{pdb_id}.pdb"
 
 # print(args)
-with open('commandline_args.txt', 'w') as f:
+with open('analysis_commandline_args.txt', 'w') as f:
     f.write(' '.join(sys.argv))
     f.write('\n')
 
 # for compute Q
 input_pdb_filename, cleaned_pdb_filename = prepare_pdb("crystal_structure.pdb", chain)
-# ensure_atom_order(input_pdb_filename)
+ensure_atom_order(input_pdb_filename, quiet=1)
 
 
 pdb_trajectory = read_trajectory_pdb_positions("movie.pdb")
@@ -61,7 +61,7 @@ oa = OpenMMAWSEMSystem(input_pdb_filename, chains=chain, k_awsem=1.0, xml_filena
 # forceGroupTable_Rev = {11:"Con", 12:"Chain", 13:"Chi", 14:"Excluded", 15:"Rama", 16:"Direct",
 #                   17:"Burial", 18:"Mediated", 19:"Fragment"}
 forceGroupTable = {"Con":11, "Chain":12, "Chi":13, "Excluded":14, "Rama":15, "Direct":16,
-                    "Burial":17, "Mediated":18, "Contact":18, "Fragment":19, "Total":list(range(11, 20)),
+                    "Burial":17, "Mediated":18, "Contact":18, "Fragment":19, "Membrane":20, "Total":list(range(11, 21)),
                     "Water":[16, 18], "Q":1}
 forces = [
     oa.q_value("crystal_structure-cleaned.pdb"),
@@ -72,8 +72,12 @@ forces = [
     oa.rama_term(),
     oa.rama_proline_term(),
     oa.rama_ssweight_term(),
-    oa.contact_term(),
-    oa.fragment_memory_term(frag_location_pre="./")
+    oa.contact_term(z_dependent=True),
+    # oa.burial_term(),
+    # oa.mediated_term(),
+    # oa.direct_term(),
+    oa.fragment_memory_term(frag_location_pre="./"),
+    oa.membrane_term(),
 ]
 oa.addForcesWithDefaultForceGroup(forces)
 
@@ -84,7 +88,7 @@ integrator = LangevinIntegrator(300*kelvin, 1/picosecond, 2*femtoseconds)
 simulation = Simulation(oa.pdb.topology, oa.system, integrator, Platform.getPlatformByName("OpenCL"))
 
 
-showEnergy = ["Q", "Con", "Chain", "Chi", "Excluded", "Rama", "Contact", "Fragment", "Total"]
+showEnergy = ["Q", "Con", "Chain", "Chi", "Excluded", "Rama", "Contact", "Fragment", "Membrane", "Total"]
 # print("Steps", *showEnergy)
 print(" ".join(["{0:<8s}".format(i) for i in ["Steps"] + showEnergy]))
 for step, pdb in enumerate(pdb_trajectory):

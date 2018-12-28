@@ -7,10 +7,21 @@ from random import seed, randint
 import argparse
 import platform
 from datetime import datetime
-import imp
 from myPersonalFunctions import *
 import glob
 from small_script.myFunctions import *
+
+try:
+    OPENAWSEM_LOCATION = os.environ["OPENAWSEM_LOCATION"]
+    sys.path.insert(0, OPENAWSEM_LOCATION)
+    # print(OPENAWSEM_LOCATION)
+except KeyError:
+    print("Please set the environment variable name OPENAWSEM_LOCATION.\n Example: export OPENAWSEM_LOCATION='YOUR_OPENAWSEM_LOCATION'")
+    exit()
+
+# from openmmawsem import *
+from helperFunctions.myFunctions import *
+
 # Useful codes
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
@@ -64,6 +75,23 @@ def pick_structure_generate_show_script(n=2):
         # f.write("show cartoon, all\n")
         # f.write("hide nonbonded, all\n")
 
+if args.day == "dec13":
+    if args.mode == 1:
+        pdb_list = ["T0958"]
+        cleanPdb(pdb_list, chain="-1", fromFile="crystal_structure.pdb", toFolder="cleaned_pdbs")
+
+if args.day == "dec11":
+    if args.mode == 1:
+        get_frame("movie.pdb", "last_frame.pdb")
+        convert_openMM_to_standard_pdb()
+        do("~/opt/TMalign/TMalign last_frame.pdb ../crystal_structure.pdb -o result")
+        do("cp result_all_atm result_all_atm.pdb")
+        do("pymol ~/opt/plot_scripts/tmalign_all.pml")
+
+if args.day == "dec09":
+    if args.mode == 1:
+        pdb_list = ["5a63"]
+        cleanPdb(pdb_list, chain="-1", fromFolder=".", toFolder="cleaned_pdbs")
 
 if args.day == "nov23":
     pdb_list = "5a63".split(", ")
@@ -105,7 +133,7 @@ if args.day == "nov12":
     pdb_list = "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", ")
     if args.mode == 1:
         downloadPdb(pdb_list)
-        cleanPdb(pdb_list)
+        cleanPdb(pdb_list, chain=None)
     if args.mode == 2:
         do("mkdir -p all_simulations")
         cd("all_simulations")

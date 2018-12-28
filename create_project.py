@@ -38,6 +38,7 @@ with open('commandline_args.txt', 'w') as f:
     f.write('\n')
 
 # get fasta, pdb, seq file ready
+# HETATM MSE will not be counted as regular residue.
 do("~/opt/script/pdb2fasta.sh crystal_structure.pdb > {0}.fasta".format(proteinName))
 size = myPersonalFunctions.length_from_fasta("{0}.fasta".format(proteinName))
 

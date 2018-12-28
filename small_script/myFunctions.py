@@ -37,6 +37,7 @@ def read_hydrophobicity_scale(seq, isNew=False):
     HFscales = pd.read_table("~/opt/small_script/Whole_residue_HFscales.txt")
     if not isNew:
         # Octanol Scale
+        # new and old difference is at HIS.
         code = {"GLY" : "G", "ALA" : "A", "LEU" : "L", "ILE" : "I",
                 "ARG+" : "R", "LYS+" : "K", "MET" : "M", "CYS" : "C",
                 "TYR" : "Y", "THR" : "T", "PRO" : "P", "SER" : "S",
@@ -362,9 +363,9 @@ def structure_prediction_run(protein):
     # do("")
 
 
-def check_and_correct_fragment_memory():
+def check_and_correct_fragment_memory(fragFile="fragsLAMW.mem"):
     with open("tmp.mem", "w") as out:
-        with open("fragsLAMW.mem", "r") as f:
+        with open(fragFile, "r") as f:
             for i in range(4):
                 line = next(f)
                 out.write(line)
@@ -387,8 +388,8 @@ def check_and_correct_fragment_memory():
                             delete = True
                 if not delete:
                     out.write(line)
-    os.system("mv fragsLAMW.mem fragsLAMW_back")
-    os.system("mv tmp.mem fragsLAMW.mem")
+    os.system(f"mv {fragFile} fragsLAMW_back")
+    os.system(f"mv tmp.mem {fragFile}")
 
 def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=False, localQ=False, disReal=False, dis_h56=False, goEnergy=False, goEnergy3H=False, goEnergy4H=False):
     all_data_list = []
@@ -856,58 +857,78 @@ def read_variable_folder(location, match="*_", **kwargs):
     data.reset_index(drop=True).to_feather(name)
 
 
-def downloadPdb(pdb_list):
-    os.system("mkdir -p original_pdbs")
-    for pdb_id in pdb_list:
-        pdb = f"{pdb_id.lower()[:4]}"
-        pdbFile = pdb+".pdb"
-        if not os.path.isfile("original_pdbs/"+pdbFile):
-            pdbl = PDBList()
-            name = pdbl.retrieve_pdb_file(pdb, pdir='.', file_format='pdb')
-            os.system(f"mv {name} original_pdbs/{pdbFile}")
+# def downloadPdb(pdb_list):
+#     os.system("mkdir -p original_pdbs")
+#     for pdb_id in pdb_list:
+#         pdb = f"{pdb_id.lower()[:4]}"
+#         pdbFile = pdb+".pdb"
+#         if not os.path.isfile("original_pdbs/"+pdbFile):
+#             pdbl = PDBList()
+#             name = pdbl.retrieve_pdb_file(pdb, pdir='.', file_format='pdb')
+#             os.system(f"mv {name} original_pdbs/{pdbFile}")
 
 
 
-def cleanPdb(pdb_list, chain=None):
-    os.system("mkdir -p cleaned_pdbs")
-    for pdb_id in pdb_list:
-        pdb = f"{pdb_id.lower()[:4]}"
-        if chain is None:
-            if len(pdb_id) == 5:
-                Chosen_chain = pdb_id[4].upper()
-            else:
-                assert(len(pdb_id) == 4)
-                Chosen_chain = "A"
-        else:
-            Chosen_chain = chain
-        pdbFile = pdb+".pdb"
-        # clean pdb
-        fixer = PDBFixer(filename="original_pdbs/"+pdbFile)
-        # remove unwanted chains
-        chains = list(fixer.topology.chains())
-        chains_to_remove = [i for i, x in enumerate(chains) if x.id not in Chosen_chain]
-        fixer.removeChains(chains_to_remove)
+# def cleanPdb(pdb_list, chain=None, fromFolder="original_pdbs", toFolder="cleaned_pdbs"):
+#     os.system(f"mkdir -p {toFolder}")
+#     for pdb_id in pdb_list:
+#         pdb = f"{pdb_id.lower()[:4]}"
+#         pdbFile = pdb+".pdb"
+#         if chain is None:
+#             if len(pdb_id) == 5:
+#                 Chosen_chain = pdb_id[4].upper()
+#             else:
+#                 assert(len(pdb_id) == 4)
+#                 Chosen_chain = "A"
+#         elif chain == "-1" or chain == -1:
+#             Chosen_chain = getAllChains(os.path.join(fromFolder, pdbFile))
+#         else:
+#             Chosen_chain = chain
+#         # clean pdb
+#         fixer = PDBFixer(filename=os.path.join(fromFolder, pdbFile))
+#         # remove unwanted chains
+#         chains = list(fixer.topology.chains())
+#         chains_to_remove = [i for i, x in enumerate(chains) if x.id not in Chosen_chain]
+#         fixer.removeChains(chains_to_remove)
 
-        fixer.findMissingResidues()
-        # add missing residues in the middle of a chain, not ones at the start or end of the chain.
-        chains = list(fixer.topology.chains())
-        keys = fixer.missingResidues.keys()
-        # print(keys)
-        for key in list(keys):
-            chain = chains[key[0]]
-            if key[1] == 0 or key[1] == len(list(chain.residues())):
-                del fixer.missingResidues[key]
+#         fixer.findMissingResidues()
+#         # add missing residues in the middle of a chain, not ones at the start or end of the chain.
+#         chains = list(fixer.topology.chains())
+#         keys = fixer.missingResidues.keys()
+#         # print(keys)
+#         for key in list(keys):
+#             chain = chains[key[0]]
+#             if key[1] == 0 or key[1] == len(list(chain.residues())):
+#                 del fixer.missingResidues[key]
 
-        fixer.findNonstandardResidues()
-        fixer.replaceNonstandardResidues()
-        fixer.removeHeterogens(keepWater=False)
-        fixer.findMissingAtoms()
-        fixer.addMissingAtoms()
-        fixer.addMissingHydrogens(7.0)
-        PDBFile.writeFile(fixer.topology, fixer.positions, open("cleaned_pdbs/"+pdbFile, 'w'))
+#         fixer.findNonstandardResidues()
+#         fixer.replaceNonstandardResidues()
+#         fixer.removeHeterogens(keepWater=False)
+#         fixer.findMissingAtoms()
+#         fixer.addMissingAtoms()
+#         fixer.addMissingHydrogens(7.0)
+#         PDBFile.writeFile(fixer.topology, fixer.positions, open(os.path.join(toFolder, pdbFile), 'w'))
+
+# def getAllChains(pdbFile):
+#     fixer = PDBFixer(filename=pdbFile)
+#     # remove unwanted chains
+#     chains = list(fixer.topology.chains())
+#     a = ""
+#     for i in chains:
+#         a += i.id
+#     return ''.join(sorted(set(a.upper().replace(" ", ""))))
 
 
-
+# def add_chain_to_pymol_pdb(location):
+#     # location = "/Users/weilu/Research/server/nov_2018/openMM/random_start/1r69.pdb"
+#     with open("tmp", "w") as out:
+#         with open(location, "r") as f:
+#             for line in f:
+#                 info = list(line)
+#                 if len(info) > 21:
+#                     info[21] = "A"
+#                 out.write("".join(info))
+#     os.system(f"mv tmp {location}")
 
 
 

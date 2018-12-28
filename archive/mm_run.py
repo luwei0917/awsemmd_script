@@ -10,6 +10,7 @@ from datetime import datetime
 import imp
 from time import sleep
 import fileinput
+from small_script.myFunctions import *
 
 if(platform.system() == 'Darwin'):  # Mac system (local machine)
     OPENAWSEM_LOCATION = "/Users/weilu/openmmawsem/"
@@ -44,7 +45,7 @@ parser.add_argument("-i", "--inplace", action="store_true", default=False)
 parser.add_argument("-f", "--force", type=float, default=1.0)
 parser.add_argument("--start", default="native")
 parser.add_argument("--commons", type=int, default=0)
-parser.add_argument("-c", "--chain", type=str, default="A")
+parser.add_argument("-c", "--chain", type=str, default="-1")
 args = parser.parse_args()
 
 if(args.debug):
@@ -227,16 +228,23 @@ def batch_run():
 
 
 simulation_platform = "CPU"  # OpenCL, CUDA, CPU, or Reference
+simulation_platform = "OpenCL"
 platform = Platform.getPlatformByName(simulation_platform)
-platform.setPropertyDefaultValue("Threads", "1")
-print(f"{simulation_platform}: {platform.getPropertyDefaultValue('Threads')} threads")
+if simulation_platform == "CPU":
+    platform.setPropertyDefaultValue("Threads", "1")
+    print(f"{simulation_platform}: {platform.getPropertyDefaultValue('Threads')} threads")
+
 proteinName = pdb_id = args.protein
 chain=args.chain.upper()
 pdb = f"{pdb_id}.pdb"
 
+if chain == "-1":
+    chain = getAllChains("crystal_structure.pdb")
+    print("Chains to simulate: ", chain)
+
 input_pdb_filename, cleaned_pdb_filename = prepare_pdb(pdb, chain)
 ensure_atom_order(input_pdb_filename)
-getSeqFromCleanPdb(input_pdb_filename, chains='A')
+getSeqFromCleanPdb(input_pdb_filename, chains=chain)
 
 def add_chain_to_pymol_pdb(location):
     # location = "/Users/weilu/Research/server/nov_2018/openMM/random_start/1r69.pdb"
@@ -251,7 +259,7 @@ def add_chain_to_pymol_pdb(location):
 
 
 reporter_frequency = 4000
-oa = OpenMMAWSEMSystem(input_pdb_filename, k_awsem=1.0, xml_filename=OPENAWSEM_LOCATION+"awsem.xml") # k_awsem is an overall scaling factor that will affect the relevant temperature scales
+oa = OpenMMAWSEMSystem(input_pdb_filename, k_awsem=1.0, chains=chain, xml_filename=OPENAWSEM_LOCATION+"awsem.xml") # k_awsem is an overall scaling factor that will affect the relevant temperature scales
 
 # apply forces
 forces = [
@@ -262,7 +270,7 @@ forces = [
     oa.rama_term(),
     oa.rama_proline_term(),
     oa.rama_ssweight_term(),
-    oa.contact_term(),
+    oa.contact_term(z_dependent=True),
     # oa.direct_term(),
     # oa.burial_term(),
     # oa.mediated_term(),
@@ -280,6 +288,14 @@ simulation.context.setPositions(oa.pdb.positions) # set the initial positions of
 simulation.minimizeEnergy() # first, minimize the energy to a local minimum to reduce any large forces that might be present
 simulation.reporters.append(StateDataReporter(stdout, reporter_frequency, step=True, potentialEnergy=True, temperature=True)) # output energy and temperature during simulation
 simulation.reporters.append(PDBReporter("movie.pdb", reporter_frequency)) # output PDBs of simulated structures
-simulation.step(int(1e5))
+
+print("Simulation Starts")
+start_time = time.time()
+
+simulation.step(int(1e6))
 # simulation.reporters.append(CheckpointReporter(checkpoint_file, checkpoint_reporter_frequency)) # save progress during the simulation
 
+time_taken = time.time() - start_time  # time_taken is in seconds
+hours, rest = divmod(time_taken,3600)
+minutes, seconds = divmod(rest, 60)
+print(f"---{hours} hours {minutes} minutes {seconds} seconds ---")

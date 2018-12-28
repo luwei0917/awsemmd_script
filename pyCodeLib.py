@@ -646,19 +646,25 @@ def phi_density_mediated_contact_well(res_list, neighbor_list, parameter_list):
     for res1globalindex, res1 in enumerate(res_list):
         res1index = get_local_index(res1)
         res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
         for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
             res2index = get_local_index(res2)
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
+            rho_j = cb_density[res2globalindex]
             if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
-                phi_mediated_contact_well[0][res1type][res2type] += interaction_well(rij, r_min, r_max, kappa)
-                phi_mediated_contact_well[1][res1type][res2type] += interaction_well(rij, r_min, r_max, kappa)
+                _pij_protein = prot_water_switchFunc_sigmaProt(
+                    rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
+                _pij_water = prot_water_switchFunc_sigmaWater(
+                    rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
+                phi_mediated_contact_well[0][res1type][res2type] += _pij_protein
+                phi_mediated_contact_well[1][res1type][res2type] += _pij_water
                 if not res1type == res2type:
-                    phi_mediated_contact_well[0][res2type][res1type] += interaction_well(rij, r_min, r_max, kappa)
-                    phi_mediated_contact_well[1][res2type][res1type] += interaction_well(rij, r_min, r_max, kappa)
+                    phi_mediated_contact_well[0][res2type][res1type] += _pij_protein
+                    phi_mediated_contact_well[1][res2type][res1type] += _pij_water
 
     phis_to_return = []
     for i in range(2):
@@ -668,155 +674,155 @@ def phi_density_mediated_contact_well(res_list, neighbor_list, parameter_list):
     return phis_to_return
 
 
-def phi_protein_mediated_contact_well(res_list_tmonly, res_list_entire, neighbor_list, parameter_list, TCRmodeling=False):
-    r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
-    cb_density = calculate_cb_density(res_list_entire, neighbor_list)
-    r_min = float(r_min)
-    r_max = float(r_max)
-    kappa = float(kappa)
-    min_seq_sep = int(min_seq_sep)
-    density_threshold = float(density_threshold)
-    density_kappa = float(density_kappa)
-    phi_mediated_contact_well = np.zeros((20, 20))
-    for res1globalindex, res1 in enumerate(res_list_entire):
-        res1index = get_local_index(res1)
-        res1chain = get_chain(res1)
+# def phi_protein_mediated_contact_well(res_list_tmonly, res_list_entire, neighbor_list, parameter_list, TCRmodeling=False):
+#     r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
+#     cb_density = calculate_cb_density(res_list_entire, neighbor_list)
+#     r_min = float(r_min)
+#     r_max = float(r_max)
+#     kappa = float(kappa)
+#     min_seq_sep = int(min_seq_sep)
+#     density_threshold = float(density_threshold)
+#     density_kappa = float(density_kappa)
+#     phi_mediated_contact_well = np.zeros((20, 20))
+#     for res1globalindex, res1 in enumerate(res_list_entire):
+#         res1index = get_local_index(res1)
+#         res1chain = get_chain(res1)
 
-        # For TCR modeling, we only need the sequence in the peptide;
-        if TCRmodeling:
+#         # For TCR modeling, we only need the sequence in the peptide;
+#         if TCRmodeling:
 
-            if (res1 in res_list_tmonly):
+#             if (res1 in res_list_tmonly):
 
-                for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max + 2.0):
-                    res2index = get_local_index(res2)
-                    res2chain = get_chain(res2)
-                    res2globalindex = get_global_index(res_list_entire, res2)
+#                 for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max + 2.0):
+#                     res2index = get_local_index(res2)
+#                     res2chain = get_chain(res2)
+#                     res2globalindex = get_global_index(res_list_entire, res2)
 
-                    # Get the density parameters of i an j
-                    rho_i = cb_density[res1globalindex]
-                    rho_j = cb_density[res2globalindex]
-                    rho_0 = density_threshold
-                    kappa = density_kappa
+#                     # Get the density parameters of i an j
+#                     rho_i = cb_density[res1globalindex]
+#                     rho_j = cb_density[res2globalindex]
+#                     rho_0 = density_threshold
+#                     kappa = density_kappa
 
-                    # Here, we strictly consider only between the peptide and the TCR (chain C & D):
-                    # Res1 through tm_only, is already in chain E, we only need to control the res2 to
-                    # be in chian C or D;
-                    if (res2chain == 'C' or res2chain == 'D'):
-                        res1type = get_res_type(res_list_entire, res1)
-                        res2type = get_res_type(res_list_entire, res2)
-                        rij = get_interaction_distance(res1, res2)
-                        phi_mediated_contact_well[res1type][res2type] += prot_water_switchFunc_sigmaProt(
-                            rho_i, rho_j, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
-                        if not res1type == res2type:
-                            phi_mediated_contact_well[res2type][res1type] += prot_water_switchFunc_sigmaProt(
-                                rho_j, rho_i, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
-            else:
-                continue
+#                     # Here, we strictly consider only between the peptide and the TCR (chain C & D):
+#                     # Res1 through tm_only, is already in chain E, we only need to control the res2 to
+#                     # be in chian C or D;
+#                     if (res2chain == 'C' or res2chain == 'D'):
+#                         res1type = get_res_type(res_list_entire, res1)
+#                         res2type = get_res_type(res_list_entire, res2)
+#                         rij = get_interaction_distance(res1, res2)
+#                         phi_mediated_contact_well[res1type][res2type] += prot_water_switchFunc_sigmaProt(
+#                             rho_i, rho_j, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
+#                         if not res1type == res2type:
+#                             phi_mediated_contact_well[res2type][res1type] += prot_water_switchFunc_sigmaProt(
+#                                 rho_j, rho_i, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
+#             else:
+#                 continue
 
-        else:
+#         else:
 
-            for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max + 2.0):
-                res2index = get_local_index(res2)
-                res2chain = get_chain(res2)
-                res2globalindex = get_global_index(res_list_entire, res2)
+#             for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max + 2.0):
+#                 res2index = get_local_index(res2)
+#                 res2chain = get_chain(res2)
+#                 res2globalindex = get_global_index(res_list_entire, res2)
 
-                # Get the density parameters of i an j
-                rho_i = cb_density[res1globalindex]
-                rho_j = cb_density[res2globalindex]
-                rho_0 = density_threshold
-                kappa = density_kappa
+#                 # Get the density parameters of i an j
+#                 rho_i = cb_density[res1globalindex]
+#                 rho_j = cb_density[res2globalindex]
+#                 rho_0 = density_threshold
+#                 kappa = density_kappa
 
-                if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
-                    res1type = get_res_type(res_list_entire, res1)
-                    res2type = get_res_type(res_list_entire, res2)
-                    rij = get_interaction_distance(res1, res2)
-                    phi_mediated_contact_well[res1type][res2type] += prot_water_switchFunc_sigmaProt(
-                        rho_i, rho_j, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
-                    if not res1type == res2type:
-                        phi_mediated_contact_well[res2type][res1type] += prot_water_switchFunc_sigmaProt(
-                            rho_j, rho_i, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
+#                 if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+#                     res1type = get_res_type(res_list_entire, res1)
+#                     res2type = get_res_type(res_list_entire, res2)
+#                     rij = get_interaction_distance(res1, res2)
+#                     phi_mediated_contact_well[res1type][res2type] += prot_water_switchFunc_sigmaProt(
+#                         rho_i, rho_j, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
+#                     if not res1type == res2type:
+#                         phi_mediated_contact_well[res2type][res1type] += prot_water_switchFunc_sigmaProt(
+#                             rho_j, rho_i, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
 
-    phis_to_return = []
-    for i in range(20):
-        for j in range(i, 20):
-            phis_to_return.append(phi_mediated_contact_well[i][j])
-    return phis_to_return
+#     phis_to_return = []
+#     for i in range(20):
+#         for j in range(i, 20):
+#             phis_to_return.append(phi_mediated_contact_well[i][j])
+#     return phis_to_return
 
 
-def phi_water_mediated_contact_well(res_list_tmonly, res_list_entire, neighbor_list, parameter_list, TCRmodeling=False):
-    r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
-    cb_density = calculate_cb_density(res_list_entire, neighbor_list)
-    r_min = float(r_min)
-    r_max = float(r_max)
-    kappa = float(kappa)
-    min_seq_sep = int(min_seq_sep)
-    density_threshold = float(density_threshold)
-    density_kappa = float(density_kappa)
-    phi_mediated_contact_well = np.zeros((20, 20))
-    for res1globalindex, res1 in enumerate(res_list_entire):
-        res1index = get_local_index(res1)
-        res1chain = get_chain(res1)
+# def phi_water_mediated_contact_well(res_list_tmonly, res_list_entire, neighbor_list, parameter_list, TCRmodeling=False):
+#     r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
+#     cb_density = calculate_cb_density(res_list_entire, neighbor_list)
+#     r_min = float(r_min)
+#     r_max = float(r_max)
+#     kappa = float(kappa)
+#     min_seq_sep = int(min_seq_sep)
+#     density_threshold = float(density_threshold)
+#     density_kappa = float(density_kappa)
+#     phi_mediated_contact_well = np.zeros((20, 20))
+#     for res1globalindex, res1 in enumerate(res_list_entire):
+#         res1index = get_local_index(res1)
+#         res1chain = get_chain(res1)
 
-        # For TCR modeling, we only need the sequence in the peptide;
-        if TCRmodeling:
+#         # For TCR modeling, we only need the sequence in the peptide;
+#         if TCRmodeling:
 
-            if (res1 in res_list_tmonly):
+#             if (res1 in res_list_tmonly):
 
-                for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max + 2.0):
-                    res2index = get_local_index(res2)
-                    res2chain = get_chain(res2)
-                    res2globalindex = get_global_index(res_list_entire, res2)
+#                 for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max + 2.0):
+#                     res2index = get_local_index(res2)
+#                     res2chain = get_chain(res2)
+#                     res2globalindex = get_global_index(res_list_entire, res2)
 
-                    # Get the density parameters of i an j
-                    rho_i = cb_density[res1globalindex]
-                    rho_j = cb_density[res2globalindex]
-                    rho_0 = density_threshold
-                    kappa = density_kappa
+#                     # Get the density parameters of i an j
+#                     rho_i = cb_density[res1globalindex]
+#                     rho_j = cb_density[res2globalindex]
+#                     rho_0 = density_threshold
+#                     kappa = density_kappa
 
-                    # Here, we strictly consider only between the peptide and the TCR (chain C & D):
-                    # Res1 through tm_only, is already in chain E, we only need to control the res2 to
-                    # be in chian C or D;
-                    if (res2chain == 'C' or res2chain == 'D'):
-                        res1type = get_res_type(res_list_entire, res1)
-                        res2type = get_res_type(res_list_entire, res2)
-                        rij = get_interaction_distance(res1, res2)
-                        phi_mediated_contact_well[res1type][res2type] += prot_water_switchFunc_sigmaWater(
-                            rho_i, rho_j, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
-                        if not res1type == res2type:
-                            phi_mediated_contact_well[res2type][res1type] += prot_water_switchFunc_sigmaWater(
-                                rho_j, rho_i, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
+#                     # Here, we strictly consider only between the peptide and the TCR (chain C & D):
+#                     # Res1 through tm_only, is already in chain E, we only need to control the res2 to
+#                     # be in chian C or D;
+#                     if (res2chain == 'C' or res2chain == 'D'):
+#                         res1type = get_res_type(res_list_entire, res1)
+#                         res2type = get_res_type(res_list_entire, res2)
+#                         rij = get_interaction_distance(res1, res2)
+#                         phi_mediated_contact_well[res1type][res2type] += prot_water_switchFunc_sigmaWater(
+#                             rho_i, rho_j, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
+#                         if not res1type == res2type:
+#                             phi_mediated_contact_well[res2type][res1type] += prot_water_switchFunc_sigmaWater(
+#                                 rho_j, rho_i, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
 
-            else:
-                continue
+#             else:
+#                 continue
 
-        else:
+#         else:
 
-            for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max + 2.0):
-                res2index = get_local_index(res2)
-                res2chain = get_chain(res2)
-                res2globalindex = get_global_index(res_list_entire, res2)
+#             for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max + 2.0):
+#                 res2index = get_local_index(res2)
+#                 res2chain = get_chain(res2)
+#                 res2globalindex = get_global_index(res_list_entire, res2)
 
-                # Get the density parameters of i an j
-                rho_i = cb_density[res1globalindex]
-                rho_j = cb_density[res2globalindex]
-                rho_0 = density_threshold
-                kappa = density_kappa
+#                 # Get the density parameters of i an j
+#                 rho_i = cb_density[res1globalindex]
+#                 rho_j = cb_density[res2globalindex]
+#                 rho_0 = density_threshold
+#                 kappa = density_kappa
 
-                if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
-                    res1type = get_res_type(res_list_entire, res1)
-                    res2type = get_res_type(res_list_entire, res2)
-                    rij = get_interaction_distance(res1, res2)
-                    phi_mediated_contact_well[res1type][res2type] += prot_water_switchFunc_sigmaWater(
-                        rho_i, rho_j, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
-                    if not res1type == res2type:
-                        phi_mediated_contact_well[res2type][res1type] += prot_water_switchFunc_sigmaWater(
-                            rho_j, rho_i, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
+#                 if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+#                     res1type = get_res_type(res_list_entire, res1)
+#                     res2type = get_res_type(res_list_entire, res2)
+#                     rij = get_interaction_distance(res1, res2)
+#                     phi_mediated_contact_well[res1type][res2type] += prot_water_switchFunc_sigmaWater(
+#                         rho_i, rho_j, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
+#                     if not res1type == res2type:
+#                         phi_mediated_contact_well[res2type][res1type] += prot_water_switchFunc_sigmaWater(
+#                             rho_j, rho_i, rho_0, kappa) * interaction_well(rij, r_min, r_max, kappa)
 
-    phis_to_return = []
-    for i in range(20):
-        for j in range(i, 20):
-            phis_to_return.append(phi_mediated_contact_well[i][j])
-    return phis_to_return
+#     phis_to_return = []
+#     for i in range(20):
+#         for j in range(i, 20):
+#             phis_to_return.append(phi_mediated_contact_well[i][j])
+#     return phis_to_return
 
 
 # Evaluate for those that decoy strucutres are provided;

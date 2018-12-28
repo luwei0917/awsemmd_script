@@ -1,0 +1,38 @@
+# VMD for MACOSXX86, version 1.9.3 (November 30, 2016)
+# Log file '/Users/weilu/openmmawsem/_local/gamma_secretase/5a63.vmd', created by user weilu
+mol load pdb movie.pdb
+
+mol modcolor 0 0 Chain
+mol modstyle 0 0 NewCartoon 0.300000 10.000000 4.100000 0
+mol material AOChalky
+
+mol smoothrep 0 0 10
+
+animate goto 0
+
+color Display Background white
+color Labels Bonds black
+
+graphics 0 line {-1000 45 15} {1000 45 15} width 2
+graphics 0 line {-1000 45 -15} {1000 45 -15} width 2
+graphics 0 line {-1000 -45 15} {1000 -45 15} width 2
+graphics 0 line {-1000 -45 -15} {1000 -45 -15} width 2
+
+axes location off
+display projection orthographic
+display cuedensity 0
+
+
+user add key q {rotate x by 90}
+user add key w {rotate x by -90}
+user add key a {rotate y by 90}
+user add key d {rotate y by -90}
+
+rotate x by 90.000000
+rotate x by 90.000000
+rotate x by 90.000000
+scale by 1.200000
+
+
+# VMD for MACOSXX86, version 1.9.3 (November 30, 2016)
+# end of log file.
