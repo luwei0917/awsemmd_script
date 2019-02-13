@@ -34,6 +34,7 @@ parser.add_argument("-i", "--inplace", action="store_true", default=False)
 parser.add_argument("-f", "--force", type=float, default=1.0)
 parser.add_argument("--start", default="native")
 parser.add_argument("--commons", type=int, default=0)
+parser.add_argument("--test", type=int, default=0)
 args = parser.parse_args()
 
 if(args.debug):
@@ -209,7 +210,10 @@ else:
             do("cp -r {} {}/{}".format(proteinName, args.name, i))
         cd(args.name + "/"+str(i))
         set_up()
-        batch_run()
+        if args.test == 0:
+            batch_run()
+        elif args.test == 1:
+            do(f"/home/wl45/build/sep03/src/lmp_serial -in {proteinName}_0.in")
         cd(cwd)
 
 # print("hello world")

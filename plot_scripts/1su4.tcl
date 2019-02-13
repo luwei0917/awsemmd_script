@@ -97,6 +97,8 @@ mol delrep 0 0
 user add key q {rotate x by 90}
 user add key w {rotate x by -90}
 
+user add key a {rotate y by 90}
+user add key d {rotate y by -90}
 puts "ahora anda lindo todo!!!"
 
 animate style Once

@@ -70,8 +70,18 @@ def computePhis(proteins):
     addLocation(proteins, proteins_location)
     # os.chdir('database')
     add_virtual_glycines_list(proteins_location)
-    generate_decoy_sequences(proteins, methods=['shuffle'])
-    evaluate_phis_over_training_set_Wei(proteins, "phi_list.txt", decoy_method='shuffle', max_decoys=1e+10, tm_only=False, num_processors=1)
+    generate_decoy_sequences(proteins, methods=['shuffle'], databaseLocation="../../")
+    evaluate_phis_over_training_set_for_native_structures_Wei(proteins, "phi_list.txt", decoy_method='shuffle', max_decoys=1e+10, tm_only=False, num_processors=1)
 # extractSeqFromFa()
-computePhis(args.proteins)
 
+def computePhisForDecoys(proteins):
+    proteins_location = "location_"+ proteins
+    # transferPDB(proteins)
+    addLocation(proteins, proteins_location)
+    # os.chdir('database')
+    add_virtual_glycines_list(proteins_location)
+    # generate_decoy_structures(proteins, methods=['lammps'], num_decoys=[10], databaseLocation="../../")
+    evaluate_phis_over_training_set_for_decoy_structures_Wei(proteins, "phi_list.txt", decoy_method='lammps', max_decoys=1e+5, tm_only=False, num_processors=1)
+
+# computePhis(args.proteins)
+computePhisForDecoys(args.proteins)

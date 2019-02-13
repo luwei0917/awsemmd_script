@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser(
     description="This is a python3 script to\
     automatic copy the template file, \
     run simulation and analysis")
+parser.add_argument("protein", help="The name of the protein")
 parser.add_argument("-r", "--run", help="test mode",
                     action="store_true")
 parser.add_argument("-s", "--see", help="test mode",
@@ -24,36 +25,47 @@ parser.add_argument("-m", "--mode", type=int, default=0)
 parser.add_argument("-d", "--day", type=str, default="someday")
 parser.add_argument("-t", "--test", action="store_true", default=False)
 args = parser.parse_args()
-if args.test:
-    do = print
-else:
-    do = os.system
+
+do = os.system
 cd = os.chdir
+
 def replace(TARGET, FROM, TO):
     do("sed -i.bak 's/{}/{}/g' {}".format(FROM,TO,TARGET))
 def extra(fileName, offset=0):
     replace(fileName, "1 1 30 5", "1 1 30 {}".format(offset))
-def rerun(extra=extra, offset=0):
-    do("cp 2xov_0.in rerun_{}.in".format(offset))
+def rerun(proteinName, extra=extra, offset=0):
+    do(f"cp {proteinName}_0.in rerun_{offset}.in")
     fileName = "rerun_{}.in".format(offset)
     replace(fileName, "fix               1 all nve", "")
     replace(fileName, "fix               2 all langevin", "#")
-    replace(fileName, "0\/", "recompute_offset_{}\/".format(offset))
+    replace(fileName, "run", "#")
+    # replace(fileName, "0\/", "recompute_offset_{}\/".format(offset))
+    replace(fileName, "0\/", "rerun\/")
+    do("mkdir rerun")
+    do("cp 0/dump.lammpstrj rerun/")
+    replace(fileName, "minimize", "# minimize")
     replace(fileName, "dump		1 all atom 4000", "#")
     replace(fileName, "dump_modify	1 sort id", "")
-    replace(fileName, "run", "#")
-    replace(fileName, "restart         100000 restart", "rerun 0\/dump.lammpstrj dump x y z")
+    replace(fileName, "restart         100000 restart", "rerun rerun\/dump.lammpstrj dump x y z")
 
     # replace(fileName, "1 1 30 5", "1 1 30 0")
     # extra(fileName, offset)
     slurm = "rerun_{}.slurm".format(offset)
-    do("cp ~/opt/2xov_eval/run.slurm " + slurm)
-    replace(slurm, "2xov_eval", "rerun_{}".format(offset))
+    do("cp run_0.slurm " + slurm)
+    replace(slurm, "#SBATCH --time=04:00:00", "#SBATCH --time=00:10:00")
+    replace(slurm, f"{proteinName}_0.in", "rerun_{}.in".format(offset))
+    if args.test:
+        do("/home/wl45/build/sep03/src/lmp_serial -in rerun_0.in")
+    else:
+        do("sbatch " + slurm)
+    # do("cp ~/opt/2xov_eval/run.slurm " + slurm)
+    # replace(slurm, "2xov_eval", "rerun_{}".format(offset))
     # replace(slurm, "commons", "ctbp-common")
-    do("mkdir recompute_offset_{}".format(offset))
-    do("sbatch " + slurm)
+    # do("mkdir recompute_offset_{}".format(offset))
+    # do("sbatch " + slurm)
 
-rerun()
+proteinName = args.protein.strip("/.").lower()
+rerun(proteinName)
 # parser.add_argument("template", help="the name of template file")
 # parser.add_argument("-n", "--number", type=int, default=20,
 #                     help="Number of simulation run")

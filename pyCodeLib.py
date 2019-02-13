@@ -11,7 +11,8 @@ import random
 from functools import partial
 
 MYHOME = "/Users/weilu/Research/optimization/"
-MYHOME = "/scratch/wl45/oct_2018/03_week/optimization/"
+# MYHOME = "/scratch/wl45/oct_2018/03_week/optimization/"
+MYHOME = "/scratch/wl45/jan_2019/optimization/"
 # MYHOME = "optimization/"
 # For matplot
 import matplotlib.pyplot as plt
@@ -255,6 +256,14 @@ def read_decoy_sequences(sequence_file_name):
             sequences.append(line)
     return sequences
 
+def read_decoy_structures(structure_file_name):
+    structures = []
+    with open(structure_file_name, "r") as structure_file:
+        for line in structure_file:
+            line = line.strip()
+            s = parse_pdb(os.path.join(line))
+            structures.append(s)
+    return structures
 
 def is_hetero(residue):
     if residue.id[0] != ' ':
@@ -918,7 +927,7 @@ def evaluate_phis_for_decoy_protein(protein, phi_list, decoy_method, max_decoys,
             output_file.close()
 
 
-def evaluate_phis_over_training_set_Wei(training_set_file, phi_list_file_name, decoy_method, max_decoys, tm_only=False, num_processors=1):
+def evaluate_phis_over_training_set_for_native_structures_Wei(training_set_file, phi_list_file_name, decoy_method, max_decoys, tm_only=False, num_processors=1):
     phi_list = read_phi_list(phi_list_file_name)
     print(phi_list)
     training_set = read_column_from_file(training_set_file, 1)
@@ -929,6 +938,14 @@ def evaluate_phis_over_training_set_Wei(training_set_file, phi_list_file_name, d
     # for protein in training_set:
     #   evaluate_phis_for_protein(protein, phi_list, decoy_method, max_decoys, tm_only=tm_only)
 
+def evaluate_phis_over_training_set_for_decoy_structures_Wei(training_set_file, phi_list_file_name, decoy_method, max_decoys, tm_only=False, num_processors=1):
+    phi_list = read_phi_list(phi_list_file_name)
+    print(phi_list)
+    training_set = read_column_from_file(training_set_file, 1)
+    print(training_set)
+    function_to_evaluate = partial(evaluate_phis_for_decoy_protein_Wei, tm_only=tm_only)
+    arguments_lists = [training_set, [phi_list]*len(training_set), [decoy_method]*len(training_set), [max_decoys]*len(training_set)]
+    call_independent_functions_on_n_processors(function_to_evaluate, arguments_lists, num_processors)
 # def evaluate_phis_over_training_set(training_set_file, phi_list_file_name, decoy_method, max_decoys, tm_only=False, num_processors=1, TCRmodeling=False):
 #     phi_list = read_phi_list(phi_list_file_name)
 #     print(phi_list)
@@ -972,6 +989,39 @@ def evaluate_phis_for_protein_Wei(protein, phi_list, decoy_method, max_decoys, t
                     phis_to_write = phiF(res_list, neighbor_list, parameters)
                     output_file.write(str(phis_to_write).strip('[]').replace(',', ' ')+'\n')
                 output_file.close()
+
+def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_decoys, tm_only=False):
+        print(protein)
+        structure = parse_pdb(os.path.join(structures_directory, protein))
+        res_list = get_res_list(structure)
+        neighbor_list = get_neighbor_list(structure)
+        sequence = get_sequence_from_structure(structure)
+        for phi, parameters in phi_list:
+            phiF = globals()[phi]
+            parameters_string = get_parameters_string(parameters)
+            print(phi, parameters, parameters_string)
+            # check to see if the decoys are already generated
+            number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)))
+            if not number_of_lines_in_file >= 1:
+                output_file = open(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)), 'w')
+                phis_to_write = phiF(res_list, neighbor_list, parameters)
+                output_file.write(str(phis_to_write).strip('[]').replace(',', '')+'\n')
+                output_file.close()
+            number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)))
+            if not number_of_lines_in_file >= max_decoys:
+                output_file = open(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
+                # decoy_sequences = read_decoy_sequences(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
+                decoy_structures = read_decoy_structures(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
+                for i_decoy, decoy_structure in enumerate(decoy_structures):
+                    if i_decoy >= max_decoys:
+                        break
+                    # decoy_structure = parse_pdb(os.path.join(structures_directory,protein))
+                    decoy_res_list = get_res_list(decoy_structure)
+                    decoy_neighbor_list = get_neighbor_list(decoy_structure)
+                    phis_to_write = phiF(decoy_res_list, decoy_neighbor_list, parameters)
+                    output_file.write(str(phis_to_write).strip('[]').replace(',', ' ')+'\n')
+                output_file.close()
+
 '''
 def evaluate_phis_for_protein(protein, phi_list, decoy_method, max_decoys, tm_only=False, TCRmodeling=False):
     print(protein)
@@ -1070,22 +1120,42 @@ def get_parameters_string(parameters):
     return parameter_string
 
 
-def generate_decoy_sequences(proteins_list_file_name, methods=['shuffle', 'cyclic'], num_decoys=[1000, 1000]):
+def generate_decoy_sequences(proteins_list_file_name, methods=['shuffle', 'cyclic'], num_decoys=[1000, 1000], databaseLocation="."):
     protein_list = read_column_from_file(proteins_list_file_name, 1)
     os.chdir(decoys_root_directory)
     for i, method in enumerate(methods):
         if not os.path.exists(method):
             os.makedirs(method)
         os.chdir(method)
+        print(os.getcwd())
         for protein in protein_list:
             print(method, protein)
             output_file = open("%s.decoys" % protein, 'w')
             for j in range(num_decoys[i]):
                 output_file.write(generate_decoy_sequence(
-                    protein, method=method, degree=j) + '\n')
+                    protein, method=method, degree=j, databaseLocation=databaseLocation) + '\n')
             output_file.close()
         os.chdir('..')
     os.chdir("..")
+
+
+# def generate_decoy_structures(proteins_list_file_name, methods=['lammps'], num_decoys=[1000], databaseLocation="."):
+#     protein_list = read_column_from_file(proteins_list_file_name, 1)
+#     os.chdir(decoys_root_directory)
+#     for i, method in enumerate(methods):
+#         if not os.path.exists(method):
+#             os.makedirs(method)
+#         os.chdir(method)
+#         print(os.getcwd())
+#         for protein in protein_list:
+#             print(method, protein)
+#             output_file = open("%s.decoys" % protein, 'w')
+#             for j in range(num_decoys[i]):
+#                 output_file.write(generate_decoy_structure(
+#                     protein, method=method, degree=j, databaseLocation=databaseLocation) + '\n')
+#             output_file.close()
+#         os.chdir('..')
+#     os.chdir("..")
 
 
 def shuffle_string(string):
@@ -1107,9 +1177,9 @@ def get_sublist_complement(list_name, indices_list):
 membrane_database_root = os.getenv('MEMBRANE_DATABASE_ROOT', 'C:\\Users\\Dell\\research\\databases\\membrane_protein_database\\')
 tm_root_directory = os.path.join(membrane_database_root, 'cleaned_database', 'tms')
 
-def generate_decoy_sequence(protein, method='TCR_randomization', degree=None):
+def generate_decoy_sequence(protein, method='TCR_randomization', degree=None, databaseLocation="."):
 
-    sequences_root_directory = os.path.join(MYHOME,"database/S20_seq/")
+    sequences_root_directory = os.path.join(databaseLocation,"database/S20_seq/")
 
     with open("%s%s.seq" % (sequences_root_directory, protein), "r") as sequence_file:
         native_sequence = sequence_file.read().replace('\n', '')
@@ -1170,6 +1240,12 @@ def generate_decoy_sequence(protein, method='TCR_randomization', degree=None):
         else:
             return newsequence
 
+# def generate_decoy_structure(protein, method='lammps', degree=None, databaseLocation="."):
+#     structures_root_directory = os.path.join(databaseLocation,"database/S20_seq/")
+#     with open("%s%s.seq" % (structures_root_directory, protein), "r") as structure_file:
+#         native_structure = structure_file.read().replace('\n', '')
+#     if method == 'shuffle':
+#         return shuffle_string(native_structure)
 
 def get_total_phis_and_parameter_string(phi_list, training_set):
     full_parameters_string = ""
@@ -1210,7 +1286,7 @@ def get_total_phis_and_parameter_string_decoy_structures_provided(phi_list, trai
         for i_protein, protein in enumerate(training_set):
             if i_protein > 0:
                 break
-            input_file = open(os.path.join(phis_directory, "%s_%s_decoy_%s" % (
+            input_file = open(os.path.join(phis_directory, "%s_%s_decoys_lammps_%s" % (
                 phi, protein, parameters_string)), 'r')
             for line in input_file:
                 line = line.strip().split()
@@ -1227,10 +1303,10 @@ def read_decoy_phi_structures_provided(protein, phi_list, total_phis, jackhmmer=
         parameters = phi_and_parameters[1]
         parameters_string = get_parameters_string(parameters)
         if jackhmmer:
-            input_file = open(os.path.join(jackhmmer_phis_directory, "%s_%s_decoy_%s" % (
+            input_file = open(os.path.join(jackhmmer_phis_directory, "%s_%s_decoys_lammps_%s" % (
                 phi, protein, parameters_string)), 'r')
         else:
-            input_file = open(os.path.join(phis_directory, "%s_%s_decoy_%s" % (
+            input_file = open(os.path.join(phis_directory, "%s_%s_decoys_lammps_%s" % (
                 phi, protein, parameters_string)), 'r')
 
         for line in input_file:
@@ -1419,7 +1495,7 @@ def calculate_A_B_and_gamma_xl23(training_set_file, phi_list_file_name, decoy_me
     # Find out how many total phi_i there are and get full parameter string
     total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
         phi_list, training_set)
-
+    # print(num_phis)
     phi_native_i_protein = np.zeros((len(training_set), total_phis))
     for i_protein, protein in enumerate(training_set):
         phi_native_i_protein[i_protein] = read_native_phi(
