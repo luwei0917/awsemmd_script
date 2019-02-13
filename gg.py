@@ -75,6 +75,78 @@ def pick_structure_generate_show_script(n=2):
         # f.write("show cartoon, all\n")
         # f.write("hide nonbonded, all\n")
 
+if args.day == "jan14":
+    pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    if args.mode == 1:
+        downloadPdb(pdb_list)
+        cleanPdb(pdb_list, chain=None)
+    if args.mode == 2:
+        do("mkdir -p all_simulations")
+        cd("all_simulations")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {name}/{name}")
+            cd(f"{name}/{name}")
+            do("pwd")
+            do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+            do(f"python2 ~/opt/script/Pdb2Gro.py crystal_structure.pdb {name}.gro")
+            do(f"create_project.py {name} --globular")
+            protein_length = getFromTerminal("wc ssweight").split()[0]
+            print(f"protein: {name}, length: {protein_length}")
+            with open("frags.mem", "w") as out:
+                out.write("[Target]\nquery\n\n[Memories]\n")
+                out.write(f"{name}.gro 1 1 {protein_length} 20\n")
+            cd("../..")
+
+
+if args.day == "jan07":
+    if args.mode == 1:
+        pdb_list = ["5fn2"]
+        downloadPdb(pdb_list, membrane_protein=True)
+        # downloadPdb(pdb_list, membrane_protein=False)
+        print("clean")
+        cleanPdb(pdb_list, chain=-1)
+    name = "abeta42_1"
+    rowN = 1
+    columnN = 1
+    if args.mode == 2:
+        do("rm crystal_structure.pdb")
+        to = "tmp1.pdb"
+
+        table = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        count = 0
+        for i in range(rowN):
+            for j in range(columnN):
+                duplicate_pdb("cleaned_pdbs/one_abeta42.pdb", to, offset_x=100, offset_y=-50, offset_z=50.0*j, new_chain="E")
+                do(f"cat {to} >> crystal_structure.pdb")
+                count += 1
+if args.day == "jan06":
+    pdb_list = "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", ")
+    if args.mode == 1:
+        downloadPdb(pdb_list)
+        cleanPdb(pdb_list, chain=None)
+    if args.mode == 2:
+        do("mkdir -p all_simulations")
+        cd("all_simulations")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {name}/{name}")
+            cd(f"{name}/{name}")
+            do("pwd")
+            do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+            do(f"python2 ~/opt/script/Pdb2Gro.py crystal_structure.pdb {name}.gro")
+            do(f"create_project.py {name} --globular")
+            protein_length = getFromTerminal("wc ssweight").split()[0]
+            print(f"protein: {name}, length: {protein_length}")
+            with open("frags.mem", "w") as out:
+                out.write("[Target]\nquery\n\n[Memories]\n")
+                out.write(f"{name}.gro 1 1 {protein_length} 20\n")
+            cd("../..")
+
+
+if args.day == "jan03":
+    if args.mode == 1:
+        convert_openMM_to_standard_pdb(fileName="movie.pdb")
 if args.day == "dec13":
     if args.mode == 1:
         pdb_list = ["T0958"]

@@ -271,6 +271,75 @@ def is_hetero(residue):
     else:
         return False
 
+def plot_contact_well(gammas, invert_sign=True, fix_colorbar=True, inferBound=False,
+                        vmin=-0.3, vmax=0.3, fix_confidence_colorbar=True, confidence_vmin=0,
+                        confidence_vmax=1.0, plot_confidence=False, confidence_lower=None, confidence_upper=None):
+    size = 20
+    interaction_matrix = np.zeros((size, size))
+    i_content = 0
+    for i in range(size):
+        for j in range(i, size):
+            index1 = hydrophobicity_map[inverse_res_type_map[i]]
+            index2 = hydrophobicity_map[inverse_res_type_map[j]]
+            interaction_matrix[index1][index2] = gammas[i_content]
+            interaction_matrix[index2][index1] = gammas[i_content]
+            i_content += 1
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    # The minus sign is here to be consistent with the way AWSEM thinks about gammas
+    if invert_sign:
+        interaction_matrix *= -1
+
+    if inferBound:
+        vmin = np.min(interaction_matrix)
+        vmax = np.max(interaction_matrix)
+
+    if fix_colorbar:
+        cax = ax.pcolor(interaction_matrix, vmin=vmin,
+                        vmax=vmax, cmap="bwr")
+    else:
+        cax = ax.pcolor(interaction_matrix, cmap="RdBu_r")
+    fig.colorbar(cax)
+
+    # put the major ticks at the middle of each cell
+    ax.set_yticks(np.arange(interaction_matrix.shape[0]) + 0.5, minor=False)
+    ax.set_xticks(np.arange(interaction_matrix.shape[1]) + 0.5, minor=False)
+
+    ax.set_xticklabels(hydrophobicity_letters)
+    ax.set_yticklabels(hydrophobicity_letters)
+
+    if plot_confidence:
+        confidence_interval_size = confidence_upper - confidence_lower
+        confidence_matrix = np.zeros((size, size))
+        i_content = 0
+        for i in range(size):
+            for j in range(i, size):
+                index1 = hydrophobicity_map[inverse_res_type_map[i]]
+                index2 = hydrophobicity_map[inverse_res_type_map[j]]
+                confidence_matrix[index1][index2] = confidence_interval_size[i_content]
+                confidence_matrix[index2][index1] = confidence_interval_size[i_content]
+                i_content += 1
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        if fix_confidence_colorbar:
+            cax = ax.pcolor(confidence_matrix, vmin=confidence_vmin,
+                            vmax=confidence_vmax, cmap="RdBu_r")
+        else:
+            cax = ax.pcolor(confidence_matrix, cmap="RdBu_r")
+        fig.colorbar(cax)
+
+        # put the major ticks at the middle of each cell
+        ax.set_yticks(np.arange(confidence_matrix.shape[0]) + 0.5, minor=False)
+        ax.set_xticks(np.arange(confidence_matrix.shape[1]) + 0.5, minor=False)
+
+        ax.set_xticklabels(hydrophobicity_letters)
+        ax.set_yticklabels(hydrophobicity_letters)
+
+    plt.savefig('direct_contact.pdf')
+    plt.show()
+
 
 def plot_phi_pairwise_contact_well(gammas, invert_sign=True, fix_colorbar=True, vmin=-0.3, vmax=0.3, fix_confidence_colorbar=True, confidence_vmin=0, confidence_vmax=1.0, plot_confidence=False, confidence_lower=None, confidence_upper=None):
     size = 20
@@ -1803,6 +1872,70 @@ def evaluate_hamiltonian(protein, hamiltonian, training_set_file, training_decoy
     # calculate z-score
     z_score = (e_mg - e_native) / e_mg_std
     return z_score, e_native, e_mg, e_mg_std
+
+
+def evaluate_hamiltonian_wei(protein, hamiltonian, training_set_file, gamma_file_name, test_decoy_method, num_decoys, use_filtered_gammas=True):
+    phi_list = read_phi_list(hamiltonian)
+    training_set = read_column_from_file(training_set_file, 1)
+    # read in Hamiltonian
+    # Find out how many total phi_i there are and get full parameter string
+    total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
+        phi_list, training_set)
+    # read in corresponding gammas
+    if use_filtered_gammas:
+        gamma_file_name = "%s%s_%s_gamma_filtered" % (
+            gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string)
+    else:
+        pass
+        # gamma_file_name = "%s%s_%s_gamma" % (gammas_directory, training_set_file.split(
+        #     '/')[-1].split('.')[0], full_parameters_string)
+
+    # Need to filter out the complex number if in the "filtered" mode;
+    if use_filtered_gammas:
+        gamma = np.loadtxt(gamma_file_name, dtype=complex, converters={
+                           0: lambda s: complex(s.decode().replace('+-', '-'))})
+    else:
+        gamma = np.loadtxt(gamma_file_name)
+
+    # read in corresponding phis (native and decoys)
+    phi_native = read_native_phi(protein, phi_list, total_phis)
+    phi_i_decoy = read_decoy_phis(
+        protein, phi_list, total_phis, num_phis, num_decoys, test_decoy_method)
+    # perform dot products to get energies (native and decoys)
+    e_decoy = np.zeros(num_decoys)
+    e_native = np.dot(gamma, phi_native)
+    for i_decoy in range(num_decoys):
+        e_decoy[i_decoy] = np.dot(gamma, phi_i_decoy[i_decoy])
+    e_mg = np.average(e_decoy)
+    e_mg_std = np.std(e_decoy)
+    # calculate z-score
+    z_score = (e_mg - e_native) / e_mg_std
+    return z_score, e_native, e_mg, e_mg_std
+
+def validate_hamiltonian_wei(hamiltonian, training_set_file, gamma_file_name, training_decoy_method, num_decoys, test_set_file=None, test_decoy_method=None, use_filtered_gammas=False):
+    if test_set_file is None:
+        test_set_file = training_set_file
+    if test_decoy_method is None:
+        test_decoy_method = training_decoy_method
+    test_set = read_column_from_file(test_set_file, 1)
+    z_scores = []
+    e_natives = []
+    e_mgs = []
+    e_mg_stds = []
+    for i, protein in enumerate(test_set):
+
+        z, en, emg, emgstd = evaluate_hamiltonian_wei(
+            protein, hamiltonian, training_set_file, gamma_file_name, test_decoy_method, num_decoys, use_filtered_gammas)
+        if np.isnan(z):
+            continue
+        z_scores.append(z)
+        e_natives.append(en)
+        e_mgs.append(emg)
+        e_mg_stds.append(emgstd)
+        if i % 1000 == 0:
+            print(i, z)
+    return z_scores, e_natives, e_mgs, e_mg_stds
+
 
 def validate_hamiltonian_decoy_structures_provided(hamiltonian, native_training_set_file, decoy_training_set_file, training_decoy_method, native_test_set_file=None, decoy_test_set_file=None, test_decoy_method=None, use_filtered_gammas=False):
     if native_test_set_file == None:

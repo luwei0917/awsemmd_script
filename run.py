@@ -200,7 +200,8 @@ if(args.inplace):
     print("inplace")
     set_up()
     # batch_run()
-    do("~/build/brian/z_dependence/lmp_serial -in {}_multi.in".format(proteinName))
+    # do("~/build/brian/z_dependence/lmp_serial -in {}_multi.in".format(proteinName))
+    do("~/openmmawsem/_local/awsem_nov06/lmp_serial -in {}_multi.in".format(proteinName))
 else:
     n = args.number
     cwd = os.getcwd()
