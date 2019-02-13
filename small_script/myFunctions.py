@@ -32,6 +32,22 @@ from Bio.PDB import PDBList
 def getFromTerminal(CMD):
     return subprocess.Popen(CMD,stdout=subprocess.PIPE,shell=True).communicate()[0].decode()
 
+
+def splitPDB(pre, fileName):
+    location = f"{pre}/{fileName}"
+    with open(location, "r") as f:
+        a = f.readlines()
+    i = 0
+    tmp = ""
+    for line in a:
+        tmp += line
+    #     os.system(f"echo '{line}' >> {pre}frame{i}")
+        if line == "END\n":
+            with open(f"{pre}frame{i}.pdb", "w") as out:
+                out.write(tmp)
+            i += 1
+            tmp = ""
+
 def read_hydrophobicity_scale(seq, isNew=False):
     seq_dataFrame = pd.DataFrame({"oneLetterCode":list(seq)})
     HFscales = pd.read_table("~/opt/small_script/Whole_residue_HFscales.txt")

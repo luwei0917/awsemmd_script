@@ -514,6 +514,439 @@ def isComplete(a):
                     return 0
     return 1
 
+if args.day == "feb13":
+    print(args.day)
+    pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    decoy_n = 20
+    # simulation_location = "iter1"
+    simulation_location = "iter2"
+    if args.mode == 1:
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            print(name)
+            for i in range(30):
+                cd(f"{name}/simulation/{i}/0/")
+                do(f"cp ../{name}.seq .")
+                do(f"python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie {name}.seq")
+                cd("../../../../")
+    if args.mode == 2:
+        # clean up
+        # do("rm database/S20_seq/*")
+        # do("rm database/dompdb/*")
+        do("mkdir -p decoys")
+        do("mkdir -p gammas")
+        do("mkdir -p phis")
+        do("mkdir -p database")
+        # do("cp -r ../optimization_iter1/database/dompdb database/")
+        # do("cp ../optimization_iter1/proteins_name_list.txt .")
+        # do("cp ../optimization_iter1/phi_list.txt .")
+    if args.mode == 3:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            for i in range(30):
+                do(f"cp -r ../iterative_optimization_2/{simulation_location}/{name}/simulation/{i}/0/ database/{name}_{i}")
+                pre = f"database/{name}_{i}/"
+                fileName = "movie.pdb"
+                splitPDB(pre, fileName)
+    if args.mode == 4:
+        # generate decoy file
+        print("generating decoys file")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            with open(f"decoys/lammps/{name}.decoys", "w") as out:
+                for i in range(30):
+                    for j in range(decoy_n):
+                        out.write(f"database/{name}_{i}/frame{j+1}\n")
+    if args.mode == 5:
+        with open("proteins_name_list.txt", "w") as out:
+            for p in pdb_list:
+                name = p.lower()[:4]
+                out.write(f"{name}\n")
+        do("python3 ~/opt/compute_phis.py proteins_name_list.txt")
+    if args.mode == 6:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # import time
+        # time.sleep(4000)
+        # complete_proteins = "database/cath-dataset-nonredundant-S20Clean.list"
+        complete_proteins = "proteins_name_list.txt"
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='lammps', num_decoys=decoy_n, noise_filtering=True, jackhmmer=False)
+        # individual_gammas_randomized_decoy=read_all_gammas("phi_list.txt", complete_proteins, training_decoy_method="shuffle", noise_filtering=True)
+    if args.mode == 7:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {simulation_location}/{name}")
+            pre = f"{simulation_location}/{name}/{name}"
+            do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
+            do(f"cp ../optimization_iter2/iteration_gamma.dat {pre}/")
+            do(f"cp {pre}/gamma.dat {pre}/original_gamma.dat")
+            do(f"cp {pre}/iteration_gamma.dat {pre}/gamma.dat")
+    if args.mode == 8:
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            # steps = 40
+            # steps = 1
+            steps = 80
+            cd(name)
+            # do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            # do(f"run.py -n 10 {name} --commons 2 -s {steps} --runs 1 --start crystal")
+            do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+
+
+
+if args.day == "feb07":
+    pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    decoy_n = 20
+    if args.mode == 1:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"cp -r ../iterative_optimization/native/{name}/simulation/0/rerun database/{name}")
+            pre = f"database/{name}/"
+            fileName = "movie.pdb"
+            splitPDB(pre, fileName)
+            do(f"cp database/{name}/frame0.pdb database/dompdb/{name}.pdb")
+    if args.mode == 2:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            pre = f"database/{name}/"
+            fileName = "movie.pdb"
+            splitPDB(pre, fileName)
+            do(f"cp database/{name}/frame0.pdb database/dompdb/{name}.pdb")
+    if args.mode == 3:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"cp database/{name}/frame0.pdb database/dompdb/{name}.pdb")
+    if args.mode == 4:
+        # generate decoy file
+        print("generating decoys file")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            with open(f"decoys/lammps/{name}.decoys", "w") as out:
+                for i in range(decoy_n):
+                    out.write(f"database/{name}/frame{i+1}\n")
+    if args.mode == 5:
+        # clean up
+        # do("rm database/S20_seq/*")
+        # do("rm database/dompdb/*")
+        do("mkdir -p decoys")
+        do("mkdir -p gammas")
+        do("mkdir -p phis")
+    if args.mode == 6:
+        with open("proteins_name_list.txt", "w") as out:
+            for p in pdb_list:
+                name = p.lower()[:4]
+                out.write(f"{name}\n")
+        do("python3 ~/opt/compute_phis.py proteins_name_list.txt")
+    if args.mode == 7:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # import time
+        # time.sleep(4000)
+        # complete_proteins = "database/cath-dataset-nonredundant-S20Clean.list"
+        complete_proteins = "proteins_name_list.txt"
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='lammps', num_decoys=decoy_n, noise_filtering=True, jackhmmer=False)
+        # individual_gammas_randomized_decoy=read_all_gammas("phi_list.txt", complete_proteins, training_decoy_method="shuffle", noise_filtering=True)
+    if args.mode == 8:
+        for i in range(475):
+            with open(f"run_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py proteins_name_list_{i}.txt"))
+            do(f"sbatch run_{i}.slurm")
+    if args.mode == 9:
+        simulation_location = "native"
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            cd(f"{name}/simulation/0/rerun/")
+            do(f"cp ../{name}.seq .")
+            do(f"python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie {name}.seq")
+            cd("../../../../")
+
+if args.day == "feb06":
+    print(args.day)
+    pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    # simulation_location = "noFrag"
+    # simulation_location = "newContact_noFrag"
+    # simulation_location = "native"
+    simulation_location = "iter1"
+    if args.mode == 1:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {simulation_location}/{name}")
+            pre = f"{simulation_location}/{name}/{name}"
+            do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
+            do(f"cp ../optimization_iter1/iteration_gamma.dat {pre}/")
+            do(f"cp {pre}/gamma.dat {pre}/original_gamma.dat")
+            do(f"cp {pre}/iteration_gamma.dat {pre}/gamma.dat")
+    if args.mode == 2:
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            # steps = 40
+            # steps = 1
+            steps = 40
+            cd(name)
+            # do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            # do(f"run.py -n 10 {name} --commons 2 -s {steps} --runs 1 --start crystal")
+            do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+    if args.mode == 3:
+        cd("native")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            cd(f"{name}/simulation/0/")
+            do("cp energy.log back_energy.log")
+            do(f"rerun.py {name} -t")
+            cd(f"../../../")
+
+if args.day == "jan29":
+    print(args.day)
+    pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    # simulation_location = "noFrag"
+    # simulation_location = "newFrag"
+    simulation_location = "top5_noeven"
+    if args.mode == 1:
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            steps = 40
+            cd(name)
+            do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+    if args.mode == 2:
+        fragLibrary = "fragment_memory_top5_noeven"
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {simulation_location}/{name}")
+            do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+            pre = f"{simulation_location}/{name}/{name}"
+            do(f"cp -r fragment_memory/fraglib {pre}/")
+            do(f"cp {fragLibrary}/{name}.mem {pre}/frags.mem")
+
+            # replace(f"{simulation_location}/{name}/{name}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Water\]", "\[Water\]-")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Burial\]", "\[Burial\]-")
+            # do(f"rm all_simulations/{name}/{name}/gamma.dat")
+
+if args.day == "jan23":
+    print(args.day)
+    pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    # simulation_location = "noFrag"
+    # simulation_location = "newFrag"
+    simulation_location = "all_simulations"
+    if args.mode == 1:
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            steps = 40
+            cd(name)
+            do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+
+if args.day == "jan22":
+    print(args.day)
+    pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    # simulation_location = "noFrag"
+    # simulation_location = "newFrag"
+    simulation_location = "top5"
+    if args.mode == 1:
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            steps = 40
+            cd(name)
+            do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+    if args.mode == 2:
+        fragLibrary = "fragment_memory_top5"
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {simulation_location}/{name}")
+            do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+            pre = f"{simulation_location}/{name}/{name}"
+            do(f"cp -r fragment_memory/fraglib {pre}/")
+            do(f"cp {fragLibrary}/{name}.mem {pre}/frags.mem")
+
+            # replace(f"{simulation_location}/{name}/{name}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Water\]", "\[Water\]-")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Burial\]", "\[Burial\]-")
+            # do(f"rm all_simulations/{name}/{name}/gamma.dat")
+
+if args.day == "jan20":
+    print(args.day)
+    pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    # simulation_location = "noFrag"
+    simulation_location = "FragOnly"
+    if args.mode == 1:
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            steps = 40
+            cd(name)
+            do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+    if args.mode == 2:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {simulation_location}/{name}")
+            do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+            pre = f"{simulation_location}/{name}/{name}"
+            # replace(f"{simulation_location}/{name}/{name}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
+            replace(f"{pre}/fix_backbone_coeff.data", "\[Water\]", "\[Water\]-")
+            replace(f"{pre}/fix_backbone_coeff.data", "\[Burial\]", "\[Burial\]-")
+            # do(f"rm all_simulations/{name}/{name}/gamma.dat")
+
+if args.day == "jan17":
+    print(args.day)
+    pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    # simulation_location = "noFrag"
+    # simulation_location = "newContact_noFrag"
+    simulation_location = "newContact_singleFrag"
+    if args.mode == 1:
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            steps = 40
+            cd(name)
+            do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+    if args.mode == 2:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {simulation_location}/{name}")
+            do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+            replace(f"{simulation_location}/{name}/{name}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
+            # replace(f"{simulation_location}/{name}/{name}/fix_backbone_coeff.data", "\[Water\]", "\[Water\]-")
+            # replace(f"{simulation_location}/{name}/{name}/fix_backbone_coeff.data", "\[Burial\]", "\[Burial\]-")
+            # do(f"rm all_simulations/{name}/{name}/gamma.dat")
+    if args.mode == 3:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {simulation_location}/{name}")
+            pre = f"{simulation_location}/{name}/{name}"
+            do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
+            do(f"cp ../optimization/iteration_gamma.dat {pre}/")
+            do(f"cp {pre}/gamma.dat {pre}/original_gamma.dat")
+            do(f"cp {pre}/iteration_gamma.dat {pre}/gamma.dat")
+
+if args.day == "jan16":
+    pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    if args.mode == 1:
+        cd("all_simulations")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            if name == "2fha" or name == "1mba":
+                steps = 20
+            else:
+                steps = 40
+            cd(name)
+            do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+
+
+if args.day == "jan10":
+    pdb_list = "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", ")
+    if args.mode == 1:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p all_simulations/{name}")
+            do(f"cp -r ../iterative_optimization_4/all_simulations/{name}/{name} all_simulations/{name}/")
+            replace(f"all_simulations/{name}/{name}/fix_backbone_coeff.data", "\[Water\]", "\[Water\]-")
+            replace(f"all_simulations/{name}/{name}/fix_backbone_coeff.data", "\[Burial\]", "\[Burial\]-")
+            do(f"rm all_simulations/{name}/{name}/gamma.dat")
+
+if args.day == "jan06":
+    if args.mode == 1:
+        cd("all_simulations")
+        name = "2fha"
+        if name == "2fha" or name == "1mba":
+            steps = 20
+        else:
+            steps = 40
+        cd(name)
+        do(f"run.py -n 20 {name} --commons 2 -s {steps} --runs 3")
+        cd("..")
+
+if args.day == "dec30":
+    pdb_list = "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", ")
+    if args.mode == 1:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p all_simulations/{name}")
+            do(f"cp -r ../iterative_optimization_4/all_simulations/{name}/{name} all_simulations/{name}/")
+            do(f"cp ../optimization/iteration_gamma.dat all_simulations/{name}/{name}/")
+            do(f"cp all_simulations/{name}/{name}/gamma.dat all_simulations/{name}/{name}/original_gamma.dat")
+            do(f"cp all_simulations/{name}/{name}/iteration_gamma.dat all_simulations/{name}/{name}/gamma.dat")
+    if args.mode == 2:
+        cd("all_simulations")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            if name == "2fha" or name == "1mba":
+                steps = 20
+            else:
+                steps = 40
+            cd(name)
+            do(f"run.py -n 20 {name} --commons 2 -s {steps} --runs 3")
+            cd("..")
+
+if args.day == "dec11":
+    if args.mode == 1:
+        all_results = pd.read_csv("filtered.csv", index_col=0)
+        for i, line in all_results.iterrows():
+            print(i, line["name"], line["folder"])
+
+            name = line["name"]
+            folder = line["folder"]
+            do(f"mkdir -p {name}")
+            from_file = f"/scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/{line['name']}/refinement/post-processing/1PCbias/sequentialPC/towardsPC1/lowTstructure/lowTstructure{line['folder']}.pdb"
+            os.system(f"cp {from_file} {name}/{name}_{folder}_{i%5}.pdb")
+
+if args.day == "dec09":
+    if args.mode == 1:
+        for i in range(10):
+            for percore in [1]:
+                for cpu in [1]:
+                    for thread in [-1]:
+                        do(f"python3 mm_sbatch.py -c {cpu} -t {thread} --percore {percore} --memory 32 -i {i}")
+if args.day == "dec06":
+    if args.mode == 1:
+        for i in range(10):
+            for percore in [1]:
+                for cpu in [2]:
+                    for thread in [-1]:
+                        do(f"python3 mm_sbatch.py -c {cpu} -t {thread} --percore {percore} --memory 16 -i {i}")
+    if args.mode == 2:
+        all_results = pd.read_csv("all_results.csv", index_col=0)
+        for i, line in all_results.query("result == 'picked_top5'").sort_values(["name", "prob"], ascending=False).reset_index(drop=True).iterrows():
+            print(i, line["name"], line["folder"])
+            name = line["name"]
+            folder = line["folder"]
+            from_file = f"/scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/{line['name']}/refinement/post-processing/1PCbias/sequentialPC/towardsPC1/lowTstructure/lowTstructure{line['folder']}.pdb"
+            os.system(f"cp {from_file} {name}_{folder}_{i%5}.pdb")
+if args.day == "dec05":
+    if args.mode == 1:
+        for cpu in [8]:
+            for thread in [-1, 1, 2, 4, 8, 16, 32, 48]:
+                for percore in [2]:
+                    do(f"python3 mm_sbatch.py -c {cpu} -t {thread} --percore {percore}")
+    if args.mode == 2:
+        for percore in [1, 2]:
+            for cpu in [4]:
+                for thread in [-1, 1, 2, 4, 8, 16, 32, 48]:
+                    do(f"python3 mm_sbatch.py -c {cpu} -t {thread} --percore {percore} --memory 8")
+    if args.mode == 3:
+        name_list = ["tr884-halfDIHE", "tr872-halfDIHE", "tr948-halfDIHE", "tr894", "tr882", "tr594", "tr869", "tr898", "tr862", "tr877", "tr872", "tr885", "tr866", "tr868", "tr884", "tr895", "tr896", "tr870", "tr921", "tr922", "tr891", "tr948", "tr947"]
+        for name in name_list:
+            do(f"mkdir {name}")
+            # do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/{name}/PCselection/* {name}/")
+            do(f"cp /scratch/xl23/home/xl23/notsJob/gromacs/all-atom/aawsem/pca/results/selection/PCselection/{name}/* {name}/")
 
 if args.day == "nov25":
     if args.mode == 6:
@@ -648,12 +1081,21 @@ if args.day == "nov01":
         do("rm gammas/*")
         do("rm -r phis")
         do("mkdir -p phis")
-
+    if args.mode == 5:
+        # do("mkdir -p decoys")
+        # do("mkdir -p gammas")
+        # do("mkdir -p phis")
+        for i in range(400, 475):
+            with open(f"run_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py proteins_name_list_{i}.txt"))
+            do(f"sbatch run_{i}.slurm")
 if args.day == "oct26":
     if args.mode == 1:
         from pyCodeLib import *
         import warnings
         warnings.filterwarnings('ignore')
+        # import time
+        # time.sleep(4000)
         complete_proteins = "database/cath-dataset-nonredundant-S20Clean.list"
         A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='shuffle', num_decoys=1000, noise_filtering=True, jackhmmer=False)
         # individual_gammas_randomized_decoy=read_all_gammas("phi_list.txt", complete_proteins, training_decoy_method="shuffle", noise_filtering=True)
