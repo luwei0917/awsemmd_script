@@ -19,8 +19,8 @@ from itertools import product
 from Bio.PDB.PDBParser import PDBParser
 
 from Bio.PDB import PDBList
-from pdbfixer import PDBFixer
-from simtk.openmm.app import PDBFile
+# from pdbfixer import PDBFixer
+# from simtk.openmm.app import PDBFile
 
 # compute cross Q for every pdb pair in one folder
 # parser = argparse.ArgumentParser(description="Compute cross q")
@@ -856,6 +856,26 @@ def read_variable_folder(location, match="*_", **kwargs):
     name = f"{datetime.today().strftime('%d_%h_%H%M%S')}.feather"
     data.reset_index(drop=True).to_feather(name)
 
+def getFragPdb(pdbId, i, outFile=None):
+    pdb = pdbId + ".pdb"
+    if outFile is None:
+        outFile = f"{i}_{pdb}"
+#     pdb = "1igqB00.pdb"
+#     pdbId = pdb.split('.')[0]
+    pre = "/Users/weilu/Research/optimization/fragment/"
+    database = "/Users/weilu/Research/optimization/fragment/database/dompdb/"
+    parser = bio.PDBParser(QUIET=True)
+    structure = parser.get_structure("x", os.path.join(database, pdb))
+    for model in structure:
+        for chain in model:
+            all_residues = list(chain)
+            io = bio.PDBIO()
+            c = bio.Chain.Chain("A")
+            c.child_list = all_residues[i:i+9]
+#             for ii, res in enumerate(c):
+#                 res.id = (' ', ii+1, ' ')
+            io.set_structure(c)
+            io.save(f'{pre}{outFile}')
 
 # def downloadPdb(pdb_list):
 #     os.system("mkdir -p original_pdbs")

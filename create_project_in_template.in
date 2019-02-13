@@ -43,9 +43,9 @@ group		oxygens id OXYGENS
 
 
 thermo 4000
-velocity        all create 500 RANDOM
+velocity        all create 700 RANDOM
 fix               1 all nve
-fix               2 all langevin 500 200 10000.0 RANDOM
+fix               2 all langevin 700 300 10000.0 RANDOM
 # fix     radialconstraint all spring/rg/cylindricalZdependent 0.1 0.0 0.2 30# NULL means use the starting configuration to define the radius, otherwise specify in Angstroms
 fix		  4 alpha_carbons backbone beta_atoms oxygens fix_backbone_coeff.data PROTEIN.seq
 
@@ -95,7 +95,7 @@ variable E_K     equal ke
 variable E_total equal v_E_P+v_E_K
 
 
-
+minimize       1.0e-4 1.0e-6 100 10000
 
 dump		1 all atom 4000 NUMBER/dump.lammpstrj
 dump_modify	1 sort id
@@ -103,6 +103,6 @@ dump_modify	1 sort id
 fix energy all print 4000 "${step}, ${E_chain}, ${E_shake}, ${E_chi}, ${E_rama}, ${E_excluded}, ${E_dssp}, ${E_pap}, ${E_water}, ${E_burial}, ${E_helix}, ${E_amhgo}, ${E_fmem}, ${E_vecFM}, ${E_membrane}, ${E_ssb}, ${E_P3}, ${E_bond}, ${E_excl}" file NUMBER/energy.dat screen no title "Steps,    Chain,           Shake,           Chi,             Rama,            Excluded,        DSSP,            P_AP,            Water,           Burial,          Helix,           AMH-Go,       Frag_Mem,        Vec_FM,          Membrane,        SSB,          VTotal,      Ebond,     Epair"
 fix         	wham all print 4000 "${step}, ${qw}, ${rg}, ${tc}, ${E_P}" file NUMBER/wham.dat screen no title "Steps, Qw, Rg, Tc, Energy"
 
-# reset_timestep	0
+reset_timestep	0
 restart         100000 restart
 run		SIMULATION_STEPS

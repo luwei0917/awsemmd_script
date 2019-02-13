@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import os
 import argparse
 import sys
@@ -78,9 +78,11 @@ beta_atoms = " ".join([str(i) for i in list(range(3, size*3+1, 3))])
 oxygens = " ".join([str(i) for i in list(range(2, size*3+1, 3))])
 last = " ".join(str(i) for i in [size*3-2, size*3-1, size*3])
 if args.crystal:
+    print("try not use this template")
     do("cp ~/opt/create_project_in_crystal_template.in {}_multi.in".format(proteinName))
 else:
     if args.membrane:
+        print("try not use this template")
         do("cp ~/opt/create_membrane_protein_folding_project_in_template.in {}_multi.in".format(proteinName))
     else:
         do("cp ~/opt/create_project_in_template.in {}_multi.in".format(proteinName))

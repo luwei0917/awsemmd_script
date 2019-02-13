@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import os
 import argparse
 import sys
 from time import sleep
 import subprocess
-import imp
+# import imp
 from small_script.myFunctions import shrinkage
 
 parser = argparse.ArgumentParser(description="written by Wei Lu.")
@@ -86,7 +86,10 @@ if args.mode == 2:
 
     if args.plot:
         # do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e 2xov_movie_bicelle.tcl")
-        do(f"/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e {protein_name}.tcl")
+        if not os.path.exists(f"{protein_name}.tcl"):
+            do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e movie.tcl")
+        else:
+            do(f"/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e {protein_name}.tcl")
 
 
 # if(args.number == -1):
