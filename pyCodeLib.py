@@ -1617,6 +1617,19 @@ def calculate_A_B_and_gamma_xl23(training_set_file, phi_list_file_name, decoy_me
     B_file_name = file_prefix + '_B'
 #    B_file = open(B_file_name, 'w')
     np.savetxt(B_file_name, B, fmt='%1.5f')
+
+    half_B_file_name = file_prefix + '_half_B'
+#    gamma_file = open(gamma_file_name, 'w')
+    np.savetxt(half_B_file_name, half_B, '%1.5f')
+
+    other_half_B_file_name = file_prefix + '_other_half_B'
+#    gamma_file = open(gamma_file_name, 'w')
+    np.savetxt(other_half_B_file_name, other_half_B, '%1.5f')
+
+    std_half_B_file_name = file_prefix + '_std_half_B'
+#    gamma_file = open(gamma_file_name, 'w')
+    np.savetxt(std_half_B_file_name, std_half_B, '%1.5f')
+
     #open("%s%s_%s_gamma.dat" % (gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string), 'w').write(str(gamma).strip('[]').replace('\n', ' '))
 
     if noise_filtering:
