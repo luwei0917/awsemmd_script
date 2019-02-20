@@ -83,5 +83,5 @@ def computePhisForDecoys(proteins):
     # generate_decoy_structures(proteins, methods=['lammps'], num_decoys=[10], databaseLocation="../../")
     evaluate_phis_over_training_set_for_decoy_structures_Wei(proteins, "phi_list.txt", decoy_method='lammps', max_decoys=1e+5, tm_only=False, num_processors=1)
 
-# computePhis(args.proteins)
-computePhisForDecoys(args.proteins)
+computePhis(args.proteins)
+# computePhisForDecoys(args.proteins)

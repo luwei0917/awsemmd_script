@@ -9,6 +9,8 @@ import numpy as np
 from scipy import stats
 import random
 from functools import partial
+import datetime
+
 
 MYHOME = "/Users/weilu/Research/optimization/"
 # MYHOME = "/scratch/wl45/oct_2018/03_week/optimization/"
@@ -1459,55 +1461,305 @@ def calculate_A_and_B(average_phi_decoy, phi_native, total_phis, num_decoys, phi
 
     return A, B, half_B, other_half_B, std_half_B
 
+def calculate_A_and_B_wei(average_phi_decoy, phi_native, all_phis):
+    print("calculate_A_and_B")
+    os.system("echo 'calculate_A_and_B' >> log")
+    print(datetime.datetime.now())
+    A = average_phi_decoy - phi_native
+    size_of_training_set, num_decoys, total_phis = all_phis.shape
+    half_B = np.zeros((total_phis, total_phis))
+    std_half_B = np.zeros((total_phis, total_phis))
+    other_half_B = np.zeros((total_phis, total_phis))
 
-def calculate_A_B_and_gamma_decoy_structures_provided(native_training_set_file, decoy_training_set_file, phi_list_file_name, decoy_method, num_decoys, noise_filtering=True, jackhmmer=False):
+    for p in range(size_of_training_set):
+        os.system(f"echo '{p}' >> log")
+        phis_i = all_phis[p].reshape(num_decoys, total_phis, 1)
+        phis_j = all_phis[p].reshape(num_decoys, 1, total_phis)
+        half_B += np.average(phis_i * phis_j, axis=0)
+        std_half_B += np.std(phis_i * phis_j, axis=0)
+    half_B /= size_of_training_set
+    std_half_B /= size_of_training_set
+
+    for p in range(size_of_training_set):
+        average_phi = np.average(all_phis[p], axis=0)
+        other_half_B += average_phi.reshape(total_phis, 1) * average_phi.reshape(1, total_phis)
+    other_half_B /= size_of_training_set
+    print("End")
+    print(datetime.datetime.now())
+
+    # for i in range(total_phis):
+    #     for j in range(total_phis):
+    #         for protein_i in range(size_of_training_set):
+    #             protein_i_phi_i_phi_j_values = np.zeros(num_decoys)
+    #             protein_i_half_B = np.zeros((total_phis, total_phis))
+    #             protein_i_std_half_B = np.zeros((total_phis, total_phis))
+    #             for i_decoy in range(num_decoys):
+    #                 phi_i_phi_j = all_phis[protein_i][i_decoy][i] * \
+    #                     all_phis[protein_i][i_decoy][j]
+    #                 protein_i_phi_i_phi_j_values[i_decoy] = phi_i_phi_j
+    #                 protein_i_half_B[i][j] += phi_i_phi_j
+    #             protein_i_half_B[i][j] /= float(num_decoys)
+    #             protein_i_std_half_B[i][j] = np.std(protein_i_phi_i_phi_j_values)
+    #             half_B[i][j] += protein_i_half_B[i][j]
+    #             std_half_B[i][j] += protein_i_std_half_B[i][j]
+    # half_B /= size_of_training_set
+    # std_half_B /= size_of_training_set
+
+    # for i in range(total_phis):
+    #     for j in range(total_phis):
+    #         other_half_B[i][j] += average_phi_decoy[i] * average_phi_decoy[j]
+
+    B = half_B - other_half_B
+
+    return A, B, half_B, other_half_B, std_half_B
+
+# def calculate_A_B_and_gamma_decoy_structures_provided(native_training_set_file, decoy_training_set_file, phi_list_file_name, decoy_method, num_decoys, noise_filtering=True, jackhmmer=False):
+#     phi_list = read_phi_list(phi_list_file_name)
+#     native_training_set = read_column_from_file(native_training_set_file, 1)
+
+#     # Find out how many total phi_i there are and get full parameter string
+#     total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
+#         phi_list, native_training_set)
+
+#     phi_native_i_protein = np.zeros((len(native_training_set), total_phis))
+#     for i_protein, protein in enumerate(native_training_set):
+#         phi_native_i_protein[i_protein] = read_native_phi(
+#             protein, phi_list, total_phis, jackhmmer=jackhmmer)
+
+#     phi_native = np.average(phi_native_i_protein, axis=0)
+
+#     # Output to a file;
+#     file_prefix = "%s%s_%s" % (phis_directory, native_training_set_file.split(
+#         '/')[-1].split('.')[0], full_parameters_string)
+#     phi_summary_file_name = file_prefix + '_phi_native_summary.txt'
+#     np.savetxt(phi_summary_file_name, phi_native, fmt='%1.5f')
+
+#     # For decoys, we will use the same function for native sets to do the calculation;
+#     decoy_training_set = read_column_from_file(decoy_training_set_file, 1)
+
+#     # Find out how many total phi_i there are and get full parameter string
+#     total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string_decoy_structures_provided(
+#         phi_list, decoy_training_set)
+
+#     phi_decoy_i_protein = np.zeros((len(decoy_training_set), total_phis))
+#     for i_protein, protein in enumerate(decoy_training_set):
+#         phi_decoy_i_protein[i_protein] = read_decoy_phi_structures_provided(
+#             protein, phi_list, total_phis, jackhmmer=jackhmmer)
+
+#     phi_decoy = np.average(phi_decoy_i_protein, axis=0)
+
+#     # Output to a file;
+#     file_prefix = "%s%s_%s" % (phis_directory, decoy_training_set_file.split(
+#         '/')[-1].split('.')[0], full_parameters_string)
+#     phi_summary_file_name = file_prefix + '_phi_decoy_summary.txt'
+#     np.savetxt(phi_summary_file_name, phi_decoy, fmt='%1.5f')
+
+#     A, B, half_B, other_half_B, std_half_B = calculate_A_and_B(
+#         phi_decoy, phi_native, total_phis, num_decoys, phi_decoy_i_protein)
+
+#     gamma = np.dot(np.linalg.pinv(B), A)
+
+#     # write gamma file
+#     file_prefix = "%s%s_%s" % (gammas_directory, native_training_set_file.split(
+#         '/')[-1].split('.')[0], full_parameters_string)
+
+#     gamma_file_name = file_prefix + '_gamma'
+# #    gamma_file = open(gamma_file_name, 'w')
+#     np.savetxt(gamma_file_name, gamma, '%1.5f')
+
+#     A_file_name = file_prefix + '_A'
+# #    A_file = open(A_file_name, 'w')
+#     np.savetxt(A_file_name, A, fmt='%1.5f')
+
+#     B_file_name = file_prefix + '_B'
+# #    B_file = open(B_file_name, 'w')
+#     np.savetxt(B_file_name, B, fmt='%1.5f')
+#     #open("%s%s_%s_gamma.dat" % (gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string), 'w').write(str(gamma).strip('[]').replace('\n', ' '))
+
+#     if noise_filtering:
+#         filtered_gamma, filtered_B, filtered_lamb, P, lamb = get_filtered_gamma_B_lamb_P_and_lamb(
+#             A, B, half_B, other_half_B, std_half_B, total_phis, num_decoys)
+#         # gamma_file_name = "%sfiltered_%s_%s_gamma.dat" % (gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string)
+#         # gamma_file = open(gamma_file_name, 'w')
+#         filtered_gamma_file_name = file_prefix + '_gamma_filtered'
+# #        filtered_gamma_file = open(filtered_gamma_file_name, 'w')
+#         np.savetxt(filtered_gamma_file_name, filtered_gamma, fmt='%1.5f')
+
+#         filtered_B_file_name = file_prefix + '_B_filtered'
+# #        filtered_B_file = open(filtered_B_file_name, 'w')
+#         np.savetxt(filtered_B_file_name, filtered_B, fmt='%1.5f')
+
+#         filtered_lamb_file_name = file_prefix + '_lamb_filtered'
+# #        filtered_lamb_file = open(filtered_lamb_file_name, 'w')
+#         np.savetxt(filtered_lamb_file_name, filtered_lamb, fmt='%1.5f')
+
+#         P_file_name = file_prefix + '_P'
+#         P_file = open(P_file_name, 'w')
+#         np.savetxt(P_file, P, fmt='%1.5f')
+
+#         lamb_file_name = file_prefix + '_lamb'
+# #        lamb_file = open(lamb_file_name, 'w')
+#         np.savetxt(lamb_file_name, lamb, fmt='%1.5f')
+
+#         # open("%sfiltered_%s_%s_gamma.dat" % (gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string), 'w').write(str(filtered_gamma).strip('[]').replace('\n', ' '))
+
+#     if noise_filtering:
+#         return
+#         # return A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb
+#     else:
+#         return A, B, gamma
+def calculate_A_B_and_gamma_parallel(training_set_file, phi_list_file_name, decoy_method, num_decoys,
+                                        noise_filtering=True, jackhmmer=False, read=True, subset=None,
+                                        subset_index=-1):
     phi_list = read_phi_list(phi_list_file_name)
-    native_training_set = read_column_from_file(native_training_set_file, 1)
-
+    training_set = read_column_from_file(training_set_file, 1)
+    print(len(training_set))
     # Find out how many total phi_i there are and get full parameter string
     total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
-        phi_list, native_training_set)
+        phi_list, training_set)
+    # print(num_phis)
+    if read:
+        print("reading native")
+        os.system("echo 'Reading native' >> log")
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_native_summary.txt'
+        phi_native = np.loadtxt(phi_summary_file_name)
+    else:
+        phi_native_i_protein = np.zeros((len(training_set), total_phis))
+        for i_protein, protein in enumerate(training_set):
+            phi_native_i_protein[i_protein] = read_native_phi(
+                protein, phi_list, total_phis, jackhmmer=jackhmmer)
 
-    phi_native_i_protein = np.zeros((len(native_training_set), total_phis))
-    for i_protein, protein in enumerate(native_training_set):
-        phi_native_i_protein[i_protein] = read_native_phi(
-            protein, phi_list, total_phis, jackhmmer=jackhmmer)
+        phi_native = np.average(phi_native_i_protein, axis=0)
 
-    phi_native = np.average(phi_native_i_protein, axis=0)
+        # Output to a file;
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_native_summary.txt'
+        np.savetxt(phi_summary_file_name, phi_native, fmt='%1.5f')
 
-    # Output to a file;
-    file_prefix = "%s%s_%s" % (phis_directory, native_training_set_file.split(
-        '/')[-1].split('.')[0], full_parameters_string)
-    phi_summary_file_name = file_prefix + '_phi_native_summary.txt'
-    np.savetxt(phi_summary_file_name, phi_native, fmt='%1.5f')
+    if read:
+        print("Reading phi decoy")
+        os.system("echo 'Reading phi decoy' >> log")
+        # Output to a file;
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_decoy_summary.txt'
+        average_phi_decoy = np.loadtxt(phi_summary_file_name)
+        # phi_all_summary_file_name = file_prefix + '_phi_decoy_all_summary.txt'
+        # phi_i_protein_i_decoy = np.zeros(
+        #     (len(training_set), num_decoys, total_phis))
+        # # phi_i_protein_i_decoy = np.loadtxt(phi_all_summary_file_name)
+        # phi_i_protein_i_decoy = np.reshape(phi_i_protein_i_decoy, (len(training_set), num_decoys, total_phis))
+    else:
+        phi_i_protein_i_decoy = np.zeros(
+            (len(training_set), num_decoys, total_phis))
 
-    # For decoys, we will use the same function for native sets to do the calculation;
-    decoy_training_set = read_column_from_file(decoy_training_set_file, 1)
+        for i_protein, protein in enumerate(training_set):
+            phi_i_protein_i_decoy[i_protein] = read_decoy_phis(
+                protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=jackhmmer)
 
-    # Find out how many total phi_i there are and get full parameter string
-    total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string_decoy_structures_provided(
-        phi_list, decoy_training_set)
+        # The phi_i decoy is constructed as the union of all decoys of all proteins in the training set;
+        phi_i_decoy_reshaped = np.reshape(phi_i_protein_i_decoy,
+                                            (len(training_set) * num_decoys, total_phis))
+        average_phi_decoy = np.average(phi_i_decoy_reshaped, axis=0)
 
-    phi_decoy_i_protein = np.zeros((len(decoy_training_set), total_phis))
-    for i_protein, protein in enumerate(decoy_training_set):
-        phi_decoy_i_protein[i_protein] = read_decoy_phi_structures_provided(
-            protein, phi_list, total_phis, jackhmmer=jackhmmer)
+        # Output to a file;
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_decoy_summary.txt'
+        np.savetxt(phi_summary_file_name, average_phi_decoy, fmt='%1.5f')
 
-    phi_decoy = np.average(phi_decoy_i_protein, axis=0)
+        # phi_all_summary_file_name = file_prefix + '_phi_decoy_all_summary.txt'
+        # np.savetxt(phi_all_summary_file_name, phi_i_decoy_reshaped, fmt='%1.5f')
+    # A, B, half_B, other_half_B, std_half_B = calculate_A_and_B(
+    #     average_phi_decoy, phi_native, total_phis, num_decoys, phi_i_decoy_reshaped)
+    print("done reading")
+    os.system("echo 'Done reading' >> log")
+    A = average_phi_decoy - phi_native
+    half_B = np.zeros((total_phis, total_phis))
+    std_half_B = np.zeros((total_phis, total_phis))
+    other_half_B = np.zeros((total_phis, total_phis))
+    if subset:
+        for i_protein, protein in enumerate(subset):
+            os.system(f"echo '{i_protein}, {protein}' >> log")
+            print(f"{i_protein}, {protein}")
+            one_half_B = np.zeros((total_phis, total_phis))
+            one_std_half_B = np.zeros((total_phis, total_phis))
+            one_other_half_B = np.zeros((total_phis, total_phis))
 
-    # Output to a file;
-    file_prefix = "%s%s_%s" % (phis_directory, decoy_training_set_file.split(
-        '/')[-1].split('.')[0], full_parameters_string)
-    phi_summary_file_name = file_prefix + '_phi_decoy_summary.txt'
-    np.savetxt(phi_summary_file_name, phi_decoy, fmt='%1.5f')
+            one_phi_i_protein_i_decoy = read_decoy_phis(
+                protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=jackhmmer)
 
-    A, B, half_B, other_half_B, std_half_B = calculate_A_and_B(
-        phi_decoy, phi_native, total_phis, num_decoys, phi_decoy_i_protein)
+            phis_i = one_phi_i_protein_i_decoy.reshape(num_decoys, total_phis, 1)
+            phis_j = one_phi_i_protein_i_decoy.reshape(num_decoys, 1, total_phis)
+            one_half_B = np.average(phis_i * phis_j, axis=0)
+            one_std_half_B = np.std(phis_i * phis_j, axis=0)
+            average_phi = np.average(one_phi_i_protein_i_decoy, axis=0)
+            one_other_half_B += average_phi.reshape(total_phis, 1) * average_phi.reshape(1, total_phis)
+            # write gamma file
+            file_prefix = "%s%s_%s" % (gammas_directory, training_set_file.split(
+                '/')[-1].split('.')[0], full_parameters_string)
+            half_B_file_name = file_prefix + f'_half_B_{protein}'
+            np.savetxt(half_B_file_name, one_half_B, '%1.5f')
+
+            other_half_B_file_name = file_prefix + f'_other_half_B_{protein}'
+            np.savetxt(other_half_B_file_name, one_other_half_B, '%1.5f')
+
+            std_half_B_file_name = file_prefix + f'_std_half_B_{protein}'
+            np.savetxt(std_half_B_file_name, one_std_half_B, '%1.5f')
+
+            half_B += one_half_B
+            std_half_B += one_std_half_B
+            other_half_B += one_other_half_B
+        # write gamma file
+        file_prefix = "%s%s_%s" % (gammas_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        # print("------")
+        # print(file_prefix)
+        # print("------")
+        half_B_file_name = file_prefix + f'_half_B_{subset_index}'
+        np.savetxt(half_B_file_name, half_B, '%1.5f')
+
+        other_half_B_file_name = file_prefix + f'_other_half_B_{subset_index}'
+        np.savetxt(other_half_B_file_name, other_half_B, '%1.5f')
+
+        std_half_B_file_name = file_prefix + f'_std_half_B_{subset_index}'
+        np.savetxt(std_half_B_file_name, std_half_B, '%1.5f')
+        exit()
+    else:
+        # for i_protein, protein in enumerate(training_set):
+        for i_protein in range(475):
+            # os.system(f"echo 'Reading {i_protein}, {protein}' >> log")
+            os.system(f"echo 'Reading {i_protein}' >> log")
+            file_prefix = "subset%s%s_%s" % (gammas_directory, training_set_file.split(
+                '/')[-1].split('.')[0], full_parameters_string)
+
+            half_B_file_name = file_prefix + f'_half_B_{i_protein}'
+            one_half_B = np.loadtxt(half_B_file_name)
+
+            std_half_B_file_name = file_prefix + f'_std_half_B_{i_protein}'
+            one_std_half_B = np.loadtxt(std_half_B_file_name)
+
+            other_half_B_file_name = file_prefix + f'_other_half_B_{i_protein}'
+            one_other_half_B = np.loadtxt(other_half_B_file_name)
+
+            half_B += one_half_B
+            std_half_B += one_std_half_B
+            other_half_B += one_other_half_B
+    size_of_training_set = len(training_set)
+    half_B /= size_of_training_set
+    std_half_B /= size_of_training_set
+    other_half_B /= size_of_training_set
+    B = half_B - other_half_B
+    # A, B, half_B, other_half_B, std_half_B = calculate_A_and_B_wei_parallel(
+    #     average_phi_decoy, phi_native, phi_i_protein_i_decoy)
 
     gamma = np.dot(np.linalg.pinv(B), A)
 
     # write gamma file
-    file_prefix = "%s%s_%s" % (gammas_directory, native_training_set_file.split(
+    file_prefix = "%s%s_%s" % (gammas_directory, training_set_file.split(
         '/')[-1].split('.')[0], full_parameters_string)
 
     gamma_file_name = file_prefix + '_gamma'
@@ -1521,6 +1773,19 @@ def calculate_A_B_and_gamma_decoy_structures_provided(native_training_set_file, 
     B_file_name = file_prefix + '_B'
 #    B_file = open(B_file_name, 'w')
     np.savetxt(B_file_name, B, fmt='%1.5f')
+
+    half_B_file_name = file_prefix + '_half_B'
+#    gamma_file = open(gamma_file_name, 'w')
+    np.savetxt(half_B_file_name, half_B, '%1.5f')
+
+    other_half_B_file_name = file_prefix + '_other_half_B'
+#    gamma_file = open(gamma_file_name, 'w')
+    np.savetxt(other_half_B_file_name, other_half_B, '%1.5f')
+
+    std_half_B_file_name = file_prefix + '_std_half_B'
+#    gamma_file = open(gamma_file_name, 'w')
+    np.savetxt(std_half_B_file_name, std_half_B, '%1.5f')
+
     #open("%s%s_%s_gamma.dat" % (gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string), 'w').write(str(gamma).strip('[]').replace('\n', ' '))
 
     if noise_filtering:
@@ -1541,8 +1806,10 @@ def calculate_A_B_and_gamma_decoy_structures_provided(native_training_set_file, 
         np.savetxt(filtered_lamb_file_name, filtered_lamb, fmt='%1.5f')
 
         P_file_name = file_prefix + '_P'
-        P_file = open(P_file_name, 'w')
-        np.savetxt(P_file, P, fmt='%1.5f')
+        # print(P)
+        # P_file = open(P_file_name, 'wb')
+        # np.savetxt(P_file, P, fmt='%1.5f')
+        np.savetxt(P_file_name, P, fmt='%1.5f')
 
         lamb_file_name = file_prefix + '_lamb'
 #        lamb_file = open(lamb_file_name, 'w')
@@ -1551,13 +1818,14 @@ def calculate_A_B_and_gamma_decoy_structures_provided(native_training_set_file, 
         # open("%sfiltered_%s_%s_gamma.dat" % (gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string), 'w').write(str(filtered_gamma).strip('[]').replace('\n', ' '))
 
     if noise_filtering:
-        return
-        # return A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb
+        # return
+        return A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb
     else:
         return A, B, gamma
 
 
-def calculate_A_B_and_gamma_xl23(training_set_file, phi_list_file_name, decoy_method, num_decoys, noise_filtering=True, jackhmmer=False):
+def calculate_A_B_and_gamma_xl23(training_set_file, phi_list_file_name, decoy_method, num_decoys,
+                                    noise_filtering=True, jackhmmer=False, read=True):
     phi_list = read_phi_list(phi_list_file_name)
     training_set = read_column_from_file(training_set_file, 1)
     print(len(training_set))
@@ -1565,40 +1833,67 @@ def calculate_A_B_and_gamma_xl23(training_set_file, phi_list_file_name, decoy_me
     total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
         phi_list, training_set)
     # print(num_phis)
-    phi_native_i_protein = np.zeros((len(training_set), total_phis))
-    for i_protein, protein in enumerate(training_set):
-        phi_native_i_protein[i_protein] = read_native_phi(
-            protein, phi_list, total_phis, jackhmmer=jackhmmer)
+    if read:
+        print("reading native")
+        os.system("echo 'Reading native' >> log")
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_native_summary.txt'
+        phi_native = np.loadtxt(phi_summary_file_name)
+    else:
+        phi_native_i_protein = np.zeros((len(training_set), total_phis))
+        for i_protein, protein in enumerate(training_set):
+            phi_native_i_protein[i_protein] = read_native_phi(
+                protein, phi_list, total_phis, jackhmmer=jackhmmer)
 
-    phi_native = np.average(phi_native_i_protein, axis=0)
+        phi_native = np.average(phi_native_i_protein, axis=0)
 
-    # Output to a file;
-    file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
-        '/')[-1].split('.')[0], full_parameters_string)
-    phi_summary_file_name = file_prefix + '_phi_native_summary.txt'
-    np.savetxt(phi_summary_file_name, phi_native, fmt='%1.5f')
+        # Output to a file;
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_native_summary.txt'
+        np.savetxt(phi_summary_file_name, phi_native, fmt='%1.5f')
 
-    phi_i_protein_i_decoy = np.zeros(
-        (len(training_set), num_decoys, total_phis))
+    if read:
+        print("Reading phi decoy")
+        os.system("echo 'Reading phi decoy' >> log")
+        # Output to a file;
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_decoy_summary.txt'
+        average_phi_decoy = np.loadtxt(phi_summary_file_name)
+        phi_all_summary_file_name = file_prefix + '_phi_decoy_all_summary.txt'
+        phi_i_protein_i_decoy = np.zeros(
+            (len(training_set), num_decoys, total_phis))
+        # phi_i_protein_i_decoy = np.loadtxt(phi_all_summary_file_name)
+        phi_i_protein_i_decoy = np.reshape(phi_i_protein_i_decoy, (len(training_set), num_decoys, total_phis))
+    else:
+        phi_i_protein_i_decoy = np.zeros(
+            (len(training_set), num_decoys, total_phis))
 
-    for i_protein, protein in enumerate(training_set):
-        phi_i_protein_i_decoy[i_protein] = read_decoy_phis(
-            protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=jackhmmer)
+        for i_protein, protein in enumerate(training_set):
+            phi_i_protein_i_decoy[i_protein] = read_decoy_phis(
+                protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=jackhmmer)
 
-    # The phi_i decoy is constructed as the union of all decoys of all proteins in the training set;
-    phi_i_decoy = np.reshape(phi_i_protein_i_decoy,
-                             (len(training_set) * num_decoys, total_phis))
+        # The phi_i decoy is constructed as the union of all decoys of all proteins in the training set;
+        phi_i_decoy_reshaped = np.reshape(phi_i_protein_i_decoy,
+                                            (len(training_set) * num_decoys, total_phis))
+        average_phi_decoy = np.average(phi_i_decoy_reshaped, axis=0)
 
-    average_phi_decoy = np.average(phi_i_decoy, axis=0)
+        # Output to a file;
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_decoy_summary.txt'
+        np.savetxt(phi_summary_file_name, average_phi_decoy, fmt='%1.5f')
 
-    # Output to a file;
-    file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
-        '/')[-1].split('.')[0], full_parameters_string)
-    phi_summary_file_name = file_prefix + '_phi_decoy_summary.txt'
-    np.savetxt(phi_summary_file_name, average_phi_decoy, fmt='%1.5f')
-
-    A, B, half_B, other_half_B, std_half_B = calculate_A_and_B(
-        average_phi_decoy, phi_native, total_phis, num_decoys, phi_i_decoy)
+        phi_all_summary_file_name = file_prefix + '_phi_decoy_all_summary.txt'
+        np.savetxt(phi_all_summary_file_name, phi_i_decoy_reshaped, fmt='%1.5f')
+    # A, B, half_B, other_half_B, std_half_B = calculate_A_and_B(
+    #     average_phi_decoy, phi_native, total_phis, num_decoys, phi_i_decoy_reshaped)
+    print("done reading")
+    os.system("echo 'Done reading' >> log")
+    A, B, half_B, other_half_B, std_half_B = calculate_A_and_B_wei(
+        average_phi_decoy, phi_native, phi_i_protein_i_decoy)
 
     gamma = np.dot(np.linalg.pinv(B), A)
 
@@ -1677,8 +1972,10 @@ def get_filtered_gamma_B_lamb_P_and_lamb(A, B, half_B, other_half_B, std_half_B,
         noisy_B = np.zeros((total_phis, total_phis))
         for i in range(total_phis):
             for j in range(i, total_phis):
+                # random_B_ij = np.random.normal(
+                #     loc=half_B[i][j], scale=std_half_B[i][j] / float(num_decoys))
                 random_B_ij = np.random.normal(
-                    loc=half_B[i][j], scale=std_half_B[i][j] / float(num_decoys))
+                    loc=half_B[i][j], scale=std_half_B[i][j])
                 noisy_B[i][j] = noisy_B[j][i] = random_B_ij - \
                     other_half_B[i][j]
 

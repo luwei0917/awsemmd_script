@@ -514,6 +514,101 @@ def isComplete(a):
                     return 0
     return 1
 
+if args.day == "feb19":
+    print(args.day)
+    pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    # simulation_location = "noFrag"
+    # simulation_location = "newFrag"
+    simulation_location = "newContact"
+    simulation_location = "single"
+    if args.mode == 1:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {simulation_location}/{name}")
+            pre = f"{simulation_location}/{name}/{name}"
+            do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
+            # do(f"cp ../jan_optimization/iteration_gamma.dat {pre}/")
+            # do(f"cp {pre}/gamma.dat {pre}/original_gamma.dat")
+            # do(f"cp {pre}/iteration_gamma.dat {pre}/gamma.dat")
+    if args.mode == 2:
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            steps = 80
+            cd(name)
+            do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+
+if args.day == "feb18_2":
+    print(args.day)
+    pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    # simulation_location = "noFrag"
+    # simulation_location = "newFrag"
+    simulation_location = "top20"
+    simulation_location = "fragment"
+    if args.mode == 1:
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            steps = 80
+            cd(name)
+            do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+    if args.mode == 2:
+        fragLibrary = "fragment_memory_top20"
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {simulation_location}/{name}")
+            do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+            pre = f"{simulation_location}/{name}/{name}"
+            do(f"cp -r fragment_memory/fraglib {pre}/")
+            do(f"cp {fragLibrary}/{name}.mem {pre}/frags.mem")
+
+            # replace(f"{simulation_location}/{name}/{name}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Water\]", "\[Water\]-")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Burial\]", "\[Burial\]-")
+            # do(f"rm all_simulations/{name}/{name}/gamma.dat")
+
+if args.day == "feb18":
+    if args.mode == 1:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        name = f"proteins_name_list_{args.label}.txt"
+        subset = read_column_from_file(name, 1)
+        print(subset)
+        # import time
+        # time.sleep(4000)
+        complete_proteins = "database/cath-dataset-nonredundant-S20Clean.list"
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+                                        num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=subset, subset_index=args.label)
+    if args.mode == 2:
+        for i in range(475):
+            with open(f"run_on_scavenge_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d feb18 -m 1 -l {i}"))
+            replace(f"run_on_scavenge_{i}.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=20G")
+            do(f"sbatch run_on_scavenge_{i}.slurm")
+    if args.mode == 3:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # import time
+        # time.sleep(4000)
+        complete_proteins = "database/cath-dataset-nonredundant-S20Clean.list"
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+                                        num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None)
+if args.day == "feb14":
+    if args.mode == 1:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # import time
+        # time.sleep(4000)
+        complete_proteins = "proteins_name_list_tiny.txt"
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='shuffle', num_decoys=1000, noise_filtering=True, jackhmmer=False)
+        # individual_gammas_randomized_decoy=read_all_gammas("phi_list.txt", complete_proteins, training_decoy_method="shuffle", noise_filtering=True)
+
 if args.day == "feb13":
     print(args.day)
     pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
@@ -673,8 +768,10 @@ if args.day == "feb06":
     # simulation_location = "noFrag"
     # simulation_location = "newContact_noFrag"
     # simulation_location = "native"
-    simulation_location = "iter1"
+    # simulation_location = "iter1"
+    simulation_location = "filtered_gamma_iter1"
     if args.mode == 1:
+        print('hi')
         for p in pdb_list:
             name = p.lower()[:4]
             do(f"mkdir -p {simulation_location}/{name}")
