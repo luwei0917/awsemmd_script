@@ -141,6 +141,7 @@ res_type_map = {
 }
 
 
+
 def parse_pdb(pdb_id):
     parser = PDBParser()
     return parser.get_structure(pdb_id, "%s.pdb" % pdb_id)
@@ -266,6 +267,17 @@ def read_decoy_structures(structure_file_name):
             s = parse_pdb(os.path.join(line))
             structures.append(s)
     return structures
+
+def read_decoy_structures_andQ(structure_file_name):
+    structures = []
+    Qs = []
+    with open(structure_file_name, "r") as structure_file:
+        for line in structure_file:
+            line, Q = line.strip().split()
+            s = parse_pdb(os.path.join(line))
+            structures.append(s)
+            Qs.append(Q)
+    return structures, Qs
 
 def is_hetero(residue):
     if residue.id[0] != ' ':
@@ -712,6 +724,29 @@ def calculate_cb_density(res_list, neighbor_list, min_seq_sep=2):
                 density[res1globalindex] += interaction_well(rij, 4.5, 6.5, 5)
     return density
 
+def phi_burial_well(res_list, neighbor_list, parameter_list):
+    kappa = parameter_list[0]
+    kappa = float(kappa)
+
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+
+    phi_burial = np.zeros((3, 20))
+    rho_table = [[0.0, 3.0], [3.0, 6.0], [6.0, 9.0]]
+    for i in range(3):
+        for res1globalindex, res1 in enumerate(res_list):
+            res1index = get_local_index(res1)
+            res1chain = get_chain(res1)
+            res1type = get_res_type(res_list, res1)
+            res1density = cb_density[res1globalindex]
+            # print res1globalindex, res1index, res1chain, res1type, res1density
+            burial_i = interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
+            phi_burial[i][res1type] += burial_i
+
+    phis_to_return = []
+    for i in range(3):
+        for j in range(20):
+            phis_to_return.append(phi_burial[i][j])
+    return phis_to_return
 
 def phi_density_mediated_contact_well(res_list, neighbor_list, parameter_list):
     r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
@@ -1009,12 +1044,12 @@ def evaluate_phis_over_training_set_for_native_structures_Wei(training_set_file,
     # for protein in training_set:
     #   evaluate_phis_for_protein(protein, phi_list, decoy_method, max_decoys, tm_only=tm_only)
 
-def evaluate_phis_over_training_set_for_decoy_structures_Wei(training_set_file, phi_list_file_name, decoy_method, max_decoys, tm_only=False, num_processors=1):
+def evaluate_phis_over_training_set_for_decoy_structures_Wei(training_set_file, phi_list_file_name, decoy_method, max_decoys, tm_only=False, num_processors=1, withBiased=False):
     phi_list = read_phi_list(phi_list_file_name)
     print(phi_list)
     training_set = read_column_from_file(training_set_file, 1)
     print(training_set)
-    function_to_evaluate = partial(evaluate_phis_for_decoy_protein_Wei, tm_only=tm_only)
+    function_to_evaluate = partial(evaluate_phis_for_decoy_protein_Wei, tm_only=tm_only, withBiased=withBiased)
     arguments_lists = [training_set, [phi_list]*len(training_set), [decoy_method]*len(training_set), [max_decoys]*len(training_set)]
     call_independent_functions_on_n_processors(function_to_evaluate, arguments_lists, num_processors)
 # def evaluate_phis_over_training_set(training_set_file, phi_list_file_name, decoy_method, max_decoys, tm_only=False, num_processors=1, TCRmodeling=False):
@@ -1061,8 +1096,8 @@ def evaluate_phis_for_protein_Wei(protein, phi_list, decoy_method, max_decoys, t
                     output_file.write(str(phis_to_write).strip('[]').replace(',', ' ')+'\n')
                 output_file.close()
 
-def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_decoys, tm_only=False):
-        print(protein)
+def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_decoys, tm_only=False, withBiased=False):
+        print(protein, withBiased)
         structure = parse_pdb(os.path.join(structures_directory, protein))
         res_list = get_res_list(structure)
         neighbor_list = get_neighbor_list(structure)
@@ -1082,7 +1117,11 @@ def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_dec
             if not number_of_lines_in_file >= max_decoys:
                 output_file = open(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
                 # decoy_sequences = read_decoy_sequences(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
-                decoy_structures = read_decoy_structures(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
+                if withBiased:
+                    decoy_structures, Qs = read_decoy_structures_andQ(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
+                else:
+                    decoy_structures = read_decoy_structures(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
+
                 for i_decoy, decoy_structure in enumerate(decoy_structures):
                     if i_decoy >= max_decoys:
                         break
@@ -1090,6 +1129,9 @@ def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_dec
                     decoy_res_list = get_res_list(decoy_structure)
                     decoy_neighbor_list = get_neighbor_list(decoy_structure)
                     phis_to_write = phiF(decoy_res_list, decoy_neighbor_list, parameters)
+                    if withBiased:
+                        # phis_to_write *= 1 - Qs[i_decoy]
+                        phis_to_write = [x * (1 - float(Qs[i_decoy])) for x in phis_to_write]
                     output_file.write(str(phis_to_write).strip('[]').replace(',', ' ')+'\n')
                 output_file.close()
 
@@ -1609,7 +1651,7 @@ def calculate_A_and_B_wei(average_phi_decoy, phi_native, all_phis):
 #     else:
 #         return A, B, gamma
 def calculate_A_B_and_gamma_parallel(training_set_file, phi_list_file_name, decoy_method, num_decoys,
-                                        noise_filtering=True, jackhmmer=False, read=True, subset=None,
+                                        noise_filtering=True, jackhmmer=False, read=0, subset=None,
                                         subset_index=-1):
     phi_list = read_phi_list(phi_list_file_name)
     training_set = read_column_from_file(training_set_file, 1)
@@ -1617,15 +1659,17 @@ def calculate_A_B_and_gamma_parallel(training_set_file, phi_list_file_name, deco
     # Find out how many total phi_i there are and get full parameter string
     total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
         phi_list, training_set)
-    # print(num_phis)
-    if read:
+    print(num_phis)
+    if read == 0:  # only compute when I need A
+        pass
+    elif read == 1:
         print("reading native")
         os.system("echo 'Reading native' >> log")
         file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
             '/')[-1].split('.')[0], full_parameters_string)
         phi_summary_file_name = file_prefix + '_phi_native_summary.txt'
         phi_native = np.loadtxt(phi_summary_file_name)
-    else:
+    elif read == 2:
         phi_native_i_protein = np.zeros((len(training_set), total_phis))
         for i_protein, protein in enumerate(training_set):
             phi_native_i_protein[i_protein] = read_native_phi(
@@ -1639,7 +1683,9 @@ def calculate_A_B_and_gamma_parallel(training_set_file, phi_list_file_name, deco
         phi_summary_file_name = file_prefix + '_phi_native_summary.txt'
         np.savetxt(phi_summary_file_name, phi_native, fmt='%1.5f')
 
-    if read:
+    if read == 0:
+        pass
+    elif read == 1:
         print("Reading phi decoy")
         os.system("echo 'Reading phi decoy' >> log")
         # Output to a file;
@@ -1652,7 +1698,7 @@ def calculate_A_B_and_gamma_parallel(training_set_file, phi_list_file_name, deco
         #     (len(training_set), num_decoys, total_phis))
         # # phi_i_protein_i_decoy = np.loadtxt(phi_all_summary_file_name)
         # phi_i_protein_i_decoy = np.reshape(phi_i_protein_i_decoy, (len(training_set), num_decoys, total_phis))
-    else:
+    elif read == 2:
         phi_i_protein_i_decoy = np.zeros(
             (len(training_set), num_decoys, total_phis))
 
@@ -1670,14 +1716,17 @@ def calculate_A_B_and_gamma_parallel(training_set_file, phi_list_file_name, deco
             '/')[-1].split('.')[0], full_parameters_string)
         phi_summary_file_name = file_prefix + '_phi_decoy_summary.txt'
         np.savetxt(phi_summary_file_name, average_phi_decoy, fmt='%1.5f')
-
+        exit()
         # phi_all_summary_file_name = file_prefix + '_phi_decoy_all_summary.txt'
         # np.savetxt(phi_all_summary_file_name, phi_i_decoy_reshaped, fmt='%1.5f')
     # A, B, half_B, other_half_B, std_half_B = calculate_A_and_B(
     #     average_phi_decoy, phi_native, total_phis, num_decoys, phi_i_decoy_reshaped)
     print("done reading")
     os.system("echo 'Done reading' >> log")
-    A = average_phi_decoy - phi_native
+    if read == 0:
+        pass
+    else:
+        A = average_phi_decoy - phi_native
     half_B = np.zeros((total_phis, total_phis))
     std_half_B = np.zeros((total_phis, total_phis))
     other_half_B = np.zeros((total_phis, total_phis))
@@ -1699,7 +1748,7 @@ def calculate_A_B_and_gamma_parallel(training_set_file, phi_list_file_name, deco
             average_phi = np.average(one_phi_i_protein_i_decoy, axis=0)
             one_other_half_B += average_phi.reshape(total_phis, 1) * average_phi.reshape(1, total_phis)
             # write gamma file
-            file_prefix = "%s%s_%s" % (gammas_directory, training_set_file.split(
+            file_prefix = "subset%s%s_%s" % (gammas_directory, training_set_file.split(
                 '/')[-1].split('.')[0], full_parameters_string)
             half_B_file_name = file_prefix + f'_half_B_{protein}'
             np.savetxt(half_B_file_name, one_half_B, '%1.5f')
@@ -1714,7 +1763,7 @@ def calculate_A_B_and_gamma_parallel(training_set_file, phi_list_file_name, deco
             std_half_B += one_std_half_B
             other_half_B += one_other_half_B
         # write gamma file
-        file_prefix = "%s%s_%s" % (gammas_directory, training_set_file.split(
+        file_prefix = "subset%s%s_%s" % (gammas_directory, training_set_file.split(
             '/')[-1].split('.')[0], full_parameters_string)
         # print("------")
         # print(file_prefix)
@@ -1730,9 +1779,11 @@ def calculate_A_B_and_gamma_parallel(training_set_file, phi_list_file_name, deco
         exit()
     else:
         # for i_protein, protein in enumerate(training_set):
-        for i_protein in range(475):
+        # for i_protein in range(475):
+        for i_protein in range(712):
             # os.system(f"echo 'Reading {i_protein}, {protein}' >> log")
             os.system(f"echo 'Reading {i_protein}' >> log")
+            print(i_protein)
             file_prefix = "subset%s%s_%s" % (gammas_directory, training_set_file.split(
                 '/')[-1].split('.')[0], full_parameters_string)
 
@@ -1963,7 +2014,7 @@ def calculate_A_B_and_gamma_xl23(training_set_file, phi_list_file_name, decoy_me
         return A, B, gamma
 
 
-def get_filtered_gamma_B_lamb_P_and_lamb(A, B, half_B, other_half_B, std_half_B, total_phis, num_decoys, noise_iterations=10, relative_error_threshold=0.5):
+def get_filtered_gamma_B_lamb_P_and_lamb(A, B, half_B, other_half_B, std_half_B, total_phis, num_decoys, noise_iterations=10, relative_error_threshold=0.5, mode=2):
     lamb, P = np.linalg.eig(B)
     lamb, P = sort_eigenvalues_and_eigenvectors(lamb, P)
 
@@ -1972,10 +2023,16 @@ def get_filtered_gamma_B_lamb_P_and_lamb(A, B, half_B, other_half_B, std_half_B,
         noisy_B = np.zeros((total_phis, total_phis))
         for i in range(total_phis):
             for j in range(i, total_phis):
+                if mode == 1:
+                    random_B_ij = np.random.normal(
+                        loc=half_B[i][j], scale=std_half_B[i][j] / float(num_decoys))
+                elif mode == 2:
+                    random_B_ij = np.random.normal(
+                        loc=half_B[i][j], scale=std_half_B[i][j] / float(num_decoys)**0.5)
                 # random_B_ij = np.random.normal(
                 #     loc=half_B[i][j], scale=std_half_B[i][j] / float(num_decoys))
-                random_B_ij = np.random.normal(
-                    loc=half_B[i][j], scale=std_half_B[i][j])
+                # random_B_ij = np.random.normal(
+                #     loc=half_B[i][j], scale=std_half_B[i][j])
                 noisy_B[i][j] = noisy_B[j][i] = random_B_ij - \
                     other_half_B[i][j]
 
@@ -2073,7 +2130,7 @@ def save_structure(structure, file_name):
 
 def add_virtual_glycines_list(proteins_list_file_name):
     proteins_list = read_column_from_file(proteins_list_file_name, 1)
-    error_list_file = open("key_errors.dat", 'w')
+    error_list_file = open("key_errors.dat", 'a')
     for protein in proteins_list:
         structure = parse_pdb(protein)
         try:
@@ -2201,11 +2258,13 @@ def evaluate_hamiltonian_wei(protein, hamiltonian, training_set_file, gamma_file
         #     '/')[-1].split('.')[0], full_parameters_string)
 
     # Need to filter out the complex number if in the "filtered" mode;
-    if use_filtered_gammas:
-        gamma = np.loadtxt(gamma_file_name, dtype=complex, converters={
-                           0: lambda s: complex(s.decode().replace('+-', '-'))})
-    else:
-        gamma = np.loadtxt(gamma_file_name)
+    # if use_filtered_gammas:
+    #     gamma = np.loadtxt(gamma_file_name, dtype=complex, converters={
+    #                        0: lambda s: complex(s.decode().replace('+-', '-'))})
+    # else:
+    #     gamma = np.loadtxt(gamma_file_name)
+    gamma = np.loadtxt(gamma_file_name, dtype=complex, converters={
+                                0: lambda s: complex(s.decode().replace('+-', '-'))})
 
     # read in corresponding phis (native and decoys)
     phi_native = read_native_phi(protein, phi_list, total_phis)

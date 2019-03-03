@@ -35,6 +35,7 @@ parser.add_argument("-f", "--force", type=float, default=1.0)
 parser.add_argument("--start", default="native")
 parser.add_argument("--commons", type=int, default=0)
 parser.add_argument("--test", type=int, default=0)
+parser.add_argument("--bias", type=int, default=-1)
 args = parser.parse_args()
 
 if(args.debug):
@@ -123,6 +124,7 @@ srun /home/wl45/build/awsem_lipid_fluctuations/src/lmp_serial -in {}_{}.in
 
 if args.commons == 1:
     run_slurm = run_slurm.replace("ctbp-common", "commons")
+    run_slurm = run_slurm.replace("#SBATCH --constraint=skylake", "")
 # run with scavenge
 if args.commons == 2:
     run_slurm = run_slurm.replace("--partition=ctbp-common", "--partition=scavenge")
@@ -211,6 +213,13 @@ else:
             do("cp -r {} {}/{}".format(proteinName, args.name, i))
         cd(args.name + "/"+str(i))
         set_up()
+        if args.bias == 1:
+            fileName = "fix_qbias_coeff.data"
+            with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
+                for line in file:
+                    tmp = line.replace("K_BIAS", "100")  # remove in future.
+                    tmp = tmp.replace("BIAS_TO", str(float(i)/n))  # change temp, remove in future
+                    print(tmp, end='')
         if args.test == 0:
             batch_run()
         elif args.test == 1:
