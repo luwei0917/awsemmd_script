@@ -32,6 +32,20 @@ from Bio.PDB import PDBList
 def getFromTerminal(CMD):
     return subprocess.Popen(CMD,stdout=subprocess.PIPE,shell=True).communicate()[0].decode()
 
+def computeRg(pdb_file):
+    # compute Radius of gyration
+    # pdb_file = f"/Users/weilu/Research/server/feb_2019/iterative_optimization_new_temp_range/all_simulations/{p}/{p}/crystal_structure.pdb"
+    chain_name = "A"
+    parser = PDBParser()
+    structure = parser.get_structure('X', pdb_file)
+    chain = list(structure[0][chain_name])
+    n = len(chain)
+    rg = 0.0
+    for i, residue_i in enumerate(chain):
+        for j, residue_j in enumerate(chain[i+1:]):
+            r = residue_i["CA"] - residue_j["CA"]
+            rg += r**2
+    return (rg/(n**2))**0.5
 
 def splitPDB(pre, fileName):
     location = f"{pre}/{fileName}"

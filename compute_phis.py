@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser(
     description="compute phi for protein list")
 
 parser.add_argument("proteins", help="The name of the protein list")
+parser.add_argument("-m", "--mode", type=int, default=0)
 args = parser.parse_args()
 
 
@@ -65,7 +66,8 @@ def extractSeqFromFa(size=7, source="database/cath-dataset-nonredundant-S20Clean
 # extractSeqFromFa()
 
 def computePhis(proteins):
-    proteins_location = "location_"+ proteins
+
+    proteins_location = "".join(proteins.split("/")[:-1]) + "/location_" + proteins.split("/")[-1]
     # transferPDB(proteins)
     addLocation(proteins, proteins_location)
     # os.chdir('database')
@@ -74,14 +76,18 @@ def computePhis(proteins):
     evaluate_phis_over_training_set_for_native_structures_Wei(proteins, "phi_list.txt", decoy_method='shuffle', max_decoys=1e+10, tm_only=False, num_processors=1)
 # extractSeqFromFa()
 
-def computePhisForDecoys(proteins):
-    proteins_location = "location_"+ proteins
+def computePhisForDecoys(proteins, withBiased=False):
+    proteins_location = "".join(proteins.split("/")[:-1]) + "/location_" + proteins.split("/")[-1]
     # transferPDB(proteins)
     addLocation(proteins, proteins_location)
     # os.chdir('database')
     add_virtual_glycines_list(proteins_location)
     # generate_decoy_structures(proteins, methods=['lammps'], num_decoys=[10], databaseLocation="../../")
-    evaluate_phis_over_training_set_for_decoy_structures_Wei(proteins, "phi_list.txt", decoy_method='lammps', max_decoys=1e+5, tm_only=False, num_processors=1)
+    evaluate_phis_over_training_set_for_decoy_structures_Wei(proteins, "phi_list.txt", decoy_method='lammps', max_decoys=1e+5, tm_only=False, num_processors=1, withBiased=withBiased)
 
-computePhis(args.proteins)
-# computePhisForDecoys(args.proteins)
+if args.mode == 0:
+    computePhis(args.proteins)
+elif args.mode == 1:
+    computePhisForDecoys(args.proteins)
+elif args.mode == 2:
+    computePhisForDecoys(args.proteins, withBiased=True)
