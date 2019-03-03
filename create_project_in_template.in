@@ -49,6 +49,9 @@ fix               2 all langevin 700 300 10000.0 RANDOM
 # fix     radialconstraint all spring/rg/cylindricalZdependent 0.1 0.0 0.2 30# NULL means use the starting configuration to define the radius, otherwise specify in Angstroms
 fix		  4 alpha_carbons backbone beta_atoms oxygens fix_backbone_coeff.data PROTEIN.seq
 
+#FIXBIAS
+
+#FIXRG
 
 variable    step equal step
 

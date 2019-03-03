@@ -19,7 +19,8 @@ parser.add_argument("--crystal", action="store_true", default=False)
 parser.add_argument("--membrane", action="store_true", default=False)
 parser.add_argument("--globular", action="store_true", default=False)
 parser.add_argument("--hybrid", action="store_true", default=False)
-
+parser.add_argument("--bias", action="store_true", default=False)
+parser.add_argument("--rgbias", action="store_true", default=False)
 
 args = parser.parse_args()
 
@@ -95,6 +96,11 @@ with fileinput.FileInput("{}_multi.in".format(proteinName), inplace=True, backup
         tmp = tmp.replace("LAST", last)
         if args.hybrid:
             tmp = tmp.replace("fix_backbone_coeff.data", "fix_backbone_coeff_hybrid.data")
+        if args.bias:
+            tmp = tmp.replace("#FIXBIAS", "fix               qbias alpha_carbons qbias fix_qbias_coeff.data\nfix_modify        qbias energy no\nvariable          biasinge equal f_qbias\n")
+            do("cp ~/opt/fix_qbias_coeff.data .")
+        if args.rgbias:
+            tmp = tmp.replace("#FIXRG", "fix rg alpha_carbons spring/rg K_RG TARGET_RG")
         # tmp = BETA_ATOMS
         print(tmp, end='')
 
