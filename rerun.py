@@ -55,7 +55,8 @@ def rerun(proteinName, extra=extra, offset=0):
     replace(slurm, "#SBATCH --time=04:00:00", "#SBATCH --time=00:10:00")
     replace(slurm, f"{proteinName}_0.in", "rerun_{}.in".format(offset))
     if args.test:
-        do("/home/wl45/build/sep03/src/lmp_serial -in rerun_0.in")
+        # do("/home/wl45/build/sep03/src/lmp_serial -in rerun_0.in")
+        do("/home/wl45/lmp_serial -in rerun_0.in")
     else:
         do("sbatch " + slurm)
     # do("cp ~/opt/2xov_eval/run.slurm " + slurm)

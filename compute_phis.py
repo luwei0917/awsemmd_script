@@ -65,25 +65,27 @@ def extractSeqFromFa(size=7, source="database/cath-dataset-nonredundant-S20Clean
 # convertTo4cName()
 # extractSeqFromFa()
 
-def computePhis(proteins):
-
+def computePhis(proteins, multiSeq=False, sampleK=1000):
+    # if addGylcines:
     proteins_location = "".join(proteins.split("/")[:-1]) + "/location_" + proteins.split("/")[-1]
     # transferPDB(proteins)
     addLocation(proteins, proteins_location)
     # os.chdir('database')
     add_virtual_glycines_list(proteins_location)
-    generate_decoy_sequences(proteins, methods=['shuffle'], databaseLocation="../../")
-    evaluate_phis_over_training_set_for_native_structures_Wei(proteins, "phi_list.txt", decoy_method='shuffle', max_decoys=1e+10, tm_only=False, num_processors=1)
+    # generate_decoy_sequences(proteins, methods=['shuffle'], databaseLocation="../../")
+    # evaluate_phis_over_training_set_for_native_structures_Wei(proteins, "phi_list.txt", decoy_method='shuffle', max_decoys=1e+10, tm_only=False, num_processors=1)
+    if multiSeq:
+        evaluate_phis_over_training_set_for_native_structures_Wei(proteins, "phi_list.txt", decoy_method='multiShuffle', max_decoys=1e+10, tm_only=False, num_processors=1, multi_seq=True, sampleK=sampleK)
 # extractSeqFromFa()
 
-def computePhisForDecoys(proteins, withBiased=False):
+def computePhisForDecoys(proteins, **kwargs):
     proteins_location = "".join(proteins.split("/")[:-1]) + "/location_" + proteins.split("/")[-1]
     # transferPDB(proteins)
-    addLocation(proteins, proteins_location)
-    # os.chdir('database')
-    add_virtual_glycines_list(proteins_location)
+    # addLocation(proteins, proteins_location)
+    # # os.chdir('database')
+    # add_virtual_glycines_list(proteins_location)
     # generate_decoy_structures(proteins, methods=['lammps'], num_decoys=[10], databaseLocation="../../")
-    evaluate_phis_over_training_set_for_decoy_structures_Wei(proteins, "phi_list.txt", decoy_method='lammps', max_decoys=1e+5, tm_only=False, num_processors=1, withBiased=withBiased)
+    evaluate_phis_over_training_set_for_decoy_structures_Wei(proteins, "phi_list.txt", decoy_method='lammps', max_decoys=1e+5, tm_only=False, num_processors=1, **kwargs)
 
 if args.mode == 0:
     computePhis(args.proteins)
@@ -91,3 +93,7 @@ elif args.mode == 1:
     computePhisForDecoys(args.proteins)
 elif args.mode == 2:
     computePhisForDecoys(args.proteins, withBiased=True)
+elif args.mode == 3:
+    computePhisForDecoys(args.proteins, withBiased=True, mode=1)
+if args.mode == 4:
+    computePhis(args.proteins, multiSeq=True, sampleK=1000)

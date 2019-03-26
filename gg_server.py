@@ -514,6 +514,667 @@ def isComplete(a):
                     return 0
     return 1
 
+def generate_multiShuffle(fullName, location="./", num_decoys=1000):
+    with open(location+f"alignments/{fullName}_filtered_0.05.seqs") as f:
+        a = f.readlines()
+
+    with open(location+f"database/S20_seq/{fullName}.seq") as f:
+        b = f.readlines()
+
+    with open(location+f"decoys/multiShuffle/{fullName}.decoys", "w") as out:
+        for seq in random.sample(a, num_decoys):
+            s = seq.strip()
+            shuffled_seq = ''.join(random.sample(s,len(s)))
+            out.write(shuffled_seq+"\n")
+        # print(shuffled_seq)
+
+def waitForJobs(jobIdList, sleepInterval=30):
+    previousJobNotFinished = True
+    while previousJobNotFinished:
+        print("Waiting for previous jobs", datetime.now())
+        time.sleep(sleepInterval)
+        previousJobNotFinished = False
+        a = getFromTerminal("squeue -u wl45")
+        for jobId in jobIdList:
+            if jobId in a:
+                previousJobNotFinished = True
+    print("Continue Next Script")
+if args.day == "mar26":
+    # data = pd.read_csv("chosen.csv", index_col=0)
+    data = pd.read_csv("data_info_3.csv", index_col=0).query("Problematic != 4")
+    if args.mode == 1:
+        do("cp ../phi_list.txt .")
+        do("mkdir -p database/dompdb")
+        do("mkdir -p database/S20_seq")
+        do("mkdir proteins_name_list")
+        do("mkdir slurms")
+        do("mkdir -p subsetgammas")
+        do("mkdir -p decoys")
+        do("mkdir -p gammas")
+        do("mkdir -p phis")
+    if args.mode == 2:
+        do("mkdir -p decoys/multiShuffle")
+        for i, line in data.iterrows():
+            fullName = line["FullName"]
+            generate_multiShuffle(fullName, num_decoys=1000)
+        jobIdList = []
+        for i in range(181):
+            with open(f"slurms/run_{i}.slurm", "w") as out:
+                out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py -m 4 proteins_name_list/proteins_name_list_{i}.txt"))
+                # out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py -m 1 proteins_name_list/proteins_name_list_{name}.txt"))
+            # replace(f"slurms/run_{i}.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=20G")
+            a = getFromTerminal(f"sbatch slurms/run_{i}.slurm")
+            jobId = a.split(" ")[-1].strip()
+            print("!"+jobId+"!")
+            jobIdList.append(jobId)
+        waitForJobs(jobIdList, sleepInterval=300)
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d mar26 -m 3"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+        # for testing toymodel
+    if args.mode == 3:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # n = len(simulation_location_list)
+        # n = 2
+        # n = len(new_simulation_list)
+
+        # import time
+        # time.sleep(4000)
+        # with open(f"proteins_name_list.txt", "w") as out:
+        #     for data in ["new", "old"]:
+        #         pdb_list, steps = dataset[data]
+        #         for p in pdb_list:
+        #             name = p.lower()[:4]
+        #             out.write(f"{name}\n")
+        # complete_proteins = "proteins_name_list/proteins_name_list_tiny.txt"
+        complete_proteins = "proteins_name_list/proteins_name_list.txt"
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='multiShuffle',
+                                        num_decoys=1000, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=True)
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='lammps',
+        #                                 num_decoys=n*6000, noise_filtering=True, jackhmmer=False, read=False)
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='lammps',
+        #                                 num_decoys=n*6000, noise_filtering=True, jackhmmer=False, read=False, mode=1, simulation_location_list=simulation_location_list)
+    if args.mode == 12:
+        # import time
+        # time.sleep(7200)
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d mar26 -m 3"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+if args.day == "mar25":
+    if args.mode == 1:
+        do("mkdir -p decoys/multiShuffle")
+        data = pd.read_csv("chosen.csv", index_col=0)
+        for i, line in data.iterrows():
+            generate_decoy_sequences(line["FullName"], num_decoys=5000)
+    if args.mode == 2:
+        time.sleep(60)
+    if args.mode == 3:
+        # a = getFromTerminal("sbatch run_on_scavenge.slurm")
+        a = getFromTerminal("gg_server.py -d mar25 -m 4")
+        jobId = a.split(" ")[-1].strip()
+        print("!"+jobId+"!")
+        jobIdList = [jobId]
+        previousJobNotFinished = True
+        while previousJobNotFinished:
+            print("Waiting for previous jobs", datetime.now())
+            time.sleep(10)
+            previousJobNotFinished = False
+            a = getFromTerminal("squeue -u wl45")
+            for jobId in jobIdList:
+                if jobId in a:
+                    previousJobNotFinished = True
+        print("Continue Next Script")
+    if args.mode == 4:
+        do("sbatch run_on_scavenge.slurm")
+if args.day == "mar11":
+    print(args.day)
+    pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    # simulation_location = "noFrag"
+    # simulation_location = "newFrag"
+    # simulation_location = "top20"
+    simulation_location = "top1"
+    # simulation_location = "top3"
+    # simulation_location = "fragment"
+
+    if args.mode == 1:
+        fragLibrary = f"fragment_memory_{simulation_location}"
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {simulation_location}/{name}")
+            do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+            pre = f"{simulation_location}/{name}/{name}"
+            do(f"cp -r ../fragment_memory/fraglib {pre}/")
+            do(f"cp {fragLibrary}/{name}.mem {pre}/frags.mem")
+
+            # replace(f"{simulation_location}/{name}/{name}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Water\]", "\[Water\]-")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Burial\]", "\[Burial\]-")
+            # do(f"rm all_simulations/{name}/{name}/gamma.dat")
+    if args.mode == 2:
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            steps = 80
+            cd(name)
+            do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+
+if args.day == "mar09":
+    print(args.day)
+    dataset = {"old":("1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", "), 40),
+                "new":("1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", "), 80),
+                "test":(['1A2J', '1A3H', '1A5Y', '1A8Q', '1AGY', '1AKZ', '1AUZ', '1B1A', '1B31', '1B8X', '1BCO', '1BN6', '1BOH', '1BOI'], 40)}
+    # pdb_list, steps = dataset["old"]
+    # pdb_list, steps = dataset["test"]
+    pdb_list, steps = dataset["new"]
+    # pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    # pdb_list = "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", ")
+
+    simulation_location = f"frag"
+    if args.mode == 1:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {simulation_location}/{name}")
+            pre = f"{simulation_location}/{name}/{name}"
+            do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
+            # if simulation_location == "newContactWithBurial":
+
+    if args.mode == 2:
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            # steps = 40
+            cd(name)
+            do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+
+
+if args.day == "mar06":
+    print(args.day)
+    dataset = {"old":("1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", "), 40),
+                "new":("1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", "), 80),
+                "test":(['1A2J', '1A3H', '1A5Y', '1A8Q', '1AGY', '1AKZ', '1AUZ', '1B1A', '1B31', '1B8X', '1BCO', '1BN6', '1BOH', '1BOI'], 40)}
+    pdb_list, steps = dataset["old"]
+    # pdb_list, steps = dataset["test"]
+    # pdb_list, steps = dataset["new"]
+    submode = 0
+    submode = 1
+    # pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    # pdb_list = "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", ")
+    # simulation_location = "noFrag"
+    # simulation_location = "newFrag"
+    # simulation_location = "newContactWithBurial"
+    # simulation_location = "iter1_with_bias_96percent"
+    # percent = 90
+    # percent = 8
+    # percent = 10
+    # percent = 96
+    # simulation_location = f"new_iter2_{percent}"
+    # simulation_location = f"new_iter3_{percent}"
+    # simulation_location = f"iter0"
+    # simulation_location = f"new_iter1_{percent}"
+    # simulation_location = f"new_iter1_combined_on_B"
+    # simulation_location = "single"
+    # simulation_location = "inverseBurial"
+    # gammaSource = "../optimization"
+    # gammaSource = "../optimization_iter1"
+    # gammaSource = "../optimization_with_biased_iter1"
+    # gammaSource = "../optimization_weighted_by_q_iter1"
+    # gammaSource = "../optimization_weighted_by_q_iter2"
+    # gammaSource = "../optimization_weighted_by_q_iter3"
+    # gamma = f"iteration_gamma_{percent}.dat"
+    # burial = f"iteration_burial_gamma_{percent}.dat"
+    if submode == 0:
+        simulation_location = f"iter0"
+        gammaSource = "../optimization"
+        gamma = f"iteration_gamma.dat"
+        burial = f"iteration_burial_gamma.dat"
+    elif submode == 1:
+        # percent = 13
+        # percent = 22
+        # percent = 5
+        # percent = 6
+        percent = 30
+
+        # iteration = 5
+        # iteration = 6
+        iteration = 7
+        simulation_location = f"iter{iteration}_{percent}"
+        gammaSource = f"../optimization_weighted_by_q_iter{iteration}"
+        gamma = f"iteration_{iteration}_gamma_{percent}.dat"
+        burial = f"iteration_{iteration}_burial_gamma_{percent}.dat"
+    # gamma = f"iteration_gamma_combined_on_B.dat"
+    # burial = f"iteration_burial_gamma_combined_on_B.dat"
+    if args.mode == 1:
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {simulation_location}/{name}")
+            pre = f"{simulation_location}/{name}/{name}"
+            do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
+            # if simulation_location == "newContactWithBurial":
+            if simulation_location != "single":
+                do(f"cp {pre}/gamma.dat {pre}/original_gamma.dat")
+                do(f"cp {gammaSource}/{gamma} {pre}/gamma.dat")
+                # print(f"cp {gammaSource}/iteration_gamma.dat {pre}/gamma.dat")
+                do(f"cp {pre}/burial_gamma.dat {pre}/original_burial_gamma.dat")
+                do(f"cp {gammaSource}/{burial} {pre}/burial_gamma.dat")
+
+    if args.mode == 2:
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            # steps = 40
+            cd(name)
+            do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+
+
+if args.day == "mar05":
+    # pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
+    dataset = {"old":("1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", "), 40),
+                "new":("1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", "), 80),
+                "test":(['1A2J', '1A3H', '1A5Y', '1A8Q', '1AGY', '1AKZ', '1AUZ', '1B1A', '1B31', '1B8X', '1BCO', '1BN6', '1BOH', '1BOI'], 40)}
+    # optimization_folder = "optimization_weighted_by_q_iter1"
+    # native_source = "../iterative_optimization_new_temp_range"
+    # gammaSource = "../optimization"
+    # simulation_location_list = ["bias_2", "bias_old_gamma", "iter1_with_bias_96percent", "iter1_with_bias_98percent"]
+    # iteration_source_dic = {"bias_2":"../iterative_optimization_biased_sampling",
+    #                         "bias_old_gamma":"../iterative_optimization_biased_sampling",
+    #                         "iter1_with_bias_96percent":"../iterative_optimization_new_temp_range",
+    #                         "iter1_with_bias_98percent":"../iterative_optimization_new_temp_range"}
+    # optimization_folder = "optimization_weighted_by_q_iter2_improved"
+    # optimization_folder = "optimization_weighted_by_q_iter5"
+    optimization_folder = "optimization_weighted_by_q_iter6"
+    optimization_folder = "optimization_weighted_by_q_iter7"
+    gammaSource = "../optimization"
+    # simulation_location_list = ["bias_2", "bias_old_gamma", "iter1_with_bias_96percent", "iter1_with_bias_98percent",
+    #             "new_iter1_0", "new_iter1_90", "new_iter1_96", "new_iter1_98", "new_iter1_combined_on_B",
+    #             "new_iter2_8", "new_iter2_10", "old_new_iter2_8", "single", "new_iter3_10"]
+    # simulation_location_list = [
+    #             "new_iter2_8", "new_iter2_10", "old_new_iter2_8"]
+    iteration_source_dic = {"bias_2":"../iterative_optimization_biased_sampling",
+                            "bias_old_gamma":"../iterative_optimization_biased_sampling",
+                            "iter1_with_bias_96percent":"../iterative_optimization_new_temp_range",
+                            "iter1_with_bias_98percent":"../iterative_optimization_new_temp_range",
+                            "new_iter1_0":"../iterative_optimization_new_temp_range",
+                            "new_iter1_90":"../iterative_optimization_new_temp_range",
+                            "new_iter1_96":"../iterative_optimization_new_temp_range",
+                            "new_iter1_98":"../iterative_optimization_new_temp_range",
+                            "new_iter1_combined_on_B":"../iterative_optimization_new_temp_range",
+                            "new_iter2_8":"../iterative_optimization_new_temp_range",
+                            "new_iter2_10":"../iterative_optimization_new_temp_range",
+                            "old_new_iter2_8":"../iterative_optimization_new_temp_range",
+                            "new_iter3_10":"../iterative_optimization_old_set",
+                            "single":"../iterative_optimization_old_set",
+                            "iter4_30":"../iterative_optimization_old_set",
+                            "iter4_6":"../iterative_optimization_old_set",
+                            "iter4_13":"../iterative_optimization_old_set",
+                            "iter5_30":"../iterative_optimization_old_set",
+                            "iter6_30":"../iterative_optimization_old_set",
+                            }
+    pdb_list_dic = {"../iterative_optimization_old_set":"old",
+                    "../iterative_optimization_new_temp_range":"new",
+                    "../iterative_optimization_biased_sampling":"new"}
+    # new_simulation_list = ["iter1_with_bias_96percent", "new_iter2_10"]
+    # old_protein_simulation_list = ["single", "new_iter3_10"]
+    new_simulation_list = ["bias_2","bias_old_gamma", "iter1_with_bias_96percent", "new_iter2_10", "new_iter1_90", "new_iter2_8", "old_new_iter2_8"]
+    old_protein_simulation_list = ["iter6_30", "iter5_30", "single", "new_iter3_10", "iter4_30", "iter4_6", "iter4_13"]
+    simulation_location_list_dic = {}
+    for p in dataset["new"][0]:
+        name = p.lower()[:4]
+        simulation_location_list_dic[name] = new_simulation_list
+    for p in dataset["old"][0]:
+        name = p.lower()[:4]
+        simulation_location_list_dic[name] = old_protein_simulation_list
+
+    if args.mode == 1:
+        do(f"mkdir {optimization_folder}")
+        cd(optimization_folder)
+        do("cp ../phi_list.txt .")
+        do("mkdir -p database/dompdb")
+        do("mkdir proteins_name_list")
+        do("mkdir slurms")
+        do("mkdir -p subsetgammas")
+        do("mkdir -p decoys")
+        do("mkdir -p gammas")
+        do("mkdir -p phis")
+    if args.mode == 2:
+        pdb_list, steps = dataset["old"]
+        simulation_location = "native"
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {simulation_location}/{name}")
+            pre = f"{simulation_location}/{name}/{name}"
+            do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+            # replace(f"{pre}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
+            replace(f"{pre}/{name}_multi.in", "minimize", "#minimize")
+
+            do(f"cp {pre}/gamma.dat {pre}/original_gamma.dat")
+            do(f"cp {gammaSource}/iteration_gamma.dat {pre}/gamma.dat")
+            # print(f"cp {gammaSource}/iteration_gamma.dat {pre}/gamma.dat")
+            do(f"cp {pre}/burial_gamma.dat {pre}/original_burial_gamma.dat")
+            do(f"cp {gammaSource}/iteration_burial_gamma.dat {pre}/burial_gamma.dat")
+    if args.mode == 3:
+        pdb_list, steps = dataset["old"]
+        simulation_location = "native"
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            # steps = 40
+            steps = 2
+            # steps = 80
+            cd(name)
+            # do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            do(f"run.py -n 1 {name} --commons 2 -s {steps} --runs 1 --start crystal")
+            # do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+            cd("..")
+    if args.mode == 4:
+        pdb_list, steps = dataset["old"]
+        cd("native")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            cd(f"{name}/simulation/0/")
+            do("cp energy.log back_energy.log")
+            do(f"rerun.py {name} -t")
+            cd(f"../../../")
+    if args.mode == 5:
+        pdb_list, steps = dataset["old"]
+        simulation_location = "native"
+        cd(simulation_location)
+        for p in pdb_list:
+            name = p.lower()[:4]
+            cd(f"{name}/simulation/0/rerun/")
+            do(f"cp ../{name}.seq .")
+            do(f"python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie {name}.seq")
+            cd("../../../../")
+    if args.mode == 6:
+        pdb_list, steps = dataset["old"]
+        # native_source = "../iterative_optimization_new_temp_range"
+        native_source = "../iterative_optimization_old_set"
+
+        do("mkdir -p database/dompdb")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p database/{name}")
+            do(f"cp -r {native_source}/native/{name}/simulation/0/rerun/* database/{name}/")
+            pre = f"database/{name}/"
+            fileName = "movie.pdb"
+            splitPDB(pre, fileName)
+            do(f"cp database/{name}/frame0.pdb database/dompdb/{name}.pdb")
+
+        pdb_list, steps = dataset["new"]
+        native_source = "../iterative_optimization_new_temp_range"
+        do("mkdir -p database/dompdb")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p database/{name}")
+            do(f"cp -r {native_source}/native/{name}/simulation/0/rerun/* database/{name}/")
+            pre = f"database/{name}/"
+            fileName = "movie.pdb"
+            splitPDB(pre, fileName)
+            do(f"cp database/{name}/frame0.pdb database/dompdb/{name}.pdb")
+    if args.mode == 7:
+        # simulation_location_list = ["single", "new_iter3_10"]
+        # simulation_location_list = ["iter4_30", "iter4_13", "iter4_6"]
+        simulation_location_list = ["iter5_30"]
+        simulation_location_list = ["iter6_30"]
+        # Go To list of simulation folder
+        for simulation_location in simulation_location_list:
+            print(simulation_location)
+            # cd(iteration_source_dic[simulation_location]+"/"+simulation_location)
+            iteration_source = iteration_source_dic[simulation_location]
+            pdb_list, steps = dataset[pdb_list_dic[iteration_source]]
+            cd(iteration_source+"/"+simulation_location)
+            for p in pdb_list:
+                name = p.lower()[:4]
+                print(name)
+                cd(f"{name}/simulation/")
+                with open(f"run_on_scavenge.slurm", "w") as out:
+                    out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d mar05 -m 77 -l {name}"))
+                # replace(f"run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=5G")
+                # replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=40G")
+                do(f"sbatch run_on_scavenge.slurm")
+                cd("../../")
+            cd("..")
+        # for simulation_location in simulation_location_list:
+        #     print(simulation_location)
+        #     # cd(iteration_source_dic[simulation_location]+"/"+simulation_location)
+        #     iteration_source = iteration_source_dic[simulation_location]
+        #     cd(iteration_source+"/"+simulation_location)
+        #     for p in pdb_list:
+        #         name = p.lower()[:4]
+        #         print(name)
+        #         for i in range(30):
+        #             cd(f"{name}/simulation/{i}/0/")
+        #             with open(f"run_on_scavenge.slurm", "w") as out:
+        #                 out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d mar05 -m 77 -l {name}"))
+        #             # replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=40G")
+        #             do(f"sbatch run_on_scavenge.slurm")
+        #             cd("../../../../")
+        #     cd("..")
+        # for simulation_location in simulation_location_list:
+        #     print(simulation_location)
+        #     cd(iteration_source_dic[simulation_location]+"/"+simulation_location)
+        #     for p in pdb_list:
+        #         name = p.lower()[:4]
+        #         print(name)
+        #         for i in range(30):
+        #             cd(f"{name}/simulation/{i}/0/")
+        #             do(f"cp ../{name}.seq .")
+        #             do(f"python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie {name}.seq")
+        #             cd("../../../../")
+        #     cd("..")
+    if args.mode == 77:
+        name = args.label
+        for i in range(30):
+            cd(f"{i}/0/")
+            do(f"cp ../{name}.seq .")
+            do(f"python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie {name}.seq")
+            cd("../..")
+        # name = args.label
+        # do(f"cp ../{name}.seq .")
+        # do(f"python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie {name}.seq")
+    if args.mode == 8:
+        simulation_location_list = new_simulation_list + old_protein_simulation_list
+        for simulation_location in simulation_location_list:
+            print(simulation_location)
+            # cd(iteration_source_dic[simulation_location]+"/"+simulation_location)
+            iteration_source = iteration_source_dic[simulation_location]
+            pdb_list, steps = dataset[pdb_list_dic[iteration_source]]
+            cd(iteration_source+"/"+simulation_location)
+            for p in pdb_list:
+                name = p.lower()[:4]
+                print(name)
+                cd(f"{name}/simulation/")
+                with open(f"run_on_scavenge.slurm", "w") as out:
+                    out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d mar05 -m 88 -l {simulation_location}_{name}"))
+                replace(f"run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=5G")
+                # replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=40G")
+                do(f"sbatch run_on_scavenge.slurm")
+                cd("../../")
+            cd("..")
+            # time.sleep(60)
+            # for p in pdb_list:
+            #     name = p.lower()[:4]
+            #     print(name)
+            #     for i in range(30):
+            #         cd(f"{name}/simulation/{i}/")
+            #         with open(f"run_on_scavenge.slurm", "w") as out:
+            #             out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d mar05 -m 88 -l {simulation_location}_{name}_{i}"))
+            #         # replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=40G")
+            #         do(f"sbatch run_on_scavenge.slurm")
+            #         cd("../../../")
+            # cd("..")
+            # time.sleep(60)
+        # for simulation_location in simulation_location_list:
+        #     print(simulation_location)
+        #     iteration_source = iteration_source_dic[simulation_location]
+        #     for p in pdb_list:
+        #         print(p)
+        #         name = p.lower()[:4]
+        #         for i in range(30):
+        #             do(f"cp -r {iteration_source}/{simulation_location}/{name}/simulation/{i}/0/ database/{simulation_location}_{name}_{i}")
+        #             pre = f"database/{simulation_location}_{name}_{i}/"
+        #             fileName = "movie.pdb"
+        #             splitPDB(pre, fileName)
+    if args.mode == 88:
+        cmd = args.label
+        for i in range(30):
+            do(f"cp -r {i}/0/ ../../../../{optimization_folder}/database/{cmd}_{i}")
+            pre = f"../../../../{optimization_folder}/database/{cmd}_{i}/"
+            fileName = "movie.pdb"
+            splitPDB(pre, fileName)
+    if args.mode == 9:
+        # generate decoy file
+        simulation_location_list = new_simulation_list + old_protein_simulation_list
+        print("generating decoys file")
+        do("mkdir -p decoys/lammps")
+        decoy_n = 200
+        for simulation_location in simulation_location_list:
+            iteration_source = iteration_source_dic[simulation_location]
+            pdb_list, steps = dataset[pdb_list_dic[iteration_source]]
+            for p in pdb_list:
+                name = p.lower()[:4]
+                count = 0
+                with open(f"decoys/lammps/{name}_{simulation_location}.decoys", "w") as out:
+                    for i in range(30):
+                        Q = pd.read_csv(f"database/{simulation_location}_{name}_{i}/wham.dat")[" Qw"].values
+                        n = len(Q)
+                        if n != 2000 and n != 1000:
+                            print(f"database/{simulation_location}_{name}_{i},  {n}")
+                        if n == 0:
+                            # print("!! Using previous i.")
+                            print(f"An error at {i}")
+                            continue
+                        for j in range(decoy_n):
+                            # out.write(f"database/{name}_{i}/frame{j+1801}\n")
+                            try:
+                                out.write(f"database/{simulation_location}_{name}_{i}/frame{j+n-decoy_n+1} {Q[j+n-decoy_n]}\n")
+                            except:
+                                print(f"!!!database/{simulation_location}_{name}_{i}\n")
+                        preQ = Q
+                        prei = i
+                        count += 1
+                    if count != 30:
+                        print(f"!! Using previous i. for {30-count}")
+                    n = len(preQ)
+                    Q = preQ
+                    i = prei
+                    while count < 30:
+                        for j in range(decoy_n):
+                            # out.write(f"database/{name}_{i}/frame{j+1801}\n")
+                            try:
+                                out.write(f"database/{simulation_location}_{name}_{i}/frame{j+n-decoy_n+1} {Q[j+n-decoy_n]}\n")
+                            except:
+                                print(f"!!!database/{simulation_location}_{name}_{i}\n")
+                        count += 1
+        # for p in pdb_list:
+        #     name = p.lower()[:4]
+        #     for simulation_location in simulation_location_list:
+        #         with open(f"decoys/lammps/{name}_{simulation_location}.decoys", "w") as out:
+        #             for i in range(30):
+        #                 Q = pd.read_csv(f"database/{simulation_location}_{name}_{i}/wham.dat")[" Qw"].values
+        #                 n = len(Q)
+        #                 if n != 2000:
+        #                     print(f"database/{simulation_location}_{name}_{i},  {n}")
+        #                 for j in range(decoy_n):
+        #                     # out.write(f"database/{name}_{i}/frame{j+1801}\n")
+        #                     try:
+        #                         out.write(f"database/{simulation_location}_{name}_{i}/frame{j+n-decoy_n+1} {Q[j+n-decoy_n]}\n")
+        #                     except:
+        #                         print(f"!!!database/{simulation_location}_{name}_{i}\n")
+        # for p in pdb_list:
+        #     name = p.lower()[:4]
+        #     with open(f"decoys/lammps/{name}.decoys", "w") as out:
+        #         for simulation_location in simulation_location_list:
+        #             for i in range(30):
+        #                 Q = pd.read_csv(f"database/{simulation_location}_{name}_{i}/wham.dat")[" Qw"].values
+        #                 n = len(Q)
+        #                 if n != 2000:
+        #                     print(f"database/{simulation_location}_{name}_{i},  {n}")
+        #                 for j in range(decoy_n):
+        #                     # out.write(f"database/{name}_{i}/frame{j+1801}\n")
+        #                     try:
+        #                         out.write(f"database/{simulation_location}_{name}_{i}/frame{j+n-decoy_n+1} {Q[j+n-decoy_n]}\n")
+        #                     except:
+        #                         print(f"!!!database/{simulation_location}_{name}_{i}\n")
+    if args.mode == 99:
+        # generate decoy file
+        print("generating decoys file")
+        do("mkdir -p decoys/lammps")
+        decoy_n = 100
+        for p in pdb_list:
+            name = p.lower()[:4]
+            with open(f"decoys/lammps/{name}.decoys", "w") as out:
+                for simulation_location in simulation_location_list:
+                    for i in range(30):
+                        Q = pd.read_csv(f"database/{simulation_location}_{name}_{i}/wham.dat")[" Qw"].values
+                        for j in range(decoy_n):
+                            # out.write(f"database/{name}_{i}/frame{j+1801}\n")
+                            out.write(f"database/{simulation_location}_{name}_{i}/frame{j*2+1801} {Q[j*2+1800]}\n")
+    if args.mode == 10:
+        # simulation_location_list = ["single", "new_iter3_10"]
+        simulation_location_list = new_simulation_list + old_protein_simulation_list
+
+        for simulation_location in simulation_location_list:
+            iteration_source = iteration_source_dic[simulation_location]
+            pdb_list, steps = dataset[pdb_list_dic[iteration_source]]
+            for p in pdb_list:
+                name = p.lower()[:4]
+                with open(f"proteins_name_list/proteins_name_list_{name}_{simulation_location}.txt", "w") as out:
+                        out.write(f"{name}_{simulation_location}\n")
+                with open(f"slurms/run_{name}_{simulation_location}.slurm", "w") as out:
+                    out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py -m 3 proteins_name_list/proteins_name_list_{name}_{simulation_location}.txt"))
+                    # out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py -m 1 proteins_name_list/proteins_name_list_{name}.txt"))
+                replace(f"slurms/run_{name}_{simulation_location}.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=20G")
+                do(f"sbatch slurms/run_{name}_{simulation_location}.slurm")
+            # with open(f"proteins_name_list/proteins_name_list_{name}.txt", "w") as out:
+            #     out.write(f"{name}\n")
+            # with open(f"slurms/run_{name}.slurm", "w") as out:
+            #     out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py -m 2 proteins_name_list/proteins_name_list_{name}.txt"))
+            #     # out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py -m 1 proteins_name_list/proteins_name_list_{name}.txt"))
+            # replace(f"slurms/run_{name}.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=50G")
+            # do(f"sbatch slurms/run_{name}.slurm")
+    if args.mode == 11:
+        # for testing toymodel
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # n = len(simulation_location_list)
+        # n = 2
+        n = len(new_simulation_list)
+        # import time
+        # time.sleep(4000)
+        with open(f"proteins_name_list.txt", "w") as out:
+            for data in ["new", "old"]:
+                pdb_list, steps = dataset[data]
+                for p in pdb_list:
+                    name = p.lower()[:4]
+                    out.write(f"{name}\n")
+        complete_proteins = "proteins_name_list.txt"
+
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='lammps',
+                                        num_decoys=n*6000, noise_filtering=True, jackhmmer=False, read=False, mode=2, simulation_location_list_dic=simulation_location_list_dic)
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='lammps',
+        #                                 num_decoys=n*6000, noise_filtering=True, jackhmmer=False, read=False)
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='lammps',
+        #                                 num_decoys=n*6000, noise_filtering=True, jackhmmer=False, read=False, mode=1, simulation_location_list=simulation_location_list)
+    if args.mode == 12:
+        # import time
+        # time.sleep(7200)
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d mar05 -m 11"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+
 if args.day == "feb27":
     print(args.day)
     dataset = {"old":("1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", "), 40),
@@ -577,11 +1238,13 @@ if args.day == "feb25_2":
     # simulation_location = "noFrag"
     # simulation_location = "newFrag"
     # simulation_location = "newContactWithBurial"
-    simulation_location = "iter1_2"
+    # simulation_location = "iter1_with_bias_96percent"
+    simulation_location = "iter1_with_bias_98percent"
     # simulation_location = "single"
     # simulation_location = "inverseBurial"
     # gammaSource = "../optimization"
-    gammaSource = "../optimization_iter1"
+    # gammaSource = "../optimization_iter1"
+    gammaSource = "../optimization_with_biased_iter1"
 
     if args.mode == 1:
         for p in pdb_list:
@@ -1016,7 +1679,7 @@ if args.day == "feb18_2":
             do(f"mkdir -p {simulation_location}/{name}")
             do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
             pre = f"{simulation_location}/{name}/{name}"
-            do(f"cp -r fragment_memory/fraglib {pre}/")
+            do(f"cp -r ../fragment_memory/fraglib {pre}/")
             do(f"cp {fragLibrary}/{name}.mem {pre}/frags.mem")
 
             # replace(f"{simulation_location}/{name}/{name}/fix_backbone_coeff.data", "\[Fragment_Memory_Table\]", "\[Fragment_Memory_Table\]-")
