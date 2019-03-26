@@ -75,6 +75,38 @@ def pick_structure_generate_show_script(n=2):
         # f.write("show cartoon, all\n")
         # f.write("hide nonbonded, all\n")
 
+if args.day == "mar25":
+    pdb_list = pd.read_csv("data_info_2.csv", index_col=0)["FullName"].values
+    if args.mode == 1:
+        do("mkdir -p all_simulations")
+        cd("all_simulations")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {name}/{name}")
+            cd(f"{name}/{name}")
+            do("pwd")
+            do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+            do(f"python2 ~/opt/script/Pdb2Gro.py crystal_structure.pdb {name}.gro")
+            do(f"create_project.py {name} --globular --bias --rgbias")
+            protein_length = getFromTerminal("wc ssweight").split()[0]
+            print(f"protein: {name}, length: {protein_length}")
+            with open("frags.mem", "w") as out:
+                out.write("[Target]\nquery\n\n[Memories]\n")
+                out.write(f"{name}.gro 1 1 {protein_length} 20\n")
+            cd("../..")
+
+
+
+if args.day == "mar20":
+    if args.mode == 1:
+        # pdb_list = ["3GL5A"]
+        pdb_list = pd.read_csv("data_info_2.csv", index_col=0)["FullName"].values
+        cleanPdb(pdb_list, chain=None)
+if args.day == "mar18":
+    if args.mode == 1:
+        pdb_list = ["3GL5A"]
+        cleanPdb(pdb_list, chain=None)
+
 if args.day == "feb27":
     dataset = {"old":("1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", "), 40),
                 "new":("1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", "), 80),
