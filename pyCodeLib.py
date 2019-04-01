@@ -1515,8 +1515,10 @@ def read_decoy_phis(protein, phi_list, total_phis, num_phis, num_decoys, decoy_m
         num_decoys = int(num_decoys/len(protein_list))
     all_phis = []
     for protein in protein_list:
+        # print(protein)
         phi_i_decoy = np.zeros((num_decoys, total_phis))
         for i_phi_function, phi_and_parameters in enumerate(phi_list):
+            # print(protein, i_phi_function, phi_and_parameters)
             phi = phi_and_parameters[0]
             parameters = phi_and_parameters[1]
             i_phi = phi_list.index(phi_and_parameters)
@@ -2461,7 +2463,8 @@ def evaluate_hamiltonian_wei(protein, hamiltonian, training_set_file, gamma_file
     # read in Hamiltonian
     # Find out how many total phi_i there are and get full parameter string
     total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
-        phi_list, training_set)
+        phi_list, training_set, **kwargs)
+    # print(total_phis, full_parameters_string, num_phis)
     # read in corresponding gammas
     if use_filtered_gammas:
         gamma_file_name = "%s%s_%s_gamma_filtered" % (
@@ -2486,6 +2489,7 @@ def evaluate_hamiltonian_wei(protein, hamiltonian, training_set_file, gamma_file
         protein, phi_list, total_phis, num_phis, num_decoys, test_decoy_method, **kwargs)
     # perform dot products to get energies (native and decoys)
     e_decoy = np.zeros(num_decoys)
+    # print(gamma.shape, phi_native.shape)
     e_native = np.dot(gamma, phi_native)
     for i_decoy in range(num_decoys):
         e_decoy[i_decoy] = np.dot(gamma, phi_i_decoy[i_decoy])
