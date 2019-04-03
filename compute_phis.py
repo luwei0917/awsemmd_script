@@ -94,6 +94,7 @@ elif args.mode == 1:
 elif args.mode == 2:
     computePhisForDecoys(args.proteins, withBiased=True)
 elif args.mode == 3:
+    # use the native structure name. but partial data.
     computePhisForDecoys(args.proteins, withBiased=True, mode=1)
 if args.mode == 4:
     computePhis(args.proteins, multiSeq=True, sampleK=1000)

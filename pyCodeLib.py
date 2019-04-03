@@ -80,8 +80,9 @@ def splitString(inputString):
 ###########################################################################
 
 
-structures_directory = "database/dompdb/"
-phis_directory = "phis/"
+# structures_directory = "database/dompdb/"
+structures_directory = "../database/dompdb/"
+phis_directory = "../phis/"
 decoys_root_directory = "decoys/"
 aligments_root_directory = "alignments/"
 tms_directory = "/opt/home/xl23/Working/Levine/jason/optimization/awsem/tms/"
@@ -1136,7 +1137,7 @@ def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_dec
                     decoy_structures = read_decoy_structures(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
 
                 for i_decoy, decoy_structure in enumerate(decoy_structures):
-                    if i_decoy % 2000 == 0:
+                    if i_decoy % 1000 == 0:
                         print(i_decoy)
                     if i_decoy >= max_decoys:
                         break

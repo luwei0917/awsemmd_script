@@ -181,8 +181,16 @@ def set_up():
             with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
                 for line in file:
                     tmp = line.replace("read_data data.crystal", "START_FROM")  # remove in future.
-                    tmp = tmp.replace("langevin 800 800", "langevin 300 300")  # change temp, remove in future
-                    tmp = tmp.replace("langevin 800 300", "langevin 300 300")  # change temp, remove in future
+                    # tmp = tmp.replace("langevin 800 800", "langevin 300 300")  # change temp, remove in future
+                    # tmp = tmp.replace("langevin 800 300", "langevin 300 300")  # change temp, remove in future
+                    eachRunTemp = int(500/runs)
+                    if i != 0:
+                        tmp = tmp.replace("velocity", "#velocity")
+                        tmp = tmp.replace("reset_timestep", "#reset_timestep")
+                        tmp = tmp.replace("minimize", "#minimize")
+
+                    tmp = tmp.replace("langevin 700 300", f"langevin {700-(i)*eachRunTemp} {700-(i+1)*eachRunTemp}")  # change temp, remove in future
+
                     tmp = tmp.replace("START_FROM", start_from)
                     tmp = tmp.replace("MY_FORCE", str(args.force))
                     # tmp = tmp.replace("fix_backbone_coeff_er.data", backbone_file)
@@ -193,7 +201,7 @@ def set_up():
                 "sed -i.bak 's/SIMULATION_STEPS/'" +
                 str(int(steps)) +
                 "'/g' {}_{}.in".format(proteinName, i))
-            os.system(  # replace SIMULATION_STEPS with specific steps
+            os.system(
                 "sed -i.bak 's/NUMBER/'" +
                 str(int(i)) +
                 "'/g' {}_{}.in".format(proteinName, i))
