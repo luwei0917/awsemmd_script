@@ -69,6 +69,7 @@ if args.membrane or args.hybrid:
     do(f"cp data.crystal data.{proteinName}")
     do("grep -E 'CB|CA  GLY' crystal_structure.pdb > cbs.data")
     do("""awk '{if($9>15) print "1"; else if($9<-15) print "3"; else print "2"}'  cbs.data  > zimPosition""")
+    do(f"python3 ~/opt/create_zim.py -f {proteinName}.fasta")
     if args.crystal:
         create_zim(f"crystal.seq")
 

@@ -64,7 +64,8 @@ def splitPDB(pre, fileName):
 
 def read_hydrophobicity_scale(seq, isNew=False):
     seq_dataFrame = pd.DataFrame({"oneLetterCode":list(seq)})
-    HFscales = pd.read_table("~/opt/small_script/Whole_residue_HFscales.txt")
+    # HFscales = pd.read_table("~/opt/small_script/Whole_residue_HFscales.txt")
+    HFscales = pd.read_csv("~/opt/small_script/Whole_residue_HFscales.txt", sep="\t")
     if not isNew:
         # Octanol Scale
         # new and old difference is at HIS.
@@ -398,10 +399,12 @@ def structure_prediction_run(protein):
         backboneFile = "fix_backbone_coeff_" + protocol
         with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
             for line in file:
-                tmp = line.replace("fix_backbone_coeff_er", backboneFile)
+                # tmp = line.replace("fix_backbone_coeff_er", backboneFile)
+                tmp = line.replace("fix_backbone_coeff_hybrid", backboneFile)
                 print(tmp, end='')
         cd("..")
-        do("run.py -m 0 -n 20 {}".format(protein))
+        # do("run.py -m 0 -n 20 {}".format(protein))
+        do("run.py -n 20 {}".format(protein))
         cd("..")
     cd("..")
     # do("")
@@ -994,6 +997,36 @@ def mix_gammas_3(pre, Gamma, preGamma, alpha=None, iterGammaName=None, iteration
     gamma_format_convertion_iteration_to_simulation(iter_gamma, gamma_for_simulation, burial_gamma_for_simulation=burial_gamma_for_simulation)
     if iterGammaName is not None:
         np.savetxt(pre+iterGammaName, iter_gamma)
+
+def relocate(location):
+    # location = "/Users/weilu/Research/server/april_2019/iterative_optimization_new_set_with_frag/all_simulations/1fc2/1fc2"
+    fileLocation = location + "/frags.mem"
+    pre = location + "/../"
+    os.system(f"mkdir -p {pre}/fraglib")
+    a = pd.read_csv(fileLocation, skiprows=4, sep=" ", names=["location", "i", "j", "sep", "w"])
+    b = a["location"].unique()
+    for l in b:
+        out = os.system(f"cp {l} {pre}/fraglib/")
+        if out != 0:
+            print(f"!!Problem!!, {l}")
+
+def replace(TARGET, FROM, TO):
+    os.system("sed -i.bak 's@{}@{}@g' {}".format(FROM,TO,TARGET))
+
+# def relocate(location):
+#     # location = "/Users/weilu/Research/server/april_2019/iterative_optimization_new_set_with_frag/all_simulations/1fc2/1fc2"
+#     fileLocation = location + "/frags.mem"
+#     pre = location + "/../"
+#     os.system(f"mkdir -p {pre}/fraglib")
+#     with open(fileLocation) as f:
+#         next(f)
+#         next(f)
+#         next(f)
+#         next(f)
+#         for line in f:
+#             out = os.system(f"cp {line.split()[0]} {pre}/fraglib/")
+#             if out != 0:
+#                 print(f"!!Problem!!, {line.split()[0]}")
 # def downloadPdb(pdb_list):
 #     os.system("mkdir -p original_pdbs")
 #     for pdb_id in pdb_list:

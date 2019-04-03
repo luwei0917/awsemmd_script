@@ -40,6 +40,8 @@ myhome = os.environ.get("HOME")
 pdbDir = myhome + "/opt/script/PDBs/"
 indexDir = myhome + "/opt/script/Indices/"
 fLibDir = "fraglib/"
+fLibDir = myhome + "/opt/script/Gros/"
+
 pdbSeqres = "/Users/weilu/opt/script/pdb_seqres.txt"
 if not os.path.exists(indexDir):
     os.makedirs(indexDir)

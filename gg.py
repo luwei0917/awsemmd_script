@@ -75,6 +75,47 @@ def pick_structure_generate_show_script(n=2):
         # f.write("show cartoon, all\n")
         # f.write("hide nonbonded, all\n")
 
+
+
+if args.day == "apr03":
+    if args.mode == 1:
+        # downloadPdb(pdb_list)
+        pdb_list = ["2bg9", "1j4n", "1py6", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19", "2rh1"]
+        pdb_list = ["2xov"]
+        pdb_list = ["2bs2", "1py6", "1u19", "2rh1"]
+        do("mkdir -p original_pdbs")
+        for pdb in pdb_list:
+            do(f"wget https://opm-assets.storage.googleapis.com/pdb/{pdb}.pdb")
+            do(f"mv {pdb}.pdb original_pdbs/")
+        cleanPdb(pdb_list, chain=-1, formatName=False)
+    if args.mode == 2:
+        # pdb_list = ["2xov"]
+        pdb_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
+        do("mkdir -p all_simulations")
+        cd("all_simulations")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {name}/{name}")
+            cd(f"{name}/{name}")
+            do("pwd")
+            # do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+            do("cp ~/opt/crystal_structures/membrane_proteins/for_simulation/{}.pdb crystal_structure.pdb ".format(name))
+            do(f"python2 ~/opt/script/Pdb2Gro.py crystal_structure.pdb {name}.gro")
+            do(f"create_project.py {name} --hybrid --frag")
+            check_and_correct_fragment_memory(fragFile="frags.mem")
+            relocate("./")
+            replace(f"frags.mem", "/Users/weilu/opt/script/Gros/", "../fraglib/")
+            protein_length = getFromTerminal("wc ssweight").split()[0]
+            print(f"protein: {name}, length: {protein_length}")
+            with open("single_frags.mem", "w") as out:
+                out.write("[Target]\nquery\n\n[Memories]\n")
+                out.write(f"{name}.gro 1 1 {protein_length} 20\n")
+            cd("../..")
+if args.day == "apr01":
+    if args.mode == 1:
+        # downloadPdb(pdb_list)
+        pdb_list = ["5a63"]
+        cleanPdb(pdb_list, chain=-1, formatName=False)
 if args.day == "mar31":
     if args.mode == 1:
         iteration = "original"
@@ -94,6 +135,40 @@ if args.day == "mar31":
         preGamma = np.loadtxt(f"/Users/weilu/Research/server/april_2019/complete_gammas/iter_{pre_i}")
         mix_gammas_3(pre, Gamma, preGamma, alpha=0.3, iterGammaName=f"iter_{i}", iteration=f"iter_{i}")
         do(f"mv iteration_iter_{i}_* for_simulation/")
+    if args.mode == 3:
+        pre_i = 2
+        i = pre_i + 1
+        pre = "./"
+        g = "gammas/proteins_name_list_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0phi_burial_well4.0_gamma_filtered"
+        Gamma = np.loadtxt(f"/Users/weilu/Research/server/april_2019/optimization_restart_iter{i}/{g}")
+        preGamma = np.loadtxt(f"/Users/weilu/Research/server/april_2019/complete_gammas/iter_{pre_i}")
+        mix_gammas_3(pre, Gamma, preGamma, alpha=0.3, iterGammaName=f"iter_{i}", iteration=f"iter_{i}")
+        do(f"mv iteration_iter_{i}_* for_simulation/")
+
+    if args.mode == 4:
+        pre_i = 2
+        i = pre_i + 1
+        alpha = 0.9
+        pre = "./"
+        g = "gammas/proteins_name_list_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0phi_burial_well4.0_gamma_filtered"
+        Gamma = np.loadtxt(f"/Users/weilu/Research/server/april_2019/optimization_restart_iter{i}/{g}")
+        preGamma = np.loadtxt(f"/Users/weilu/Research/server/april_2019/complete_gammas/iter_{pre_i}")
+        mix_gammas_3(pre, Gamma, preGamma, alpha=alpha, iterGammaName=f"iter_{i}_{int(alpha*100)}", iteration=f"iter_{i}")
+        do(f"mv iteration_iter_{i}_* for_simulation/")
+    if args.mode == 5:
+        pre_i = 3
+        i = pre_i + 1
+        alpha = 0.3
+        pre = "./"
+        g = "gammas/proteins_name_list_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0phi_burial_well4.0_gamma_filtered"
+        Gamma = np.loadtxt(f"/Users/weilu/Research/server/april_2019/optimization_restart_iter{i}/{g}")
+        preGamma = np.loadtxt(f"/Users/weilu/Research/server/april_2019/complete_gammas/iter_{pre_i}")
+        if alpha == 0.3:
+            mix_gammas_3(pre, Gamma, preGamma, alpha=alpha, iterGammaName=f"iter_{i}", iteration=f"iter_{i}")
+        else:
+            mix_gammas_3(pre, Gamma, preGamma, alpha=alpha, iterGammaName=f"iter_{i}_{int(alpha*100)}", iteration=f"iter_{i}")
+        do(f"mv iteration_iter_{i}_* for_simulation/")
+
 if args.day == "mar30":
     dataset = {"old":("1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", "), 40),
                 "new":("1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", "), 80),
@@ -188,12 +263,35 @@ if args.day == "mar27":
             do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
             do(f"python2 ~/opt/script/Pdb2Gro.py crystal_structure.pdb {name}.gro")
             do(f"create_project.py {name} --globular --frag")
+            relocate("./")
+            replace(f"frags.mem", "/Users/weilu/opt/script/Gros/", "../fraglib/")
             # protein_length = getFromTerminal("wc ssweight").split()[0]
             # print(f"protein: {name}, length: {protein_length}")
             # with open("frags.mem", "w") as out:
             #     out.write("[Target]\nquery\n\n[Memories]\n")
             #     out.write(f"{name}.gro 1 1 {protein_length} 20\n")
             cd("../..")
+            # break
+    if args.mode == 22:
+        do("mkdir -p all_simulations")
+        cd("all_simulations")
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {name}/{name}")
+            cd(f"{name}/{name}")
+            do("pwd")
+            do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+            do(f"python2 ~/opt/script/Pdb2Gro.py crystal_structure.pdb {name}.gro")
+            do(f"create_project.py {name} --globular --frag")
+            relocate("./")
+            replace(f"frags.mem", "/Users/weilu/opt/script/Gros/", "../../fraglib/")
+            # protein_length = getFromTerminal("wc ssweight").split()[0]
+            # print(f"protein: {name}, length: {protein_length}")
+            # with open("frags.mem", "w") as out:
+            #     out.write("[Target]\nquery\n\n[Memories]\n")
+            #     out.write(f"{name}.gro 1 1 {protein_length} 20\n")
+            cd("../..")
+
     if args.mode == 3:
         with open("/Users/weilu/Research/database/queriedPDB.dat") as f:
             a = f.readlines()
