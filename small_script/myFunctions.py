@@ -64,7 +64,8 @@ def splitPDB(pre, fileName):
 
 def read_hydrophobicity_scale(seq, isNew=False):
     seq_dataFrame = pd.DataFrame({"oneLetterCode":list(seq)})
-    HFscales = pd.read_table("~/opt/small_script/Whole_residue_HFscales.txt")
+    # HFscales = pd.read_table("~/opt/small_script/Whole_residue_HFscales.txt")
+    HFscales = pd.read_csv("~/opt/small_script/Whole_residue_HFscales.txt", sep="\t")
     if not isNew:
         # Octanol Scale
         # new and old difference is at HIS.
@@ -127,6 +128,20 @@ def duplicate_pdb(From, To, offset_x=0, offset_y=0, offset_z=0, new_chain="B"):
                     tmp[38:46] = "{:8.3f}".format(new_y)
                     tmp[46:54] = "{:8.3f}".format(new_z)
 
+                a = "".join(tmp)
+                out.write(a)
+
+
+def fill_chain(From, To, chain="A"):
+    # add the missing chain info
+    with open(To, "w") as out:
+        with open(From, "r") as f:
+            for line in f:
+                if len(line) < 21:
+                    continue
+                tmp = list(line)
+                if line[0:4] == "ATOM":
+                    tmp[21] = "A"
                 a = "".join(tmp)
                 out.write(a)
 
@@ -384,10 +399,12 @@ def structure_prediction_run(protein):
         backboneFile = "fix_backbone_coeff_" + protocol
         with fileinput.FileInput(fileName, inplace=True, backup='.bak') as file:
             for line in file:
-                tmp = line.replace("fix_backbone_coeff_er", backboneFile)
+                # tmp = line.replace("fix_backbone_coeff_er", backboneFile)
+                tmp = line.replace("fix_backbone_coeff_hybrid", backboneFile)
                 print(tmp, end='')
         cd("..")
-        do("run.py -m 0 -n 20 {}".format(protein))
+        # do("run.py -m 0 -n 20 {}".format(protein))
+        do("run.py -n 20 {}".format(protein))
         cd("..")
     cd("..")
     # do("")
@@ -907,6 +924,109 @@ def getFragPdb(pdbId, i, outFile=None):
             io.set_structure(c)
             io.save(f'{pre}{outFile}')
 
+
+
+def gamma_format_convertion_iteration_to_simulation(iteration_gamma, gamma_for_simulation, burial_gamma_for_simulation=None):
+    from Bio.PDB.Polypeptide import one_to_three, three_to_one
+    res_type_map = {
+        'A': 0,
+        'C': 4,
+        'D': 3,
+        'E': 6,
+        'F': 13,
+        'G': 7,
+        'H': 8,
+        'I': 9,
+        'K': 11,
+        'L': 10,
+        'M': 12,
+        'N': 2,
+        'P': 14,
+        'Q': 5,
+        'R': 1,
+        'S': 15,
+        'T': 16,
+        'V': 19,
+        'W': 17,
+        'Y': 18
+    }
+    # res_type_map = gamma_se_map_1_letter = {   'A': 0,  'R': 1,  'N': 2,  'D': 3,  'C': 4,
+    #                             'Q': 5,  'E': 6,  'G': 7,  'H': 8,  'I': 9,
+    #                             'L': 10, 'K': 11, 'M': 12, 'F': 13, 'P': 14,
+    #                             'S': 15, 'T': 16, 'W': 17, 'Y': 18, 'V': 19}
+    res_type_map_letters = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G',
+                            'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+
+    inverse_res_type_map = dict(list(zip(list(range(20)), res_type_map_letters)))
+
+    # gamma_location = "/Users/weilu/Research/server_backup/jan_2019/optimization/gammas_dec30/cath-dataset-nonredundant-S20Clean_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0_gamma"
+    # gamma_for_simulation = "/Users/weilu/Research/server_backup/jan_2019/optimization/iteration_gamma.dat"
+    gamma = iteration_gamma
+    gamma = -gamma  # caused by tradition.
+    # convert gamma to gamma used by simulation
+    with open(gamma_for_simulation, "w") as out:
+        c = 0
+        for i in range(20):
+            for j in range(i, 20):
+                out.write(f"{gamma[c]:<.5f} {gamma[c]:10.5f}\n")
+                c += 1
+        out.write("\n")
+        for i in range(20):
+            for j in range(i, 20):
+                # protein, water
+                out.write(f"{gamma[c]:<.5f} {gamma[c+210]:10.5f}\n")
+                c += 1
+    if burial_gamma_for_simulation:
+        rhoGamma = pd.DataFrame(gamma[630:].reshape(3,20).T, columns=["rho1", "rho2", "rho3"]).reset_index()
+        rhoGamma["oneLetter"] = rhoGamma["index"].apply(lambda x: inverse_res_type_map[x])
+        rhoGamma["Residue"] = rhoGamma["index"].apply(lambda x: one_to_three(inverse_res_type_map[x]))
+        rhoGamma = rhoGamma[["Residue", "rho1", "rho2", "rho3", "index", "oneLetter"]]
+        g = rhoGamma[["rho1", "rho2", "rho3"]].values
+        np.savetxt(burial_gamma_for_simulation, g, fmt='%7.4f')
+
+
+def mix_gammas_3(pre, Gamma, preGamma, alpha=None, iterGammaName=None, iteration="5"):
+    percent = int(alpha*100)
+    scale = np.std(preGamma)/np.std(Gamma)
+    iter_gamma = ((1- alpha)*preGamma + alpha*(scale*Gamma)).astype(float)
+    iter_gamma *= np.std(preGamma)/np.std(iter_gamma)
+
+    # pre = "/Users/weilu/Research/server/march_2019/optimization_weighted_by_q_iter1/"
+    gamma_for_simulation = pre + f"iteration_{iteration}_gamma_{percent}.dat"
+    burial_gamma_for_simulation = pre + f"iteration_{iteration}_burial_gamma_{percent}.dat"
+    gamma_format_convertion_iteration_to_simulation(iter_gamma, gamma_for_simulation, burial_gamma_for_simulation=burial_gamma_for_simulation)
+    if iterGammaName is not None:
+        np.savetxt(pre+iterGammaName, iter_gamma)
+
+def relocate(location):
+    # location = "/Users/weilu/Research/server/april_2019/iterative_optimization_new_set_with_frag/all_simulations/1fc2/1fc2"
+    fileLocation = location + "/frags.mem"
+    pre = location + "/../"
+    os.system(f"mkdir -p {pre}/fraglib")
+    a = pd.read_csv(fileLocation, skiprows=4, sep=" ", names=["location", "i", "j", "sep", "w"])
+    b = a["location"].unique()
+    for l in b:
+        out = os.system(f"cp {l} {pre}/fraglib/")
+        if out != 0:
+            print(f"!!Problem!!, {l}")
+
+def replace(TARGET, FROM, TO):
+    os.system("sed -i.bak 's@{}@{}@g' {}".format(FROM,TO,TARGET))
+
+# def relocate(location):
+#     # location = "/Users/weilu/Research/server/april_2019/iterative_optimization_new_set_with_frag/all_simulations/1fc2/1fc2"
+#     fileLocation = location + "/frags.mem"
+#     pre = location + "/../"
+#     os.system(f"mkdir -p {pre}/fraglib")
+#     with open(fileLocation) as f:
+#         next(f)
+#         next(f)
+#         next(f)
+#         next(f)
+#         for line in f:
+#             out = os.system(f"cp {line.split()[0]} {pre}/fraglib/")
+#             if out != 0:
+#                 print(f"!!Problem!!, {line.split()[0]}")
 # def downloadPdb(pdb_list):
 #     os.system("mkdir -p original_pdbs")
 #     for pdb_id in pdb_list:

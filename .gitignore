@@ -4,6 +4,7 @@ bin-debug/
 bin-release/
 script/PDBs/
 script/Indices/
+script/Gros/
 # Other files and folders
 ._.DS_Store
 .settings/

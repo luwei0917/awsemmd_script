@@ -8,23 +8,18 @@ import myPersonalFunctions
 import fileinput
 from small_script.myFunctions import *
 
-# parser = argparse.ArgumentParser(
-#     description="The goal of this python3 code is to automatically create \
-#     the project template as fast as possible. Written by Wei Lu."
-# )
-# parser.add_argument("protein", help="The name of the protein")
-# parser.add_argument("-d", "--debug", action="store_true", default=False)
-# parser.add_argument("--frag", action="store_true", default=False)
-# parser.add_argument("--crystal", action="store_true", default=False)
-# parser.add_argument("--membrane", action="store_true", default=False)
-# parser.add_argument("--globular", action="store_true", default=False)
-# parser.add_argument("--hybrid", action="store_true", default=False)
+parser = argparse.ArgumentParser(
+    description="The goal of this python3 code is to automatically create \
+    zim file. Written by Wei Lu."
+)
+parser.add_argument("-f", "--fastaFile", default="crystal_structure.fasta", help="The name of the fasta file")
 
 
-# args = parser.parse_args()
+
+args = parser.parse_args()
 
 seq = ""
-with open("crystal_structure.fasta", "r") as f:
+with open(args.fastaFile, "r") as f:
     for line in f:
         if line[0] == ">":
             pass
