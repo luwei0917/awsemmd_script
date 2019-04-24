@@ -133,6 +133,10 @@ if args.membrane:
 #     do("python2 ~/opt/MultCha_prepFrags_index_HO.py \
 #     cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 0 95" % proteinName)
 if args.frag:
-    do("cp ~/opt/database/cullpdb_pc80_* .")
-    do("python2 ~/opt/script/MultCha_prepFrags_index.py \
+    # do("cp ~/opt/database/cullpdb_pc80_* .")
+    # do("python2 ~/opt/script/MultCha_prepFrags_index.py \
+    # cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 1 9 > logfile" % proteinName)
+    do(f"cp ~/opt/database/cullpdb_pc80_* .")
+    do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py \
     cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 1 9 > logfile" % proteinName)
+    check_and_correct_fragment_memory("frags.mem")

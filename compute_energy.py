@@ -55,6 +55,7 @@ def read_gamma(gammaFile):
     gamma_mediated = data[210:]
     return gamma_direct, gamma_mediated
 gamma_direct, gamma_mediated = read_gamma("/Users/weilu/openmmawsem/parameters/gamma.dat")
+burial_gamma = np.loadtxt("/Users/weilu/openmmawsem/parameters/burial_gamma.dat").T
 
 nwell = 1
 gamma_ijm = np.zeros((nwell, 20, 20))
@@ -147,17 +148,19 @@ def compute_direct(structure, kappa=5.0):
     sequence = get_sequence_from_structure(structure)
     r_min = 4.5
     r_max = 6.5
-    kappa = 5
+    # kappa = 5
     min_seq_sep = 10
     # phi_pairwise_contact_well = np.zeros((20,20))
     v_direct = 0
     for res1globalindex, res1 in enumerate(res_list):
         res1index = get_local_index(res1)
         res1chain = get_chain(res1)
+        # print(get_interaction_atom(res1).get_vector()[2], type(get_interaction_atom(res1).get_vector()[2]))
         for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
             res2index = get_local_index(res2)
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
+
             if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
@@ -166,6 +169,24 @@ def compute_direct(structure, kappa=5.0):
     #             phi_pairwise_contact_well[res1type][res2type] += interaction_well(rij, r_min, r_max, kappa)
                 v_direct += gamma * interaction_well(rij, r_min, r_max, kappa)
     return v_direct
+
+def compute_burial(structure, kappa=4.0):
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    sequence = get_sequence_from_structure(structure)
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    rho_table = [[0.0, 3.0], [3.0, 6.0], [6.0, 9.0]]
+    v_burial = 0
+    for i in range(3):
+        for res1globalindex, res1 in enumerate(res_list):
+            res1index = get_local_index(res1)
+            res1chain = get_chain(res1)
+            res1type = get_res_type(res_list, res1)
+            res1density = cb_density[res1globalindex]
+            # print res1globalindex, res1index, res1chain, res1type, res1density
+            v_burial += burial_gamma[i][res1type] * interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
+    return v_burial
+
 
 input_pdb_filename = "/Users/weilu/Research/server_backup/jan_2019/compute_energy/12asA00.pdb"
 def compute_direct_2(input_pdb_filename):
@@ -200,7 +221,7 @@ def compute_direct_2(input_pdb_filename):
 
 def read_beta_parameters():
     ### directly copied from Nick Schafer's
-    #os.chdir(parameter_directory)
+    # os.chdir(parameter_directory)
     in_anti_HB = open("anti_HB", 'r').readlines()
     in_anti_NHB = open("anti_NHB", 'r').readlines()
     in_para_HB = open("para_HB", 'r').readlines()
@@ -232,12 +253,15 @@ def read_beta_parameters():
 
 pdb = (args.protein).split(".")[0]
 structure = parse_pdb(pdb)
-# e_mediated = compute_mediated(structure)
-# e_direct = compute_direct(structure)
-# print(e_mediated, e_direct, e_mediated + e_direct)
+e_mediated = compute_mediated(structure)
+e_direct = compute_direct(structure)
+e_burial = compute_burial(structure)
+print("Mediated, Direct, Mediated+Direct, Burial, Mediated+Direct+Burial")
+print(e_mediated, e_direct, e_mediated + e_direct, e_burial, e_mediated + e_direct + e_burial)
 # kappa = 10.0
-kappa_list = [5.0, 10.0]
-for kappa in kappa_list:
-    e_mediated = compute_mediated(structure, kappa=kappa)
-    e_direct = compute_direct(structure, kappa=kappa)
-    print(f"kappa: {kappa}", e_mediated, e_direct, e_mediated + e_direct)
+# kappa_list = [5.0, 10.0]
+# for kappa in kappa_list:
+#     e_mediated = compute_mediated(structure, kappa=kappa)
+#     e_direct = compute_direct(structure, kappa=kappa)
+#     e_burial = compute_burial(structure)
+#     print(f"kappa: {kappa}", e_mediated, e_direct, e_mediated + e_direct)

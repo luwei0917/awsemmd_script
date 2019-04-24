@@ -410,33 +410,33 @@ def structure_prediction_run(protein):
     # do("")
 
 
-def check_and_correct_fragment_memory(fragFile="fragsLAMW.mem"):
-    with open("tmp.mem", "w") as out:
-        with open(fragFile, "r") as f:
-            for i in range(4):
-                line = next(f)
-                out.write(line)
-            for line in f:
-                gro, _, i, n, _ = line.split()
-                delete = False
-                # print(gro, i, n)
-                # name = gro.split("/")[-1]
-                with open(gro, "r") as one:
-                    next(one)
-                    next(one)
-                    all_residues = set()
-                    for atom in one:
-                        residue, *_ = atom.split()
-                        # print(residue)
-                        all_residues.add(int(residue))
-                    for test in range(int(i), int(i)+int(n)):
-                        if test not in all_residues:
-                            print("ATTENTION", gro, i, n, "missing:",test)
-                            delete = True
-                if not delete:
-                    out.write(line)
-    os.system(f"mv {fragFile} fragsLAMW_back")
-    os.system(f"mv tmp.mem {fragFile}")
+# def check_and_correct_fragment_memory(fragFile="fragsLAMW.mem"):
+#     with open("tmp.mem", "w") as out:
+#         with open(fragFile, "r") as f:
+#             for i in range(4):
+#                 line = next(f)
+#                 out.write(line)
+#             for line in f:
+#                 gro, _, i, n, _ = line.split()
+#                 delete = False
+#                 # print(gro, i, n)
+#                 # name = gro.split("/")[-1]
+#                 with open(gro, "r") as one:
+#                     next(one)
+#                     next(one)
+#                     all_residues = set()
+#                     for atom in one:
+#                         residue, *_ = atom.split()
+#                         # print(residue)
+#                         all_residues.add(int(residue))
+#                     for test in range(int(i), int(i)+int(n)):
+#                         if test not in all_residues:
+#                             print("ATTENTION", gro, i, n, "missing:",test)
+#                             delete = True
+#                 if not delete:
+#                     out.write(line)
+#     os.system(f"mv {fragFile} fragsLAMW_back")
+#     os.system(f"mv tmp.mem {fragFile}")
 
 def read_complete_temper_2(n=4, location=".", rerun=-1, qnqc=False, average_z=False, localQ=False, disReal=False, dis_h56=False, goEnergy=False, goEnergy3H=False, goEnergy4H=False):
     all_data_list = []
@@ -924,7 +924,17 @@ def getFragPdb(pdbId, i, outFile=None):
             io.set_structure(c)
             io.save(f'{pre}{outFile}')
 
-
+# membrane_gamma = np.loadtxt("/Users/weilu/opt/parameters/membrane/gamma.dat")
+# membrane_gamma_formated = simulation_to_iteration_gamma(membrane_gamma)
+# water_gamma = np.loadtxt("/Users/weilu/opt/parameters/globular_parameters/gamma.dat")
+# water_gamma_formated = simulation_to_iteration_gamma(water_gamma)
+# ratio = np.std(water_gamma_formated)/np.std(membrane_gamma_formated)
+# membrane_gamma_formated_rescaled = membrane_gamma_formated * ratio
+def simulation_to_iteration_gamma(membrane_gamma):
+    direct = membrane_gamma[:210][:,0]
+    protein = membrane_gamma[210:][:,0]
+    water = membrane_gamma[210:][:,1]
+    return np.concatenate([direct, protein, water])
 
 def gamma_format_convertion_iteration_to_simulation(iteration_gamma, gamma_for_simulation, burial_gamma_for_simulation=None):
     from Bio.PDB.Polypeptide import one_to_three, three_to_one
@@ -998,20 +1008,45 @@ def mix_gammas_3(pre, Gamma, preGamma, alpha=None, iterGammaName=None, iteration
     if iterGammaName is not None:
         np.savetxt(pre+iterGammaName, iter_gamma)
 
-def relocate(location):
-    # location = "/Users/weilu/Research/server/april_2019/iterative_optimization_new_set_with_frag/all_simulations/1fc2/1fc2"
-    fileLocation = location + "/frags.mem"
-    pre = location + "/../"
-    os.system(f"mkdir -p {pre}/fraglib")
-    a = pd.read_csv(fileLocation, skiprows=4, sep=" ", names=["location", "i", "j", "sep", "w"])
-    b = a["location"].unique()
-    for l in b:
-        out = os.system(f"cp {l} {pre}/fraglib/")
-        if out != 0:
-            print(f"!!Problem!!, {l}")
+# def relocate(fileLocation="frags.mem", toLocation="../fraglib"):
+#     # location = "/Users/weilu/Research/server/april_2019/iterative_optimization_new_set_with_frag/all_simulations/1fc2/1fc2"
+#     # fileLocation = location + "/frags.mem"
+#     # toLocation
+#     print(os.getcwd())
+#     os.system(f"mkdir -p {toLocation}")
+#     a = pd.read_csv(fileLocation, skiprows=4, sep=" ", names=["location", "i", "j", "sep", "w"])
+#     b = a["location"].unique()
+#     for l in b:
+#         out = os.system(f"cp {l} {toLocation}/")
+#         if out != 0:
+#             print(f"!!Problem!!, {l}")
 
-def replace(TARGET, FROM, TO):
-    os.system("sed -i.bak 's@{}@{}@g' {}".format(FROM,TO,TARGET))
+# def replace(TARGET, FROM, TO):
+#     os.system("sed -i.bak 's@{}@{}@g' {}".format(FROM,TO,TARGET))
+
+def generate_SEQRES(fastaFile):
+    # fastaFile = "/Users/weilu/Research/server/april_2019/complete_2xov/P09391.fasta"
+    with open(fastaFile) as input_data:
+        data = ""
+        for line in input_data:
+            if(line[0] == ">"):
+                print(line)
+            elif(line == "\n"):
+                pass
+            else:
+                data += line.strip("\n")
+    i = 0
+    c = 1
+    template = ""
+    length = len(data)
+    while i < len(data):
+        seq = data[i:i+13]
+        a = [one_to_three(r) for r in seq]
+        ss = " ".join(a)
+        template += f"SEQRES {c: >3} A {length: >4}  {ss: <51}          \n"
+        i += 13
+        c += 1
+    return template
 
 # def relocate(location):
 #     # location = "/Users/weilu/Research/server/april_2019/iterative_optimization_new_set_with_frag/all_simulations/1fc2/1fc2"

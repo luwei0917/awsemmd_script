@@ -10,7 +10,7 @@ from scipy import stats
 import random
 from functools import partial
 import datetime
-
+import pandas as pd
 
 MYHOME = "/Users/weilu/Research/optimization/"
 # MYHOME = "/scratch/wl45/oct_2018/03_week/optimization/"
@@ -2467,13 +2467,13 @@ def evaluate_hamiltonian_wei(protein, hamiltonian, training_set_file, gamma_file
         phi_list, training_set, **kwargs)
     # print(total_phis, full_parameters_string, num_phis)
     # read in corresponding gammas
-    if use_filtered_gammas:
-        gamma_file_name = "%s%s_%s_gamma_filtered" % (
-            gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string)
-    else:
-        pass
-        # gamma_file_name = "%s%s_%s_gamma" % (gammas_directory, training_set_file.split(
-        #     '/')[-1].split('.')[0], full_parameters_string)
+    # if use_filtered_gammas:
+    #     gamma_file_name = "%s%s_%s_gamma_filtered" % (
+    #         gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string)
+    # else:
+    #     pass
+    #     gamma_file_name = "%s%s_%s_gamma" % (gammas_directory, training_set_file.split(
+    #         '/')[-1].split('.')[0], full_parameters_string)
 
     # Need to filter out the complex number if in the "filtered" mode;
     # if use_filtered_gammas:
@@ -2498,6 +2498,7 @@ def evaluate_hamiltonian_wei(protein, hamiltonian, training_set_file, gamma_file
     e_mg_std = np.std(e_decoy)
     # calculate z-score
     z_score = (e_mg - e_native) / e_mg_std
+
     return z_score, e_native, e_mg, e_mg_std
 
 def validate_hamiltonian_wei(hamiltonian, training_set_file, gamma_file_name, training_decoy_method, num_decoys, test_set_file=None, test_decoy_method=None, use_filtered_gammas=False, **kwargs):
@@ -2522,58 +2523,62 @@ def validate_hamiltonian_wei(hamiltonian, training_set_file, gamma_file_name, tr
         e_mg_stds.append(emgstd)
         if i % 1000 == 0:
             print(i, z)
-    return z_scores, e_natives, e_mgs, e_mg_stds
+    data = pd.concat([pd.Series(test_set), pd.Series(z_scores), pd.Series(e_natives), pd.Series(e_mgs), pd.Series(e_mg_stds)], axis=1)
+    data.columns = ["Protein", "Z_scores", "E_native", "E_mgs", "Std_mg"]
+    data.Z_scores = data.Z_scores.astype(float)
+    data.E_native = data.E_native.astype(float)
+    return data
 
 
-def validate_hamiltonian_decoy_structures_provided(hamiltonian, native_training_set_file, decoy_training_set_file, training_decoy_method, native_test_set_file=None, decoy_test_set_file=None, test_decoy_method=None, use_filtered_gammas=False):
-    if native_test_set_file == None:
-        native_test_set_file = native_training_set_file
-    if decoy_test_set_file == None:
-        decoy_test_set_file = decoy_training_set_file
-    if test_decoy_method == None:
-        test_decoy_method = training_decoy_method
-    native_test_set = read_column_from_file(native_test_set_file, 1)
-    decoy_test_set = read_column_from_file(decoy_test_set_file, 1)
-    z_scores = []
-    e_natives = []
-    e_mgs = []
-    e_mg_stds = []
-    for protein in native_test_set:
-        en = evaluate_hamiltonian_native_structures_provided(
-            protein, hamiltonian, native_test_set_file, training_decoy_method, test_decoy_method, use_filtered_gammas)
-        e_natives.append(en)
-    for protein in decoy_test_set:
-        e_decoy = evaluate_hamiltonian_decoy_structures_provided(
-            protein, hamiltonian, native_test_set_file, decoy_test_set_file, training_decoy_method, test_decoy_method, use_filtered_gammas)
-        e_mgs.append(e_decoy)
+# def validate_hamiltonian_decoy_structures_provided(hamiltonian, native_training_set_file, decoy_training_set_file, training_decoy_method, native_test_set_file=None, decoy_test_set_file=None, test_decoy_method=None, use_filtered_gammas=False):
+#     if native_test_set_file == None:
+#         native_test_set_file = native_training_set_file
+#     if decoy_test_set_file == None:
+#         decoy_test_set_file = decoy_training_set_file
+#     if test_decoy_method == None:
+#         test_decoy_method = training_decoy_method
+#     native_test_set = read_column_from_file(native_test_set_file, 1)
+#     decoy_test_set = read_column_from_file(decoy_test_set_file, 1)
+#     z_scores = []
+#     e_natives = []
+#     e_mgs = []
+#     e_mg_stds = []
+#     for protein in native_test_set:
+#         en = evaluate_hamiltonian_native_structures_provided(
+#             protein, hamiltonian, native_test_set_file, training_decoy_method, test_decoy_method, use_filtered_gammas)
+#         e_natives.append(en)
+#     for protein in decoy_test_set:
+#         e_decoy = evaluate_hamiltonian_decoy_structures_provided(
+#             protein, hamiltonian, native_test_set_file, decoy_test_set_file, training_decoy_method, test_decoy_method, use_filtered_gammas)
+#         e_mgs.append(e_decoy)
 
-    # Calculate the real averaged <E>mg, <E>n, std(Emg) and zScore;
-    average_e_mg = np.average(e_mgs)
-    std_e_mgs = np.std(e_mgs)
-    average_e_native = np.average(e_natives)
-    z_score_forall = (average_e_mg - average_e_native) / std_e_mgs
-    return z_score_forall, average_e_native, average_e_mg, std_e_mgs, e_mgs, e_natives
+#     # Calculate the real averaged <E>mg, <E>n, std(Emg) and zScore;
+#     average_e_mg = np.average(e_mgs)
+#     std_e_mgs = np.std(e_mgs)
+#     average_e_native = np.average(e_natives)
+#     z_score_forall = (average_e_mg - average_e_native) / std_e_mgs
+#     return z_score_forall, average_e_native, average_e_mg, std_e_mgs, e_mgs, e_natives
 
-def validate_hamiltonian(hamiltonian, training_set_file, training_decoy_method, num_decoys, test_set_file=None, test_decoy_method=None, use_filtered_gammas=False):
-    if test_set_file == None:
-        test_set_file = training_set_file
-    if test_decoy_method == None:
-        test_decoy_method = training_decoy_method
-    test_set = read_column_from_file(test_set_file, 1)
-    z_scores = []
-    e_natives = []
-    e_mgs = []
-    e_mg_stds = []
-    for protein in test_set:
-        z, en, emg, emgstd = evaluate_hamiltonian(
-            protein, hamiltonian, training_set_file, training_decoy_method, test_decoy_method, num_decoys, use_filtered_gammas)
-        if np.isnan(z):
-            continue
-        z_scores.append(z)
-        e_natives.append(en)
-        e_mgs.append(emg)
-        e_mg_stds.append(emgstd)
-    return z_scores, e_natives, e_mgs, e_mg_stds
+# def validate_hamiltonian(hamiltonian, training_set_file, training_decoy_method, num_decoys, test_set_file=None, test_decoy_method=None, use_filtered_gammas=False):
+#     if test_set_file == None:
+#         test_set_file = training_set_file
+#     if test_decoy_method == None:
+#         test_decoy_method = training_decoy_method
+#     test_set = read_column_from_file(test_set_file, 1)
+#     z_scores = []
+#     e_natives = []
+#     e_mgs = []
+#     e_mg_stds = []
+#     for protein in test_set:
+#         z, en, emg, emgstd = evaluate_hamiltonian(
+#             protein, hamiltonian, training_set_file, training_decoy_method, test_decoy_method, num_decoys, use_filtered_gammas)
+#         if np.isnan(z):
+#             continue
+#         z_scores.append(z)
+#         e_natives.append(en)
+#         e_mgs.append(emg)
+#         e_mg_stds.append(emgstd)
+#     return z_scores, e_natives, e_mgs, e_mg_stds
 
 
 ###########################################################################
