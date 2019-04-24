@@ -104,6 +104,9 @@ def duplicate_pdb(From, To, offset_x=0, offset_y=0, offset_z=0, new_chain="B"):
         with open(From, "r") as f:
             for line in f:
                 tmp = list(line)
+                if len(tmp) < 26:
+                    out.write(line)
+                    continue
                 atom = line[0:4]
                 atomSerialNumber = line[6:11]
                 atomName = line[12:16]
@@ -112,7 +115,7 @@ def duplicate_pdb(From, To, offset_x=0, offset_y=0, offset_z=0, new_chain="B"):
                 residueNumber = line[22:26]
                 # change chain A to B
                 # new_chain = "B"
-                tmp[21] = new_chain
+
                 if atom == "ATOM":
                     x = float(line[30:38])
                     y = float(line[38:46])
@@ -123,14 +126,13 @@ def duplicate_pdb(From, To, offset_x=0, offset_y=0, offset_z=0, new_chain="B"):
                     new_y = y + offset_y
                     new_z = z + offset_z
 
-
+                    tmp[21] = new_chain
                     tmp[30:38] = "{:8.3f}".format(new_x)
                     tmp[38:46] = "{:8.3f}".format(new_y)
                     tmp[46:54] = "{:8.3f}".format(new_z)
 
                 a = "".join(tmp)
                 out.write(a)
-
 
 def fill_chain(From, To, chain="A"):
     # add the missing chain info
@@ -1012,6 +1014,84 @@ def relocate(location):
 
 def replace(TARGET, FROM, TO):
     os.system("sed -i.bak 's@{}@{}@g' {}".format(FROM,TO,TARGET))
+
+def cleanPdb1(pdb_list, chain=None, source=None, toFolder="cleaned_pdbs", formatName=False, verbose=False, removeTwoEndsMissingResidues=True):
+    from pdbfixer import PDBFixer
+    from simtk.openmm.app import PDBFile
+    os.system(f"mkdir -p {toFolder}")
+    for pdb_id in pdb_list:
+        # print(chain)
+        print(pdb_id)
+        # pdb = f"{pdb_id.lower()[:4]}"
+        # pdbFile = pdb+".pdb"
+        if formatName:
+            pdb = f"{pdb_id.lower()[:4]}"
+        else:
+            pdb = pdb_id
+        pdbFile = pdb + ".pdb"
+        if source is None:
+            fromFile = os.path.join("original_pdbs", pdbFile)
+        elif source[-4:] == ".pdb":
+            fromFile = source
+        else:
+            fromFile = os.path.join(source, pdbFile)
+
+        # clean pdb
+        # os.system("pwd")
+        # print(f"--{fromFile}--")
+        fixer = PDBFixer(filename=fromFile)
+        # remove unwanted chains
+        chains = list(fixer.topology.chains())
+        print(chains)
+        if chain is None:  # None mean deafult is chain A unless specified.
+            if len(pdb_id) >= 5:
+                Chosen_chain = pdb_id[4]
+                # Chosen_chain = pdb_id[4].upper()
+            else:
+                assert(len(pdb_id) == 4)
+                Chosen_chain = "A"
+        elif chain == "-1" or chain == -1:
+            Chosen_chain = getAllChains(fromFile)
+            print(f"Chains: {Chosen_chain}")
+        elif chain == "first":
+            Chosen_chain = chains[0].id
+        else:
+            Chosen_chain = chain
+
+        chains_to_remove = [i for i, x in enumerate(chains) if x.id not in Chosen_chain]
+        fixer.removeChains(chains_to_remove)
+
+        fixer.findMissingResidues()
+        # add missing residues in the middle of a chain, not ones at the start or end of the chain.
+        chains = list(fixer.topology.chains())
+        keys = fixer.missingResidues.keys()
+        if verbose:
+            print("missing residues: ", keys)
+        if removeTwoEndsMissingResidues:
+            for key in list(keys):
+                chain_tmp = chains[key[0]]
+                if key[1] == 0 or key[1] == len(list(chain_tmp.residues())):
+                    del fixer.missingResidues[key]
+
+        fixer.findNonstandardResidues()
+        fixer.replaceNonstandardResidues()
+        fixer.removeHeterogens(keepWater=False)
+        fixer.findMissingAtoms()
+        try:
+            fixer.addMissingAtoms()
+        except:
+            continue
+        fixer.addMissingHydrogens(7.0)
+        PDBFile.writeFile(fixer.topology, fixer.positions, open(os.path.join(toFolder, pdbFile), 'w'))
+
+
+def get_inside_or_not_table(pdb_file):
+    parser = PDBParser(PERMISSIVE=1)
+    structure = parser.get_structure('X', pdb_file)
+    inside_or_not_table = []
+    for res in structure.get_residues():
+        inside_or_not_table.append(int(abs(res["CA"].get_vector()[-1]) < 15))
+    return inside_or_not_table
 
 # def relocate(location):
 #     # location = "/Users/weilu/Research/server/april_2019/iterative_optimization_new_set_with_frag/all_simulations/1fc2/1fc2"

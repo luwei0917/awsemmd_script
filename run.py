@@ -32,7 +32,7 @@ parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("-m", "--mode", type=int, default=5)
 parser.add_argument("-i", "--inplace", action="store_true", default=False)
 parser.add_argument("-f", "--force", type=float, default=1.0)
-parser.add_argument("--start", default="native")
+parser.add_argument("--start", default="native", help="could be crystal")
 parser.add_argument("--commons", type=int, default=0)
 parser.add_argument("--test", type=int, default=0)
 parser.add_argument("--bias", type=int, default=-1)
@@ -152,7 +152,7 @@ if args.commons == 2:
 
 
 proteinName = args.protein.strip("/.")
-def set_up():
+def set_up(native=False):
     seed(datetime.now())
     with open("my_loop_submit.bash", "w") as f:
         steps = args.steps*1e5
@@ -183,6 +183,9 @@ def set_up():
                     tmp = line.replace("read_data data.crystal", "START_FROM")  # remove in future.
                     # tmp = tmp.replace("langevin 800 800", "langevin 300 300")  # change temp, remove in future
                     # tmp = tmp.replace("langevin 800 300", "langevin 300 300")  # change temp, remove in future
+                    if native:
+                        tmp = tmp.replace("langevin 700 300", "langevin 200 200")
+                        tmp = tmp.replace("velocity", "#velocity")
                     eachRunTemp = int(500/runs)
                     if i != 0:
                         tmp = tmp.replace("velocity", "#velocity")
@@ -229,10 +232,20 @@ if(args.inplace):
     set_up()
     # batch_run()
     # do("~/build/brian/z_dependence/lmp_serial -in {}_multi.in".format(proteinName))
-    do("~/openmmawsem/_local/awsem_nov06/lmp_serial -in {}_multi.in".format(proteinName))
+    # do("~/openmmawsem/_local/awsem_nov06/lmp_serial -in {}_multi.in".format(proteinName))
+    do("/home/wl45/build/sep03/src/lmp_serial -in {}_multi.in".format(proteinName))
 else:
     n = args.number
     cwd = os.getcwd()
+    if n == -1:
+        do("mkdir -p " + args.name)
+        do(f"cp -r {proteinName} {args.name}/native")
+        cd(f"{args.name}/native")
+        set_up(native=True)
+        if args.test == 0:
+            batch_run()
+        elif args.test == 1:
+            do(f"/home/wl45/lmp_serial -in {proteinName}_0.in")
     for i in range(n):
         if args.restart == 0:
             do("mkdir -p " + args.name)
