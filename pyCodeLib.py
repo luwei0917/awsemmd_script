@@ -12,9 +12,10 @@ from functools import partial
 import datetime
 import pandas as pd
 
-MYHOME = "/Users/weilu/Research/optimization/"
+
+# MYHOME = "/Users/weilu/Research/optimization/"
 # MYHOME = "/scratch/wl45/oct_2018/03_week/optimization/"
-MYHOME = "/scratch/wl45/jan_2019/optimization/"
+# MYHOME = "/scratch/wl45/jan_2019/optimization/"
 # MYHOME = "optimization/"
 # For matplot
 import matplotlib.pyplot as plt
@@ -142,7 +143,28 @@ res_type_map = {
     'Y': 18
 }
 
-
+res_type_map_HP = {
+    'C': 0,
+    'M': 0,
+    'F': 0,
+    'I': 0,
+    'L': 0,
+    'V': 0,
+    'W': 0,
+    'Y': 0,
+    'A': 1,
+    'H': 1,
+    'T': 1,
+    'G': 1,
+    'P': 1,
+    'D': 1,
+    'E': 1,
+    'N': 1,
+    'Q': 1,
+    'R': 1,
+    'K': 1,
+    'S': 1
+}
 
 def parse_pdb(pdb_id):
     parser = PDBParser()
@@ -152,6 +174,8 @@ def parse_pdb(pdb_id):
 def interaction_well(r, r_min, r_max, kappa):
     return 0.5 * (np.tanh(kappa * (r - r_min)) * np.tanh(kappa * (r_max - r))) + 0.5
 
+def interaction_well_2(r, r_min, r_max, kappa):
+    return 0.5*np.tanh(kappa * (r - r_min)) + 0.5*np.tanh(kappa * (r_max - r))
 # Switching function dictating the difference between the protein and water-mediated environment
 
 
@@ -182,12 +206,17 @@ def get_neighbors_within_radius(neighbor_list, residue, radius):
 def get_interaction_atom(residue):
     try:
         if residue.resname == "GLY":
-            return residue['CA']
+            res = residue['CA']
+            return res
         else:
-            return residue['CB']
+            res = residue['CB']
+            return res
     except:
         print(residue)
-        raise
+        print("----------Use CA instead---------------")
+        res = residue['CA']
+        return res
+        # raise
 
 
 def get_interaction_distance(res1, res2):
@@ -196,6 +225,9 @@ def get_interaction_distance(res1, res2):
 
 def get_res_type(res_list, residue):
     return res_type_map[three_to_one(residue.get_resname())]
+
+def get_res_type_HP(res_list, residue):
+    return res_type_map_HP[three_to_one(residue.get_resname())]
 
 
 def get_res_list(structure, tm_only=False):
@@ -790,6 +822,216 @@ def phi_density_mediated_contact_well(res_list, neighbor_list, parameter_list):
                 phis_to_return.append(phi_mediated_contact_well[i][j][k])
     return phis_to_return
 
+def read_gamma(gammaFile):
+    data = np.loadtxt(gammaFile)
+    gamma_direct = data[:210]
+    gamma_mediated = data[210:]
+    return gamma_direct, gamma_mediated
+def get_gammas(gammaFile="./gamma.dat", memGammaFile="./membrane_gamma_rescaled.dat"):
+    gamma_direct, gamma_mediated = read_gamma(gammaFile)
+    nwell = 2
+    gamma_ijm = np.zeros((nwell, 20, 20))
+    water_gamma_ijm = np.zeros((nwell, 20, 20))
+    protein_gamma_ijm = np.zeros((nwell, 20, 20))
+    m = 0
+    count = 0
+    for i in range(20):
+        for j in range(i, 20):
+            gamma_ijm[m][i][j] = gamma_direct[count][0]
+            gamma_ijm[m][j][i] = gamma_direct[count][0]
+            count += 1
+    count = 0
+    for i in range(20):
+        for j in range(i, 20):
+            water_gamma_ijm[m][i][j] = gamma_mediated[count][1]
+            water_gamma_ijm[m][j][i] = gamma_mediated[count][1]
+            count += 1
+    count = 0
+    for i in range(20):
+        for j in range(i, 20):
+            protein_gamma_ijm[m][i][j] = gamma_mediated[count][0]
+            protein_gamma_ijm[m][j][i] = gamma_mediated[count][0]
+            count += 1
+    if memGammaFile:
+        mem_gamma_direct, mem_gamma_mediated = read_gamma(memGammaFile)
+        m = 1  # membrane environment
+        count = 0
+        for i in range(20):
+            for j in range(i, 20):
+                gamma_ijm[m][i][j] = mem_gamma_direct[count][0]
+                gamma_ijm[m][j][i] = mem_gamma_direct[count][0]
+                count += 1
+        count = 0
+        for i in range(20):
+            for j in range(i, 20):
+                water_gamma_ijm[m][i][j] = mem_gamma_mediated[count][1]
+                water_gamma_ijm[m][j][i] = mem_gamma_mediated[count][1]
+                count += 1
+        count = 0
+        for i in range(20):
+            for j in range(i, 20):
+                protein_gamma_ijm[m][i][j] = mem_gamma_mediated[count][0]
+                protein_gamma_ijm[m][j][i] = mem_gamma_mediated[count][0]
+                count += 1
+    return gamma_ijm, water_gamma_ijm, protein_gamma_ijm
+
+
+def get_burial_gammas(burialGammaFile="./burial_gamma.dat"):
+    return np.loadtxt(burialGammaFile)
+
+
+def get_z_position(res1):
+    return get_interaction_atom(res1).get_vector()[2]
+
+
+def phi_normalize_relative_k(res_list, neighbor_list, parameter_list):
+    phi_relative_k_well = np.zeros(11)
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    gamma_ijm, water_gamma_ijm, protein_gamma_ijm = get_gammas(memGammaFile=None)
+    burial_gamma = get_burial_gammas()
+
+    r_min_I = 4.5
+    r_max_I = 6.5
+    kappa = 5.0
+    min_seq_sep = 10
+
+    # Direct Term
+    phi_pairwise_contact_well = np.zeros((2,2))
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max_I+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                res1type_HP = get_res_type_HP(res_list, res1)
+                res2type_HP = get_res_type_HP(res_list, res2)
+                rij = get_interaction_distance(res1, res2)
+                _direct = gamma_ijm[0][res1type][res2type] * interaction_well(rij, r_min_I, r_max_I, kappa)
+                phi_pairwise_contact_well[res1type_HP][res2type_HP] += _direct
+                if not res2type_HP == res1type_HP:
+                    phi_pairwise_contact_well[res2type_HP][res1type_HP] += _direct
+    # Mediated Term
+    r_min = 6.5
+    r_max = 9.5
+    density_threshold = 2.6
+    density_kappa = 7.0
+    phi_mediated_contact_well = np.zeros((2,2,2))
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            rho_j = cb_density[res2globalindex]
+            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                res1type_HP = get_res_type_HP(res_list, res1)
+                res2type_HP = get_res_type_HP(res_list, res2)
+                rij = get_interaction_distance(res1, res2)
+                _pij_protein = prot_water_switchFunc_sigmaProt(
+                    rho_i, rho_j, density_threshold, density_kappa) * protein_gamma_ijm[0][res1type][res2type]
+                _pij_water = prot_water_switchFunc_sigmaWater(
+                    rho_i, rho_j, density_threshold, density_kappa) * water_gamma_ijm[0][res1type][res2type]
+                _pij_protein *= interaction_well(rij, r_min, r_max, kappa)
+                _pij_water *= interaction_well(rij, r_min, r_max, kappa)
+                phi_mediated_contact_well[0][res1type_HP][res2type_HP] += _pij_protein
+                phi_mediated_contact_well[1][res1type_HP][res2type_HP] += _pij_water
+                if not res1type_HP == res2type_HP:
+                    phi_mediated_contact_well[0][res2type_HP][res1type_HP] += _pij_protein
+                    phi_mediated_contact_well[1][res2type_HP][res1type_HP] += _pij_water
+    # Burial Term
+    phi_burial = np.zeros((2))
+    burial_kappa = 4.0
+    rho_table = [[0.0, 3.0], [3.0, 6.0], [6.0, 9.0]]
+    for i in range(3):
+        for res1globalindex, res1 in enumerate(res_list):
+            res1index = get_local_index(res1)
+            res1chain = get_chain(res1)
+            res1type = get_res_type(res_list, res1)
+            res1type_HP = get_res_type_HP(res_list, res1)
+            res1density = cb_density[res1globalindex]
+            # print res1globalindex, res1index, res1chain, res1type, res1density
+            burial_i = interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
+            phi_burial[res1type_HP] += burial_i * burial_gamma[res1type][i]
+
+    phis_to_return = []
+    for i in range(2):
+        for j in range(i, 2):
+            phis_to_return.append(-phi_pairwise_contact_well[i][j])
+    for i in range(2):
+        for j in range(2):
+            for k in range(j, 2):
+                phis_to_return.append(-phi_mediated_contact_well[i][j][k])
+    for i in range(2):
+        phis_to_return.append(-phi_burial[i])
+    return phis_to_return
+
+def phi_relative_k_well(res_list, neighbor_list, parameter_list):
+    phi_relative_k_well = np.zeros(2)
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+
+    gamma_ijm, water_gamma_ijm, protein_gamma_ijm = get_gammas()
+    r_min = 6.5
+    r_max = 9.5
+
+    r_min_I = 4.5
+    r_max_I = 6.5
+    kappa = 5.0
+    min_seq_sep = 10
+    # min_sequence_separation_mem = 13
+    eta_switching = 10
+    z_m = 15
+    density_threshold = 2.6
+    density_kappa = 7.0
+
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        z1 = get_z_position(res1)
+        alphaMembrane1 = interaction_well_2(z1, -z_m, z_m, eta_switching)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            z2 = get_z_position(res2)
+            alphaMembrane2 = interaction_well_2(z1, -z_m, z_m, eta_switching)
+            rho_j = cb_density[res2globalindex]
+            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance(res1, res2)
+                _pij_protein = prot_water_switchFunc_sigmaProt(
+                    rho_i, rho_j, density_threshold, density_kappa) * protein_gamma_ijm[0][res1type][res2type]
+                _pij_water = prot_water_switchFunc_sigmaWater(
+                    rho_i, rho_j, density_threshold, density_kappa) * water_gamma_ijm[0][res1type][res2type]
+                water_part = (_pij_protein + _pij_water) * interaction_well(rij, r_min, r_max, kappa)
+                # direct term
+                gamma = gamma_ijm[0][res1type][res2type]
+                water_part += gamma * interaction_well(rij, r_min_I, r_max_I, kappa)
+                _pij_protein = prot_water_switchFunc_sigmaProt(
+                    rho_i, rho_j, density_threshold, density_kappa) * protein_gamma_ijm[1][res1type][res2type]
+                _pij_water = prot_water_switchFunc_sigmaWater(
+                    rho_i, rho_j, density_threshold, density_kappa) * water_gamma_ijm[1][res1type][res2type]
+                membrane_part = (_pij_protein + _pij_water) * interaction_well(rij, r_min, r_max, kappa)
+                gamma = gamma_ijm[1][res1type][res2type]
+                membrane_part += gamma * interaction_well(rij, r_min_I, r_max_I, kappa)
+                phi_relative_k_well[0] += (1 - alphaMembrane1 * alphaMembrane2) * water_part
+                # phi_relative_k_well[1] += (1 - alphaMembrane1 * alphaMembrane2) * membrane_part
+                phi_relative_k_well[1] += alphaMembrane1 * alphaMembrane2 * membrane_part
+    phis_to_return = []
+    for i in range(2):
+        phis_to_return.append(phi_relative_k_well[i])
+    return phis_to_return
+
+
 
 # def phi_protein_mediated_contact_well(res_list_tmonly, res_list_entire, neighbor_list, parameter_list, TCRmodeling=False):
 #     r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
@@ -1133,6 +1375,12 @@ def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_dec
                 # decoy_sequences = read_decoy_sequences(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
                 if withBiased:
                     decoy_structures, Qs = read_decoy_structures_andQ(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
+                    output_file_Q = open(os.path.join(phis_directory, "%s_%s_decoysQ_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
+                    for i_decoy, Q in enumerate(Qs):
+                        if i_decoy >= max_decoys:
+                            print("i_decoy larger than max_decoys")
+                        output_file_Q.write(str(Q)+"\n")
+                    output_file_Q.close()
                 else:
                     decoy_structures = read_decoy_structures(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
 
@@ -1145,11 +1393,14 @@ def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_dec
                     decoy_res_list = get_res_list(decoy_structure)
                     decoy_neighbor_list = get_neighbor_list(decoy_structure)
                     phis_to_write = phiF(decoy_res_list, decoy_neighbor_list, parameters)
-                    if withBiased:
-                        # phis_to_write *= 1 - Qs[i_decoy]
-                        phis_to_write = [x * (1 - float(Qs[i_decoy])) for x in phis_to_write]
+                    # if withBiased:
+                    #     # phis_to_write *= 1 - Qs[i_decoy]
+                    #     # phis_to_write = [x * (1 - float(Qs[i_decoy])) for x in phis_to_write]
+                    #     output_file_Q.write(str(Qs[i_decoy])+"\n")
                     output_file.write(str(phis_to_write).strip('[]').replace(',', ' ')+'\n')
                 output_file.close()
+                # if withBiased:
+                #     output_file_Q.close()
 
 '''
 def evaluate_phis_for_protein(protein, phi_list, decoy_method, max_decoys, tm_only=False, TCRmodeling=False):
@@ -1541,6 +1792,46 @@ def read_decoy_phis(protein, phi_list, total_phis, num_phis, num_decoys, decoy_m
                 for i_value, value_i in enumerate(line):
                     phi_i_decoy[i_decoy][i_phi] = float(line[i_value])
                     i_phi += 1
+        all_phis.append(phi_i_decoy)
+    return np.concatenate(all_phis)
+
+def read_decoyQ_phis(protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=False, mode=0, simulation_location_list=None, simulation_location_list_dic=None, **kwargs):
+    if mode == 0:
+        protein_list = [protein]
+    elif mode == 1:
+        protein_list = [protein+f"_{x}" for x in simulation_location_list]
+        num_decoys = int(num_decoys/len(protein_list))
+    elif mode == 2:
+        simulation_location_list = simulation_location_list_dic[protein]
+        protein_list = [protein+f"_{x}" for x in simulation_location_list]
+        num_decoys = int(num_decoys/len(protein_list))
+    all_phis = []
+    for protein in protein_list:
+        # print(protein)
+        phi_i_decoy = np.zeros((num_decoys, 1))
+        for i_phi_function, phi_and_parameters in enumerate(phi_list):
+            # print(protein, i_phi_function, phi_and_parameters)
+            phi = phi_and_parameters[0]
+            parameters = phi_and_parameters[1]
+            i_phi = phi_list.index(phi_and_parameters)
+            parameters_string = get_parameters_string(parameters)
+            # try:
+            input_file = open(os.path.join(phis_directory, "%s_%s_decoysQ_%s_%s" % (
+                phi, protein, decoy_method, parameters_string)), 'r')
+            # except:
+            #     input_file = open(os.path.join(phis_directory, "%s_%s_decoysQ_%s_%s" % (
+            #         "phi_normalize_relative_k", protein, "lammps", "1")), 'r')
+            for i_decoy, line in enumerate(input_file):
+                # if i_decoy >= num_decoys:
+                #     break
+                first_phi = np.cumsum(num_phis)[
+                    i_phi_function] - num_phis[i_phi_function]
+                i_phi = first_phi
+                line = line.strip()
+                Q_i = float(line)
+                phi_i_decoy[i_decoy] = Q_i
+                # i_phi += 1
+            break
         all_phis.append(phi_i_decoy)
     return np.concatenate(all_phis)
 
@@ -1950,7 +2241,7 @@ def calculate_A_B_and_gamma_parallel(training_set_file, phi_list_file_name, deco
 
 
 def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_method, num_decoys,
-                                    noise_filtering=True, jackhmmer=False, read=True, **kwargs):
+                                    noise_filtering=True, jackhmmer=False, read=True, withBiased=False, **kwargs):
     phi_list = read_phi_list(phi_list_file_name)
     training_set = read_column_from_file(training_set_file, 1)
     print(len(training_set))
@@ -2000,11 +2291,21 @@ def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_me
         for i_protein, protein in enumerate(training_set):
             phi_i_protein_i_decoy[i_protein] = read_decoy_phis(
                 protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=jackhmmer, **kwargs)
-
+        if withBiased:
+            phi_i_protein_i_decoyQ = np.zeros(
+                (len(training_set), num_decoys, 1))
+            for i_protein, protein in enumerate(training_set):
+                phi_i_protein_i_decoyQ[i_protein] = read_decoyQ_phis(
+                    protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=jackhmmer, **kwargs)
+            phi_i_protein_i_decoy *= 1 - phi_i_protein_i_decoyQ
+            normalization = np.sum(1 - phi_i_protein_i_decoyQ)
+        else:
+            normalization = len(training_set) * num_decoys
         # The phi_i decoy is constructed as the union of all decoys of all proteins in the training set;
         phi_i_decoy_reshaped = np.reshape(phi_i_protein_i_decoy,
                                             (len(training_set) * num_decoys, total_phis))
-        average_phi_decoy = np.average(phi_i_decoy_reshaped, axis=0)
+        # average_phi_decoy = np.average(phi_i_decoy_reshaped, axis=0)
+        average_phi_decoy = np.sum(phi_i_decoy_reshaped, axis=0) / normalization
 
         # Output to a file;
         file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(

@@ -47,7 +47,7 @@ def rerun(proteinName, extra=extra, offset=0):
     replace(fileName, "dump		1 all atom 4000", "#")
     replace(fileName, "dump_modify	1 sort id", "")
     replace(fileName, "restart         100000 restart", "rerun rerun\/dump.lammpstrj dump x y z")
-
+    replace(fileName, "4000", "1")  # compute for energy dump.
     # replace(fileName, "1 1 30 5", "1 1 30 0")
     # extra(fileName, offset)
     slurm = "rerun_{}.slurm".format(offset)
@@ -64,8 +64,11 @@ def rerun(proteinName, extra=extra, offset=0):
     # replace(slurm, "commons", "ctbp-common")
     # do("mkdir recompute_offset_{}".format(offset))
     # do("sbatch " + slurm)
-
-proteinName = args.protein.strip("/.").lower()
+if args.mode == 0:
+    proteinName = args.protein.strip("/.").lower()
+elif args.mode == 1:
+    # do not format name
+    proteinName = args.protein.strip("/.")
 rerun(proteinName)
 # parser.add_argument("template", help="the name of template file")
 # parser.add_argument("-n", "--number", type=int, default=20,
