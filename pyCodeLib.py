@@ -1089,6 +1089,7 @@ def str2bool(string):
 def phi_six_letter_four_body_helix_docking(res_list, neighbor_list, parameter_list):
     r_min, r_max, kappa, min_seq_sep, output_helix_docking_locations = parameter_list
     output_helix_docking_locations = str2bool(output_helix_docking_locations)
+    helix_docking_locations_directory = "./"
     if output_helix_docking_locations:
         protein = get_protein_name_from_res_list(res_list)
         output_helix_docking_locations_file = open("%s%s-helix_docking_locations.dat" % (helix_docking_locations_directory, protein), 'w')
