@@ -2799,7 +2799,10 @@ def evaluate_hamiltonian_wei(protein, hamiltonian, training_set_file, gamma_file
     e_mg_std = np.std(e_decoy)
     # calculate z-score
     z_score = (e_mg - e_native) / e_mg_std
-
+    # print(protein, z_score, e_native, e_mg, e_mg_std)
+    # if protein == "1r69":
+    #     print(phi_i_decoy)
+        # print(e_decoy)
     return z_score, e_native, e_mg, e_mg_std
 
 def validate_hamiltonian_wei(hamiltonian, training_set_file, gamma_file_name, training_decoy_method, num_decoys, test_set_file=None, test_decoy_method=None, use_filtered_gammas=False, **kwargs):
@@ -2816,6 +2819,7 @@ def validate_hamiltonian_wei(hamiltonian, training_set_file, gamma_file_name, tr
 
         z, en, emg, emgstd = evaluate_hamiltonian_wei(
             protein, hamiltonian, training_set_file, gamma_file_name, test_decoy_method, num_decoys, use_filtered_gammas, **kwargs)
+        # print(protein, z)
         if np.isnan(z):
             continue
         z_scores.append(z)

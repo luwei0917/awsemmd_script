@@ -81,6 +81,15 @@ dataset = {"old":"1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split("
             "test":["t089", "t120", "t251", "top7", "1ubq", "t0766", "t0778", "t0782", "t0792", "t0803", "t0815", "t0833", "t0842", "t0844"]}
 dataset["combined"] = dataset["old"] + dataset["new"]
 
+if args.day == "apr30":
+    if args.mode == 1:
+        # work on pdb fixer of membrane protein
+        # pdb_list = ["1uaz", "1m0l", "1vgo", "2ei4"]
+        # , '1lv7', '6mlu' bad
+        pdb_list = ['6c70', '5azb', '4r1i', '6bvg', '4zr1', '5o5e', '6eu6', '4pgr']
+        for pdb in pdb_list:
+            do(f"cp ../Alpha-helical_polytopic/{pdb}.pdb original_pdbs/")
+        cleanPdb(pdb_list, chain="first", verbose=True, addMissingResidues=False)
 
 if args.day == "apr18":
     if args.mode == 1:

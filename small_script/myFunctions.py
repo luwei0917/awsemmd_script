@@ -17,7 +17,7 @@ import pandas as pd
 import fileinput
 from itertools import product
 from Bio.PDB.PDBParser import PDBParser
-
+from Bio.PDB.PDBIO import PDBIO
 from Bio.PDB import PDBList
 # from pdbfixer import PDBFixer
 # from simtk.openmm.app import PDBFile
@@ -1119,14 +1119,61 @@ def cleanPdb1(pdb_list, chain=None, source=None, toFolder="cleaned_pdbs", format
         fixer.addMissingHydrogens(7.0)
         PDBFile.writeFile(fixer.topology, fixer.positions, open(os.path.join(toFolder, pdbFile), 'w'))
 
-
 def get_inside_or_not_table(pdb_file):
-    parser = PDBParser(PERMISSIVE=1)
+    parser = PDBParser(PERMISSIVE=1,QUIET=True)
     structure = parser.get_structure('X', pdb_file)
     inside_or_not_table = []
     for res in structure.get_residues():
+        if res.get_id()[0] != " ":
+            continue  # skip
+        try:
+            res["CA"].get_vector()
+        except:
+            print(res.get_id())
         inside_or_not_table.append(int(abs(res["CA"].get_vector()[-1]) < 15))
     return inside_or_not_table
+
+def extractTransmembrane(toLocation, location):
+    x = PDBParser().get_structure("x", location)
+
+    class Transmembrane(Select):
+        def accept_residue(self, residue):
+            if abs(residue["CA"].get_vector()[-1]) < 15:
+                return 1
+            else:
+                return 0
+
+    io = PDBIO()
+    io.set_structure(x)
+    io.save(toLocation, Transmembrane())
+
+def getSeqFromPDB(location, considerGap=True):
+    x = PDBParser().get_structure("x", location)
+    seq = ""
+    preResId = 0
+    for res in x.get_residues():
+        resId = res.get_id()[1]
+        if considerGap and resId != preResId + 1:
+            seq += " "
+        seq += three_to_one(res.get_resname())
+        preResId = resId
+    return seq.strip()
+
+# def get_inside_or_not_table(pdb_file):
+#     parser = PDBParser(PERMISSIVE=1)
+#     structure = parser.get_structure('X', pdb_file)
+#     inside_or_not_table = []
+#     for res in structure.get_residues():
+#         inside_or_not_table.append(int(abs(res["CA"].get_vector()[-1]) < 15))
+#     return inside_or_not_table
+
+# def getSeqFromPDB(location):
+#     x = PDBParser().get_structure("x", location)
+#     ppb=PPBuilder()
+#     seq = ""
+#     for pp in ppb.build_peptides(x):
+#         seq += str(pp.get_sequence())
+#     return seq
 
 # def relocate(location):
 #     # location = "/Users/weilu/Research/server/april_2019/iterative_optimization_new_set_with_frag/all_simulations/1fc2/1fc2"
