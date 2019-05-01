@@ -1025,6 +1025,8 @@ def mix_gammas_3(pre, Gamma, preGamma, alpha=None, iterGammaName=None, iteration
 
 # def replace(TARGET, FROM, TO):
 #     os.system("sed -i.bak 's@{}@{}@g' {}".format(FROM,TO,TARGET))
+def replace(TARGET, FROM, TO):
+    os.system("sed -i.bak 's@{}@{}@g' {}".format(FROM,TO,TARGET))
 
 def generate_SEQRES(fastaFile):
     # fastaFile = "/Users/weilu/Research/server/april_2019/complete_2xov/P09391.fasta"

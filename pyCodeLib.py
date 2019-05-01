@@ -958,7 +958,7 @@ def phi_normalize_relative_k(res_list, neighbor_list, parameter_list):
             res1type_HP = get_res_type_HP(res_list, res1)
             res1density = cb_density[res1globalindex]
             # print res1globalindex, res1index, res1chain, res1type, res1density
-            burial_i = interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
+            burial_i = interaction_well(res1density, rho_table[i][0], rho_table[i][1], burial_kappa)
             phi_burial[res1type_HP] += burial_i * burial_gamma[res1type][i]
 
     phis_to_return = []
@@ -1031,6 +1031,141 @@ def phi_relative_k_well(res_list, neighbor_list, parameter_list):
         phis_to_return.append(phi_relative_k_well[i])
     return phis_to_return
 
+
+
+six_letter_code_combinations_index = list(range(210))
+six_letter_code_combinations = ['000004', '000013', '000022', '000031', '000040', '000103', '000112', '000121', '000130', '000202', '000211', '000220', '000301', '000310', '000400', '001003', '001012', '001021', '001030', '001102', '001111', '001120', '001201', '001210', '001300', '002002', '002011', '002020', '002101', '002110', '002200', '003001', '003010', '003100', '004000', '010003', '010012', '010021', '010030', '010102', '010111', '010120', '010201', '010210', '010300', '011002', '011011', '011020', '011101', '011110', '011200', '012001', '012010', '012100', '013000', '020002', '020011', '020020', '020101', '020110', '020200', '021001', '021010', '021100', '022000', '030001', '030010', '030100', '031000', '040000', '100003', '100012', '100021', '100030', '100102', '100111', '100120', '100201', '100210', '100300', '101002', '101011', '101020', '101101', '101110', '101200', '102001', '102010', '102100', '103000', '110002', '110011', '110020', '110101', '110110', '110200', '111001', '111010', '111100', '112000', '120001', '120010', '120100', '121000', '130000', '200002', '200011', '200020', '200101', '200110', '200200', '201001', '201010', '201100', '202000', '210001', '210010', '210100', '211000', '220000', '300001', '300010', '300100', '301000', '310000', '400000']
+six_letter_code_combinations_map = dict(list(zip(six_letter_code_combinations, six_letter_code_combinations_index)))
+inverse_six_letter_code_combinations_map = dict(list(zip(six_letter_code_combinations_index, six_letter_code_combinations)))
+# (G)(CAST)(P)(IMLV)(NHQEDRK)(FYW)
+six_letter_code_letters = {
+    'I':3,
+    'M':3,
+    'L':3,
+    'V':3,
+    'F':5,
+    'Y':5,
+    'W':5,
+    'G':0,
+    'P':2,
+    'C':1,
+    'A':1,
+    'S':1,
+    'T':1,
+    'N':4,
+    'H':4,
+    'Q':4,
+    'E':4,
+    'D':4,
+    'R':4,
+    'K':4
+}
+
+def count_general_amino_acid_combinations(number_of_amino_acid_types, number_of_sites):
+    number_of_valid_codes = 0
+    possible_codes = list(set(itertools.combinations_with_replacement(list(range(number_of_sites+1))*number_of_amino_acid_types, number_of_amino_acid_types)))
+    for code in possible_codes:
+        if sum(list(code)) == number_of_sites:
+            print(code)
+            number_of_valid_codes += 1
+    print(number_of_valid_codes)
+
+def calculate_six_letter_index(restypelist):
+    six_letter_list = [0]*6
+    for restype in restypelist:
+        six_letter_list[six_letter_code_letters[restype]] += 1
+    six_letter_list = [str(i) for i in six_letter_list]
+    six_letter_string = ''.join(six_letter_list)
+    return six_letter_code_combinations_map[six_letter_string], six_letter_string
+
+def str2bool(string):
+    if string == 'True':
+        return True
+    elif string == 'False':
+        return False
+    else:
+        return None
+
+def phi_six_letter_four_body_helix_docking(res_list, neighbor_list, parameter_list):
+    r_min, r_max, kappa, min_seq_sep, output_helix_docking_locations = parameter_list
+    output_helix_docking_locations = str2bool(output_helix_docking_locations)
+    if output_helix_docking_locations:
+        protein = get_protein_name_from_res_list(res_list)
+        output_helix_docking_locations_file = open("%s%s-helix_docking_locations.dat" % (helix_docking_locations_directory, protein), 'w')
+    r_min = float(r_min)
+    r_max = float(r_max)
+    kappa = float(kappa)
+    min_seq_sep = int(min_seq_sep)
+    phis_to_return = [0]*126
+    i_ip4_pairs = []
+    # Find all (i, i+4) pairs
+    for res_i_globalindex, res_i in enumerate(res_list):
+        res_i_index = get_local_index(res_i)
+        res_i_chain = get_chain(res_i)
+        try:
+            res_ip4 = res_list[res_i_globalindex+4]
+        except IndexError:
+            continue
+        res_ip4_index = get_local_index(res_ip4)
+        res_ip4_chain = get_chain(res_ip4)
+        if res_ip4_index == res_i_index+4 and res_ip4_chain == res_i_chain:
+            i_ip4_pairs.append([res_i, res_ip4])
+    # Loop over pairs
+    for i, res_pair1 in enumerate(i_ip4_pairs):
+        for j, res_pair2 in enumerate(i_ip4_pairs):
+            res_pair1_index_1 = get_local_index(res_pair1[0])
+            res_pair1_index_2 = get_local_index(res_pair1[1])
+            res_pair2_index_1 = get_local_index(res_pair2[0])
+            res_pair2_index_2 = get_local_index(res_pair2[1])
+            res_pair1_chain = get_chain(res_pair1[0])
+            res_pair2_chain = get_chain(res_pair2[0])
+            res_pair1_globalindex = get_global_index(res_list, res_pair1[0])
+            res_pair2_globalindex = get_global_index(res_list, res_pair2[0])
+            if (res_pair1_chain != res_pair2_chain and res_pair2_globalindex > res_pair1_globalindex) or \
+                (res_pair2_index_1-res_pair1_index_1 >= min_seq_sep and \
+                 res_pair2_index_2-res_pair1_index_1 >= min_seq_sep):
+                # calculate six letter indices
+                res_pair1_type_1 = three_to_one(res_pair1[0].get_resname())
+                res_pair1_type_2 = three_to_one(res_pair1[1].get_resname())
+                res_pair2_type_1 = three_to_one(res_pair2[0].get_resname())
+                res_pair2_type_2 = three_to_one(res_pair2[1].get_resname())
+                phi_index, six_letter_string = calculate_six_letter_index([res_pair1_type_1, res_pair1_type_2, res_pair2_type_1, res_pair2_type_2])
+                # Calculate parallel phi
+                parallel_phi = interaction_well(get_ca_ca_distance(res_pair1[0], res_pair2[0]), r_min, r_max, kappa)*\
+                               interaction_well(get_ca_ca_distance(res_pair1[1], res_pair2[1]), r_min, r_max, kappa)
+                # Calculate anti-parallel phi
+                anti_parallel_phi = interaction_well(get_ca_ca_distance(res_pair1[0], res_pair2[1]), r_min, r_max, kappa)*\
+                                    interaction_well(get_ca_ca_distance(res_pair1[1], res_pair2[0]), r_min, r_max, kappa)
+                # Add the total into the correct index
+                total_phi = parallel_phi + anti_parallel_phi
+                if total_phi > 0.8 and output_helix_docking_locations:
+                    output_helix_docking_locations_file.write("%s %d %d %s %d %d %s%s%s%s %s\n" % (res_pair1_chain, res_pair1_index_1, res_pair1_index_2, res_pair2_chain, res_pair2_index_1, res_pair2_index_2, res_pair1_type_1, res_pair1_type_2, res_pair2_type_1, res_pair2_type_2, six_letter_string))
+                phis_to_return[phi_index] += total_phi
+    # Return phis
+    return phis_to_return
+
+
+def make_helix_docking_contacts_tcl(input_file_name, output_file_name):
+    output_file = open(output_file_name, 'w')
+    output_file.write("mol modstyle 0 0 NewCartoon 0.300000 10.000000 4.100000 0\n")
+    output_file.write("mol modmaterial 0 0 Transparent\n")
+    output_file.write("mol modcolor 0 0 ColorID 0\n")
+    output_file.write("mol modcolor 0 0 ColorID 2\n")
+    output_file.write("mol color ColorID 2\n")
+    output_file.write("mol representation NewCartoon 0.300000 10.000000 4.100000 0\n")
+    output_file.write("mol selection all\n")
+    output_file.write("mol material Transparent\n")
+    for i, line in enumerate(open(input_file_name, 'r')):
+        line = line.split()
+        if len(line) == 0:
+            continue
+        chain1, res1, res2, chain2, res3, res4, aa, code_string = line
+        output_file.write("mol addrep 0\n")
+        output_file.write("mol modstyle %d 0 VDW 1.000000 12.000000\n" % (i+1))
+        output_file.write("mol modcolor %d 0 ColorID 4\n" % (i+1))
+        output_file.write("mol modselect %d 0 resid %s %s %s %s\n" % (i+1, res1, res2, res3, res4))
+        output_file.write("mol color ColorID 4\n")
+        output_file.write("mol material Opaque\n")
 
 
 # def phi_protein_mediated_contact_well(res_list_tmonly, res_list_entire, neighbor_list, parameter_list, TCRmodeling=False):
@@ -1322,31 +1457,31 @@ def evaluate_phis_for_protein_Wei(protein, phi_list, decoy_method, max_decoys, m
             parameters_string = get_parameters_string(parameters)
             print(phi, parameters, parameters_string)
             # check to see if the decoys are already generated
-            number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)))
-            if not number_of_lines_in_file >= 1:
-                output_file = open(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)), 'w')
-                if multi_seq is False:
-                    phis_to_write = phiF(res_list, neighbor_list, parameters)
-                    output_file.write(str(phis_to_write).strip('[]').replace(',', '')+'\n')
-                if multi_seq is True:
-                    mutli_sequences = read_decoy_sequences(os.path.join(aligments_root_directory, "%s_filtered_0.05.seqs" % (protein)))
-                    mutli_sequences = random.sample(mutli_sequences, sampleK)
-                    for i_decoy, decoy_sequence in enumerate(mutli_sequences):
-                        mutate_whole_sequence(res_list, decoy_sequence)
-                        phis_to_write = phiF(res_list, neighbor_list, parameters)
-                        output_file.write(str(phis_to_write).strip('[]').replace(',', ' ')+'\n')
-                output_file.close()
-            number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)))
-            if not number_of_lines_in_file >= max_decoys:
-                output_file = open(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
-                decoy_sequences = read_decoy_sequences(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
-                for i_decoy, decoy_sequence in enumerate(decoy_sequences):
-                    if i_decoy >= max_decoys:
-                        break
+            # number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)))
+            # if not number_of_lines_in_file >= 1:
+            output_file = open(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)), 'w')
+            if multi_seq is False:
+                phis_to_write = phiF(res_list, neighbor_list, parameters)
+                output_file.write(str(phis_to_write).strip('[]').replace(',', '')+'\n')
+            if multi_seq is True:
+                mutli_sequences = read_decoy_sequences(os.path.join(aligments_root_directory, "%s_filtered_0.05.seqs" % (protein)))
+                mutli_sequences = random.sample(mutli_sequences, sampleK)
+                for i_decoy, decoy_sequence in enumerate(mutli_sequences):
                     mutate_whole_sequence(res_list, decoy_sequence)
                     phis_to_write = phiF(res_list, neighbor_list, parameters)
                     output_file.write(str(phis_to_write).strip('[]').replace(',', ' ')+'\n')
-                output_file.close()
+            output_file.close()
+            # number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)))
+            # if not number_of_lines_in_file >= max_decoys:
+            output_file = open(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
+            decoy_sequences = read_decoy_sequences(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
+            for i_decoy, decoy_sequence in enumerate(decoy_sequences):
+                if i_decoy >= max_decoys:
+                    break
+                mutate_whole_sequence(res_list, decoy_sequence)
+                phis_to_write = phiF(res_list, neighbor_list, parameters)
+                output_file.write(str(phis_to_write).strip('[]').replace(',', ' ')+'\n')
+            output_file.close()
 
 def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_decoys, tm_only=False, withBiased=False, mode=0):
         print(protein, withBiased)
@@ -1363,44 +1498,44 @@ def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_dec
             parameters_string = get_parameters_string(parameters)
             print(phi, parameters, parameters_string)
             # check to see if the decoys are already generated
-            number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)))
-            if not number_of_lines_in_file >= 1:
-                output_file = open(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)), 'w')
-                phis_to_write = phiF(res_list, neighbor_list, parameters)
-                output_file.write(str(phis_to_write).strip('[]').replace(',', '')+'\n')
-                output_file.close()
-            number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)))
-            if not number_of_lines_in_file >= max_decoys:
-                output_file = open(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
-                # decoy_sequences = read_decoy_sequences(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
-                if withBiased:
-                    decoy_structures, Qs = read_decoy_structures_andQ(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
-                    output_file_Q = open(os.path.join(phis_directory, "%s_%s_decoysQ_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
-                    for i_decoy, Q in enumerate(Qs):
-                        if i_decoy >= max_decoys:
-                            print("i_decoy larger than max_decoys")
-                        output_file_Q.write(str(Q)+"\n")
-                    output_file_Q.close()
-                else:
-                    decoy_structures = read_decoy_structures(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
-
-                for i_decoy, decoy_structure in enumerate(decoy_structures):
-                    if i_decoy % 1000 == 0:
-                        print(i_decoy)
+            # number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)))
+            # if not number_of_lines_in_file >= 1:
+            output_file = open(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)), 'w')
+            phis_to_write = phiF(res_list, neighbor_list, parameters)
+            output_file.write(str(phis_to_write).strip('[]').replace(',', '')+'\n')
+            output_file.close()
+            # number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)))
+            # if not number_of_lines_in_file >= max_decoys:
+            output_file = open(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
+            # decoy_sequences = read_decoy_sequences(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
+            if withBiased:
+                decoy_structures, Qs = read_decoy_structures_andQ(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
+                output_file_Q = open(os.path.join(phis_directory, "%s_%s_decoysQ_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
+                for i_decoy, Q in enumerate(Qs):
                     if i_decoy >= max_decoys:
-                        break
-                    # decoy_structure = parse_pdb(os.path.join(structures_directory,protein))
-                    decoy_res_list = get_res_list(decoy_structure)
-                    decoy_neighbor_list = get_neighbor_list(decoy_structure)
-                    phis_to_write = phiF(decoy_res_list, decoy_neighbor_list, parameters)
-                    # if withBiased:
-                    #     # phis_to_write *= 1 - Qs[i_decoy]
-                    #     # phis_to_write = [x * (1 - float(Qs[i_decoy])) for x in phis_to_write]
-                    #     output_file_Q.write(str(Qs[i_decoy])+"\n")
-                    output_file.write(str(phis_to_write).strip('[]').replace(',', ' ')+'\n')
-                output_file.close()
+                        print("i_decoy larger than max_decoys")
+                    output_file_Q.write(str(Q)+"\n")
+                output_file_Q.close()
+            else:
+                decoy_structures = read_decoy_structures(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
+
+            for i_decoy, decoy_structure in enumerate(decoy_structures):
+                if i_decoy % 1000 == 0:
+                    print(i_decoy)
+                if i_decoy >= max_decoys:
+                    break
+                # decoy_structure = parse_pdb(os.path.join(structures_directory,protein))
+                decoy_res_list = get_res_list(decoy_structure)
+                decoy_neighbor_list = get_neighbor_list(decoy_structure)
+                phis_to_write = phiF(decoy_res_list, decoy_neighbor_list, parameters)
                 # if withBiased:
-                #     output_file_Q.close()
+                #     # phis_to_write *= 1 - Qs[i_decoy]
+                #     # phis_to_write = [x * (1 - float(Qs[i_decoy])) for x in phis_to_write]
+                #     output_file_Q.write(str(Qs[i_decoy])+"\n")
+                output_file.write(str(phis_to_write).strip('[]').replace(',', ' ')+'\n')
+            output_file.close()
+            # if withBiased:
+            #     output_file_Q.close()
 
 '''
 def evaluate_phis_for_protein(protein, phi_list, decoy_method, max_decoys, tm_only=False, TCRmodeling=False):
@@ -2244,12 +2379,12 @@ def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_me
                                     noise_filtering=True, jackhmmer=False, read=True, withBiased=False, **kwargs):
     phi_list = read_phi_list(phi_list_file_name)
     training_set = read_column_from_file(training_set_file, 1)
-    print(len(training_set))
+    print("Size of training set", len(training_set))
     os.system(f"echo 'Size {len(training_set)}' >> log")
     # Find out how many total phi_i there are and get full parameter string
     total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
         phi_list, training_set, **kwargs)
-    print(total_phis)
+    print("Size of phis", total_phis)
     if read:
         print("reading native")
         os.system("echo 'Reading native' >> log")
@@ -2337,6 +2472,10 @@ def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_me
 #    A_file = open(A_file_name, 'w')
     np.savetxt(A_file_name, A, fmt='%1.5f')
 
+    A_prime_file_name = file_prefix + '_A_prime'
+#    A_file = open(A_file_name, 'w')
+    np.savetxt(A_prime_file_name, average_phi_decoy, fmt='%1.5f')
+
     B_file_name = file_prefix + '_B'
 #    B_file = open(B_file_name, 'w')
     np.savetxt(B_file_name, B, fmt='%1.5f')
@@ -2353,7 +2492,7 @@ def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_me
 #    gamma_file = open(gamma_file_name, 'w')
     np.savetxt(std_half_B_file_name, std_half_B, '%1.5f')
 
-    #open("%s%s_%s_gamma.dat" % (gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string), 'w').write(str(gamma).strip('[]').replace('\n', ' '))
+    # open("%s%s_%s_gamma.dat" % (gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string), 'w').write(str(gamma).strip('[]').replace('\n', ' '))
 
     if noise_filtering:
         filtered_gamma, filtered_B, filtered_lamb, P, lamb = get_filtered_gamma_B_lamb_P_and_lamb(

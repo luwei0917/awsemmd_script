@@ -68,7 +68,7 @@ def extractSeqFromFa(size=7, source="database/cath-dataset-nonredundant-S20Clean
 
 def computePhis(proteins, multiSeq=False, sampleK=1000):
     # if addGylcines:
-    proteins_location = "".join(proteins.split("/")[:-1]) + "/location_" + proteins.split("/")[-1]
+    # proteins_location = "".join(proteins.split("/")[:-1]) + "/location_" + proteins.split("/")[-1]
     # transferPDB(proteins)
     # addLocation(proteins, proteins_location)
     # os.chdir('database')
