@@ -533,11 +533,12 @@ def generate_multiShuffle(fullName, location="./", num_decoys=1000):
         # print(shuffled_seq)
 
 def waitForJobs(jobIdList, sleepInterval=30):
+    from datetime import datetime as dt
     if len(jobIdList) == 0:
         return
     previousJobNotFinished = True
     while previousJobNotFinished:
-        print(f"Waiting for previous jobs {jobIdList}", datetime.now())
+        print(f"Waiting for previous jobs {jobIdList}", dt.now())
         time.sleep(sleepInterval)
         previousJobNotFinished = False
         a = getFromTerminal("squeue -u wl45")
@@ -590,6 +591,107 @@ def readList(fileName):
         a = f.readlines()
     theList = [b.strip() for b in a]
     return theList
+
+def slurmRun(slurmFileName, cmd, template=scavenge_slurm):
+    with open(slurmFileName, "w") as out:
+        out.write(template.format(cmd))
+        # out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py -m 1 proteins_name_list/proteins_name_list_{name}.txt"))
+    # replace(f"slurms/run_{i}.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=20G")
+    a = getFromTerminal(f"sbatch {slurmFileName}")
+    jobId = a.split(" ")[-1].strip()
+    return jobId
+
+if args.day == "apr31":
+    if args.mode == 1:
+        do("mkdir phis")
+
+if args.day == "apr30":
+    n_decoys = 1000
+    # iteration 0
+    if args.mode == 11:
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d apr30 -m 5"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+
+    if args.mode == 1:
+        do("mkdir proteins_name_list")
+        do("mkdir slurms")
+        do("mkdir -p decoys")
+        do("mkdir -p gammas")
+        do("mkdir -p ../phis")
+        with open("../database/cath-dataset-nonredundant-S20Clean.list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(20):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i-1)
+
+    if args.mode == 2:
+        # do("cp ~/opt/optimization/phi_list_* .")
+        # do("cp phi_list_contact.txt phi_list.txt")
+        from pyCodeLib import *
+        i = 0
+        jobIdList = []
+        do("rm iter0.txt")
+        for i in range(712):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d apr30 -m 5 -l {proteins}")
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        waitForJobs(jobIdList, sleepInterval=300)
+
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d apr30 -m 5"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+
+    if args.mode == 3:
+        do("python ~/opt/compute_phis.py proteins_name_list/proteins_name_list_0.txt -m 0")
+    if args.mode == 5:
+        proteins = args.label
+        generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+        do(f"python3 ~/opt/compute_phis.py -m 0 {proteins}")
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "iter_partial.txt"
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+                                        num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False)
+
+    if args.mode == 6:
+        # existing check
+        with open("../database/cath-dataset-nonredundant-S20Clean.list", "r") as f:
+            for line in f:
+                # print("!", line.strip(), "!")
+                a = line.strip()
+                if os.path.exists(f"../database/S20_seq/{a}.seq") and os.path.exists(f"../database/dompdb/{a}.pdb"):
+                    # print("yes")
+                    pass
+                else:
+                    print(f"../database/S20_seq/{a}.seq")
+                    print(f"../database/dompdb/{a}.pdb")
+                    print("no")
+                # break
+
+
+if args.day == "apr24":
+    if args.mode == 1:
+            fileName = "movie.pdb"
+            splitPDB("./", fileName)
 
 
 if args.day == "apr20":
@@ -902,33 +1004,6 @@ if args.day == "apr16_2":
 #         # cleanPdb([f"{name}"], chain="A", formatName=False)
 #         cleanPdb([f"{name}"], chain="first", formatName=False, toFolder=f"{pre}/../database/cleaned_pdbs/", source=f"{pre}/../database/original_pdbs/")
 
-if args.day == "apr14":
-    # iteration 0
-    if args.mode == 1:
-        with open("database/cath-dataset-nonredundant-S20Clean.list") as f:
-            content = f.readlines()
-        pos = 0
-        i = 0
-        n = len(content)
-        # n = 100  # for testing
-        while pos < n:
-            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
-                for ii in range(20):
-                    if pos < n:
-                        out.write(content[pos])
-                    pos += 1
-                i += 1
-        print(i-1)
-        do("mkdir proteins_name_list")
-        do("mkdir slurms")
-        do("mkdir -p subsetgammas")
-        do("mkdir -p decoys")
-        do("mkdir -p gammas")
-        do("mkdir -p phis")
-    if args.mode == 2:
-        i = 0
-        proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
-        generate_decoy_sequences(proteins, methods=['shuffle'], databaseLocation="../../")
 
 if args.day == "apr13":
     # multi chain iter 0
@@ -1217,7 +1292,8 @@ if args.day == "apr01":
     old_protein_simulation_list = []
     combined_simulation_list = ["multi_iter1_correct", "multi_iter1_correct_30", "multi_group_iter1", "multi_iter2", "multi_groupedNorm_check", "multi_iter1", "iter3_with_rg_less_frag", "multi_iter0", "iter3_with_rg", "iter2_with_rg_90", "iter2_with_rg", "iter0", "without_contact", "original_with_rg", "iter1_with_rg", "iter6_with_rg"]
     combined_simulation_list = ["multi_groupedNorm_check", "multi_iter1", "iter3_with_rg_less_frag", "multi_iter0", "iter3_with_rg", "iter2_with_rg_90", "iter2_with_rg", "iter0", "without_contact", "original_with_rg", "iter1_with_rg", "iter6_with_rg"]
-    combined_simulation_list = ["multi_iter2"]
+    # combined_simulation_list = ["multi_iter2"]
+    combined_simulation_list = ["multi_iter0"]
     # multi_iter2 will be special
 
     # new_data = ["multi_iter1"]
@@ -1274,6 +1350,9 @@ if args.day == "apr01":
                 cd("../../")
             cd("..")
         waitForJobs(jobIdList, sleepInterval=100)
+
+
+        # simulation_location_list = combined_simulation_list
 
         # Transport Pdbs to database folder
         print("Transporting Pdbs to database")
@@ -1380,6 +1459,7 @@ if args.day == "apr01":
                 jobIdList.append(jobId)
         waitForJobs(jobIdList, sleepInterval=200)
 
+        # exit()
         # # do("cp phis/* ../phis/")
         # with open(f"slurms/run_on_scavenge.slurm", "w") as out:
         #     out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d apr01 -m 2"))
@@ -1416,7 +1496,7 @@ if args.day == "apr01":
         complete_proteins = "proteins_name_list.txt"
 
         A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='lammps',
-                                        num_decoys=n*decoy_n, noise_filtering=True, jackhmmer=False, read=False, mode=2, withBiased=True, simulation_location_list_dic=simulation_location_list_dic)
+                                        num_decoys=n*decoy_n, noise_filtering=True, jackhmmer=False, read=False, mode=2, withBiased=False, simulation_location_list_dic=simulation_location_list_dic)
         # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='lammps',
         #                                 num_decoys=n*6000, noise_filtering=True, jackhmmer=False, read=False)
         # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='lammps',
@@ -1477,11 +1557,12 @@ if args.day == "apr01":
             out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d apr01 -m 5 -l phi_list_relative_k.txt"))
         replace(runFile, "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
         do(f"sbatch {runFile}")
-        # runFile = f"slurms/run_on_scavenge_1.slurm"
-        # with open(runFile, "w") as out:
-        #     out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d apr01 -m 5 -l phi_list_contact.txt"))
-        # replace(runFile, "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
-        # do(f"sbatch {runFile}")
+
+        runFile = f"slurms/run_on_scavenge_1.slurm"
+        with open(runFile, "w") as out:
+            out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d apr01 -m 5 -l phi_list_contact.txt"))
+        replace(runFile, "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch {runFile}")
     if args.mode == 5:
         # for testing toymodel
         from pyCodeLib import *
@@ -1502,7 +1583,7 @@ if args.day == "apr01":
         complete_proteins = "proteins_name_list.txt"
 
         A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, phi_file, decoy_method='lammps',
-                                        num_decoys=n*decoy_n, noise_filtering=True, jackhmmer=False, read=False, mode=2, withBiased=True, simulation_location_list_dic=simulation_location_list_dic)
+                                        num_decoys=n*decoy_n, noise_filtering=True, jackhmmer=False, read=False, mode=2, withBiased=False, simulation_location_list_dic=simulation_location_list_dic)
         # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='lammps',
         #                                 num_decoys=n*6000, noise_filtering=True, jackhmmer=False, read=False)
         # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='lammps',
@@ -1805,7 +1886,8 @@ if args.day == "mar30":
         cmd = args.label
         for i in range(30):
             pre = f"/scratch/wl45/april_2019/database/{cmd}_{i}/"
-            do(f"cp -r {i}/0/ {pre}")
+            do(f"mkdir -p {pre}")
+            do(f"cp -r {i}/0/* {pre}/")
             fileName = "movie.pdb"
             splitPDB(pre, fileName)
             do(f"rm {pre}movie.*")

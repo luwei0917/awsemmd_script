@@ -1,0 +1,4 @@
+phi_normalize_relative_k 1
+phi_pairwise_contact_well 4.5 6.5 5.0 10
+phi_density_mediated_contact_well 6.5 9.5 5.0 10 2.6 7.0
+phi_burial_well 4.0
