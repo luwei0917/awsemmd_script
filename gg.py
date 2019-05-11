@@ -81,14 +81,140 @@ dataset = {"old":"1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split("
             "test":["t089", "t120", "t251", "top7", "1ubq", "t0766", "t0778", "t0782", "t0792", "t0803", "t0815", "t0833", "t0842", "t0844"]}
 dataset["combined"] = dataset["old"] + dataset["new"]
 
+
+if args.day == "may11":
+    if args.mode == 1:
+        for i in range(1000):
+            if i % 100 == 0:
+                print(i)
+            do(f"python3 ~/opt/compute_energy.py original_1r69_9/frame{i}.pdb  >> data_9_2.info")
+    if args.mode == 2:
+        for p in dataset["combined"]:
+            name = p.lower()[:4]
+            a3mFile = f"/Users/weilu/Research/server/may_2019/family_fold/aligned/{name}.a3m"
+            pre = f"/Users/weilu/Research/server/may_2019/family_fold/ff_contact/{name}/"
+            os.system(f"mkdir -p {pre}")
+            data = get_MSA_data(a3mFile)
+            print(name, len(data))
+            f_direct_2, f_water_2, f_protein_2, f_burial_2 = get_ff_dat(data, location=pre)
+if args.day == "may10":
+    if args.mode == 1:
+        a = glob.glob("cleaned_pdbs/*.pdb")
+        do("mkdir -p fasta")
+        for line in a:
+            pdb = line.split("/")[-1].split(".")[0]
+            pdbToFasta(pdb, line, f"fasta/{pdb}.fasta")
+            cmd = f"hhblits -i fasta/{pdb}.fasta -d ~/Research/Build/hh-suite/uniclust30_2018_08/uniclust30_2018_08 -o {pdb} -oa3m {pdb}.a3m -n 1"
+            do(cmd)
+if args.day == "may08":
+    if args.mode == 2:
+        data = pd.read_csv("protein_info.csv", index_col=0)
+        k_rg = 1
+        pdb_list = dataset["combined"]
+        for p in pdb_list:
+            name = p.lower()[:4]
+            do(f"mkdir -p {name}")
+            cd(name)
+            do(f"python3 /Users/weilu/openmmawsem/mm_create_project.py {name} --frag --extended")
+            rg = data.query(f"Protein == '{name}'")["Rg"].values[0]
+            replace(f"params.py", "40", str(rg))
+            cd("..")
+    if args.mode == 1:
+        data = pd.read_csv("protein_info.csv", index_col=0)
+        k_rg = 1
+        pdb_list = dataset["combined"]
+        with open("run.sh", "w") as out:
+            for p in pdb_list:
+
+                name = p.lower()[:4]
+                cd(name)
+                # out.write(f"cd {name}\n")
+                for i in range(20):
+                    cmd = f"python3 mm_run.py {name} -m 1 --to run_{i} --platform CUDA"
+                    os.system(cmd)
+                    # out.write(cmd)
+                # out.write("cd ..\n")
+                cd("..")
+if args.day == "may05":
+    if args.mode == 1:
+        pdb_list = dataset["combined"]
+        for pp in pdb_list:
+            p = pp.lower()[:4]
+            do(f"echo 'minimize       1.0e-4 1.0e-6 100 10000' >>  all_simulations/{p}/{p}/{p}_multi.in")
+
+    if args.mode == 2:
+        d = pd.read_csv("seq_info.csv", index_col=0)
+        pdb_list = d.query("length < 150 and index % 2 == 0")["protein"].tolist()
+        print(pdb_list)
+        do("mkdir -p all_simulations")
+        # downloadPdb(pdb_list)
+        # cleanPdb(pdb_list, chain=None, formatName=False)
+        cd("all_simulations")
+        for p in pdb_list:
+            # name = p.lower()[:4]
+            name = p
+            do(f"mkdir -p {name}/{name}")
+            cd(f"{name}/{name}")
+            do("pwd")
+            do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+            # do("cp ~/opt/crystal_structures/membrane_proteins/for_simulation/{}.pdb crystal_structure.pdb ".format(name))
+            do(f"python2 ~/opt/script/Pdb2Gro.py crystal_structure.pdb {name}.gro")
+            do(f"create_project.py {name} --globular --frag")
+            # check_and_correct_fragment_memory("frags.mem")
+            relocate(fileLocation="frags.mem", toLocation="../fraglib")
+            replace(f"frags.mem", "/Users/weilu/openmmawsem//Gros/", "../../fraglib/")
+            protein_length = getFromTerminal("wc ssweight").split()[0]
+            print(f"protein: {name}, length: {protein_length}")
+
+            with open("single_frags.mem", "w") as out:
+                out.write("[Target]\nquery\n\n[Memories]\n")
+                out.write(f"{name}.gro 1 1 {protein_length} 20\n")
+            cd("../..")
+if args.day == "may03":
+    if args.mode == 1:
+        # work on pdb fixer of membrane protein
+        # pdb_list = ["1uaz", "1m0l", "1vgo", "2ei4"]
+        # , '1lv7', '6mlu' bad
+        # pdb_list = ['6c70', '5azb', '4r1i', '6bvg', '4zr1', '5o5e', '6eu6', '4pgr']
+        # dd = pd.read_csv("/Users/weilu/Research/database/membrane_training_set/chosen_more_data.csv", index_col=0)
+        dd = pd.read_csv("/Users/weilu/Research/database/membrane_training_set/chosen_large_data.csv", index_col=0)
+        pdb_list = dd.pdbid.tolist()
+
+        rest = []
+        need = False
+        for pdb in pdb_list:
+            if need:
+                rest.append(pdb)
+            # if pdb == "5xth":
+            # if pdb == "4v6m":
+            # if pdb == "4v7i":
+            if pdb == "6du8":
+                need = True
+        pdb_list = rest
+        # for pdb in pdb_list:
+        #     do(f"wget https://opm-assets.storage.googleapis.com/pdb/{pdb}.pdb")
+        #     do(f"mv {pdb}.pdb original_pdbs/")
+
+        # for i, pdb in enumerate(pdb_list):
+        #     print(i, pdb)
+        #     do(f"cp ../Alpha-helical_polytopic/{pdb}.pdb original_pdbs/")
+        cleanPdb(pdb_list, chain="first", verbose=True, addMissingResidues=False)
+
 if args.day == "apr30":
     if args.mode == 1:
         # work on pdb fixer of membrane protein
         # pdb_list = ["1uaz", "1m0l", "1vgo", "2ei4"]
         # , '1lv7', '6mlu' bad
-        pdb_list = ['6c70', '5azb', '4r1i', '6bvg', '4zr1', '5o5e', '6eu6', '4pgr']
+        # pdb_list = ['6c70', '5azb', '4r1i', '6bvg', '4zr1', '5o5e', '6eu6', '4pgr']
+        pdb_list = ['6aky', '1j4n', '1kpl', '6eu6', '4j05', '4nv6', '2zjs', '6gct', '2c3e', '4b4a', '4llh', '5y79', '5oc0', '3fi1', '4m58', '4a2n', '4uc1', '4qo2', '2q7r', '3h90', '3b4r', '2kdc', '2ksf', '3m73', '2m67', '5t77', '6bvg', '6bbg', '5vkv', '6d9z', '4r1i', '5tcx', '4quv', '4qtn', '5hwy', '3tij', '4av3', '2lop', '2lor', '2lom', '4il3', '3zd0', '5o5e', '4od5', '4o6m', '4pgr', '5jwy', '2mpn', '4q2e', '4x5m', '2mmu', '4rp9', '4zr1', '5a40', '4xu4', '5azb', '5dir', '5wud', '5n6h', '5vre', '5tsa', '5xj5', '6b87', '6cb2', '5zug', '6c70', '6bug', '6bar', '6bhp', '4cad', '6iu3']
+        dd = pd.read_csv("/Users/weilu/Research/database/membrane_training_set/chosen.csv", index_col=0)
+        pdb_list = dd.pdbid.tolist()
         for pdb in pdb_list:
-            do(f"cp ../Alpha-helical_polytopic/{pdb}.pdb original_pdbs/")
+            do(f"wget https://opm-assets.storage.googleapis.com/pdb/{pdb}.pdb")
+            do(f"mv {pdb}.pdb original_pdbs/")
+        # for i, pdb in enumerate(pdb_list):
+        #     print(i, pdb)
+        #     do(f"cp ../Alpha-helical_polytopic/{pdb}.pdb original_pdbs/")
         cleanPdb(pdb_list, chain="first", verbose=True, addMissingResidues=False)
 
 if args.day == "apr18":
@@ -187,10 +313,14 @@ if args.day == "apr14":
             do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
             # do("cp ~/opt/crystal_structures/membrane_proteins/for_simulation/{}.pdb crystal_structure.pdb ".format(name))
             do(f"python2 ~/opt/script/Pdb2Gro.py crystal_structure.pdb {name}.gro")
-            do(f"create_project.py {name} --globular")
+            do(f"create_project.py {name} --globular --frag")
+            # check_and_correct_fragment_memory("frags.mem")
+            relocate(fileLocation="frags.mem", toLocation="../fraglib")
+            replace(f"frags.mem", "/Users/weilu/openmmawsem//Gros/", "../../fraglib/")
             protein_length = getFromTerminal("wc ssweight").split()[0]
             print(f"protein: {name}, length: {protein_length}")
-            with open("frags.mem", "w") as out:
+
+            with open("single_frags.mem", "w") as out:
                 out.write("[Target]\nquery\n\n[Memories]\n")
                 out.write(f"{name}.gro 1 1 {protein_length} 20\n")
             cd("../..")

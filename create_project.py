@@ -79,6 +79,7 @@ alpha_carbons = " ".join([str(i) for i in list(range(1, size*3+1, 3))])
 beta_atoms = " ".join([str(i) for i in list(range(3, size*3+1, 3))])
 oxygens = " ".join([str(i) for i in list(range(2, size*3+1, 3))])
 last = " ".join(str(i) for i in [size*3-2, size*3-1, size*3])
+
 if args.crystal:
     print("try not use this template")
     do("cp ~/opt/create_project_in_crystal_template.in {}_multi.in".format(proteinName))
@@ -139,4 +140,4 @@ if args.frag:
     do(f"cp ~/opt/database/cullpdb_pc80_* .")
     do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py \
     cullpdb_pc80_res3.0_R1.0_d160504_chains29712 %s.fasta 20 1 9 > logfile" % proteinName)
-    check_and_correct_fragment_memory("frags.mem")
+    check_and_correct_fragment_memory_back("frags.mem")

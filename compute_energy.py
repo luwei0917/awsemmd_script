@@ -35,6 +35,7 @@ parser = argparse.ArgumentParser(
     run simulation and analysis")
 
 parser.add_argument("protein", help="The name of the protein")
+parser.add_argument("-l", "--label", type=str, default="label")
 args = parser.parse_args()
 
 code = {"GLY" : "G", "ALA" : "A", "LEU" : "L", "ILE" : "I",
@@ -218,6 +219,90 @@ def compute_direct_2(input_pdb_filename):
     #         v_direct += 1
     return v_direct
 
+def compute_direct_family_fold(structure, f_direct, kappa=5.0):
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    sequence = get_sequence_from_structure(structure)
+    r_min = 4.5
+    r_max = 6.5
+    # kappa = 5
+    min_seq_sep = 10
+    # phi_pairwise_contact_well = np.zeros((20,20))
+    v_direct = 0
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        # print(get_interaction_atom(res1).get_vector()[2], type(get_interaction_atom(res1).get_vector()[2]))
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+
+            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance(res1, res2)
+                # gamma = gamma_ijm[0][res1type][res2type]
+                gamma = f_direct[res1globalindex][res2globalindex]
+    #             phi_pairwise_contact_well[res1type][res2type] += interaction_well(rij, r_min, r_max, kappa)
+                v_direct += gamma * interaction_well(rij, r_min, r_max, kappa)
+    return v_direct
+
+
+def compute_mediated_family_fold(structure, f_water, f_protein, kappa=5.0):
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    sequence = get_sequence_from_structure(structure)
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    r_min = 6.5
+    r_max = 9.5
+    # kappa = 5.0
+    min_seq_sep = 10
+    density_threshold = 2.6
+    density_kappa = 7.0
+    # phi_mediated_contact_well = np.zeros((2, 20,20))
+    v_mediated = 0
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            rho_j = cb_density[res2globalindex]
+            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance(res1, res2)
+                # protein_gamma = protein_gamma_ijm[0][res1type][res2type]
+                # water_gamma = water_gamma_ijm[0][res1type][res2type]
+                protein_gamma = f_protein[res1globalindex][res2globalindex]
+                water_gamma = f_water[res1globalindex][res2globalindex]
+                _pij_protein = prot_water_switchFunc_sigmaProt(
+                    rho_i, rho_j, density_threshold, density_kappa) * protein_gamma
+                _pij_water = prot_water_switchFunc_sigmaWater(
+                    rho_i, rho_j, density_threshold, density_kappa) * water_gamma
+                v_mediated += (_pij_protein + _pij_water) * interaction_well(rij, r_min, r_max, kappa)
+    return v_mediated
+
+def compute_burial(structure, kappa=4.0):
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    sequence = get_sequence_from_structure(structure)
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    rho_table = [[0.0, 3.0], [3.0, 6.0], [6.0, 9.0]]
+    v_burial = 0
+    for i in range(3):
+        for res1globalindex, res1 in enumerate(res_list):
+            res1index = get_local_index(res1)
+            res1chain = get_chain(res1)
+            res1type = get_res_type(res_list, res1)
+            res1density = cb_density[res1globalindex]
+            # print res1globalindex, res1index, res1chain, res1type, res1density
+            v_burial += burial_gamma[i][res1type] * interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
+    return v_burial
+
 
 def read_beta_parameters():
     ### directly copied from Nick Schafer's
@@ -249,15 +334,24 @@ def read_beta_parameters():
             p_parhb[i][j][1] = float(in_para_HB[i+21].strip().split()[j])
     return p_par, p_anti, p_antihb, p_antinhb, p_parhb
 
-
+pre = args.label
+# pre = "/Users/weilu/Research/server/may_2019/family_fold/ff_contact/1r69/"
+f_direct = np.loadtxt(f"{pre}/direct.dat")
+f_water = np.loadtxt(f"{pre}/water.dat")
+f_protein = np.loadtxt(f"{pre}/protein.dat")
+f_burial = np.loadtxt(f"{pre}/burial.dat")
 
 pdb = (args.protein).split(".")[0]
 structure = parse_pdb(pdb)
 e_mediated = compute_mediated(structure)
 e_direct = compute_direct(structure)
 e_burial = compute_burial(structure)
-print("Mediated, Direct, Mediated+Direct, Burial, Mediated+Direct+Burial")
-print(e_mediated, e_direct, e_mediated + e_direct, e_burial, e_mediated + e_direct + e_burial)
+# print("Mediated, Direct, Mediated+Direct, Burial, Mediated+Direct+Burial")
+# print(e_mediated, e_direct, e_mediated + e_direct, e_burial, e_mediated + e_direct + e_burial)
+
+e_direct_ff = compute_direct_family_fold(structure, f_direct, kappa=5.0)
+e_mediated_ff = compute_mediated_family_fold(structure, f_water, f_protein)
+print(pdb, e_direct_ff, e_mediated_ff, -(e_direct_ff+e_mediated_ff))
 # kappa = 10.0
 # kappa_list = [5.0, 10.0]
 # for kappa in kappa_list:

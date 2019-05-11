@@ -2789,7 +2789,7 @@ def calculate_A_B_and_gamma_xl23(training_set_file, phi_list_file_name, decoy_me
 
 
 
-def get_filtered_gamma_B_lamb_P_and_lamb(A, B, half_B, other_half_B, std_half_B, total_phis, num_decoys, noise_iterations=10, relative_error_threshold=0.5, mode=2):
+def get_filtered_gamma_B_lamb_P_and_lamb(A, B, half_B, other_half_B, std_half_B, total_phis, num_decoys, noise_iterations=10, relative_error_threshold=0.5, mode=2, setCutoff=None):
     lamb, P = np.linalg.eig(B)
     lamb, P = sort_eigenvalues_and_eigenvectors(lamb, P)
 
@@ -2823,6 +2823,8 @@ def get_filtered_gamma_B_lamb_P_and_lamb(A, B, half_B, other_half_B, std_half_B,
         cutoff_modes.append(cutoff_mode)
 
     cutoff_mode = min(cutoff_modes)
+    if setCutoff:
+        cutoff_mode = setCutoff
     print(cutoff_mode)
 
     filtered_lamb = np.copy(lamb)
