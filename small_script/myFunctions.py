@@ -32,6 +32,27 @@ from Bio.PDB import PDBList
 def getFromTerminal(CMD):
     return subprocess.Popen(CMD,stdout=subprocess.PIPE,shell=True).communicate()[0].decode()
 
+def get_data(pre, pdb_list, simType="all_simulations", n_rum=30, rerun=1, formatName=True):
+    # to get last 50 frame of each run
+    _all = []
+    for p in pdb_list:
+        if formatName:
+            name = p.lower()[:4]
+        else:
+            name = p
+        for i in range(n_rum):
+            for ii in range(rerun):
+                location = pre + f"{simType}/{name}/simulation/{i}/{ii}/wham.dat"
+                try:
+                    tmp = pd.read_csv(location).tail(50).reset_index()
+                    tmp.columns = tmp.columns.str.strip()
+                    _all.append(tmp.assign(Run=i, Name=name, Rerun=ii))
+                except Exception as e:
+                    print(e)
+    data = pd.concat(_all)
+    data["Run"] = "Run" + data["Run"].astype(str)
+    return data
+
 def computeRg(pdb_file):
     # compute Radius of gyration
     # pdb_file = f"/Users/weilu/Research/server/feb_2019/iterative_optimization_new_temp_range/all_simulations/{p}/{p}/crystal_structure.pdb"
@@ -51,16 +72,20 @@ def splitPDB(pre, fileName):
     location = f"{pre}/{fileName}"
     with open(location, "r") as f:
         a = f.readlines()
+    print(len(a))
     i = 0
     tmp = ""
     for line in a:
         tmp += line
     #     os.system(f"echo '{line}' >> {pre}frame{i}")
         if line == "END\n":
-            with open(f"{pre}frame{i}.pdb", "w") as out:
+            with open(f"{pre}/frame{i}.pdb", "w") as out:
                 out.write(tmp)
             i += 1
             tmp = ""
+        else:
+            if line.strip() == "END":
+                print("problem")
 
 def read_hydrophobicity_scale(seq, isNew=False):
     seq_dataFrame = pd.DataFrame({"oneLetterCode":list(seq)})

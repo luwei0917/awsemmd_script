@@ -26,6 +26,8 @@ parser.add_argument("projectName", help="name of the folder your simulation will
 parser.add_argument("gamma", help="pre name of your gamma")
 parser.add_argument("-k", "--kfrag", type=float, default=0.01)
 parser.add_argument("-m", "--mode", type=int, default=0)
+parser.add_argument("--singleMemory", action="store_true", default=False)
+parser.add_argument("-q", "--qbias", action="store_true", default=False)
 args = parser.parse_args()
 
 
@@ -76,11 +78,18 @@ if args.mode == 0:
         do(f"cp -r all_simulations/{name}/ {simulation_location}/")
         # change the k frag.
         replace(f"{pre}/fix_backbone_coeff.data", "0.01", args.kfrag)
+        if args.singleMemory:
+            replace(f"{pre}/fix_backbone_coeff.data", "frags.mem", "single_frags.mem")
 
         rg = data.query(f"Protein == '{name}'")["Rg"].values[0]
         replace(f"{pre}/{name}_multi.in", "#FIXRG", f"fix rg alpha_carbons spring/rg {k_rg} {rg}")
         # replace(f"{pre}/{name}_multi.in", "minimize", "#minimize")
-
+        if args.qbias:
+            replace(f"{pre}/{name}_multi.in", "#FIXBIAS", "fix               qbias alpha_carbons qbias fix_qbias_coeff.data\\nfix_modify        qbias energy no\\nvariable          biasinge equal f_qbias\\n")
+            do(f"cp ~/opt/fix_qbias_coeff.data {pre}/")
+            qbias = "--bias 1"
+        else:
+            qbias = ""
         # replace(f"{pre}/fix_backbone_coeff.data", "\[Dssp_Hdrgn\]-", "\[Dssp_Hdrgn\]")
         # replace(f"{pre}/fix_backbone_coeff.data", "\[P_AP\]-", "\[P_AP\]")
 
@@ -102,7 +111,7 @@ if args.mode == 0:
         steps = returnSteps(p)
 
         cd(name)
-        do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+        do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1 {qbias}")
         # do(f"run.py -n 20 {name} --commons 2 -s {steps} --runs 1")
         # do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 2 --start crystal")
         # do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
@@ -124,6 +133,8 @@ if args.mode == 1:
         do(f"cp -r all_simulations/{name}/ {simulation_location}/")
         # change the k frag.
         replace(f"{pre}/fix_backbone_coeff.data", "0.01", args.kfrag)
+        if args.singleMemory:
+            replace(f"{pre}/fix_backbone_coeff.data", "frags.mem", "single_frags.mem")
         # if args.mode == 0:
         #     rg = data.query(f"Protein == '{name}'")["Rg"].values[0]
         #     replace(f"{pre}/{name}_multi.in", "#FIXRG", f"fix rg alpha_carbons spring/rg {k_rg} {rg}")
@@ -156,47 +167,47 @@ if args.mode == 1:
     cd("..")
 
 
-if args.mode == 2:
-    d = pd.read_csv("seq_info.csv", index_col=0)
-    pdb_list = d.query("length < 150 and index % 2 == 0")["protein"].tolist()
+# if args.mode == 2:
+#     d = pd.read_csv("seq_info.csv", index_col=0)
+#     pdb_list = d.query("length < 150 and index % 2 == 0")["protein"].tolist()
 
-    for p in pdb_list:
-        name = p
-        print(name)
-        do(f"mkdir -p {simulation_location}/{name}")
-        pre = f"{simulation_location}/{name}/{name}"
-        # do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
-        do(f"cp -r all_simulations/{name}/ {simulation_location}/")
-        # change the k frag.
-        replace(f"{pre}/fix_backbone_coeff.data", "0.01", args.kfrag)
-        replace(f"{pre}/fix_backbone_coeff.data", "frags.mem", "single_frags.mem")
-        # if args.mode == 0:
-        #     rg = data.query(f"Protein == '{name}'")["Rg"].values[0]
-        #     replace(f"{pre}/{name}_multi.in", "#FIXRG", f"fix rg alpha_carbons spring/rg {k_rg} {rg}")
-        # replace(f"{pre}/{name}_multi.in", "minimize", "#minimize")
+#     for p in pdb_list:
+#         name = p
+#         print(name)
+#         do(f"mkdir -p {simulation_location}/{name}")
+#         pre = f"{simulation_location}/{name}/{name}"
+#         # do(f"cp -r all_simulations/{name}/{name} {simulation_location}/{name}/")
+#         do(f"cp -r all_simulations/{name}/ {simulation_location}/")
+#         # change the k frag.
+#         replace(f"{pre}/fix_backbone_coeff.data", "0.01", args.kfrag)
+#         replace(f"{pre}/fix_backbone_coeff.data", "frags.mem", "single_frags.mem")
+#         # if args.mode == 0:
+#         #     rg = data.query(f"Protein == '{name}'")["Rg"].values[0]
+#         #     replace(f"{pre}/{name}_multi.in", "#FIXRG", f"fix rg alpha_carbons spring/rg {k_rg} {rg}")
+#         # replace(f"{pre}/{name}_multi.in", "minimize", "#minimize")
 
-        # replace(f"{pre}/fix_backbone_coeff.data", "\[Dssp_Hdrgn\]-", "\[Dssp_Hdrgn\]")
-        # replace(f"{pre}/fix_backbone_coeff.data", "\[P_AP\]-", "\[P_AP\]")
+#         # replace(f"{pre}/fix_backbone_coeff.data", "\[Dssp_Hdrgn\]-", "\[Dssp_Hdrgn\]")
+#         # replace(f"{pre}/fix_backbone_coeff.data", "\[P_AP\]-", "\[P_AP\]")
 
-        # replace(f"{pre}/fix_backbone_coeff.data", "\[Water\]", "\[Water\]-")
-        # replace(f"{pre}/fix_backbone_coeff.data", "\[Burial\]", "\[Burial\]-")
+#         # replace(f"{pre}/fix_backbone_coeff.data", "\[Water\]", "\[Water\]-")
+#         # replace(f"{pre}/fix_backbone_coeff.data", "\[Burial\]", "\[Burial\]-")
 
-        do(f"cp {pre}/gamma.dat {pre}/original_gamma.dat")
-        do(f"cp {gamma} {pre}/gamma.dat")
-        # print(f"cp {gammaSource}/iteration_gamma.dat {pre}/gamma.dat")
-        do(f"cp {pre}/burial_gamma.dat {pre}/original_burial_gamma.dat")
-        do(f"cp {burial} {pre}/burial_gamma.dat")
-    cd(simulation_location)
-    for p in pdb_list:
-        name = p
-        # steps = 40
-        # steps = 2
-        # steps = 80
-        steps = 40
-        cd(name)
-        do(f"run.py -n 10 {name} --commons 2 -s {steps} --runs 1")
-        # do(f"run.py -n 20 {name} --commons 2 -s {steps} --runs 1")
-        # do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 2 --start crystal")
-        # do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
-        cd("..")
-    cd("..")
+#         do(f"cp {pre}/gamma.dat {pre}/original_gamma.dat")
+#         do(f"cp {gamma} {pre}/gamma.dat")
+#         # print(f"cp {gammaSource}/iteration_gamma.dat {pre}/gamma.dat")
+#         do(f"cp {pre}/burial_gamma.dat {pre}/original_burial_gamma.dat")
+#         do(f"cp {burial} {pre}/burial_gamma.dat")
+#     cd(simulation_location)
+#     for p in pdb_list:
+#         name = p
+#         # steps = 40
+#         # steps = 2
+#         # steps = 80
+#         steps = 40
+#         cd(name)
+#         do(f"run.py -n 10 {name} --commons 2 -s {steps} --runs 1")
+#         # do(f"run.py -n 20 {name} --commons 2 -s {steps} --runs 1")
+#         # do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 2 --start crystal")
+#         # do(f"run.py -n 30 {name} --commons 2 -s {steps} --runs 1")
+#         cd("..")
+#     cd("..")

@@ -1,1 +1,1 @@
-phi_normalize_relative_k 1
+phi_relative_k_well 4.5 6.5 5.0 10

@@ -66,7 +66,7 @@ def extractSeqFromFa(size=7, source="database/cath-dataset-nonredundant-S20Clean
 # convertTo4cName()
 # extractSeqFromFa()
 
-def computePhis(proteins, multiSeq=False, sampleK=1000):
+def computePhis(proteins, multiSeq=False, sampleK=1000, **kwargs):
     # if addGylcines:
     # proteins_location = "".join(proteins.split("/")[:-1]) + "/location_" + proteins.split("/")[-1]
     # transferPDB(proteins)
