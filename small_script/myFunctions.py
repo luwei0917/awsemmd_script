@@ -18,7 +18,9 @@ import fileinput
 from itertools import product
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.PDBIO import PDBIO
+from Bio.PDB.PDBIO import Select
 from Bio.PDB import PDBList
+from Bio.PDB.Polypeptide import three_to_one
 # from pdbfixer import PDBFixer
 # from simtk.openmm.app import PDBFile
 
@@ -411,6 +413,57 @@ def structure_prediction_run(protein):
     cd("..")
     # do("")
 
+
+def check_and_correct_fragment_memory_back(fragFile="fragsLAMW.mem"):
+    with open("tmp.mem", "w") as out:
+        with open(fragFile, "r") as f:
+            for i in range(4):
+                line = next(f)
+                out.write(line)
+            for line in f:
+                gro, _, i, n, _ = line.split()
+                delete = False
+                # print(gro, i, n)
+                # name = gro.split("/")[-1]
+                with open(gro, "r") as one:
+                    next(one)
+                    next(one)
+                    all_residues = []
+                    for atom in one:
+                        residue, resType, atomType, *_ = atom.split()
+                        # print(residue, resType, atomType)
+                        if atomType == "CA":
+                            all_residues.append(int(residue))
+                    all_residues = np.array(all_residues)
+                    for test in range(int(i), int(i)+int(n)):
+                        if (test == all_residues).sum() > 1:
+                            # In rare case, one res id may have two different possible residues.
+                            # on example, pdb 3vpg. chain A, res id 220.
+                            # ATOM   1467  N   ARG A 220A      9.151 -20.984  46.737  1.00 31.30           N
+                            # ATOM   1468  CA  ARG A 220A      9.120 -19.710  46.027  1.00 31.52           C
+                            # ATOM   1469  C   ARG A 220A      9.768 -19.832  44.650  1.00 33.58           C
+                            # ATOM   1470  O   ARG A 220A     10.552 -18.973  44.240  1.00 28.91           O
+                            # ATOM   1471  CB  ARG A 220A      9.853 -18.641  46.847  1.00 31.58           C
+                            # ATOM   1472  CG  ARG A 220A      9.181 -18.295  48.168  1.00 33.55           C
+                            # ATOM   1473  CD  ARG A 220A      7.834 -17.651  47.916  1.00 34.70           C
+                            # ATOM   1474  NE  ARG A 220A      7.959 -16.526  46.994  1.00 43.05           N
+                            # ATOM   1475  CZ  ARG A 220A      6.931 -15.906  46.425  1.00 46.69           C
+                            # ATOM   1476  NH1 ARG A 220A      5.691 -16.300  46.683  1.00 39.12           N
+                            # ATOM   1477  NH2 ARG A 220A      7.144 -14.898  45.590  1.00 41.15           N
+                            # ATOM   1478  N   ALA A 220B      9.429 -20.901  43.936  1.00 33.78           N
+                            # ATOM   1479  CA  ALA A 220B      9.979 -21.153  42.608  1.00 32.13           C
+                            # ATOM   1480  C   ALA A 220B      9.944 -19.933  41.692  1.00 30.71           C
+                            # ATOM   1481  O   ALA A 220B      9.050 -19.088  41.787  1.00 28.56           O
+                            # ATOM   1482  CB  ALA A 220B      9.234 -22.310  41.951  1.00 35.20           C
+                            print("ATTENTION", gro, i, n, "duplicate:",test)
+                            delete = True
+                        if test not in all_residues:
+                            print("ATTENTION", gro, i, n, "missing:",test)
+                            delete = True
+                if not delete:
+                    out.write(line)
+    os.system(f"mv {fragFile} fragsLAMW_back")
+    os.system(f"mv tmp.mem {fragFile}")
 
 # def check_and_correct_fragment_memory(fragFile="fragsLAMW.mem"):
 #     with open("tmp.mem", "w") as out:
@@ -1123,7 +1176,10 @@ def cleanPdb1(pdb_list, chain=None, source=None, toFolder="cleaned_pdbs", format
 
 def get_inside_or_not_table(pdb_file):
     parser = PDBParser(PERMISSIVE=1,QUIET=True)
-    structure = parser.get_structure('X', pdb_file)
+    try:
+        structure = parser.get_structure('X', pdb_file)
+    except:
+        return [0]
     inside_or_not_table = []
     for res in structure.get_residues():
         if res.get_id()[0] != " ":
@@ -1131,10 +1187,10 @@ def get_inside_or_not_table(pdb_file):
         try:
             res["CA"].get_vector()
         except:
-            print(res.get_id())
+            print(pdb_file, res.get_id())
+            return [0]
         inside_or_not_table.append(int(abs(res["CA"].get_vector()[-1]) < 15))
     return inside_or_not_table
-
 def extractTransmembrane(toLocation, location):
     x = PDBParser().get_structure("x", location)
 
@@ -1152,14 +1208,216 @@ def extractTransmembrane(toLocation, location):
 def getSeqFromPDB(location, considerGap=True):
     x = PDBParser().get_structure("x", location)
     seq = ""
+    resseqs = []
     preResId = 0
     for res in x.get_residues():
         resId = res.get_id()[1]
         if considerGap and resId != preResId + 1:
             seq += " "
+            resseqs.append(-1)
         seq += three_to_one(res.get_resname())
+        resseqs.append(res.get_id()[1])
         preResId = resId
-    return seq.strip()
+    return seq,resseqs
+
+
+def get_raw_optimization_data(pre, name):
+    # pre = "/Users/weilu/Research/server_backup/feb_2019/jan_optimization/gammas/"
+    # pp = "cath-dataset-nonredundant-S20Clean_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0"
+    # pp = "proteins_name_list_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0phi_burial_well4.0"
+    pp = name
+    A_name = pp + "_A"
+    B_name = pp + "_B"
+    B_filtered_name = pp + "_B_filtered"
+    P_name = pp + "_P"
+    Gamma_name = pp + "_gamma"
+    Gamma_filtered_name = pp + "_gamma_filtered"
+    Lamb_name = pp + "_lamb"
+    Lamb_filtered_name = pp + "_lamb_filtered"
+
+    A_prime_name = pp + "_A_prime"
+    A_prime = np.loadtxt(pre+A_prime_name)
+
+    A = np.loadtxt(pre+A_name)
+    B = np.loadtxt(pre+B_name)
+    B_filtered = np.loadtxt(pre+B_filtered_name, dtype=complex, converters={
+                               0: lambda s: complex(s.decode().replace('+-', '-'))})
+    Gamma = np.loadtxt(pre+Gamma_name)
+    Gamma_filtered = np.loadtxt(pre+Gamma_filtered_name, dtype=complex, converters={
+                               0: lambda s: complex(s.decode().replace('+-', '-'))})
+    Lamb = np.loadtxt(pre+Lamb_name, dtype=complex, converters={
+                               0: lambda s: complex(s.decode().replace('+-', '-'))})
+    Lamb_filtered = np.loadtxt(pre+Lamb_filtered_name, dtype=complex, converters={
+                               0: lambda s: complex(s.decode().replace('+-', '-'))})
+
+    half_B_name = pp + "_half_B"
+    half_B = np.loadtxt(pre+half_B_name)
+    other_half_B_name = pp + "_other_half_B"
+    other_half_B = np.loadtxt(pre+other_half_B_name)
+    std_half_B_name = pp + "_std_half_B"
+    std_half_B = np.loadtxt(pre+std_half_B_name)
+    return A,B,B_filtered,Gamma,Gamma_filtered,Lamb,Lamb_filtered,half_B,other_half_B,std_half_B,A_prime
+
+
+def formatBurialGamma(burialGamma):
+    # now, positive means favored.
+    rhoGamma = pd.DataFrame(-burialGamma.reshape(3,20).T, columns=["rho1", "rho2", "rho3"]).reset_index()
+    rhoGamma["oneLetter"] = rhoGamma["index"].apply(lambda x: inverse_res_type_map[x])
+    rhoGamma["Residue"] = rhoGamma["index"].apply(lambda x: one_to_three(inverse_res_type_map[x]))
+    rhoGamma = rhoGamma[["Residue", "rho1", "rho2", "rho3", "index", "oneLetter"]]
+    g = rhoGamma[["rho1", "rho2", "rho3"]].values
+    # np.savetxt("/Users/weilu/Research/server/feb_2019/burial_only_gamma.dat", g, fmt='%7.4f')
+    # rhoGamma
+    rhoGamma["hydrophobicityOrder"] = rhoGamma["oneLetter"].apply(lambda x: hydrophobicity_map[x])
+    return rhoGamma.sort_values("hydrophobicityOrder")
+
+
+def get_MSA_data(a3mFile):
+    data = []
+    # "/Users/weilu/Research/server/may_2019/family_fold/aligned/1r69.a3m"
+    with open(a3mFile, "r") as f:
+        for line in f:
+            if line[0] == ">":
+                continue
+            s_new = ""
+            seq = line.strip()
+            for s in seq:
+                if s.islower():
+                    continue
+                s_new += s
+            data.append(s_new)
+    return data
+
+
+def read_gamma(gammaFile):
+    data = np.loadtxt(gammaFile)
+    gamma_direct = data[:210]
+    gamma_mediated = data[210:]
+    return gamma_direct, gamma_mediated
+
+def get_gammas(gammaFile="./gamma.dat", memGammaFile="./membrane_gamma_rescaled.dat"):
+    gamma_direct, gamma_mediated = read_gamma(gammaFile)
+    nwell = 2
+    gamma_ijm = np.zeros((nwell, 20, 20))
+    water_gamma_ijm = np.zeros((nwell, 20, 20))
+    protein_gamma_ijm = np.zeros((nwell, 20, 20))
+    m = 0
+    count = 0
+    for i in range(20):
+        for j in range(i, 20):
+            gamma_ijm[m][i][j] = gamma_direct[count][0]
+            gamma_ijm[m][j][i] = gamma_direct[count][0]
+            count += 1
+    count = 0
+    for i in range(20):
+        for j in range(i, 20):
+            water_gamma_ijm[m][i][j] = gamma_mediated[count][1]
+            water_gamma_ijm[m][j][i] = gamma_mediated[count][1]
+            count += 1
+    count = 0
+    for i in range(20):
+        for j in range(i, 20):
+            protein_gamma_ijm[m][i][j] = gamma_mediated[count][0]
+            protein_gamma_ijm[m][j][i] = gamma_mediated[count][0]
+            count += 1
+    if memGammaFile:
+        mem_gamma_direct, mem_gamma_mediated = read_gamma(memGammaFile)
+        m = 1  # membrane environment
+        count = 0
+        for i in range(20):
+            for j in range(i, 20):
+                gamma_ijm[m][i][j] = mem_gamma_direct[count][0]
+                gamma_ijm[m][j][i] = mem_gamma_direct[count][0]
+                count += 1
+        count = 0
+        for i in range(20):
+            for j in range(i, 20):
+                water_gamma_ijm[m][i][j] = mem_gamma_mediated[count][1]
+                water_gamma_ijm[m][j][i] = mem_gamma_mediated[count][1]
+                count += 1
+        count = 0
+        for i in range(20):
+            for j in range(i, 20):
+                protein_gamma_ijm[m][i][j] = mem_gamma_mediated[count][0]
+                protein_gamma_ijm[m][j][i] = mem_gamma_mediated[count][0]
+                count += 1
+    return gamma_ijm, water_gamma_ijm, protein_gamma_ijm
+
+
+def get_ff_dat(data, location=None):
+    res_type_map = {
+        'A': 0,
+        'C': 4,
+        'D': 3,
+        'E': 6,
+        'F': 13,
+        'G': 7,
+        'H': 8,
+        'I': 9,
+        'K': 11,
+        'L': 10,
+        'M': 12,
+        'N': 2,
+        'P': 14,
+        'Q': 5,
+        'R': 1,
+        'S': 15,
+        'T': 16,
+        'V': 19,
+        'W': 17,
+        'Y': 18
+    }
+    gamma_ijm, water_gamma_ijm, protein_gamma_ijm = get_gammas("/Users/weilu/opt/parameters/globular_parameters/gamma.dat", memGammaFile=None)
+    burial_gamma = np.loadtxt("/Users/weilu/opt/parameters/globular_parameters/burial_gamma.dat")
+    n = len(data[0])
+    f_direct = np.zeros((n,n))
+    f_water = np.zeros((n,n))
+    f_protein = np.zeros((n,n))
+    f_burial = np.zeros((n,3))
+    for i in range(n):
+        for j in range(i+1, n):
+            direct = []
+            water = []
+            protein = []
+            for seq in data:
+                # seq = data[0]
+                if seq[i] == "-" or seq[j] == "-":
+                    continue
+                if seq[i] == "X" or seq[j] == "X":
+                    continue
+                if seq[i] == "B" or seq[j] == "B":
+                    continue
+                if seq[i] == "Z" or seq[j] == "Z":
+                    continue
+                res1type = res_type_map[seq[i]]
+                res2type = res_type_map[seq[j]]
+                direct.append(gamma_ijm[0][res1type][res2type])
+                water.append(water_gamma_ijm[0][res1type][res2type])
+                protein.append(protein_gamma_ijm[0][res1type][res2type])
+            f_direct[i][j] += np.average(direct)
+            f_water[i][j] += np.average(water)
+            f_protein[i][j] += np.average(protein)
+
+            f_direct[j][i] += np.average(direct)
+            f_water[j][i] += np.average(water)
+            f_protein[j][i] += np.average(protein)
+
+    for i in range(n):
+        for j in range(3):
+            burial = []
+            for seq in data:
+                if seq[i] == "-" or seq[i] == "X" or seq[i] == "B" or seq[i] == "Z":
+                    continue
+                res1type = res_type_map[seq[i]]
+                burial.append(burial_gamma[res1type][j])
+            f_burial[i][j] += np.average(burial)
+    if location:
+        np.savetxt(location+"/direct.dat", f_direct)
+        np.savetxt(location+"/water.dat", f_water)
+        np.savetxt(location+"/protein.dat", f_protein)
+        np.savetxt(location+"/burial.dat", f_burial)
+    return f_direct, f_water, f_protein, f_burial
+
 
 # def get_inside_or_not_table(pdb_file):
 #     parser = PDBParser(PERMISSIVE=1)

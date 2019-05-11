@@ -109,3 +109,4 @@ fix         	wham all print 4000 "${step}, ${qw}, ${rg}, ${tc}, ${E_P}" file NUM
 reset_timestep	0
 restart         100000 restart
 run		SIMULATION_STEPS
+minimize       1.0e-4 1.0e-6 100 10000
