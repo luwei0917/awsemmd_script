@@ -34,6 +34,18 @@ from Bio.PDB.Polypeptide import three_to_one
 def getFromTerminal(CMD):
     return subprocess.Popen(CMD,stdout=subprocess.PIPE,shell=True).communicate()[0].decode()
 
+
+def atoi(text):
+    return int(text) if text.isdigit() else text
+
+def natural_keys(text):
+    '''
+    alist.sort(key=natural_keys) sorts in human order
+    http://nedbatchelder.com/blog/200712/human_sorting.html
+    (See Toothy's implementation in the comments)
+    '''
+    return [atoi(c) for c in re.split(r'(\d+)', text)]
+
 def get_data(pre, pdb_list, simType="all_simulations", n_rum=30, rerun=1, formatName=True):
     # to get last 50 frame of each run
     _all = []
@@ -1369,7 +1381,7 @@ def get_gammas(gammaFile="./gamma.dat", memGammaFile="./membrane_gamma_rescaled.
     return gamma_ijm, water_gamma_ijm, protein_gamma_ijm
 
 
-def get_ff_dat(data, location=None):
+def get_ff_dat(data, location=None, gammaLocation=None):
     res_type_map = {
         'A': 0,
         'C': 4,
@@ -1392,8 +1404,8 @@ def get_ff_dat(data, location=None):
         'W': 17,
         'Y': 18
     }
-    gamma_ijm, water_gamma_ijm, protein_gamma_ijm = get_gammas("/Users/weilu/opt/parameters/globular_parameters/gamma.dat", memGammaFile=None)
-    burial_gamma = np.loadtxt("/Users/weilu/opt/parameters/globular_parameters/burial_gamma.dat")
+    gamma_ijm, water_gamma_ijm, protein_gamma_ijm = get_gammas(f"{gammaLocation}/gamma.dat", memGammaFile=None)
+    burial_gamma = np.loadtxt(f"{gammaLocation}/burial_gamma.dat")
     n = len(data[0])
     f_direct = np.zeros((n,n))
     f_water = np.zeros((n,n))
@@ -1443,6 +1455,68 @@ def get_ff_dat(data, location=None):
         np.savetxt(location+"/burial.dat", f_burial)
     return f_direct, f_water, f_protein, f_burial
 
+
+
+def my_reorder(a, first):
+    # move first to the top. and keep the rest
+    new_order = first.copy()
+    for col in a:
+        if col not in first:
+            new_order.append(col)
+    return new_order
+
+def read_pdb(pre, name, run=30, rerun=2):
+    all_data = []
+    if run == -1:
+        run_list = ["native"]
+    else:
+        run_list = list(range(run))
+    for i in run_list:
+        if rerun == -1:
+            rerun_list = ["rerun"]
+        else:
+            rerun_list = list(range(rerun))
+        for j in rerun_list:
+            # pre = "/Users/weilu/Research/server/nov_2018/iterative_optimization_4/all_simulations/"
+            location = pre + f"{name}/simulation/{i}/{j}/"
+            try:
+                wham = pd.read_csv(location+"wham.dat")
+            except:
+                print(f"PDB: {name}, Run: {i}, Rerun: {j} not exist")
+                print(location+"wham.dat")
+                continue
+            wham.columns = wham.columns.str.strip()
+            remove_columns = ['Tc', 'Energy']
+            wham = wham.drop(remove_columns, axis=1)
+            energy = pd.read_csv(location+"energy.dat")
+            energy.columns = energy.columns.str.strip()
+            remove_columns = ['Steps', 'Shake', 'Excluded', 'Helix', 'AMH-Go', 'Vec_FM', 'SSB']
+            energy = energy.drop(remove_columns, axis=1)
+            data = pd.concat([wham, energy], axis=1).assign(Repeat=i, Run=j)
+            all_data.append(data)
+    data = pd.concat(all_data).reset_index(drop=True)
+    data = data.reindex(columns=my_reorder(data.columns, ["Steps", "Qw", "VTotal", "Run", "Repeat"]))
+    print(name, len(data))
+    return data
+
+def get_complete_data(pre, folder_list, pdb_list, formatName=True, **kwargs):
+    complete_all_data = []
+    for folder in folder_list:
+        # pre = "/Users/weilu/Research/server/april_2019/iterative_optimization_old_set/"
+        pre_folder = f"{pre}{folder}/"
+        all_data = []
+        for p in pdb_list:
+            if formatName:
+                name = p.lower()[:4]
+            else:
+                name = p
+            tmp = read_pdb(pre_folder, name, **kwargs)
+            all_data.append(tmp.assign(Name=name))
+        data = pd.concat(all_data)
+        complete_all_data.append(data.assign(Folder=folder))
+    data = pd.concat(complete_all_data)
+    data = data.reindex(columns=my_reorder(data.columns, ["Name", "Folder"]))
+    return data
 
 # def get_inside_or_not_table(pdb_file):
 #     parser = PDBParser(PERMISSIVE=1)

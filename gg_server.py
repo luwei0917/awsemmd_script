@@ -609,6 +609,38 @@ def slurmRun(slurmFileName, cmd, template=scavenge_slurm, memory=1):
     return jobId
 
 
+if args.day == "may11":
+    if args.mode == 1:
+        formatName = True
+        pdb_list = dataset["combined"]
+        folder_list = ["original", "multi_iter0"]
+        # folder_list = ["multi_constant_tc_frag", "multi_constant_tc", "original_fragMemory", "multi_iter0_fragMemory"]
+        jobIdList = []
+        for simulation_location in folder_list:
+            for pp in pdb_list:
+                print(pp)
+                if formatName:
+                    p = pp.lower()[:4]
+                else:
+                    p = pp
+                for i in range(30):
+                    cd(f"{simulation_location}_{p}_{i}")
+                    proteins = p
+                    jobId = slurmRun(f"convertDumpToPdbs.slurms", f"python3 ~/opt/gg_server.py -d may11 -m 2 -l {proteins}")
+                    jobIdList.append(jobId)
+                    cd("..")
+        waitForJobs(jobIdList, sleepInterval=300)
+    if args.mode == 2:
+        protein = args.label
+        a = glob.glob("frame*.pdb")
+        a.sort(key=natural_keys)
+        print(len(a))
+        with open("ff_energy.dat", "w") as out:
+            for frame in a[-50:]:
+                cmd = f"python3 ~/opt/compute_energy.py {frame} -l /scratch/wl45/may_2019/family_fold/ff_contact/{protein}/"
+                line = getFromTerminal(cmd)
+                out.write(line)
+
 if args.day == "may10":
     if args.mode == 1:
         a = glob.glob("*.out")

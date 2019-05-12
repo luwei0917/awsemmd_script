@@ -55,8 +55,18 @@ def read_gamma(gammaFile):
     gamma_direct = data[:210]
     gamma_mediated = data[210:]
     return gamma_direct, gamma_mediated
-gamma_direct, gamma_mediated = read_gamma("/Users/weilu/openmmawsem/parameters/gamma.dat")
-burial_gamma = np.loadtxt("/Users/weilu/openmmawsem/parameters/burial_gamma.dat").T
+from pathlib import Path
+import platform
+
+if(platform.system() == 'Darwin'):
+    pre = str(Path.home()) + "/openmmawsem/parameters/"
+elif(platform.system() == 'Linux'):
+    pre = "/projects/pw8/wl45/openawsem/parameters/"
+else:
+    print("system unkown")
+
+gamma_direct, gamma_mediated = read_gamma(f"{pre}/gamma.dat")
+burial_gamma = np.loadtxt(f"{pre}/burial_gamma.dat").T
 
 nwell = 1
 gamma_ijm = np.zeros((nwell, 20, 20))
@@ -286,7 +296,7 @@ def compute_mediated_family_fold(structure, f_water, f_protein, kappa=5.0):
                 v_mediated += (_pij_protein + _pij_water) * interaction_well(rij, r_min, r_max, kappa)
     return v_mediated
 
-def compute_burial(structure, kappa=4.0):
+def compute_burial_family_fold(structure, f_burial, kappa=4.0):
     res_list = get_res_list(structure)
     neighbor_list = get_neighbor_list(structure)
     sequence = get_sequence_from_structure(structure)
@@ -300,7 +310,9 @@ def compute_burial(structure, kappa=4.0):
             res1type = get_res_type(res_list, res1)
             res1density = cb_density[res1globalindex]
             # print res1globalindex, res1index, res1chain, res1type, res1density
-            v_burial += burial_gamma[i][res1type] * interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
+            # b_gamma = burial_gamma[i][res1type]
+            b_gamma = f_burial[res1globalindex][i]
+            v_burial += b_gamma * interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
     return v_burial
 
 
@@ -351,7 +363,10 @@ e_burial = compute_burial(structure)
 
 e_direct_ff = compute_direct_family_fold(structure, f_direct, kappa=5.0)
 e_mediated_ff = compute_mediated_family_fold(structure, f_water, f_protein)
-print(pdb, e_direct_ff, e_mediated_ff, -(e_direct_ff+e_mediated_ff))
+e_burial_ff = compute_burial_family_fold(structure, f_burial)
+energy_out_list = [-e_direct_ff, -e_mediated_ff, -e_burial_ff, -(e_direct_ff+e_mediated_ff), -(e_direct_ff+e_mediated_ff+e_burial_ff)]
+out_line = " ".join([f"{pdb:<8}"] + ["{0:<8.3f}".format(i) for i in energy_out_list])
+print(out_line)
 # kappa = 10.0
 # kappa_list = [5.0, 10.0]
 # for kappa in kappa_list:
