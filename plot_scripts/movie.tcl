@@ -35,6 +35,11 @@ scale by 0.833000
 scale by 0.9
 animate speed 1.0
 mol smoothrep 0 0 10
+
+animate goto 99
+display resetview
+animate goto 1
+
 #animate forward
 #animate goto 450
 #source "~/Downloads/take_picture.tcl"

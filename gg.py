@@ -80,8 +80,45 @@ dataset = {"old":"1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split("
             "new":"1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", "),
             "test":["t089", "t120", "t251", "top7", "1ubq", "t0766", "t0778", "t0782", "t0792", "t0803", "t0815", "t0833", "t0842", "t0844"]}
 dataset["combined"] = dataset["old"] + dataset["new"]
+dataset["may13"] = ['1r69', '3icb', '256b', '4cpv', '2mhr', '1mba', '2fha', '1fc2', '1enh', '2gb1', '2cro', '1ctf', '4icb']
 
+if args.day == "may25":
+    if args.mode == 1:
+        do("mkdir -p setup")
+        cd("setup")
+        pdb_list = dataset["may13"]
+        for pdb in pdb_list:
+            do(f"mkdir -p {pdb}")
+            cd(pdb)
+            do(f"mm_create_project.py ../../cleaned_pdbs/{pdb}.pdb --frag --extended")
+            cd("..")
+    if args.mode == 2:
+        pdb_list = dataset["may13"]
+        for pdb in pdb_list:
+            do(f"mkdir -p {pdb}")
+            do(f"python mm_run.py setup/{pdb}/extended --to testRun/{pdb} -m 1 -s 200000")
+            do(f"python mm_analysis.py setup/{pdb}/extended -t testRun/{pdb}/movie.dcd")
+    if args.mode == 3:
+        do(f"python mm_run.py setup/1r69/1r69 --to testRun/1r69_native -s 10")
+        do(f"python mm_analysis.py setup/1r69/1r69 -t testRun/1r69_native/native.pdb -o testRun/1r69_native/native.dat")
 
+if args.day == "may24":
+    if args.mode == 1:
+        a = pd.read_csv("/Users/weilu/Research/server/may_2019/multiSeq_iteration/chosen_may24.csv", index_col=0)
+        pdb_list = a["FullName"].tolist()
+        print(pdb_list)
+        cleanPdb(pdb_list, chain="first", source="database/dompdb", verbose=True, addMissingResidues=False)
+
+if args.day == "may20":
+    if args.mode == 1:
+        # test new contact potential
+        name = "1r69"
+        a3mFile = f"/Users/weilu/Research/server/may_2019/family_fold/{name}.a3m"
+        pre = f"/Users/weilu/Research/server/may_2019/family_fold/ff_contact_2/{name}/"
+        os.system(f"mkdir -p {pre}")
+        data = get_MSA_data(a3mFile)
+        print(name, len(data))
+        f_direct_2, f_water_2, f_protein_2, f_burial_2 = get_ff_dat(data, location=pre, gammaLocation="/Users/weilu/Research/server/may_2019/openMM_2/1r69/")
 if args.day == "may11":
     if args.mode == 1:
         for i in range(1000):
