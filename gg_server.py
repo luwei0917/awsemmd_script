@@ -108,6 +108,7 @@ scavenge_slurm = '''\
 #SBATCH --time=04:00:00
 #SBATCH --mail-user=luwei0917@gmail.com
 #SBATCH --mail-type=FAIL
+#SBATCH -o outs/slurm-%j.out
 echo "My job ran on:"
 echo $SLURM_NODELIST
 srun {}\n'''
@@ -568,14 +569,16 @@ dataset = {"old":"1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split("
             "test":["t089", "t120", "t251", "top7", "1ubq", "t0766", "t0778", "t0782", "t0792", "t0803", "t0815", "t0833", "t0842", "t0844"]}
 dataset["combined"] = dataset["old"] + dataset["new"]
 
-def returnSteps(p):
-    if p in "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", "):
-        steps = 80
-    elif p in "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR".split(", "):
-        steps = 40
-    elif p in ["1MBA", "2FHA"]:
-        steps = 30
-    return steps
+dataset["may13"] = ['1r69', '3icb', '256b', '4cpv', '2mhr', '1mba', '2fha', '1fc2', '1enh', '2gb1', '2cro', '1ctf', '4icb']
+
+# def returnSteps(p):
+#     if p in "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", "):
+#         steps = 80
+#     elif p in "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR".split(", "):
+#         steps = 40
+#     elif p in ["1MBA", "2FHA"]:
+#         steps = 30
+#     return steps
 
 
 def get_aligned_info(p1, p2):
@@ -609,6 +612,372 @@ def slurmRun(slurmFileName, cmd, template=scavenge_slurm, memory=1):
     return jobId
 
 
+if args.day == "may28":
+    if args.mode == 1:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        pdb_list = dataset["may13"]
+        folder = "with_restart"
+        for pdb in pdb_list:
+            for i in range(20):
+                cmd = f"python mm_run.py setup/{pdb}/extended --to {folder}/{pdb}/{i}_0 -m 1 -s 2e5 -p CPU -t 2 --tempStart 600 --tempEnd 400\n"
+                cmd += f"python mm_analysis.py setup/{pdb}/{pdb} -t {folder}/{pdb}/{i}_0/movie.dcd"
+                jobId = slurmRun(f"slurms/{pdb}_{i}.slurm", cmd, memory=3)
+                jobIdList.append(jobId)
+                # exit()
+        waitForJobs(jobIdList, sleepInterval=100)
+        for pdb in pdb_list:
+            for i in range(20):
+                cmd = f"python mm_run.py setup/{pdb}/extended --to {folder}/{pdb}/{i}_1 -m 1 -s 2e5 -p CPU -t 2 --tempStart 400 --tempEnd 200 --fromCheckPoint {folder}/{pdb}/{i}_0/checkpnt.chk\n"
+                cmd += f"python mm_analysis.py setup/{pdb}/{pdb} -t {folder}/{pdb}/{i}_1/movie.dcd"
+                jobId = slurmRun(f"slurms/{pdb}_{i}.slurm", cmd, memory=3)
+                jobIdList.append(jobId)
+                # exit()
+
+if args.day == "may26":
+    if args.mode == 1:
+        do("mkdir -p slurms")
+        jobIdList = []
+        pdb_list = dataset["may13"]
+        for pdb in pdb_list:
+            for i in range(20):
+                cmd = f"python mm_run.py setup/{pdb}/extended --to fast_10f_timeStep/{pdb}/{i} -m 1 -s 1e5 -p CPU -t 1\n"
+                cmd += f"python mm_analysis.py setup/{pdb}/{pdb} -t fast_10f_timeStep/{pdb}/{i}/movie.dcd"
+                jobId = slurmRun(f"slurms/{pdb}_{i}.slurm", cmd, memory=3)
+                jobIdList.append(jobId)
+                # exit()
+if args.day == "may21":
+    if args.mode == 1:
+        # make sure all dump files exists.
+        a = glob.glob("/scratch/wl45/may_2019/database/*")
+        for one in a:
+            if "Q_" in one:
+                continue
+            if os.path.exists(os.path.join(one, "dump.lammpstrj")):
+                print(one)
+    if args.mode == 2:
+        splitPDB(".", "movie.pdb")
+
+if args.day == "may19":
+    if args.mode == 1:
+        newFolder = "optimization_4_correct"
+        do("gg_server.py -d may13 -m 1")
+        do("gg_server.py -d may13 -m 3")
+        cd("../iter1_optimization_decoys_2000")
+        do(f"mkdir -p {newFolder}")
+        cd(newFolder)
+        do("gg_server.py -d may13 -m 4")
+        do("gg_server.py -d may13 -m 5")
+        do("gg_server.py -d may13 -m 6")
+
+if args.day == "may13":
+    # pdb_list = dataset["combined"]
+    formatName = False
+    pdb_list = dataset["may13"]
+    Run = 30
+    # decoy_n = 1000
+    decoy_n = 2000
+    folder_list = []
+    folder_list_1 = ["original", "multi_iter0"]
+    folder_list_2 = ["multi_constant_tc_frag", "multi_constant_tc", "original_fragMemory", "multi_iter0_fragMemory"]
+    folder_list_3 = ["iter1_30", "iter1_90", "iter1_30_frag", "iter1_90_frag"]
+    folder_list_4 = ["iter2_30", "iter2_90", "iter2_30_frag", "iter2_90_frag"]
+    folder_list_5 = ["iter3_30", "iter3_90", "iter3_30_frag", "iter3_90_frag"]
+    folder_list_6 = ["iter1_30_correct", "iter1_30_correct_frag", "iter1_80_correct", "iter1_80_correct_frag"]
+    folder_list_7 = ["iter2_30_correct", "iter2_30_correct_frag", "iter2_80_correct", "iter2_80_correct_frag"]
+    folder_list_8 = ["iter3_30_correct", "iter3_30_correct_frag", "iter3_80_correct", "iter3_80_correct_frag"]
+    folder_list = folder_list_1 + folder_list_2
+    # folder_list = folder_list_2
+    # folder_list += folder_list_3
+    # folder_list += folder_list_4
+    # folder_list += folder_list_5
+    folder_list += folder_list_6
+    folder_list += folder_list_7
+    folder_list += folder_list_8
+    # folder_list = folder_list_1
+    # folder_list = ["original"]
+
+    if args.mode == 1:
+        # Convert Dump File to Pdbs
+        jobIdList = []
+        for simulation_location in folder_list:
+            cd(simulation_location)
+            for pp in pdb_list:
+                if formatName:
+                    p = pp.lower()[:4]
+                else:
+                    p = pp
+                cd(f"{p}/simulation")
+                proteins = p
+                jobId = slurmRun(f"convertDumpToPdbs.slurms", f"python3 ~/opt/gg_server.py -d may13 -m 11 -l {proteins}")
+                jobIdList.append(jobId)
+                cd("../..")
+            cd("..")
+        waitForJobs(jobIdList, sleepInterval=100)
+    if args.mode == 2:
+        # Transport Pdbs to database folder
+        jobIdList = []
+        for simulation_location in folder_list:
+            cd(simulation_location)
+            for pp in pdb_list:
+                if formatName:
+                    p = pp.lower()[:4]
+                else:
+                    p = pp
+                cd(f"{p}/simulation")
+                proteins = f"/scratch/wl45/may_2019/database/{simulation_location}_{p}"
+                jobId = slurmRun(f"transportPDBs.slurm", f"python3 ~/opt/gg_server.py -d may13 -m 22 -l {proteins}", memory=3)
+                jobIdList.append(jobId)
+                cd("../..")
+            cd("..")
+        waitForJobs(jobIdList, sleepInterval=200)
+    if args.mode == 11:
+        name = args.label
+        for i in range(30):
+            cd(f"{i}/0/")
+            do(f"cp ../{name}.seq .")
+            do(f"python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie {name}.seq")
+            cd("../..")
+    if args.mode == 22:
+        # python3 ~/opt/gg_server.py -d may06 -m 22 -l /scratch/wl45/may_2019/database/original_1r69
+        cmd = args.label
+        for i in range(30):
+            pre = f"{cmd}_{i}/"
+            do(f"mkdir -p {pre}")
+            do(f"cp -r {i}/0/* {pre}/")
+            fileName = "movie.pdb"
+            # splitPDB(pre, fileName)
+            # do(f"rm {pre}movie.*")
+    if args.mode == 3:
+        # process Qw info.
+        print("Processing Qw files")
+        # print(len(simulation_location_list))
+        for simulation_location in folder_list:
+            print(simulation_location)
+            for p in pdb_list:
+                # name = p.lower()[:4]
+                name = p
+                complete_Q = []
+                for i in range(Run):
+                    if not os.path.exists(f"../database/{simulation_location}_{name}_{i}/dump.lammpstrj"):
+                        print(f"File not exist {simulation_location}_{name}_{i}/dump.lammpstrj")
+                        continue
+                    if not os.path.exists(f"../database/{simulation_location}_{name}_{i}/movie.pdb"):
+                        print(f"File not exist {simulation_location}_{name}_{i}/movie.pdb")
+                        continue
+                    try:
+                        Q = pd.read_csv(f"../database/{simulation_location}_{name}_{i}/wham.dat")[" Qw"]
+                    except:
+                        print(f"File not exist {simulation_location}_{name}_{i}/wham.dat")
+                        continue
+                    n = len(Q)
+                    if n != 2000 and n != 1000 and n != 750:
+                        print(f"database/{simulation_location}_{name}_{i},  {n}")
+                    if n == 0:
+                        # print("!! Using previous i.")
+                        print(f"An error at {i}")
+                        continue
+
+                    complete_Q.append(pd.DataFrame(Q).assign(Run=i))
+                data = pd.concat(complete_Q).reset_index(drop=False)
+                data["Rank"] = data["index"].rank(ascending=False)
+                data.to_csv(f"../database/Q_{simulation_location}_{name}")
+
+
+    if args.mode == 4:
+        do("mkdir -p slurms")
+        jobIdList = []
+        for simulation_location in folder_list:
+            for p in pdb_list:
+                # name = p.lower()[:4]
+                name = p
+                cmd = f"python3 ~/opt/gg_server.py -d may13 -m 444 -l {simulation_location}__{name}"
+                jobId = slurmRun(f"slurms/decoys_{name}_{simulation_location}.slurm", cmd, memory=10)
+                jobIdList.append(jobId)
+        waitForJobs(jobIdList, sleepInterval=200)
+
+    if args.mode == 444:
+        # generate decoys
+        database_location = "../../database"
+        do("mkdir -p decoys/lammps")
+        import io
+        from Bio.PDB.PDBParser import PDBParser
+        simulation_location, name = args.label.split("__")
+        simulation_location_name = f"{simulation_location}_{name}"
+
+        def getStructures(x, all_movies):
+            index = int(x["index"])+1
+            run = int(x["Run"])
+
+            start = index * size
+            end = (index + 1) * size
+            f = io.StringIO("".join(all_movies[run][start:end]))
+            parser = PDBParser()
+            return parser.get_structure(f"{index}", f)
+
+        a = pd.read_csv(f"{database_location}/Q_{simulation_location_name}", index_col=0).query(f"Rank < {decoy_n*3}")
+        sampled = a.sample(decoy_n)
+        all_movies = {}
+        for i in sampled["Run"].unique():
+            with open(f"{database_location}/{simulation_location_name}_{i}/movie.pdb") as f:
+                movie = f.readlines()
+            all_movies[i] = movie
+        size = 0
+        for line in movie:
+            size += 1
+            if line == "END\n":
+                break
+        print(simulation_location_name, size)
+        sampled["structure"] = sampled.apply(getStructures, all_movies=all_movies, axis=1)
+        sampled["Qw"] = sampled[" Qw"].round(3)
+        sampled.drop(" Qw", axis=1)
+        sampled.to_pickle(f"decoys/lammps/{name}_{simulation_location}.pkl")
+
+    # if args.mode == 44:
+    #     # generate decoys
+    #     database_location = "../../database"
+    #     do("mkdir -p decoys/lammps")
+    #     import io
+    #     from Bio.PDB.PDBParser import PDBParser
+
+    #     def getStructures(x, all_movies):
+    #         index = int(x["index"])+1
+    #         run = int(x["Run"])
+
+    #         start = index * size
+    #         end = (index + 1) * size
+    #         f = io.StringIO("".join(all_movies[run][start:end]))
+    #         parser = PDBParser()
+    #         return parser.get_structure(f"{index}", f)
+
+    #     for simulation_location in folder_list:
+    #         for p in pdb_list:
+    #             # name = p.lower()[:4]
+    #             name = p
+    #             a = pd.read_csv(f"{database_location}/Q_{simulation_location}_{name}", index_col=0).query(f"Rank < {decoy_n*3}")
+    #             sampled = a.sample(decoy_n)
+    #             all_movies = {}
+    #             for i in sampled["Run"].unique():
+    #                 with open(f"{database_location}/{simulation_location}_{name}_{i}/movie.pdb") as f:
+    #                     movie = f.readlines()
+    #                 all_movies[i] = movie
+    #             size = 0
+    #             for line in movie:
+    #                 size += 1
+    #                 if line == "END\n":
+    #                     break
+    #             print(simulation_location, p, size)
+    #             sampled["structure"] = sampled.apply(getStructures, all_movies=all_movies, axis=1)
+    #             sampled["Qw"] = sampled[" Qw"].round(3)
+    #             sampled.drop(" Qw", axis=1)
+    #             sampled.to_pickle(f"decoys/lammps/{name}_{simulation_location}.pkl")
+    # if args.mode == 4:
+    #     # generate decoys
+    #     database_location = "../../database"
+    #     do("mkdir -p decoys/lammps")
+    #     for simulation_location in folder_list:
+    #         for p in pdb_list:
+    #             # name = p.lower()[:4]
+    #             name = p
+    #             a = pd.read_csv(f"{database_location}/Q_{simulation_location}_{name}", index_col=0).query(f"Rank < {decoy_n*3}")
+    #             sampled = a.sample(decoy_n)
+    #             with open(f"decoys/lammps/{name}_{simulation_location}.decoys", "w") as out:
+    #                 for i, item in sampled.iterrows():
+    #                     location = f"{database_location}/{simulation_location}_{name}_{int(item['Run'])}/frame{int(item['index']+1)}"
+    #                     qw = np.round(item[' Qw'], 3)
+    #                     if not os.path.exists(location+".pdb"):
+    #                         print(location, "not exists")
+    #                         location = pre
+    #                         qw = preQw
+    #                     out.write(f"{location} {qw}\n")
+    #                     pre = location
+    #                     preQw = qw
+    if args.mode == 5:
+        # Compute Phis
+        print("Computing Phis")
+        do("mkdir -p proteins_name_list")
+        do("mkdir -p slurms")
+        do("mkdir -p ../phis")
+        do("cp ../../gammas/for_simulation/iteration_multi_constraint_tc_constant_burial_gamma.dat burial_gamma.dat")
+        do("cp ../../gammas/for_simulation/iteration_multi_constraint_tc_constant_gamma.dat gamma.dat")
+        do("cp ~/opt/optimization/phi_list_contact.txt .")
+        do("cp ~/opt/optimization/group_normalization.txt .")
+        do("rm phi_list.txt")
+        do("cat phi_list_contact.txt >> phi_list.txt")
+        do("cat group_normalization.txt >> phi_list.txt")
+        jobIdList = []
+        for simulation_location in folder_list:
+            for p in pdb_list:
+                # name = p.lower()[:4]
+                name = p
+                with open(f"proteins_name_list/proteins_name_list_{name}_{simulation_location}.txt", "w") as out:
+                        out.write(f"{name}_{simulation_location}\n")
+                cmd = f"python3 ~/opt/compute_phis.py -m 3 proteins_name_list/proteins_name_list_{name}_{simulation_location}.txt"
+                jobId = slurmRun(f"slurms/run_{name}_{simulation_location}.slurm", cmd, memory=10)
+                jobIdList.append(jobId)
+        waitForJobs(jobIdList, sleepInterval=200)
+    if args.mode == 6:
+        # time.sleep(4000)
+        do("mkdir -p gammas")
+        runFile = f"slurms/run_on_scavenge_2.slurm"
+        with open(runFile, "w") as out:
+            out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d may13 -m 66 -l group_normalization.txt"))
+        replace(runFile, "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch {runFile}")
+
+        runFile = f"slurms/run_on_scavenge_1.slurm"
+        with open(runFile, "w") as out:
+            out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d may13 -m 66 -l phi_list_contact.txt"))
+        replace(runFile, "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch {runFile}")
+    if args.mode == 66:
+        # for testing toymodel
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # n = len(simulation_location_list)
+        # n = 2
+        folder_list = folder_list_1 + folder_list_2
+        # folder_list += folder_list_3
+        # folder_list += folder_list_4
+        # folder_list += folder_list_5
+        folder_list += folder_list_6
+        folder_list += folder_list_7
+        folder_list += folder_list_8
+        n = len(folder_list)
+        print(n, folder_list)
+        phi_file = args.label
+        # import time
+        # time.sleep(4000)
+        with open(f"proteins_name_list.txt", "w") as out:
+            for p in pdb_list:
+                # name = p.lower()[:4]
+                name = p
+                out.write(f"{name}\n")
+        complete_proteins = "proteins_name_list.txt"
+        simulation_location_list_dic = defaultdict(list)
+        for p in pdb_list:
+            # name = p.lower()[:4]
+            name = p
+            simulation_location_list_dic[name] += folder_list
+
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, phi_file, decoy_method='lammps',
+                                        num_decoys=n*decoy_n, noise_filtering=True, jackhmmer=False, read=False, mode=2, withBiased=True, simulation_location_list_dic=simulation_location_list_dic)
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='lammps',
+        #                                 num_decoys=n*6000, noise_filtering=True, jackhmmer=False, read=False)
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='lammps',
+        #                                 num_decoys=n*6000, noise_filtering=True, jackhmmer=False, read=False, mode=1, simulation_location_list=simulation_location_list)
+    if args.mode == 7:
+        do("mkdir -p database/dompdb")
+        do("mkdir -p optimization")
+        for p in pdb_list:
+            # name = p.lower()[:4]
+            name = p
+            do(f"cp ../database/dompdb/{name}.pdb database/dompdb/")
+
+
+
 if args.day == "may11":
     if args.mode == 1:
         formatName = True
@@ -635,12 +1004,29 @@ if args.day == "may11":
         a = glob.glob("frame*.pdb")
         a.sort(key=natural_keys)
         print(len(a))
-        with open("ff_energy.dat", "w") as out:
-            for frame in a[-50:]:
+        with open("ff_energy_smaller.dat", "w") as out:
+            for frame in a[::20]:
                 cmd = f"python3 ~/opt/compute_energy.py {frame} -l /scratch/wl45/may_2019/family_fold/ff_contact/{protein}/"
                 line = getFromTerminal(cmd)
                 out.write(line)
-
+    if args.mode == 3:
+        pdb_list = dataset["combined"]
+        folder_list = ["original", "multi_iter0"]
+        for location in folder_list:
+            cd(location)
+            do("pwd")
+            for pp in pdb_list:
+                p = pp.lower()[:4]
+                name = p
+                cd(f"{p}/simulation/native/rerun")
+                # do(f"cp ../{name}.seq .")
+                # do(f"python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie {name}.seq")
+                # fileName = "movie.pdb"
+                # splitPDB("./", fileName)
+                cmd = f"python3 ~/opt/compute_energy.py frame0.pdb -l /scratch/wl45/may_2019/family_fold/ff_contact/{name}/ > newContact.dat"
+                line = do(cmd)
+                cd("../../../..")
+            cd("..")
 if args.day == "may10":
     if args.mode == 1:
         a = glob.glob("*.out")
@@ -664,62 +1050,7 @@ if args.day == "may09":
 if args.day == "may07":
     if args.mode == 1:
         splitPDB(".", "movie.pdb")
-if args.day == "may06":
-    formatName = True
-    pdb_list = dataset["combined"]
-    # folder_list = ["original", "multi_iter0"]
-    folder_list = ["multi_constant_tc_frag", "multi_constant_tc", "original_fragMemory", "multi_iter0_fragMemory"]
 
-    if args.mode == 1:
-        # Convert Dump File to Pdbs
-        jobIdList = []
-        for simulation_location in folder_list:
-            cd(simulation_location)
-            for pp in pdb_list:
-                if formatName:
-                    p = pp.lower()[:4]
-                else:
-                    p = pp
-                cd(f"{p}/simulation")
-                proteins = p
-                jobId = slurmRun(f"convertDumpToPdbs.slurms", f"python3 ~/opt/gg_server.py -d may06 -m 11 -l {proteins}")
-                jobIdList.append(jobId)
-                cd("../..")
-            cd("..")
-        waitForJobs(jobIdList, sleepInterval=300)
-
-        # Transport Pdbs to database folder
-        jobIdList = []
-        for simulation_location in folder_list:
-            cd(simulation_location)
-            for pp in pdb_list:
-                if formatName:
-                    p = pp.lower()[:4]
-                else:
-                    p = pp
-                cd(f"{p}/simulation")
-                proteins = f"/scratch/wl45/may_2019/database/{simulation_location}_{p}"
-                jobId = slurmRun(f"transportPDBs.slurm", f"python3 ~/opt/gg_server.py -d may06 -m 22 -l {proteins}", memory=3)
-                jobIdList.append(jobId)
-                cd("../..")
-            cd("..")
-        waitForJobs(jobIdList, sleepInterval=300)
-    if args.mode == 11:
-        name = args.label
-        for i in range(30):
-            cd(f"{i}/0/")
-            do(f"cp ../{name}.seq .")
-            do(f"python2 ~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj movie {name}.seq")
-            cd("../..")
-    if args.mode == 22:
-        cmd = args.label
-        for i in range(30):
-            pre = f"{cmd}_{i}/"
-            do(f"mkdir -p {pre}")
-            do(f"cp -r {i}/0/* {pre}/")
-            fileName = "movie.pdb"
-            splitPDB(pre, fileName)
-            do(f"rm {pre}movie.*")
 
 if args.day == "may05":
     folder_list = ["original", "multi_iter0"]

@@ -355,9 +355,9 @@ f_burial = np.loadtxt(f"{pre}/burial.dat")
 
 pdb = (args.protein).split(".")[0]
 structure = parse_pdb(pdb)
-e_mediated = compute_mediated(structure)
-e_direct = compute_direct(structure)
-e_burial = compute_burial(structure)
+# e_mediated = compute_mediated(structure)
+# e_direct = compute_direct(structure)
+# e_burial = compute_burial(structure)
 # print("Mediated, Direct, Mediated+Direct, Burial, Mediated+Direct+Burial")
 # print(e_mediated, e_direct, e_mediated + e_direct, e_burial, e_mediated + e_direct + e_burial)
 

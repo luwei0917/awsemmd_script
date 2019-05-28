@@ -303,6 +303,12 @@ def read_decoy_structures(structure_file_name):
     return structures
 
 def read_decoy_structures_andQ(structure_file_name):
+    if structure_file_name[-3:] == "pkl":
+        a = pd.read_pickle(structure_file_name)
+        structures = a["structure"].tolist()
+        Qs = a["Qw"].tolist()
+        return structures, Qs
+
     structures = []
     Qs = []
     with open(structure_file_name, "r") as structure_file:
@@ -312,6 +318,7 @@ def read_decoy_structures_andQ(structure_file_name):
             structures.append(s)
             Qs.append(Q)
     return structures, Qs
+
 
 def is_hetero(residue):
     if residue.id[0] != ' ':
@@ -1577,7 +1584,7 @@ def evaluate_phis_for_protein_Wei(protein, phi_list, decoy_method, max_decoys, m
                 output_file.close()
             else:
                 print("must be at least 1 or -1.")
-def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_decoys, tm_only=False, withBiased=False, mode=0):
+def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_decoys, tm_only=False, withBiased=False, mode=0, pickle=True):
         print(protein, withBiased)
         if mode == 1:
             baseProtein = protein.split("_")[0]
@@ -1603,7 +1610,10 @@ def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_dec
             output_file = open(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
             # decoy_sequences = read_decoy_sequences(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
             if withBiased:
-                decoy_structures, Qs = read_decoy_structures_andQ(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
+                if pickle:
+                    decoy_structures, Qs = read_decoy_structures_andQ(os.path.join(decoys_root_directory, "%s/%s.pkl" % (decoy_method, protein)))
+                else:
+                    decoy_structures, Qs = read_decoy_structures_andQ(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
                 output_file_Q = open(os.path.join(phis_directory, "%s_%s_decoysQ_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
                 for i_decoy, Q in enumerate(Qs):
                     if i_decoy >= max_decoys:
@@ -1989,10 +1999,18 @@ def read_native_phi(protein, phi_list, total_phis, jackhmmer=False, mode=0, simu
                     phi, protein, parameters_string)), 'r')
 
             for line in input_file:
+                # print(line, len(line))
+
                 line = line.strip().split()
+                print(len(line))
                 for i_value, value_i in enumerate(line):
-                    phi_native[i_phi] = float(line[i_value])
-                    i_phi += 1
+                    try:
+                        phi_native[i_phi] = float(line[i_value])
+                        i_phi += 1
+                    except:
+                        print("ERROR", phi, protein, parameters_string)
+                        print(line, len(line))
+                        exit()
     return phi_native
 
 
@@ -2515,7 +2533,6 @@ def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_me
         for i_protein, protein in enumerate(training_set):
             phi_native_i_protein[i_protein] = read_native_phi(
                 protein, phi_list, total_phis, jackhmmer=jackhmmer, **kwargs)
-
         phi_native = np.average(phi_native_i_protein, axis=0)
 
         # Output to a file;
@@ -2617,6 +2634,7 @@ def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_me
             A, B, half_B, other_half_B, std_half_B, total_phis, num_decoys)
         # gamma_file_name = "%sfiltered_%s_%s_gamma.dat" % (gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string)
         # gamma_file = open(gamma_file_name, 'w')
+
         filtered_gamma_file_name = file_prefix + '_gamma_filtered'
 #        filtered_gamma_file = open(filtered_gamma_file_name, 'w')
         np.savetxt(filtered_gamma_file_name, filtered_gamma, fmt='%1.5f')
@@ -2792,38 +2810,38 @@ def calculate_A_B_and_gamma_xl23(training_set_file, phi_list_file_name, decoy_me
 def get_filtered_gamma_B_lamb_P_and_lamb(A, B, half_B, other_half_B, std_half_B, total_phis, num_decoys, noise_iterations=10, relative_error_threshold=0.5, mode=2, setCutoff=None):
     lamb, P = np.linalg.eig(B)
     lamb, P = sort_eigenvalues_and_eigenvectors(lamb, P)
+    if not setCutoff:
+        cutoff_modes = []
+        for i_noise in range(noise_iterations):
+            noisy_B = np.zeros((total_phis, total_phis))
+            for i in range(total_phis):
+                for j in range(i, total_phis):
+                    if mode == 1:
+                        random_B_ij = np.random.normal(
+                            loc=half_B[i][j], scale=std_half_B[i][j] / float(num_decoys))
+                    elif mode == 2:
+                        random_B_ij = np.random.normal(
+                            loc=half_B[i][j], scale=std_half_B[i][j] / float(num_decoys)**0.5)
+                    # random_B_ij = np.random.normal(
+                    #     loc=half_B[i][j], scale=std_half_B[i][j] / float(num_decoys))
+                    # random_B_ij = np.random.normal(
+                    #     loc=half_B[i][j], scale=std_half_B[i][j])
+                    noisy_B[i][j] = noisy_B[j][i] = random_B_ij - \
+                        other_half_B[i][j]
 
-    cutoff_modes = []
-    for i_noise in range(noise_iterations):
-        noisy_B = np.zeros((total_phis, total_phis))
-        for i in range(total_phis):
-            for j in range(i, total_phis):
-                if mode == 1:
-                    random_B_ij = np.random.normal(
-                        loc=half_B[i][j], scale=std_half_B[i][j] / float(num_decoys))
-                elif mode == 2:
-                    random_B_ij = np.random.normal(
-                        loc=half_B[i][j], scale=std_half_B[i][j] / float(num_decoys)**0.5)
-                # random_B_ij = np.random.normal(
-                #     loc=half_B[i][j], scale=std_half_B[i][j] / float(num_decoys))
-                # random_B_ij = np.random.normal(
-                #     loc=half_B[i][j], scale=std_half_B[i][j])
-                noisy_B[i][j] = noisy_B[j][i] = random_B_ij - \
-                    other_half_B[i][j]
+            noisy_lamb, noisy_P = np.linalg.eig(noisy_B)
+            noisy_lamb, noisy_P = sort_eigenvalues_and_eigenvectors(
+                noisy_lamb, noisy_P)
 
-        noisy_lamb, noisy_P = np.linalg.eig(noisy_B)
-        noisy_lamb, noisy_P = sort_eigenvalues_and_eigenvectors(
-            noisy_lamb, noisy_P)
+            try:
+                cutoff_mode = np.where(
+                    np.abs(lamb - noisy_lamb) / lamb > relative_error_threshold)[0][0]
+            except IndexError:
+                cutoff_mode = len(lamb)
+            cutoff_modes.append(cutoff_mode)
 
-        try:
-            cutoff_mode = np.where(
-                np.abs(lamb - noisy_lamb) / lamb > relative_error_threshold)[0][0]
-        except IndexError:
-            cutoff_mode = len(lamb)
-        cutoff_modes.append(cutoff_mode)
-
-    cutoff_mode = min(cutoff_modes)
-    if setCutoff:
+        cutoff_mode = min(cutoff_modes)
+    else:
         cutoff_mode = setCutoff
     print(cutoff_mode)
 

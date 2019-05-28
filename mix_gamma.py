@@ -28,6 +28,7 @@ parser.add_argument("gamma", help="Gamma")
 parser.add_argument("-a", "--alpha", type=float, default=0.3)
 parser.add_argument("-i", "--iter", type=str, default="-1")
 parser.add_argument("-o", "--onlyToSimulation", action="store_true", default=False)
+parser.add_argument("-s", "--scale", action="store_true", default=False)
 args = parser.parse_args()
 
 with open('mix_gamma_cmd.txt', 'a') as f:
@@ -51,8 +52,11 @@ if args.onlyToSimulation:
 
 preGamma = np.loadtxt(args.preGamma)
 
-if alpha == 0.3:
-    mix_gammas_3(pre, Gamma, preGamma, alpha=alpha, iterGammaName=f"iter_{i}", iteration=f"iter_{i}")
-else:
-    mix_gammas_3(pre, Gamma, preGamma, alpha=alpha, iterGammaName=f"iter_{i}_{int(alpha*100)}", iteration=f"iter_{i}")
+# if alpha == 0.3:
+#     mix_gammas_3(pre, Gamma, preGamma, alpha=alpha, scale=args.scale iterGammaName=f"iter_{i}", iteration=f"iter_{i}")
+# else:
+#     mix_gammas_3(pre, Gamma, preGamma, alpha=alpha, scale=args.scale, iterGammaName=f"iter_{i}_{int(alpha*100)}", iteration=f"iter_{i}")
+
+mix_gammas_3(pre, Gamma, preGamma, alpha=alpha, scale=args.scale, iterGammaName=f"iter_{i}_{int(alpha*100)}", iteration=f"iter_{i}")
+
 os.system(f"mv iteration_iter_{i}_* for_simulation/")

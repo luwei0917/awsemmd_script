@@ -63,7 +63,7 @@ burial = args.gamma
 
 
 if args.mode == 0:
-    data = pd.read_csv("/scratch/wl45/april_2019/protein_info.csv", index_col=0)
+    data = pd.read_csv("/scratch/wl45/may_2019/protein_info.csv", index_col=0)
     k_rg = 1
     pdb_list = dataset["combined"]
 

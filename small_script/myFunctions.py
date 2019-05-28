@@ -1087,11 +1087,14 @@ def gamma_format_convertion_iteration_to_simulation(iteration_gamma, gamma_for_s
         np.savetxt(burial_gamma_for_simulation, g, fmt='%7.4f')
 
 
-def mix_gammas_3(pre, Gamma, preGamma, alpha=None, iterGammaName=None, iteration="5"):
+def mix_gammas_3(pre, Gamma, preGamma, alpha=None, scale=True, iterGammaName=None, iteration="5"):
     percent = int(alpha*100)
-    scale = np.std(preGamma)/np.std(Gamma)
-    iter_gamma = ((1- alpha)*preGamma + alpha*(scale*Gamma)).astype(float)
-    iter_gamma *= np.std(preGamma)/np.std(iter_gamma)
+    if scale:
+        scale = np.std(preGamma)/np.std(Gamma)
+        iter_gamma = ((1- alpha)*preGamma + alpha*(scale*Gamma)).astype(float)
+        iter_gamma *= np.std(preGamma)/np.std(iter_gamma)
+    else:
+        iter_gamma = ((1- alpha)*preGamma + alpha*(Gamma)).astype(float)
 
     # pre = "/Users/weilu/Research/server/march_2019/optimization_weighted_by_q_iter1/"
     gamma_for_simulation = pre + f"iteration_{iteration}_gamma_{percent}.dat"
