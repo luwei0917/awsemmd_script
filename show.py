@@ -14,6 +14,7 @@ parser.add_argument("-d", "--debug", action="store_true", default=False)
 parser.add_argument("protein", help="the name of protein file")
 parser.add_argument("-p", "--plot", action="store_true", default=False, help="Plot the result")
 parser.add_argument("--casp", action="store_true", default=False)
+parser.add_argument("--openMM", action="store_true", default=False)
 parser.add_argument("--step", type=int, default=8000,
                     help="Which step to show")
 parser.add_argument("--tmalign", action="store_true", default=False)
@@ -38,7 +39,23 @@ else:
     do = os.system
     cd = os.chdir
 
-
+if args.openMM:
+    do("~/opt/TMalign/TMalign lastFrame.pdb crystal_structure.pdb -o result".format(protein_name))
+    do("cp result_all_atm result_all_atm.pdb")
+    do("grep 'TM-score=' result > tmscore.dat")
+    # Seq_ID=n_identical/n_aligned
+    do("cat tmscore.dat")
+    with open("tmscore.dat", "r") as f:
+        for line in f:
+            aligned_length,rmsd,tmscore,seqid = line.split(",")
+            aligned_length = int(aligned_length.split("=")[1])
+            rmsd = float(rmsd.split("=")[1])
+            tmscore = float(tmscore.split("=")[1])
+            seqid = float(seqid.split("=")[1])
+            print("aligned_length, rmsd, tmscore, seqid")
+            print(aligned_length, rmsd, tmscore, seqid)
+    do("pymol ~/opt/plot_scripts/tmalign_all.pml")
+    exit()
 
 if(args.frame >= 0):
     frame = int(args.frame)
@@ -50,7 +67,7 @@ do("cp ../{}.seq .".format(protein_name))
 do("cp ../crystal_structure.pdb {}.pdb".format(protein_name))
 if args.submode == -1:
     do("~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj awsem {}.seq {}".format(protein_name, frame))
-else:
+elif args.usbmode == 0:
     do("~/opt/script/BuildAllAtomsFromLammps_seq.py dump.lammpstrj.{} awsem {}.seq {}".format(args.submode, protein_name, frame))
 
 do("~/opt/TMalign/TMalign awsem.pdb {}.pdb -o result".format(protein_name))

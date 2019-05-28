@@ -26,10 +26,18 @@ args = parser.parse_args()
 do = os.system
 cd = os.chdir
 
-protein_name = args.protein.split('.')[0]
 
 if args.fix >= 0:
     do(f"python ~/opt/small_script/PBC_fixer.py -n {args.fix}")
+
+if args.mode == 4:
+    do("python ~/openmmawsem/helperFunctions/convertOpenmmTrajectoryToStandardMovie.py movie.pdb")
+    do("cp ~/opt/plot_scripts/movie.tcl .")
+    do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e movie.tcl")
+
+protein_name = args.protein.split('.')[0]
+
+
 if args.mode == 3:
     # do("python3 ~/opt/small_script/delete_lammps_frame.py")
     if args.submode == -1:
