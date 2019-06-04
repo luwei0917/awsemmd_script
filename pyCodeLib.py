@@ -88,7 +88,7 @@ decoys_root_directory = "decoys/"
 aligments_root_directory = "alignments/"
 tms_directory = "/opt/home/xl23/Working/Levine/jason/optimization/awsem/tms/"
 gammas_directory = "gammas/"
-
+sub_gammas_directory = "sub_gamma/"
 # These three functions provide a way of calling a function multiple times (that run independently)
 # on a certain number of processors so that a new function call starts when a processor becomes available
 
@@ -898,65 +898,14 @@ def phi_density_mediated_contact_well(res_list, neighbor_list, parameter_list):
                 phis_to_return.append(phi_mediated_contact_well[i][j][k])
     return phis_to_return
 
-def phi_density_mediated_contact_multiDensity_well(res_list, neighbor_list, parameter_list):
-    r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
-    cb_density = calculate_cb_density(res_list, neighbor_list)
-    weight_density = calculate_cb_weight_density(res_list, neighbor_list)
-    r_min = float(r_min)
-    r_max = float(r_max)
-    kappa = float(kappa)
-    min_seq_sep = int(min_seq_sep)
-    density_threshold = float(density_threshold)
-    density_kappa = float(density_kappa)
-    phi_mediated_contact_well = np.zeros((2, 20,20))
-    weight_phi_mediated_contact_well = np.zeros((2, 20,20))
-    weight_density_threshold = 3.0
-    for res1globalindex, res1 in enumerate(res_list):
-        res1index = get_local_index(res1)
-        res1chain = get_chain(res1)
-        rho_i = cb_density[res1globalindex]
-        rho_i_weight = weight_density[res1globalindex]
-        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
-            res2index = get_local_index(res2)
-            res2chain = get_chain(res2)
-            res2globalindex = get_global_index(res_list, res2)
-            rho_j = cb_density[res2globalindex]
-            rho_j_weight = weight_density[res2globalindex]
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
-                res1type = get_res_type(res_list, res1)
-                res2type = get_res_type(res_list, res2)
-                rij = get_interaction_distance(res1, res2)
-                _interaction_well = interaction_well(rij, r_min, r_max, kappa)
-                _pij_protein = prot_water_switchFunc_sigmaProt(
-                    rho_i, rho_j, density_threshold, density_kappa) * _interaction_well
-                _pij_water = prot_water_switchFunc_sigmaWater(
-                    rho_i, rho_j, density_threshold, density_kappa) * _interaction_well
-                phi_mediated_contact_well[0][res1type][res2type] += _pij_protein
-                phi_mediated_contact_well[1][res1type][res2type] += _pij_water
-                if not res1type == res2type:
-                    phi_mediated_contact_well[0][res2type][res1type] += _pij_protein
-                    phi_mediated_contact_well[1][res2type][res1type] += _pij_water
-
-                _pij_heavy = prot_water_switchFunc_sigmaProt(
-                    rho_i_weight, rho_j_weight, weight_density_threshold, density_kappa) * _interaction_well
-                _pij_light = prot_water_switchFunc_sigmaWater(
-                    rho_i_weight, rho_j_weight, weight_density_threshold, density_kappa) * _interaction_well
-                weight_phi_mediated_contact_well[0][res1type][res2type] += _pij_heavy
-                weight_phi_mediated_contact_well[1][res1type][res2type] += _pij_light
-                if not res1type == res2type:
-                    weight_phi_mediated_contact_well[0][res2type][res1type] += _pij_heavy
-                    weight_phi_mediated_contact_well[1][res2type][res1type] += _pij_light
-    phis_to_return = []
-    for i in range(2):
-        for j in range(20):
-            for k in range(j, 20):
-                phis_to_return.append(phi_mediated_contact_well[i][j][k])
-
-    for i in range(2):
-        for j in range(20):
-            for k in range(j, 20):
-                phis_to_return.append(weight_phi_mediated_contact_well[i][j][k])
-    return phis_to_return
+def get_pre_and_post(res_list, index):
+    n = len(res_list)
+    if index == 0:
+        return res_list[0], res_list[1]
+    elif index == n - 1:
+        return res_list[index-1], res_list[index]
+    else:
+        return res_list[index-1], res_list[index+1]
 
 def phi_pairwise_contact_multiLetter_well(res_list, neighbor_list, parameter_list):
     r_min, r_max, kappa, min_seq_sep = parameter_list
@@ -964,7 +913,8 @@ def phi_pairwise_contact_multiLetter_well(res_list, neighbor_list, parameter_lis
     r_max = float(r_max)
     kappa = float(kappa)
     min_seq_sep = int(min_seq_sep)
-    phi_pairwise_contact_multiLetter_well = np.zeros((4,4,20,20))
+    # phi_pairwise_contact_multiLetter_well = np.zeros((4,4,20,20))
+    phi_pairwise_contact_multiLetter_well = np.zeros((80,80))
     for res1globalindex, res1 in enumerate(res_list):
         res1index = get_local_index(res1)
         res1chain = get_chain(res1)
@@ -981,17 +931,17 @@ def phi_pairwise_contact_multiLetter_well(res_list, neighbor_list, parameter_lis
                 res2_pre, res2_post = get_pre_and_post(res_list, res2globalindex)
                 res1_neighbor_type = get_neighbor_res_type(res1_pre, res1_post)
                 res2_neighbor_type = get_neighbor_res_type(res2_pre, res2_post)
+                res1_with_neighbor_type = res1_neighbor_type*20+res1type
+                res2_with_neighbor_type = res2_neighbor_type*20+res2type
 
-                phi_pairwise_contact_multiLetter_well[res1_neighbor_type][res2_neighbor_type][res1type][res2type] += interaction_well(rij, r_min, r_max, kappa)
-                if not res1type == res2type:
-                    phi_pairwise_contact_multiLetter_well[res1_neighbor_type][res2_neighbor_type][res2type][res1type] += interaction_well(rij, r_min, r_max, kappa)
+                phi_pairwise_contact_multiLetter_well[res1_with_neighbor_type][res2_with_neighbor_type] += interaction_well(rij, r_min, r_max, kappa)
+                if not res1_with_neighbor_type == res2_with_neighbor_type:
+                    phi_pairwise_contact_multiLetter_well[res2_with_neighbor_type][res1_with_neighbor_type] += interaction_well(rij, r_min, r_max, kappa)
 
     phis_to_return = []
-    for ii in range(4):
-        for jj in range(4):
-            for i in range(20):
-                for j in range(i, 20):
-                    phis_to_return.append(phi_pairwise_contact_multiLetter_well[ii][jj][i][j])
+    for i in range(80):
+        for j in range(i, 80):
+            phis_to_return.append(phi_pairwise_contact_multiLetter_well[i][j])
     return phis_to_return
 
 
@@ -1004,7 +954,8 @@ def phi_density_mediated_contact_multiLetter_well(res_list, neighbor_list, param
     min_seq_sep = int(min_seq_sep)
     density_threshold = float(density_threshold)
     density_kappa = float(density_kappa)
-    phi_mediated_contact_multiLetter_well = np.zeros((4,4, 2, 20,20))
+    # phi_mediated_contact_multiLetter_well = np.zeros((4,4, 2, 20,20))
+    phi_mediated_contact_multiLetter_well = np.zeros((2, 80, 80))
     for res1globalindex, res1 in enumerate(res_list):
         res1index = get_local_index(res1)
         res1chain = get_chain(res1)
@@ -1023,24 +974,24 @@ def phi_density_mediated_contact_multiLetter_well(res_list, neighbor_list, param
                 res2_pre, res2_post = get_pre_and_post(res_list, res2globalindex)
                 res1_neighbor_type = get_neighbor_res_type(res1_pre, res1_post)
                 res2_neighbor_type = get_neighbor_res_type(res2_pre, res2_post)
+                res1_with_neighbor_type = res1_neighbor_type*20+res1type
+                res2_with_neighbor_type = res2_neighbor_type*20+res2type
 
                 _pij_protein = prot_water_switchFunc_sigmaProt(
                     rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
                 _pij_water = prot_water_switchFunc_sigmaWater(
                     rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
-                phi_mediated_contact_multiLetter_well[res1_neighbor_type][res2_neighbor_type][0][res1type][res2type] += _pij_protein
-                phi_mediated_contact_multiLetter_well[res1_neighbor_type][res2_neighbor_type][1][res1type][res2type] += _pij_water
-                if not res1type == res2type:
-                    phi_mediated_contact_multiLetter_well[res1_neighbor_type][res2_neighbor_type][0][res2type][res1type] += _pij_protein
-                    phi_mediated_contact_multiLetter_well[res1_neighbor_type][res2_neighbor_type][1][res2type][res1type] += _pij_water
+                phi_mediated_contact_multiLetter_well[0][res1_with_neighbor_type][res2_with_neighbor_type] += _pij_protein
+                phi_mediated_contact_multiLetter_well[1][res1_with_neighbor_type][res2_with_neighbor_type] += _pij_water
+                if not res1_with_neighbor_type == res2_with_neighbor_type:
+                    phi_mediated_contact_multiLetter_well[0][res2_with_neighbor_type][res1_with_neighbor_type] += _pij_protein
+                    phi_mediated_contact_multiLetter_well[1][res2_with_neighbor_type][res1_with_neighbor_type] += _pij_water
 
     phis_to_return = []
-    for ii in range(4):
-        for jj in range(4):
-            for i in range(2):
-                for j in range(20):
-                    for k in range(j, 20):
-                        phis_to_return.append(phi_mediated_contact_multiLetter_well[ii][jj][i][j][k])
+    for i in range(2):
+        for j in range(80):
+            for k in range(j, 80):
+                phis_to_return.append(phi_mediated_contact_multiLetter_well[i][j][k])
     return phis_to_return
 
 def phi_burial_multiLetter_well(res_list, neighbor_list, parameter_list):
@@ -1049,7 +1000,8 @@ def phi_burial_multiLetter_well(res_list, neighbor_list, parameter_list):
 
     cb_density = calculate_cb_density(res_list, neighbor_list)
 
-    phi_burial = np.zeros((3, 20))
+    # phi_burial_multiLetter = np.zeros((4, 3, 20))
+    phi_burial_multiLetter = np.zeros((3, 80))
     rho_table = [[0.0, 3.0], [3.0, 6.0], [6.0, 9.0]]
     for i in range(3):
         for res1globalindex, res1 in enumerate(res_list):
@@ -1060,16 +1012,22 @@ def phi_burial_multiLetter_well(res_list, neighbor_list, parameter_list):
 
             res1_pre, res1_post = get_pre_and_post(res_list, res1globalindex)
             res1_neighbor_type = get_neighbor_res_type(res1_pre, res1_post)
-
+            res1_with_neighbor_type = res1_neighbor_type*20+res1type
             # print res1globalindex, res1index, res1chain, res1type, res1density
             burial_i = interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
-            phi_burial_multiLetter[res1_neighbor_type][i][res1type] += burial_i
+            # phi_burial_multiLetter[res1_neighbor_type][i][res1type] += burial_i
+            phi_burial_multiLetter[i][res1_with_neighbor_type] += burial_i
 
     phis_to_return = []
-    for ii in range(4):
-        for i in range(3):
-            for j in range(20):
-                phis_to_return.append(phi_burial_multiLetter[ii][i][j])
+    # for ii in range(4):
+    #     for i in range(3):
+    #         for j in range(20):
+    #             phis_to_return.append(phi_burial_multiLetter[ii][i][j])
+
+    for i in range(3):
+        for j in range(80):
+            phis_to_return.append(phi_burial_multiLetter[i][j])
+
     return phis_to_return
 
 def read_gamma(gammaFile):
@@ -2752,6 +2710,125 @@ def calculate_A_B_and_gamma_parallel(training_set_file, phi_list_file_name, deco
         return A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb
     else:
         return A, B, gamma
+
+def calculate_A_B_and_gamma_wl45_parallel(training_set_file, phi_list_file_name, decoy_method, num_decoys,
+                                            noise_filtering=True, jackhmmer=False, read=True, withBiased=False, **kwargs):
+    phi_list = read_phi_list(phi_list_file_name)
+    training_set = read_column_from_file(training_set_file, 1)
+    print("Size of training set", len(training_set))
+    os.system(f"echo 'Size {len(training_set)}' >> log")
+    # Find out how many total phi_i there are and get full parameter string
+    total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
+        phi_list, training_set, **kwargs)
+    print("Size of phis", total_phis)
+    if read:
+        print("reading native")
+        os.system("echo 'Reading native' >> log")
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_native_summary.txt'
+        phi_native = np.loadtxt(phi_summary_file_name)
+    else:
+        phi_native_i_protein = np.zeros((len(training_set), total_phis))
+        for i_protein, protein in enumerate(training_set):
+            phi_native_i_protein[i_protein] = read_native_phi(
+                protein, phi_list, total_phis, jackhmmer=jackhmmer, **kwargs)
+        phi_native = np.average(phi_native_i_protein, axis=0)
+
+    if read:
+        print("Reading phi decoy")
+        os.system("echo 'Reading phi decoy' >> log")
+        # Output to a file;
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_decoy_summary.txt'
+        average_phi_decoy = np.loadtxt(phi_summary_file_name)
+        phi_all_summary_file_name = file_prefix + '_phi_decoy_all_summary.txt'
+        phi_i_protein_i_decoy = np.zeros(
+            (len(training_set), num_decoys, total_phis))
+        # phi_i_protein_i_decoy = np.loadtxt(phi_all_summary_file_name)
+        phi_i_protein_i_decoy = np.reshape(phi_i_protein_i_decoy, (len(training_set), num_decoys, total_phis))
+    else:
+        phi_i_protein_i_decoy = np.zeros(
+            (len(training_set), num_decoys, total_phis))
+
+        for i_protein, protein in enumerate(training_set):
+            phi_i_protein_i_decoy[i_protein] = read_decoy_phis(
+                protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=jackhmmer, **kwargs)
+        if withBiased:
+            phi_i_protein_i_decoyQ = np.zeros(
+                (len(training_set), num_decoys, 1))
+            for i_protein, protein in enumerate(training_set):
+                phi_i_protein_i_decoyQ[i_protein] = read_decoyQ_phis(
+                    protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=jackhmmer, **kwargs)
+            phi_i_protein_i_decoy *= 1 - phi_i_protein_i_decoyQ
+            normalization = np.sum(1 - phi_i_protein_i_decoyQ)
+        else:
+            normalization = len(training_set) * num_decoys
+        # The phi_i decoy is constructed as the union of all decoys of all proteins in the training set;
+        phi_i_decoy_reshaped = np.reshape(phi_i_protein_i_decoy,
+                                            (len(training_set) * num_decoys, total_phis))
+        # average_phi_decoy = np.average(phi_i_decoy_reshaped, axis=0)
+        average_phi_decoy = np.sum(phi_i_decoy_reshaped, axis=0) / normalization
+        phi_i_decoy_reshaped = None
+    # A, B, half_B, other_half_B, std_half_B = calculate_A_and_B(
+    #     average_phi_decoy, phi_native, total_phis, num_decoys, phi_i_decoy_reshaped)
+    print("done reading")
+    # os.system("echo 'Done reading' >> log")
+
+    A = average_phi_decoy - phi_native
+    size_of_training_set, num_decoys, total_phis = phi_i_protein_i_decoy.shape
+    half_B = np.zeros((total_phis, total_phis))
+    std_half_B = np.zeros((total_phis, total_phis))
+    other_half_B = np.zeros((total_phis, total_phis))
+
+    for p in range(size_of_training_set):
+        phis_i = phi_i_protein_i_decoy[p].reshape(num_decoys, total_phis, 1)
+        for j in range(total_phis):
+            phis_j = phis_i[:, j].reshape(num_decoys, 1, 1)
+            half_B[j] += np.average(phis_i * phis_j, axis=0).reshape(total_phis)
+            std_half_B[j] += np.std(phis_i * phis_j, axis=0).reshape(total_phis)
+
+    # half_B /= size_of_training_set
+    # std_half_B /= size_of_training_set
+
+    for p in range(size_of_training_set):
+        average_phi = np.average(phi_i_protein_i_decoy[p], axis=0)
+        other_half_B += average_phi.reshape(total_phis, 1) * average_phi.reshape(1, total_phis)
+
+    # other_half_B /= size_of_training_set
+    # B = half_B - other_half_B
+
+    phi_i_protein_i_decoy = None  # free its memory
+
+    # write gamma file
+    file_prefix = "%s%s_%s" % (sub_gammas_directory, training_set_file.split(
+        '/')[-1].split('.')[0], full_parameters_string)
+
+
+    A_file_name = file_prefix + '_A'
+#    A_file = open(A_file_name, 'w')
+    np.savetxt(A_file_name, A, fmt='%1.5f')
+
+    A_prime_file_name = file_prefix + '_A_prime'
+#    A_file = open(A_file_name, 'w')
+    np.savetxt(A_prime_file_name, average_phi_decoy, fmt='%1.5f')
+
+
+    half_B_file_name = file_prefix + '_half_B'
+#    gamma_file = open(gamma_file_name, 'w')
+    np.savetxt(half_B_file_name, half_B, '%1.5f')
+
+    other_half_B_file_name = file_prefix + '_other_half_B'
+#    gamma_file = open(gamma_file_name, 'w')
+    np.savetxt(other_half_B_file_name, other_half_B, '%1.5f')
+
+    std_half_B_file_name = file_prefix + '_std_half_B'
+#    gamma_file = open(gamma_file_name, 'w')
+    np.savetxt(std_half_B_file_name, std_half_B, '%1.5f')
+
+    # open("%s%s_%s_gamma.dat" % (gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string), 'w').write(str(gamma).strip('[]').replace('\n', ' '))
+    return True
 
 
 def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_method, num_decoys,
