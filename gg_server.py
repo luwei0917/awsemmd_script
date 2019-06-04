@@ -52,6 +52,10 @@ args = parser.parse_args()
 #     do = print
 # else:
 #     do = os.system
+with open('cmd_gg_server.txt', 'a') as f:
+    f.write(' '.join(sys.argv))
+    f.write('\n')
+
 
 def do(cmd, get=False, show=True):
     if get:
@@ -612,26 +616,196 @@ def slurmRun(slurmFileName, cmd, template=scavenge_slurm, memory=1):
     return jobId
 
 
+if args.day == "may30":
+    if args.mode == 1:
+        # iteratively generate gammas
+        # first get pdbs.
+        folder = "with_restart"
+        database = "../../database"
+        pdb_list = dataset["may13"]
+        for pdb in pdb_list:
+            if pdb in ["4cpv", "2mhr", "1mba", "2fha"]:
+                continue
+            print(pdb)
+            all_data = []
+            for i in range(20):
+                cd(f"{pdb}/{i}_1/")
+                do("python /projects/pw8/wl45/openawsem/helperFunctions/convertOpenmmTrajectoryToStandardMovie.py movie.pdb")
+                tmp = pd.read_csv("info.dat", sep="\s+")
+                tmp = tmp.assign(Run=i, Protein=pdb)
+                all_data.append(tmp)
+                cd("../../")
+                do(f"mkdir -p {database}/{folder}_{pdb}_{i}")
+                do(f"cp {pdb}/{i}_1/* {database}/{folder}_{pdb}_{i}/")
+            data = pd.concat(all_data)
+            data.to_csv(f"{database}/Q_{folder}_{pdb}")
+        # process Qw info.
+
+    if args.mode == 444:
+        # generate decoys
+        database_location = "../../database"
+        do("mkdir -p decoys/lammps")
+        import io
+        from Bio.PDB.PDBParser import PDBParser
+        simulation_location, name = args.label.split("__")
+        simulation_location_name = f"{simulation_location}_{name}"
+
+        def getStructures(x, all_movies):
+            index = int(x["index"])+1
+            run = int(x["Run"])
+
+            start = index * size
+            end = (index + 1) * size
+            f = io.StringIO("".join(all_movies[run][start:end]))
+            parser = PDBParser()
+            return parser.get_structure(f"{index}", f)
+
+        a = pd.read_csv(f"{database_location}/Q_{simulation_location_name}", index_col=0).query(f"Rank < {decoy_n*3}")
+        sampled = a.sample(decoy_n)
+        all_movies = {}
+        for i in sampled["Run"].unique():
+            with open(f"{database_location}/{simulation_location_name}_{i}/movie.pdb") as f:
+                movie = f.readlines()
+            all_movies[i] = movie
+        size = 0
+        for line in movie:
+            size += 1
+            if line == "ENDMDL\n":
+                break
+        print(simulation_location_name, size)
+        sampled["structure"] = sampled.apply(getStructures, all_movies=all_movies, axis=1)
+        sampled["Qw"] = sampled[" Qw"].round(3)
+        sampled.drop(" Qw", axis=1)
+        sampled.to_pickle(f"decoys/lammps/{name}_{simulation_location}.pkl")
+
+# if args.day == "may29":
+#     if args.mode == 1:
+#         folder = "may29"
+#         pdb = "1mba"
+#         with open("cuda_run.sh", "w") as out:
+#             for i in range(20):
+#                 out.write(f"python mm_run.py setup/{pdb}/extended --to {folder}/{pdb}/{i}_0 -m 1 -s 3e6 -p CUDA --tempStart 800 --tempEnd 200\n")
+
 if args.day == "may28":
+    if args.mode == 2:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        pdb_list = dataset["may13"]
+        # folder = "with_restart"
+        # folder = "jun02"
+        # folder = "jun03"
+        folder = "frags_original"
+        totalRuns = 20
+        subMode = 1
+        # folder = "jun02_original"
+        for pdb in pdb_list:
+            if pdb == "1mba" or pdb == "2fha":
+                continue
+            toPath = f"{folder}/{pdb}/native"
+            cmd = ""
+            cmd += f"python mm_run.py setup/{pdb}/{pdb} --to {toPath} -m 1 -s 1e2 -p CPU -t 1 --tempStart 800 --tempEnd 200 --subMode {subMode}\n"
+            cmd += f"python mm_analysis.py setup/{pdb}/{pdb} -t {toPath}/movie.dcd --subMode {subMode}\n"
+            cmd += f"python mm_analysis.py setup/{pdb}/{pdb} -t {toPath}/native.pdb -o native.dat --subMode {subMode}"
+            jobId = slurmRun(f"slurms/{folder}_{pdb}_native.slurm", cmd, memory=3)
+            for i in range(totalRuns):
+                toPath = f"{folder}/{pdb}/{i}_0"
+                cmd = ""
+                cmd += f"python mm_run.py setup/{pdb}/extended --to {toPath} -m 1 -s 1e5 -p CPU -t 1 --tempStart 800 --tempEnd 600 --subMode {subMode}\n"
+                cmd += f"python mm_analysis.py setup/{pdb}/{pdb} -t {toPath}/movie.dcd --subMode {subMode}"
+                jobId = slurmRun(f"slurms/{folder}_{pdb}_{i}.slurm", cmd, memory=3)
+                jobIdList.append(jobId)
+                # exit()
+        waitForJobs(jobIdList, sleepInterval=100)
+        for pdb in pdb_list:
+            if pdb == "1mba" or pdb == "2fha":
+                continue
+            for i in range(totalRuns):
+                toPath = f"{folder}/{pdb}/{i}_1"
+                cmd = ""
+                cmd += f"python mm_run.py setup/{pdb}/extended --to {toPath} -m 1 -s 1e5 -p CPU -t 1 --tempStart 600 --tempEnd 200 --subMode {subMode} --fromCheckPoint {folder}/{pdb}/{i}_0/checkpnt.chk\n"
+                cmd += f"python mm_analysis.py setup/{pdb}/{pdb} -t {toPath}/movie.dcd --subMode {subMode}"
+                jobId = slurmRun(f"slurms/{folder}_{pdb}_{i}_2.slurm", cmd, memory=3)
+                jobIdList.append(jobId)
+                # exit()
+
+    # if args.mode == 2:
+    #     do("mkdir -p slurms")
+    #     do("mkdir -p outs")
+    #     jobIdList = []
+    #     pdb_list = dataset["may13"]
+    #     # folder = "with_restart"
+    #     # folder = "jun02"
+    #     folder = "jun02_original"
+    #     totalRuns = 20
+    #     for pdb in pdb_list:
+    #         if pdb == "1mba" or pdb == "2fha":
+    #             continue
+    #         toPath = f"{folder}/{pdb}/native"
+    #         cmd = ""
+    #         cmd += f"python mm_run_original.py setup/{pdb}/{pdb} --to {toPath} -m 1 -s 1e2 -p CPU -t 1 --tempStart 800 --tempEnd 200\n"
+    #         cmd += f"python mm_analysis_original.py setup/{pdb}/{pdb} -t {toPath}/movie.dcd"
+    #         cmd += f"python mm_analysis_original.py setup/{pdb}/{pdb} -t {toPath}/native.pdb -o native.dat"
+    #         jobId = slurmRun(f"slurms/{pdb}_native.slurm", cmd, memory=3)
+    #         for i in range(totalRuns):
+    #             toPath = f"{folder}/{pdb}/{i}_0"
+    #             cmd = ""
+    #             cmd += f"python mm_run_original.py setup/{pdb}/extended --to {toPath} -m 1 -s 1e5 -p CPU -t 1 --tempStart 600 --tempEnd 400\n"
+    #             cmd += f"python mm_analysis_original.py setup/{pdb}/{pdb} -t {toPath}/movie.dcd"
+    #             jobId = slurmRun(f"slurms/{pdb}_{i}_{folder}.slurm", cmd, memory=3)
+    #             jobIdList.append(jobId)
+    #             # exit()
+    #     waitForJobs(jobIdList, sleepInterval=100)
+    #     for pdb in pdb_list:
+    #         if pdb == "1mba" or pdb == "2fha":
+    #             continue
+    #         for i in range(totalRuns):
+    #             toPath = f"{folder}/{pdb}/{i}_1"
+    #             cmd = ""
+    #             cmd += f"python mm_run_original.py setup/{pdb}/extended --to {toPath} -m 1 -s 1e5 -p CPU -t 1 --tempStart 400 --tempEnd 200 --fromCheckPoint {folder}/{pdb}/{i}_0/checkpnt.chk\n"
+    #             cmd += f"python mm_analysis_original.py setup/{pdb}/{pdb} -t {toPath}/movie.dcd"
+    #             jobId = slurmRun(f"slurms/{pdb}_{i}_{folder}_2.slurm", cmd, memory=3)
+    #             jobIdList.append(jobId)
+    #             # exit()
     if args.mode == 1:
         do("mkdir -p slurms")
         do("mkdir -p outs")
         jobIdList = []
         pdb_list = dataset["may13"]
-        folder = "with_restart"
+        # folder = "with_restart"
+        # folder = "jun02"
+        # folder = "jun03"
+        folder = "frags"
+        totalRuns = 20
+        subMode = 0
+        # folder = "jun02_original"
         for pdb in pdb_list:
-            for i in range(20):
-                cmd = f"python mm_run.py setup/{pdb}/extended --to {folder}/{pdb}/{i}_0 -m 1 -s 2e5 -p CPU -t 2 --tempStart 600 --tempEnd 400\n"
-                cmd += f"python mm_analysis.py setup/{pdb}/{pdb} -t {folder}/{pdb}/{i}_0/movie.dcd"
+            if pdb == "1mba" or pdb == "2fha":
+                continue
+            toPath = f"{folder}/{pdb}/native"
+            cmd = ""
+            cmd += f"python mm_run.py setup/{pdb}/{pdb} --to {toPath} -m 1 -s 1e2 -p CPU -t 1 --tempStart 800 --tempEnd 200 --subMode {subMode}\n"
+            cmd += f"python mm_analysis.py setup/{pdb}/{pdb} -t {toPath}/movie.dcd --subMode {subMode}\n"
+            cmd += f"python mm_analysis.py setup/{pdb}/{pdb} -t {toPath}/native.pdb -o native.dat --subMode {subMode}"
+            jobId = slurmRun(f"slurms/{pdb}_native.slurm", cmd, memory=3)
+            for i in range(totalRuns):
+                toPath = f"{folder}/{pdb}/{i}_0"
+                cmd = ""
+                cmd += f"python mm_run.py setup/{pdb}/extended --to {toPath} -m 1 -s 1e5 -p CPU -t 1 --tempStart 800 --tempEnd 600 --subMode {subMode}\n"
+                cmd += f"python mm_analysis.py setup/{pdb}/{pdb} -t {toPath}/movie.dcd --subMode {subMode}"
                 jobId = slurmRun(f"slurms/{pdb}_{i}.slurm", cmd, memory=3)
                 jobIdList.append(jobId)
                 # exit()
         waitForJobs(jobIdList, sleepInterval=100)
         for pdb in pdb_list:
-            for i in range(20):
-                cmd = f"python mm_run.py setup/{pdb}/extended --to {folder}/{pdb}/{i}_1 -m 1 -s 2e5 -p CPU -t 2 --tempStart 400 --tempEnd 200 --fromCheckPoint {folder}/{pdb}/{i}_0/checkpnt.chk\n"
-                cmd += f"python mm_analysis.py setup/{pdb}/{pdb} -t {folder}/{pdb}/{i}_1/movie.dcd"
-                jobId = slurmRun(f"slurms/{pdb}_{i}.slurm", cmd, memory=3)
+            if pdb == "1mba" or pdb == "2fha":
+                continue
+            for i in range(totalRuns):
+                toPath = f"{folder}/{pdb}/{i}_1"
+                cmd = ""
+                cmd += f"python mm_run.py setup/{pdb}/extended --to {toPath} -m 1 -s 1e5 -p CPU -t 1 --tempStart 600 --tempEnd 200 --subMode {subMode} --fromCheckPoint {folder}/{pdb}/{i}_0/checkpnt.chk\n"
+                cmd += f"python mm_analysis.py setup/{pdb}/{pdb} -t {toPath}/movie.dcd --subMode {subMode}"
+                jobId = slurmRun(f"slurms/{pdb}_{i}_2.slurm", cmd, memory=3)
                 jobIdList.append(jobId)
                 # exit()
 
@@ -1122,19 +1296,25 @@ if args.day == "may04":
         print(number_of_runs)
     if args.mode == 2:
         do("mkdir -p decoys/multiShuffle")
-        for i, line in data.iterrows():
-            fullName = line["FullName"]
-            generate_multiShuffle(fullName, num_decoys=1000)
+        # for i, line in data.iterrows():
+        #     fullName = line["FullName"]
+        #     generate_multiShuffle(fullName, num_decoys=1000)
         jobIdList = []
         for i in range(362):
             proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
             jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 4 {proteins}")
             jobIdList.append(jobId)
-        waitForJobs(jobIdList, sleepInterval=300)
-        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
-            out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d may04 -m 3"))
-        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
-        do(f"sbatch slurms/run_on_scavenge.slurm")
+        # waitForJobs(jobIdList, sleepInterval=300)
+        # with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+        #     out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d may04 -m 3"))
+        # replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        # do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 22:
+        jobIdList = []
+        for i in range(362):
+            sub_list_file = f"proteins_name_list/proteins_name_list_{i}.txt"
+            jobId = slurmRun(f"slurms/run_AB_{i}.slurm", f"python3 ~/opt/gg_server.py -d may04 -m 3 -l {sub_list_file}", memory=5)
+            jobIdList.append(jobId)
         # for testing toymodel
     if args.mode == 3:
         from pyCodeLib import *
@@ -1153,20 +1333,26 @@ if args.day == "may04":
         #             name = p.lower()[:4]
         #             out.write(f"{name}\n")
         # complete_proteins = "proteins_name_list/proteins_name_list_tiny.txt"
-        complete_proteins = "proteins_name_list.txt"
+        # complete_proteins = "proteins_name_list.txt"
+        # complete_proteins = "tiny_list.txt"
+        complete_proteins = args.label
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='multiShuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=True)
+
         # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
         #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
-        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='multiShuffle',
+        out = calculate_A_B_and_gamma_wl45_parallel(complete_proteins, "phi_list.txt", decoy_method='multiShuffle',
                                         num_decoys=1000, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=True)
+        print("Success", out)
         # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='lammps',
         #                                 num_decoys=n*6000, noise_filtering=True, jackhmmer=False, read=False)
         # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='lammps',
         #                                 num_decoys=n*6000, noise_filtering=True, jackhmmer=False, read=False, mode=1, simulation_location_list=simulation_location_list)
-    if args.mode == 4:
-        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
-            out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d apr13 -m 3"))
-        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
-        do(f"sbatch slurms/run_on_scavenge.slurm")
+    # if args.mode == 4:
+    #     with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+    #         out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d apr13 -m 3"))
+    #     replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+    #     do(f"sbatch slurms/run_on_scavenge.slurm")
 
 if args.day == "may02":
     # relative k
