@@ -103,7 +103,7 @@ if args.mode == 4:
 if args.mode == 5:
     evaluate_phis_over_training_set_for_decoy_structures_Wei(args.proteins, "phi_list.txt", decoy_method='shifted', max_decoys=1e+5, tm_only=False, num_processors=1)
 if args.mode == 6:
-    evaluate_phis_over_training_set_for_decoy_structures_Wei(args.proteins, "phi_list.txt", decoy_method='shifted', max_decoys=1e+5, tm_only=False, num_processors=1, withBiased=True)
+    evaluate_phis_over_training_set_for_decoy_structures_Wei(args.proteins, "phi_list.txt", decoy_method='shifted', max_decoys=1e+5, tm_only=False, num_processors=1, withBiased=True, pickle=False)
 
 
 

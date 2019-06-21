@@ -29,6 +29,7 @@ parser.add_argument("-a", "--alpha", type=float, default=0.3)
 parser.add_argument("-i", "--iter", type=str, default="-1")
 parser.add_argument("-o", "--onlyToSimulation", action="store_true", default=False)
 parser.add_argument("-s", "--scale", action="store_true", default=False)
+parser.add_argument("-q", "--quick", action="store_true", default=False)
 args = parser.parse_args()
 
 with open('mix_gamma_cmd.txt', 'a') as f:
@@ -45,8 +46,12 @@ Gamma = np.loadtxt(args.gamma)
 
 
 if args.onlyToSimulation:
-    gamma_for_simulation = pre + f"for_simulation/iteration_{i}_gamma.dat"
-    burial_gamma_for_simulation = pre + f"for_simulation/iteration_{i}_burial_gamma.dat"
+    if args.quick:
+        gamma_for_simulation = pre + f"for_simulation/gamma.dat"
+        burial_gamma_for_simulation = pre + f"for_simulation/burial_gamma.dat"
+    else:
+        gamma_for_simulation = pre + f"for_simulation/iteration_{i}_gamma.dat"
+        burial_gamma_for_simulation = pre + f"for_simulation/iteration_{i}_burial_gamma.dat"
     gamma_format_convertion_iteration_to_simulation(Gamma, gamma_for_simulation, burial_gamma_for_simulation=burial_gamma_for_simulation)
     exit()
 
