@@ -776,6 +776,30 @@ def calculate_cb_density(res_list, neighbor_list, min_seq_sep=2):
                 density[res1globalindex] += interaction_well(rij, 4.5, 6.5, 5)
     return density
 
+def calculate_cb_weight_density(res_list, neighbor_list, min_seq_sep=2):
+    weight_info = pd.read_csv("~/opt/parameters/amino_acid_side_chain_weight", comment="#", sep="\s+")
+    weight_info["normalized_weight"] = weight_info["weight"] /(weight_info["weight"].min())
+    num_residues = len(res_list)
+    density = np.zeros(num_residues)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, 9.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            if abs(res2index - res1index) >= min_seq_sep or (res1chain != res2chain):
+                rij = get_interaction_distance(res1, res2)
+                res2type = three_to_one(res2.get_resname())
+                try:
+                    weight = float(weight_info.query(f"oneLetterCode == '{res2type}'")["normalized_weight"])
+                except:
+                    print(res2)
+                    print(res2type)
+                    print(weight_info.query(f"oneLetterCode == '{res2type}'")["normalized_weight"])
+                density[res1globalindex] += weight*interaction_well(rij, 4.5, 6.5, 5)
+    return density
+
 def phi_burial_well(res_list, neighbor_list, parameter_list):
     kappa = parameter_list[0]
     kappa = float(kappa)
@@ -798,6 +822,41 @@ def phi_burial_well(res_list, neighbor_list, parameter_list):
     for i in range(3):
         for j in range(20):
             phis_to_return.append(phi_burial[i][j])
+    return phis_to_return
+
+def phi_burial_multiDensity_well(res_list, neighbor_list, parameter_list):
+    kappa = parameter_list[0]
+    kappa = float(kappa)
+
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    weight_density = calculate_cb_weight_density(res_list, neighbor_list)
+
+    phi_burial = np.zeros((3, 20))
+    rho_table = [[0.0, 3.0], [3.0, 6.0], [6.0, 9.0]]
+
+    weight_phi_burial = np.zeros((3, 20))
+    weight_rho_table = [[0.0, 4.0], [4.0, 8.0], [8.0, 28.0]]
+    for i in range(3):
+        for res1globalindex, res1 in enumerate(res_list):
+            res1index = get_local_index(res1)
+            res1chain = get_chain(res1)
+            res1type = get_res_type(res_list, res1)
+            res1density = cb_density[res1globalindex]
+            # print res1globalindex, res1index, res1chain, res1type, res1density
+            burial_i = interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
+            phi_burial[i][res1type] += burial_i
+
+            weight_res1density = weight_density[res1globalindex]
+            burial_i = interaction_well(weight_res1density, weight_rho_table[i][0], weight_rho_table[i][1], kappa)
+            weight_phi_burial[i][res1type] += burial_i
+
+    phis_to_return = []
+    for i in range(3):
+        for j in range(20):
+            phis_to_return.append(phi_burial[i][j])
+    for i in range(3):
+        for j in range(20):
+            phis_to_return.append(weight_phi_burial[i][j])
     return phis_to_return
 
 def phi_density_mediated_contact_well(res_list, neighbor_list, parameter_list):

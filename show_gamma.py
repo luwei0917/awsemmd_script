@@ -86,6 +86,7 @@ def plot_contact_well_all(gamma_complete, title=None, **kwargs):
     gammas = gamma_complete[:210]
     _ = ax.set_title("Direct")
     plot_contact_well(gammas, ax, fig, **kwargs)
+
     ax = fig.add_subplot(132)
     gammas = gamma_complete[210:420]
     _ = ax.set_title("Protein")

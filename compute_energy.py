@@ -230,6 +230,76 @@ def compute_direct_2(input_pdb_filename):
     #         v_direct += 1
     return v_direct
 
+
+def compute_mediated_multiDensity(structure, kappa=5.0):
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    sequence = get_sequence_from_structure(structure)
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    weight_density = calculate_cb_weight_density(res_list, neighbor_list)
+    r_min = 6.5
+    r_max = 9.5
+    # kappa = 5.0
+    min_seq_sep = 10
+    density_threshold = 2.6
+    weight_density_threshold = 3.0
+    density_kappa = 7.0
+    # phi_mediated_contact_well = np.zeros((2, 20,20))
+    v_mediated = 0
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        rho_i_weight = weight_density[res1globalindex]
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            rho_j = cb_density[res2globalindex]
+            rho_j_weight = weight_density[res2globalindex]
+            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                protein_gamma = protein_gamma_ijm[0][res1type][res2type]
+                water_gamma = water_gamma_ijm[0][res1type][res2type]
+
+                rij = get_interaction_distance(res1, res2)
+                _pij_protein = prot_water_switchFunc_sigmaProt(
+                    rho_i, rho_j, density_threshold, density_kappa) * protein_gamma
+                _pij_water = prot_water_switchFunc_sigmaWater(
+                    rho_i, rho_j, density_threshold, density_kappa) * water_gamma
+                v_mediated += (_pij_protein + _pij_water) * interaction_well(rij, r_min, r_max, kappa)
+
+                heavy_gamma = protein_gamma_ijm[0][res1type][res2type]
+                light_gamma = water_gamma_ijm[0][res1type][res2type]
+                _pij_heavy = prot_water_switchFunc_sigmaProt(
+                    rho_i_weight, rho_j_weight, weight_density_threshold, density_kappa) * heavy_gamma
+                _pij_light = prot_water_switchFunc_sigmaWater(
+                    rho_i_weight, rho_j_weight, weight_density_threshold, density_kappa) * light_gamma
+                v_mediated += (_pij_heavy + _pij_light) * interaction_well(rij, r_min, r_max, kappa)
+    return v_mediated
+
+def compute_burial_multiDensity(structure, kappa=4.0):
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    sequence = get_sequence_from_structure(structure)
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    weight_density = calculate_cb_weight_density(res_list, neighbor_list)
+    rho_table = [[0.0, 3.0], [3.0, 6.0], [6.0, 9.0]]
+    weight_rho_table = [[0.0, 4.0], [4.0, 8.0], [8.0, 28.0]]
+    v_burial = 0
+    for i in range(3):
+        for res1globalindex, res1 in enumerate(res_list):
+            res1index = get_local_index(res1)
+            res1chain = get_chain(res1)
+            res1type = get_res_type(res_list, res1)
+            res1density = cb_density[res1globalindex]
+            res1weight = weight_density[res1globalindex]
+            # print res1globalindex, res1index, res1chain, res1type, res1density
+            v_burial += burial_gamma[i][res1type] * interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
+            v_burial += burial_gamma[i][res1type] * interaction_well(res1weight, weight_rho_table[i][0], weight_rho_table[i][1], kappa)
+    return v_burial
+
 def compute_direct_family_fold(structure, f_direct, kappa=5.0):
     res_list = get_res_list(structure)
     neighbor_list = get_neighbor_list(structure)
@@ -326,10 +396,13 @@ def get_pre_and_post(res_list, index):
         return res_list[index-1], res_list[index+1]
 
 def compute_direct_multiLetter(structure, kappa=5.0):
-    gamma_ij_multiLetter = np.zeros((4, 4, 20, 20))
+    # gamma_ij_multiLetter = np.zeros((4, 4, 20, 20))
+    gamma_ij_multiLetter = np.zeros((80, 80))
     for i in range(4):
         for j in range(4):
-            gamma_ij_multiLetter[i][j] = gamma_ijm[0]
+            for ii in range(20):
+                for jj in range(20):
+                    gamma_ij_multiLetter[i*20+ii][j*20+jj] = gamma_ijm[0][ii][jj]
     res_list = get_res_list(structure)
     neighbor_list = get_neighbor_list(structure)
     sequence = get_sequence_from_structure(structure)
@@ -359,18 +432,26 @@ def compute_direct_multiLetter(structure, kappa=5.0):
 
                 rij = get_interaction_distance(res1, res2)
 
-                gamma = gamma_ij_multiLetter[res1_neighbor_type][res2_neighbor_type][res1type][res2type]
+                gamma = gamma_ij_multiLetter[res1_neighbor_type*20+res1type][res2_neighbor_type*20+res2type]
     #             phi_pairwise_contact_well[res1type][res2type] += interaction_well(rij, r_min, r_max, kappa)
                 v_direct += gamma * interaction_well(rij, r_min, r_max, kappa)
     return v_direct
 
 def compute_mediated_multiLetter(structure, kappa=5.0):
-    protein_gamma_ij_multiLetter = np.zeros((4, 4, 20, 20))
-    water_gamma_ij_multiLetter = np.zeros((4, 4, 20, 20))
+    # protein_gamma_ij_multiLetter = np.zeros((4, 4, 20, 20))
+    # water_gamma_ij_multiLetter = np.zeros((4, 4, 20, 20))
+    # for i in range(4):
+    #     for j in range(4):
+    #         protein_gamma_ij_multiLetter[i][j] = protein_gamma_ijm[0]
+    #         water_gamma_ij_multiLetter[i][j] = water_gamma_ijm[0]
+    protein_gamma_ij_multiLetter = np.zeros((80, 80))
+    water_gamma_ij_multiLetter = np.zeros((80, 80))
     for i in range(4):
         for j in range(4):
-            protein_gamma_ij_multiLetter[i][j] = protein_gamma_ijm[0]
-            water_gamma_ij_multiLetter[i][j] = water_gamma_ijm[0]
+            for ii in range(20):
+                for jj in range(20):
+                    protein_gamma_ij_multiLetter[i*20+ii][j*20+jj] = protein_gamma_ijm[0][ii][jj]
+                    water_gamma_ij_multiLetter[i*20+ii][j*20+jj] = water_gamma_ijm[0][ii][jj]
     res_list = get_res_list(structure)
     neighbor_list = get_neighbor_list(structure)
     sequence = get_sequence_from_structure(structure)
@@ -401,8 +482,8 @@ def compute_mediated_multiLetter(structure, kappa=5.0):
                 res2_pre, res2_post = get_pre_and_post(res_list, res2globalindex)
                 res1_neighbor_type = get_neighbor_res_type(res1_pre, res1_post)
                 res2_neighbor_type = get_neighbor_res_type(res2_pre, res2_post)
-                gamma_p = protein_gamma_ij_multiLetter[res1_neighbor_type][res2_neighbor_type][res1type][res2type]
-                gamma_w = water_gamma_ij_multiLetter[res1_neighbor_type][res2_neighbor_type][res1type][res2type]
+                gamma_p = protein_gamma_ij_multiLetter[res1_neighbor_type*20+res1type][res2_neighbor_type*20+res2type]
+                gamma_w = water_gamma_ij_multiLetter[res1_neighbor_type*20+res1type][res2_neighbor_type*20+res2type]
 
                 _pij_protein = prot_water_switchFunc_sigmaProt(
                     rho_i, rho_j, density_threshold, density_kappa) * gamma_p
@@ -514,3 +595,9 @@ print(e_burial_multiLetter)
 #     e_direct = compute_direct(structure, kappa=kappa)
 #     e_burial = compute_burial(structure)
 #     print(f"kappa: {kappa}", e_mediated, e_direct, e_mediated + e_direct)
+
+print("multiDensity")
+e_mediated_multiLetter = compute_mediated_multiDensity(structure)
+print(e_mediated_multiLetter)
+e_burial_multiLetter = compute_burial_multiDensity(structure)
+print(e_burial_multiLetter)
