@@ -212,8 +212,9 @@ def get_interaction_atom(residue):
             res = residue['CB']
             return res
     except:
-        print(residue)
-        print("----------Use CA instead---------------")
+        # print(residue)
+        # print("----------Use CA instead---------------")
+        # probably because mutation.
         res = residue['CA']
         return res
         # raise
@@ -898,6 +899,267 @@ def phi_density_mediated_contact_well(res_list, neighbor_list, parameter_list):
                 phis_to_return.append(phi_mediated_contact_well[i][j][k])
     return phis_to_return
 
+def phi_contact_hybrid_well(res_list, neighbor_list, parameter_list):
+    r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    r_min = float(r_min)
+    r_max = float(r_max)
+    kappa = float(kappa)
+    min_seq_sep = int(min_seq_sep)
+    density_threshold = float(density_threshold)
+    density_kappa = float(density_kappa)
+    phi_mediated_contact_well = np.zeros((2,3,20,20))
+
+    eta_switching = 1
+    z_m = 15
+    r_min_I = 4.5
+    r_max_I = 6.5
+
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        z1 = get_z_position(res1)
+        alphaMembrane1 = interaction_well_2(z1, -z_m, z_m, eta_switching)
+
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            rho_j = cb_density[res2globalindex]
+            z2 = get_z_position(res2)
+            alphaMembrane2 = interaction_well_2(z1, -z_m, z_m, eta_switching)
+
+            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance(res1, res2)
+
+                alpha_water = (1 - alphaMembrane1 * alphaMembrane2)
+                alpha_membrane = alphaMembrane1 * alphaMembrane2
+
+                direct = interaction_well(rij, r_min_I, r_max_I, kappa)
+                _pij_high_density = prot_water_switchFunc_sigmaProt(
+                    rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
+                _pij_low_density = prot_water_switchFunc_sigmaWater(
+                    rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
+
+                phi_mediated_contact_well[0][0][res1type][res2type] += alpha_water * direct
+                phi_mediated_contact_well[0][1][res1type][res2type] += alpha_water * _pij_high_density
+                phi_mediated_contact_well[0][2][res1type][res2type] += alpha_water * _pij_low_density
+                if not res1type == res2type:
+                    phi_mediated_contact_well[0][0][res2type][res1type] += alpha_water * direct
+                    phi_mediated_contact_well[0][1][res2type][res1type] += alpha_water * _pij_high_density
+                    phi_mediated_contact_well[0][2][res2type][res1type] += alpha_water * _pij_low_density
+
+                phi_mediated_contact_well[1][0][res1type][res2type] += alpha_membrane * direct
+                phi_mediated_contact_well[1][1][res1type][res2type] += alpha_membrane * _pij_high_density
+                phi_mediated_contact_well[1][2][res1type][res2type] += alpha_membrane * _pij_low_density
+                if not res1type == res2type:
+                    phi_mediated_contact_well[1][0][res2type][res1type] += alpha_membrane * direct
+                    phi_mediated_contact_well[1][1][res2type][res1type] += alpha_membrane * _pij_high_density
+                    phi_mediated_contact_well[1][2][res2type][res1type] += alpha_membrane * _pij_low_density
+
+    phis_to_return = []
+    for ii in range(2):
+        for jj in range(3):
+            for i in range(20):
+                for j in range(i, 20):
+                    phis_to_return.append(phi_mediated_contact_well[ii][jj][i][j])
+
+    kappa = 4.0
+    phi_burial = np.zeros((2, 3, 20))
+    rho_table = [[0.0, 3.0], [3.0, 6.0], [6.0, 9.0]]
+    for i in range(3):
+        for res1globalindex, res1 in enumerate(res_list):
+            res1index = get_local_index(res1)
+            res1chain = get_chain(res1)
+            res1type = get_res_type(res_list, res1)
+            res1density = cb_density[res1globalindex]
+            z1 = get_z_position(res1)
+            alphaMembrane1 = interaction_well_2(z1, -z_m, z_m, eta_switching)
+            # print res1globalindex, res1index, res1chain, res1type, res1density
+            burial_i = interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
+            phi_burial[0][i][res1type] += burial_i * (1 - alphaMembrane1)
+            phi_burial[1][i][res1type] += burial_i * alphaMembrane1
+
+    for ii in range(2):
+        for i in range(3):
+            for j in range(20):
+                phis_to_return.append(phi_burial[ii][i][j])
+
+    return phis_to_return
+
+
+def phi_contact_membrane_well(res_list, neighbor_list, parameter_list):
+    r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    r_min = float(r_min)
+    r_max = float(r_max)
+    kappa = float(kappa)
+    min_seq_sep = int(min_seq_sep)
+    density_threshold = float(density_threshold)
+    density_kappa = float(density_kappa)
+    phi_mediated_contact_well = np.zeros((2,3,20,20))
+
+    eta_switching = 1
+    z_m = 15
+    r_min_I = 4.5
+    r_max_I = 6.5
+
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        # z1 = get_z_position(res1)
+        # alphaMembrane1 = interaction_well_2(z1, -z_m, z_m, eta_switching)
+
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            rho_j = cb_density[res2globalindex]
+            # z2 = get_z_position(res2)
+            # alphaMembrane2 = interaction_well_2(z1, -z_m, z_m, eta_switching)
+
+            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance(res1, res2)
+
+                # alpha_water = (1 - alphaMembrane1 * alphaMembrane2)
+                # alpha_membrane = alphaMembrane1 * alphaMembrane2
+                alpha_membrane = 1
+
+                direct = interaction_well(rij, r_min_I, r_max_I, kappa)
+                _pij_high_density = prot_water_switchFunc_sigmaProt(
+                    rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
+                _pij_low_density = prot_water_switchFunc_sigmaWater(
+                    rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
+
+                phi_mediated_contact_well[1][0][res1type][res2type] += alpha_membrane * direct
+                phi_mediated_contact_well[1][1][res1type][res2type] += alpha_membrane * _pij_high_density
+                phi_mediated_contact_well[1][2][res1type][res2type] += alpha_membrane * _pij_low_density
+                if not res1type == res2type:
+                    phi_mediated_contact_well[1][0][res2type][res1type] += alpha_membrane * direct
+                    phi_mediated_contact_well[1][1][res2type][res1type] += alpha_membrane * _pij_high_density
+                    phi_mediated_contact_well[1][2][res2type][res1type] += alpha_membrane * _pij_low_density
+
+    phis_to_return = []
+    ii = 1
+    for jj in range(3):
+        for i in range(20):
+            for j in range(i, 20):
+                phis_to_return.append(phi_mediated_contact_well[ii][jj][i][j])
+
+    kappa = 4.0
+    phi_burial = np.zeros((2, 3, 20))
+    rho_table = [[0.0, 3.0], [3.0, 6.0], [6.0, 9.0]]
+    for i in range(3):
+        for res1globalindex, res1 in enumerate(res_list):
+            res1index = get_local_index(res1)
+            res1chain = get_chain(res1)
+            res1type = get_res_type(res_list, res1)
+            res1density = cb_density[res1globalindex]
+            # z1 = get_z_position(res1)
+            # alphaMembrane1 = interaction_well_2(z1, -z_m, z_m, eta_switching)
+            # print res1globalindex, res1index, res1chain, res1type, res1density
+            burial_i = interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
+            # phi_burial[0][i][res1type] += burial_i * (1 - alphaMembrane1)
+            phi_burial[1][i][res1type] += burial_i * 1
+
+    ii = 1
+    for i in range(3):
+        for j in range(20):
+            phis_to_return.append(phi_burial[ii][i][j])
+
+    return phis_to_return
+
+
+def phi_contact_only_membrane_well(res_list, neighbor_list, parameter_list):
+    r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    r_min = float(r_min)
+    r_max = float(r_max)
+    kappa = float(kappa)
+    min_seq_sep = int(min_seq_sep)
+    density_threshold = float(density_threshold)
+    density_kappa = float(density_kappa)
+    phi_mediated_contact_well = np.zeros((2,3,20,20))
+
+    eta_switching = 1
+    z_m = 15
+    r_min_I = 4.5
+    r_max_I = 6.5
+
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        # z1 = get_z_position(res1)
+        # alphaMembrane1 = interaction_well_2(z1, -z_m, z_m, eta_switching)
+
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            rho_j = cb_density[res2globalindex]
+            # z2 = get_z_position(res2)
+            # alphaMembrane2 = interaction_well_2(z1, -z_m, z_m, eta_switching)
+
+            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance(res1, res2)
+
+                # alpha_water = (1 - alphaMembrane1 * alphaMembrane2)
+                # alpha_membrane = alphaMembrane1 * alphaMembrane2
+                alpha_membrane = 1
+
+                direct = interaction_well(rij, r_min_I, r_max_I, kappa)
+                _pij_high_density = prot_water_switchFunc_sigmaProt(
+                    rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
+                _pij_low_density = prot_water_switchFunc_sigmaWater(
+                    rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
+
+                phi_mediated_contact_well[1][0][res1type][res2type] += alpha_membrane * direct
+                phi_mediated_contact_well[1][1][res1type][res2type] += alpha_membrane * _pij_high_density
+                phi_mediated_contact_well[1][2][res1type][res2type] += alpha_membrane * _pij_low_density
+                if not res1type == res2type:
+                    phi_mediated_contact_well[1][0][res2type][res1type] += alpha_membrane * direct
+                    phi_mediated_contact_well[1][1][res2type][res1type] += alpha_membrane * _pij_high_density
+                    phi_mediated_contact_well[1][2][res2type][res1type] += alpha_membrane * _pij_low_density
+
+    phis_to_return = []
+    ii = 1
+    for jj in range(3):
+        for i in range(20):
+            for j in range(i, 20):
+                phis_to_return.append(phi_mediated_contact_well[ii][jj][i][j])
+
+    # kappa = 4.0
+    # phi_burial = np.zeros((2, 3, 20))
+    # rho_table = [[0.0, 3.0], [3.0, 6.0], [6.0, 9.0]]
+    # for i in range(3):
+    #     for res1globalindex, res1 in enumerate(res_list):
+    #         res1index = get_local_index(res1)
+    #         res1chain = get_chain(res1)
+    #         res1type = get_res_type(res_list, res1)
+    #         res1density = cb_density[res1globalindex]
+    #         # z1 = get_z_position(res1)
+    #         # alphaMembrane1 = interaction_well_2(z1, -z_m, z_m, eta_switching)
+    #         # print res1globalindex, res1index, res1chain, res1type, res1density
+    #         burial_i = interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
+    #         # phi_burial[0][i][res1type] += burial_i * (1 - alphaMembrane1)
+    #         phi_burial[1][i][res1type] += burial_i * 1
+
+    # ii = 1
+    # for i in range(3):
+    #     for j in range(20):
+    #         phis_to_return.append(phi_burial[ii][i][j])
+
+    return phis_to_return
+
 def get_pre_and_post(res_list, index):
     n = len(res_list)
     if index == 0:
@@ -906,6 +1168,7 @@ def get_pre_and_post(res_list, index):
         return res_list[index-1], res_list[index]
     else:
         return res_list[index-1], res_list[index+1]
+
 
 def phi_pairwise_contact_multiLetter_well(res_list, neighbor_list, parameter_list):
     r_min, r_max, kappa, min_seq_sep = parameter_list
@@ -918,10 +1181,12 @@ def phi_pairwise_contact_multiLetter_well(res_list, neighbor_list, parameter_lis
     for res1globalindex, res1 in enumerate(res_list):
         res1index = get_local_index(res1)
         res1chain = get_chain(res1)
+
         for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
             res2index = get_local_index(res2)
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
+
             if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
@@ -1181,7 +1446,7 @@ def phi_normalize_relative_k(res_list, neighbor_list, parameter_list):
         phis_to_return.append(-phi_burial[i])
     return phis_to_return
 
-def phi_relative_k_well(res_list, neighbor_list, parameter_list):
+def phi_relative_k_well(res_list, neighbor_list, parameter_list, z_m_high=None, z_m_low=None):
     phi_relative_k_well = np.zeros(2)
     cb_density = calculate_cb_density(res_list, neighbor_list)
 
@@ -1196,6 +1461,10 @@ def phi_relative_k_well(res_list, neighbor_list, parameter_list):
     # min_sequence_separation_mem = 13
     eta_switching = 10
     z_m = 15
+    if z_m_high is None:
+        z_m_high = z_m
+    if z_m_low is None:
+        z_m_low = -z_m
     density_threshold = 2.6
     density_kappa = 7.0
 
@@ -1204,13 +1473,13 @@ def phi_relative_k_well(res_list, neighbor_list, parameter_list):
         res1chain = get_chain(res1)
         rho_i = cb_density[res1globalindex]
         z1 = get_z_position(res1)
-        alphaMembrane1 = interaction_well_2(z1, -z_m, z_m, eta_switching)
+        alphaMembrane1 = interaction_well_2(z1, -z_m_low, z_m_high, eta_switching)
         for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
             res2index = get_local_index(res2)
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
             z2 = get_z_position(res2)
-            alphaMembrane2 = interaction_well_2(z1, -z_m, z_m, eta_switching)
+            alphaMembrane2 = interaction_well_2(z1, -z_m_low, z_m_high, eta_switching)
             rho_j = cb_density[res2globalindex]
             if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
@@ -1754,6 +2023,10 @@ def evaluate_phis_for_protein_Wei(protein, phi_list, decoy_method, max_decoys, m
                 output_file.write(str(phis_to_write).strip('[]').replace(',', '')+'\n')
             if multi_seq is True:
                 mutli_sequences = read_decoy_sequences(os.path.join(aligments_root_directory, "%s_filtered_0.05.seqs" % (protein)))
+                size = len(mutli_sequences)
+                if size < sampleK:
+                    mutli_sequences = mutli_sequences * (sampleK//size+1)
+                    print(protein, len(mutli_sequences), size)
                 mutli_sequences = random.sample(mutli_sequences, sampleK)
                 for i_decoy, decoy_sequence in enumerate(mutli_sequences):
                     mutate_whole_sequence(res_list, decoy_sequence)
@@ -1892,7 +2165,8 @@ def mutate_whole_sequence(res_list, new_sequence):
         try:
             res_list[i].resname = one_to_three(new_sequence[i])
         except:
-            print(f"Skip {i}th, {new_sequence[i]}, using the old residue name")
+            pass
+            # print(f"Skip {i}th, {new_sequence[i]}, using the old residue name")
     return res_list
 
 
