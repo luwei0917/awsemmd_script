@@ -84,11 +84,12 @@ if args.crystal:
     print("try not use this template")
     do("cp ~/opt/create_project_in_crystal_template.in {}_multi.in".format(proteinName))
 else:
-    if args.membrane:
-        print("try not use this template")
-        do("cp ~/opt/create_membrane_protein_folding_project_in_template.in {}_multi.in".format(proteinName))
-    else:
-        do("cp ~/opt/create_project_in_template.in {}_multi.in".format(proteinName))
+    # if args.membrane:
+    #     print("try not use this template")
+    #     do("cp ~/opt/create_membrane_protein_folding_project_in_template.in {}_multi.in".format(proteinName))
+    # else:
+    do("cp ~/opt/create_project_in_template.in {}_multi.in".format(proteinName))
+
 with fileinput.FileInput("{}_multi.in".format(proteinName), inplace=True, backup='.bak') as file:
     for line in file:
         tmp = line.replace("ALPHA_CARBONS", alpha_carbons)
@@ -98,6 +99,8 @@ with fileinput.FileInput("{}_multi.in".format(proteinName), inplace=True, backup
         tmp = tmp.replace("LAST", last)
         if args.hybrid:
             tmp = tmp.replace("fix_backbone_coeff.data", "fix_backbone_coeff_hybrid.data")
+        if args.membrane:
+            tmp = tmp.replace("fix_backbone_coeff.data", "fix_backbone_coeff_membrane.data")
         if args.bias:
             tmp = tmp.replace("#FIXBIAS", "fix               qbias alpha_carbons qbias fix_qbias_coeff.data\nfix_modify        qbias energy no\nvariable          biasinge equal f_qbias\n")
             do("cp ~/opt/fix_qbias_coeff.data .")
@@ -117,10 +120,11 @@ with fileinput.FileInput("{}_multi.in".format(proteinName), inplace=True, backup
 
 
 # copy parameters
-if args.globular or args.hybrid:
-    do("cp ~/opt/parameters/globular_parameters/* .")
+do("cp ~/opt/parameters/globular_parameters/* .")
+# if args.globular or args.hybrid:
+#     do("cp ~/opt/parameters/globular_parameters/* .")
 if args.membrane:
-    do("cp ~/opt/parameters/membrane/* .")
+    do("cp membrane_gamma.dat gamma.dat")
 
 # task specific input
 

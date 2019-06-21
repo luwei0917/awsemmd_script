@@ -1,21 +1,20 @@
 mol load pdb movie.pdb
 
-graphics 0 line {-1000 15 15} {1000 15 15} width 2
-graphics 0 line {-1000 15 -15} {1000 15 -15} width 2
-graphics 0 line {-1000 -15 15} {1000 -15 15} width 2
-graphics 0 line {-1000 -15 -15} {1000 -15 -15} width 2
-
-
 while {[molinfo top get numreps] > 0} {mol delrep 0 top}
 
-
-mol color ColorID 1
-mol selection all
 mol representation NewCartoon
 mol material AOChalky
-mol addrep 0
+#mol modmaterial 0 0 AOChalky
 
-mol smoothrep 0 0 10
+graphics 0 line {-1000 15 MEMUP} {1000 15 MEMUP} width 2
+graphics 0 line {-1000 15 MEMDOWN} {1000 15 MEMDOWN} width 2
+graphics 0 line {-1000 -15 MEMUP} {1000 -15 MEMUP} width 2
+graphics 0 line {-1000 -15 MEMDOWN} {1000 -15 MEMDOWN} width 2
+
+while {[molinfo top get numreps] > 0} {mol delrep 0 top}
+mol color ColorID 1
+mol selection all
+mol addrep top
 
 axes location off
 display projection orthographic
@@ -27,20 +26,26 @@ user add key w {rotate x by -90}
 
 puts "ahora anda lindo todo!!!"
 
-
 animate style Once
 animate goto 0
 display resetview
 
-rotate x by 90.000000
+
+
+translate by 0.0 1.0 0.0
+scale by 0.833000
+scale by 0.9
+animate speed 1.0
+mol smoothrep 0 0 5
+
+animate goto 99
+display resetview
+animate goto 1
+
 rotate x by 90.000000
 rotate x by 90.000000
 rotate x by 90.000000
 
-scale by 1.200000
-
-animate speed 1.000000
-#animate speed 0.168831
 #animate forward
 #animate goto 450
 #source "~/Downloads/take_picture.tcl"

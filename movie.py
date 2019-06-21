@@ -16,8 +16,10 @@ parser.add_argument("-d", "--dump", default="dump.lammpstrj")
 parser.add_argument("-l", "--last", action="store_true", default=False)
 parser.add_argument("-m", "--mode",
                     type=int, default=2)
-parser.add_argument("--submode",
+parser.add_argument("-s", "--submode",
                     type=int, default=-1)
+parser.add_argument("-c", "--membraneCenter",
+                    type=int, default=0)
 parser.add_argument("--fix", help="convert pdb period box, number of chain", type=int, default=-1)
 args = parser.parse_args()
 # render Tachyon frame450.dat '/Applications/VMD 1.9.2.app/Contents/vmd/tachyon_MACOSXX86' -aasamples 12 %s -format TARGA -o frame450.tga -res 2000 2000
@@ -26,14 +28,27 @@ args = parser.parse_args()
 do = os.system
 cd = os.chdir
 
+def replace(TARGET, FROM, TO):
+    os.system("sed -i.bak 's@{}@{}@g' {}".format(FROM,TO,TARGET))
+
 
 if args.fix >= 0:
     do(f"python ~/opt/small_script/PBC_fixer.py -n {args.fix}")
 
 if args.mode == 4:
+    # add the native as initial frames.
+    if args.submode == 1:
+        do("cat native.pdb >> tmp.pdb")
+    do("cat movie.pdb >> tmp.pdb")
+    do("mv tmp.pdb movie.pdb")
     do("python ~/openmmawsem/helperFunctions/convertOpenmmTrajectoryToStandardMovie.py movie.pdb")
     do("cp ~/opt/plot_scripts/movie.tcl .")
-    do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e movie.tcl")
+    do("cp ~/opt/plot_scripts/with_membrane.tcl .")
+    # do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e movie.tcl")
+
+    replace("with_membrane.tcl", "MEMUP", str(args.membraneCenter+15))
+    replace("with_membrane.tcl", "MEMDOWN", str(args.membraneCenter-15))
+    do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e with_membrane.tcl")
 
 protein_name = args.protein.split('.')[0]
 

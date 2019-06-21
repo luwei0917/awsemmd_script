@@ -81,17 +81,193 @@ dataset = {"old":"1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split("
             "test":["t089", "t120", "t251", "top7", "1ubq", "t0766", "t0778", "t0782", "t0792", "t0803", "t0815", "t0833", "t0842", "t0844"]}
 dataset["combined"] = dataset["old"] + dataset["new"]
 dataset["may13"] = ['1r69', '3icb', '256b', '4cpv', '2mhr', '1mba', '2fha', '1fc2', '1enh', '2gb1', '2cro', '1ctf', '4icb']
+dataset["membrane"] = ["2bg9", "1j4n", "1py6_SD", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19"]
 
-if args.day == "may25":
+
+
+
+if args.day == "jun17":
+    if args.mode == 3:
+        name = "lastframe_m1.pdb"
+        print(name , computeRg(name))
+        name = "lastframe_im1.pdb"
+        print(name , computeRg(name))
+        name = "chainB.pdb"
+        print(name , computeRg(name, chain="B"))
     if args.mode == 1:
+        pdb_list = ["6e67A"]
+        cleanPdb(pdb_list, source="original_pdbs", chain="A", formatName=False)
+        pdb_list = ["6e67B"]
+        cleanPdb(pdb_list, source="original_pdbs", chain="B", formatName=False)
+    if args.mode == 2:
+        # pdb_list = ["2xov"]
+        # pdb_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
+        # pdb_list = ["2bg9"]
+        pdb_list = ["6e67A", "6e67B"]
         do("mkdir -p setup")
         cd("setup")
-        pdb_list = dataset["may13"]
         for pdb in pdb_list:
             do(f"mkdir -p {pdb}")
             cd(pdb)
-            do(f"mm_create_project.py ../../cleaned_pdbs/{pdb}.pdb --frag --extended")
+            do(f"mm_create_project.py ../../cleaned_pdbs/{pdb}.pdb --extended --membrane --frag")
             cd("..")
+
+if args.day == "jun15":
+    if args.mode == 1:
+        do("rm crystal_structure.pdb")
+        to = "tmp1.pdb"
+
+        duplicate_pdb("2xov_complete.pdb", to, offset_x=0, offset_y=0, offset_z=0, new_chain="A")
+        do(f"cat {to} >> crystal_structure.pdb")
+        duplicate_pdb("2xov_complete.pdb", to, offset_x=50, offset_y=0, offset_z=0, new_chain="B")
+        do(f"cat {to} >> crystal_structure.pdb")
+
+if args.day == "jun13":
+    # pdb_list = ["2jo1"]
+    pdb_list = dataset["membrane"]
+    if args.mode == 1:
+        # downloadPdb(pdb_list)
+        # pdb_list = ["2bg9", "1j4n", "1py6", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19", "2rh1"]
+        # pdb_list = ["2xov"]
+        # pdb_list = ["2bs2", "1py6", "1u19", "2rh1"]
+        do("mkdir -p original_pdbs")
+        for pdb in pdb_list:
+            do(f"wget https://opm-assets.storage.googleapis.com/pdb/{pdb}.pdb")
+            do(f"mv {pdb}.pdb original_pdbs/")
+        cleanPdb(pdb_list, source="original_pdbs", chain=-1, formatName=False)
+    if args.mode == 2:
+        do("mkdir -p setup")
+        cd("setup")
+
+        for pdb in pdb_list:
+            do(f"mkdir -p {pdb}")
+            cd(pdb)
+            do(f"mm_create_project.py ../../cleaned_pdbs/{pdb}.pdb --extended --membrane --frag")
+            cd("..")
+if args.day == "jun08":
+    if args.mode == 1:
+        # a = glob.glob("cleaned_pdbs/*.pdb")
+        a = glob.glob("dompdb/*.pdb")
+        do("mkdir -p fasta")
+        for line in a:
+            print(line)
+            pdb = line.split("/")[-1].split(".")[0]
+            pdbToFasta(pdb, line, f"fasta/{pdb}.fasta")
+            cmd = f"hhblits -i fasta/{pdb}.fasta -d ~/Research/Build/hh-suite/uniclust30_2018_08/uniclust30_2018_08 -o {pdb} -oa3m {pdb}.a3m -n 2"
+            do(cmd)
+            break
+
+if args.day == "jun06":
+    pdb_list = ["2bg9", "1j4n", "1py6_SD", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19"]
+    if args.mode == 1:
+        # downloadPdb(pdb_list)
+        # pdb_list = ["2bg9", "1j4n", "1py6", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19", "2rh1"]
+        # pdb_list = ["2xov"]
+        # pdb_list = ["2bs2", "1py6", "1u19", "2rh1"]
+        do("mkdir -p original_pdbs")
+        for pdb in pdb_list:
+            do(f"wget https://opm-assets.storage.googleapis.com/pdb/{pdb}.pdb")
+            do(f"mv {pdb}.pdb original_pdbs/")
+    if args.mode == 2:
+        from small_script.extract_pdb import *
+        protein_info_list = []
+        protein_info_list.append(("1py6_SD", "A",77, 199))
+        protein_info_list.append(("1py6", "A",5, 231))
+        protein_info_list.append(("2ic8", "A",91,272))
+        protein_info_list.append(("1occ", "C",71,261))
+        protein_info_list.append(("1pv6", "A", 1, 190))
+        protein_info_list.append(("1j4n", "A",4,119))
+        protein_info_list.append(("2bs2", "C", 21,237))
+        protein_info_list.append(("2bl2", "A", 12, 156))
+        protein_info_list.append(("2bg9", "A", 211, 301))
+        protein_info_list.append(("1iwg", "A", 330, 497))
+        protein_info_list.append(("1rhz", "A", 23, 188))
+        protein_info_list.append(("1kpl", "A", 31, 233))
+        protein_info_list.append(("1u19", "A", 33, 310))
+        for (protein, chain, residue_start, residue_end) in protein_info_list:
+            # do(f"wget {0}{1} -O ~/opt/crystal_structures/membrane_proteins/original_pdb/{1}".format(pdbFileDataBase, protein+".pdb"))
+            # do(f"wget {0}{1} -O {1}".format(pdbFileDataBase, protein+".pdb"))
+            extract_pdb("./", protein, chain, residue_start, residue_end)
+        # cleanPdb(pdb_list, chain=-1, formatName=False)
+        do("rm tmp.pdb")
+    if args.mode == 3:
+        cleanPdb(pdb_list, source="extracted", chain=-1, formatName=False)
+    if args.mode == 4:
+        for pdb in pdb_list:
+            # do(f"getSize.py extracted/{pdb}.pdb")
+            do(f"getSize.py cleaned_pdbs/{pdb}.pdb")
+    if args.mode == 5:
+        # pdb_list = ["2xov"]
+        # pdb_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
+        # pdb_list = ["2bg9"]
+        do("mkdir -p all_simulations")
+        cd("all_simulations")
+        for p in pdb_list:
+            # name = p.lower()[:4]
+            name = p
+            do(f"mkdir -p {name}/{name}")
+            cd(f"{name}/{name}")
+            do("pwd")
+            do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+            # do("cp ~/opt/crystal_structures/membrane_proteins/for_simulation/{}.pdb crystal_structure.pdb ".format(name))
+            do(f"python2 ~/opt/script/Pdb2Gro.py crystal_structure.pdb {name}.gro")
+
+            do(f"create_project.py {name} --membrane")
+
+            # do(f"create_project.py {name} --membrane --frag")
+            # # check_and_correct_fragment_memory("frags.mem")
+            # relocate(fileLocation="frags.mem", toLocation="../fraglib")
+            # replace(f"frags.mem", "/Users/weilu/openmmawsem//Gros/", "../../fraglib/")
+            protein_length = getFromTerminal("wc ssweight").split()[0]
+            print(f"protein: {name}, length: {protein_length}")
+
+            with open("single_frags.mem", "w") as out:
+                out.write("[Target]\nquery\n\n[Memories]\n")
+                out.write(f"{name}.gro 1 1 {protein_length} 20\n")
+            cd("../..")
+
+        # for p in pdb_list:
+        #     name = p.lower()[:4]
+        #     do(f"mkdir -p {name}/{name}")
+        #     cd(f"{name}/{name}")
+        #     do("pwd")
+        #     # do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+
+        #     do("cp ~/opt/crystal_structures/membrane_proteins/for_simulation/{}.pdb crystal_structure.pdb ".format(name))
+        #     do(f"python2 ~/opt/script/Pdb2Gro.py crystal_structure.pdb {name}.gro")
+        #     do(f"create_project.py {name} --hybrid --frag")
+        #     check_and_correct_fragment_memory(fragFile="frags.mem")
+        #     relocate("./")
+
+        #     # replace(f"frags.mem", "/Users/weilu/opt/script/Gros/", "../fraglib/")
+        #     # replace(f"frags.mem", "../fraglib/", "../../fraglib/")
+        #     replace(f"frags.mem", "/Users/weilu/opt/script/Gros/", "../../../fraglib/")
+        #     do("cp frags.mem fragsLAMW.mem")
+        #     protein_length = getFromTerminal("wc ssweight").split()[0]
+        #     print(f"protein: {name}, length: {protein_length}")
+        #     with open("single_frags.mem", "w") as out:
+        #         out.write("[Target]\nquery\n\n[Memories]\n")
+        #         out.write(f"{name}.gro 1 1 {protein_length} 20\n")
+        #     cd("../..")
+if args.day == "jun04":
+    if args.mode == 1:
+        for i in range(4):
+            for j in range(i,4):
+                do(f"show_gamma.py correct_ni_{i}_nj_{j} -o i{i}j{j}")
+
+if args.day == "may25":
+    # pdb_list = dataset["may13"]
+    pdb_list = dataset["membrane"]
+    if args.mode == 1:
+        do("mkdir -p setup")
+        cd("setup")
+
+        for pdb in pdb_list:
+            do(f"mkdir -p {pdb}")
+            cd(pdb)
+            do(f"mm_create_project.py ../../cleaned_pdbs/{pdb}.pdb --extended --membrane")
+            cd("..")
+
     if args.mode == 2:
         pdb_list = dataset["may13"]
         for pdb in pdb_list:
@@ -134,15 +310,15 @@ if args.day == "may11":
             data = get_MSA_data(a3mFile)
             print(name, len(data))
             f_direct_2, f_water_2, f_protein_2, f_burial_2 = get_ff_dat(data, location=pre)
-if args.day == "may10":
-    if args.mode == 1:
-        a = glob.glob("cleaned_pdbs/*.pdb")
-        do("mkdir -p fasta")
-        for line in a:
-            pdb = line.split("/")[-1].split(".")[0]
-            pdbToFasta(pdb, line, f"fasta/{pdb}.fasta")
-            cmd = f"hhblits -i fasta/{pdb}.fasta -d ~/Research/Build/hh-suite/uniclust30_2018_08/uniclust30_2018_08 -o {pdb} -oa3m {pdb}.a3m -n 1"
-            do(cmd)
+# if args.day == "may10":
+#     if args.mode == 1:
+#         a = glob.glob("cleaned_pdbs/*.pdb")
+#         do("mkdir -p fasta")
+#         for line in a:
+#             pdb = line.split("/")[-1].split(".")[0]
+#             pdbToFasta(pdb, line, f"fasta/{pdb}.fasta")
+#             cmd = f"hhblits -i fasta/{pdb}.fasta -d ~/Research/Build/hh-suite/uniclust30_2018_08/uniclust30_2018_08 -o {pdb} -oa3m {pdb}.a3m -n 1"
+#             do(cmd)
 if args.day == "may08":
     if args.mode == 2:
         data = pd.read_csv("protein_info.csv", index_col=0)
@@ -403,45 +579,45 @@ if args.day == "apr04":
                 out.write("[Target]\nquery\n\n[Memories]\n")
                 out.write(f"{name}.gro 1 1 {protein_length} 20\n")
             cd("../..")
-if args.day == "apr03":
-    if args.mode == 1:
-        # downloadPdb(pdb_list)
-        pdb_list = ["2bg9", "1j4n", "1py6", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19", "2rh1"]
-        pdb_list = ["2xov"]
-        pdb_list = ["2bs2", "1py6", "1u19", "2rh1"]
-        do("mkdir -p original_pdbs")
-        for pdb in pdb_list:
-            do(f"wget https://opm-assets.storage.googleapis.com/pdb/{pdb}.pdb")
-            do(f"mv {pdb}.pdb original_pdbs/")
-        cleanPdb(pdb_list, chain=-1, formatName=False)
-    if args.mode == 2:
-        # pdb_list = ["2xov"]
-        pdb_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
-        do("mkdir -p all_simulations")
-        cd("all_simulations")
-        for p in pdb_list:
-            name = p.lower()[:4]
-            do(f"mkdir -p {name}/{name}")
-            cd(f"{name}/{name}")
-            do("pwd")
-            # do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+# if args.day == "apr03":
+#     if args.mode == 1:
+#         # downloadPdb(pdb_list)
+#         pdb_list = ["2bg9", "1j4n", "1py6", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19", "2rh1"]
+#         pdb_list = ["2xov"]
+#         pdb_list = ["2bs2", "1py6", "1u19", "2rh1"]
+#         do("mkdir -p original_pdbs")
+#         for pdb in pdb_list:
+#             do(f"wget https://opm-assets.storage.googleapis.com/pdb/{pdb}.pdb")
+#             do(f"mv {pdb}.pdb original_pdbs/")
+#         cleanPdb(pdb_list, chain=-1, formatName=False)
+#     if args.mode == 2:
+#         # pdb_list = ["2xov"]
+#         pdb_list = ["1occ", "1pv6", "2bl2", "2bg9", "1j4n", "1py6"]
+#         do("mkdir -p all_simulations")
+#         cd("all_simulations")
+#         for p in pdb_list:
+#             name = p.lower()[:4]
+#             do(f"mkdir -p {name}/{name}")
+#             cd(f"{name}/{name}")
+#             do("pwd")
+#             # do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
 
-            do("cp ~/opt/crystal_structures/membrane_proteins/for_simulation/{}.pdb crystal_structure.pdb ".format(name))
-            do(f"python2 ~/opt/script/Pdb2Gro.py crystal_structure.pdb {name}.gro")
-            do(f"create_project.py {name} --hybrid --frag")
-            check_and_correct_fragment_memory(fragFile="frags.mem")
-            relocate("./")
+#             do("cp ~/opt/crystal_structures/membrane_proteins/for_simulation/{}.pdb crystal_structure.pdb ".format(name))
+#             do(f"python2 ~/opt/script/Pdb2Gro.py crystal_structure.pdb {name}.gro")
+#             do(f"create_project.py {name} --hybrid --frag")
+#             check_and_correct_fragment_memory(fragFile="frags.mem")
+#             relocate("./")
 
-            # replace(f"frags.mem", "/Users/weilu/opt/script/Gros/", "../fraglib/")
-            # replace(f"frags.mem", "../fraglib/", "../../fraglib/")
-            replace(f"frags.mem", "/Users/weilu/opt/script/Gros/", "../../../fraglib/")
-            do("cp frags.mem fragsLAMW.mem")
-            protein_length = getFromTerminal("wc ssweight").split()[0]
-            print(f"protein: {name}, length: {protein_length}")
-            with open("single_frags.mem", "w") as out:
-                out.write("[Target]\nquery\n\n[Memories]\n")
-                out.write(f"{name}.gro 1 1 {protein_length} 20\n")
-            cd("../..")
+#             # replace(f"frags.mem", "/Users/weilu/opt/script/Gros/", "../fraglib/")
+#             # replace(f"frags.mem", "../fraglib/", "../../fraglib/")
+#             replace(f"frags.mem", "/Users/weilu/opt/script/Gros/", "../../../fraglib/")
+#             do("cp frags.mem fragsLAMW.mem")
+#             protein_length = getFromTerminal("wc ssweight").split()[0]
+#             print(f"protein: {name}, length: {protein_length}")
+#             with open("single_frags.mem", "w") as out:
+#                 out.write("[Target]\nquery\n\n[Memories]\n")
+#                 out.write(f"{name}.gro 1 1 {protein_length} 20\n")
+#             cd("../..")
 if args.day == "apr01":
     if args.mode == 1:
         # downloadPdb(pdb_list)

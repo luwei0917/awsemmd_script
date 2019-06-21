@@ -20,10 +20,10 @@ class MyChainSelect(Select):
             return False
 
 def extract_pdb(pwd, protein, chain, residue_start, residue_end):
-    parser = PDBParser(PERMISSIVE=1)
+    parser = PDBParser(PERMISSIVE=1,QUIET=True)
     structure_id = protein
-    fileName = pwd + 'original_pdb/' + structure_id + ".pdb"
-    outFileName = pwd + "for_simulation/" + structure_id + ".pdb"
+    fileName = pwd + 'original_pdbs/' + structure_id + ".pdb"
+    outFileName = pwd + "extracted/" + structure_id + ".pdb"
     structure = parser.get_structure(structure_id, fileName)
     io = PDBIO()
     io.set_structure(structure)

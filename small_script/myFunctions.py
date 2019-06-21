@@ -67,10 +67,10 @@ def get_data(pre, pdb_list, simType="all_simulations", n_rum=30, rerun=1, format
     data["Run"] = "Run" + data["Run"].astype(str)
     return data
 
-def computeRg(pdb_file):
+def computeRg(pdb_file, chain="A"):
     # compute Radius of gyration
     # pdb_file = f"/Users/weilu/Research/server/feb_2019/iterative_optimization_new_temp_range/all_simulations/{p}/{p}/crystal_structure.pdb"
-    chain_name = "A"
+    chain_name = chain
     parser = PDBParser()
     structure = parser.get_structure('X', pdb_file)
     chain = list(structure[0][chain_name])
@@ -78,7 +78,10 @@ def computeRg(pdb_file):
     rg = 0.0
     for i, residue_i in enumerate(chain):
         for j, residue_j in enumerate(chain[i+1:]):
-            r = residue_i["CA"] - residue_j["CA"]
+            try:
+                r = residue_i["CA"] - residue_j["CA"]
+            except:
+                print(residue_i, residue_j)
             rg += r**2
     return (rg/(n**2))**0.5
 
@@ -1231,12 +1234,13 @@ def get_inside_or_not_table(pdb_file):
             return [0]
         inside_or_not_table.append(int(abs(res["CA"].get_vector()[-1]) < 15))
     return inside_or_not_table
-def extractTransmembrane(toLocation, location):
+
+def extractTransmembrane(toLocation, location, cutoff=15):
     x = PDBParser().get_structure("x", location)
 
     class Transmembrane(Select):
         def accept_residue(self, residue):
-            if abs(residue["CA"].get_vector()[-1]) < 15:
+            if abs(residue["CA"].get_vector()[-1]) < cutoff:
                 return 1
             else:
                 return 0

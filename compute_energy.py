@@ -37,6 +37,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("protein", help="The name of the protein")
 parser.add_argument("-l", "--label", type=str, default="/Users/weilu/opt/ff_contact/1r69/")
 parser.add_argument("-f", "--familyFold", action="store_true", default=False)
+parser.add_argument("-m", "--membrane", action="store_true", default=False)
 args = parser.parse_args()
 
 code = {"GLY" : "G", "ALA" : "A", "LEU" : "L", "ILE" : "I",
@@ -66,7 +67,10 @@ elif(platform.system() == 'Linux'):
 else:
     print("system unkown")
 
-gamma_direct, gamma_mediated = read_gamma(f"{pre}/gamma.dat")
+if args.membrane:
+    gamma_direct, gamma_mediated = read_gamma(f"{pre}/membrane_gamma.dat")
+else:
+    gamma_direct, gamma_mediated = read_gamma(f"{pre}/gamma.dat")
 burial_gamma = np.loadtxt(f"{pre}/burial_gamma.dat").T
 
 nwell = 1
@@ -517,6 +521,10 @@ def compute_burial_multiLetter(structure, kappa=4.0):
             v_burial += burial_gamma_multiLetter[res1_neighbor_type][i][res1type] * interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
     return v_burial
 
+# def compute_single_helix_orientation(structure):
+#     res_list = get_res_list(structure)
+#     for res1globalindex, res1 in enumerate(res_list):
+#         for res2globalindex, res2 in enumerate(res_list):
 
 def read_beta_parameters():
     ### directly copied from Nick Schafer's
