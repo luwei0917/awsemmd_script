@@ -24,14 +24,22 @@ a = open("A.pdb", "w")
 b = open("B.pdb", "w")
 with open(inputFile, "r") as f:
     for line in f:
-        individual = line.split()
-        # print(len(individual))
         try:
-            if(individual[4] == "A"):
+            chain = line[21]
+            if chain == "A":
                 a.write(line)
-            elif(individual[4] == "B"):
+            elif chain == "B":
                 b.write(line)
         except:
             pass
+        # individual = line.split()
+        # # print(len(individual))
+        # try:
+        #     if(individual[4] == "A"):
+        #         a.write(line)
+        #     elif(individual[4] == "B"):
+        #         b.write(line)
+        # except:
+        #     pass
 
 # print("hello")

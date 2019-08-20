@@ -215,9 +215,15 @@ def get_interaction_atom(residue):
         # print(residue)
         # print("----------Use CA instead---------------")
         # probably because mutation.
-        res = residue['CA']
-        return res
-        # raise
+        try:
+            res = residue['CA']
+            return res
+            # raise
+        except:
+            # print("no CA found, work around is to just use any atom")
+            # return list(residue.get_atoms())[0]
+            print("need debug", residue)
+            raise
 
 
 def get_interaction_distance(res1, res2):

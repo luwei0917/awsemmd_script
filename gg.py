@@ -49,6 +49,7 @@ parser.add_argument("--qnqc", help="calculate q of n terminal and q of c termina
 parser.add_argument("-n", "--number", type=int, default=10, help="number of run")
 parser.add_argument("-d", "--day", type=str, default="someday")
 parser.add_argument("-m", "--mode",type=int, default=0)
+parser.add_argument("-l", "--label", type=str, default="label")
 args = parser.parse_args()
 
 with open('gg_cmd.txt', 'a') as f:
@@ -82,9 +83,608 @@ dataset = {"old":"1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split("
 dataset["combined"] = dataset["old"] + dataset["new"]
 dataset["may13"] = ['1r69', '3icb', '256b', '4cpv', '2mhr', '1mba', '2fha', '1fc2', '1enh', '2gb1', '2cro', '1ctf', '4icb']
 dataset["membrane"] = ["2bg9", "1j4n", "1py6_SD", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19"]
+dataset["hybrid"] = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91", "4nv6", "4p79", "5dsg", "6g7o", "6a93", "2jo1", "1py6", "1pv6", "1u19"]
 
 
+def create_project_for_pdb_list(pdb_list, frag=False):
+    do("mkdir -p setup")
+    cd("setup")
+    for pdb in pdb_list:
+        do(f"mkdir -p {pdb}")
+        cd(pdb)
+        if frag:
+            addFrag = "--frag"
+        do(f"mm_create_project.py ../../cleaned_pdbs/{pdb}.pdb --extended --membrane {addFrag}")
+        cd("..")
 
+def get_two_part_from_eye_seperation(pdb, data):
+    row = data.query(f"Protein == '{pdb}'")
+    assert len(row) == 1
+    row = row.iloc[0]
+    glob_start, glob_end = row["Range"].split("-")
+    length = row["Length"]
+    glob_start = int(glob_start)
+    glob_end = int(glob_end)
+    print(pdb, glob_start, glob_end)
+    GlobularPart = list(range(glob_start, glob_end+1))
+    MembranePart = []
+    for i in range(1, length+1):
+        if i not in GlobularPart:
+            MembranePart.append(i)
+    return GlobularPart, MembranePart
+
+
+def mix_frag(globular, mem, GlobularPart, MembranePart):
+    out = """[Target]
+query
+
+[Memories]
+"""
+    n = len(mem)//20
+    for i in range(n):
+        if i in MembranePart:
+            out += "".join(mem[i*20:(i+1)*20])
+        else:
+            out += "".join(globular[i*20:(i+1)*20])
+
+    with open("HA_combined.mem", "w") as o:
+        o.write(out)
+
+
+if args.day == "aug19":
+    if args.mode == 1:
+        for pdb in dataset["hybrid"]:
+            do(f"pymol show_{pdb}_globular.pml")
+    if args.mode == 2:
+        infoLocation = "/Users/weilu/Research/database/hybrid_prediction_database/length_info.csv"
+        info = pd.read_csv(infoLocation, index_col=0)
+        # get_two_part_from_eye
+        part_info = pd.read_csv("/Users/weilu/Research/database/hybrid_prediction_database/part_info.csv", names=["Protein", "Range"])
+        part_info = part_info.merge(info, on="Protein")
+        # pdb = "1pv6"
+        folder = "set_topology_force"
+        do(f"mkdir -p {folder}")
+        for pdb in dataset["hybrid"]:
+            GlobularPart, MembranePart = get_two_part_from_eye_seperation(pdb, part_info)
+            toFile = f"{folder}/forces_setup_{pdb}.py"
+            fromFile = "forces_setup.py"
+            do(f"cp {fromFile} {toFile}")
+            pre = "/Users/weilu/Research/server/aug_2019/second_hybrid_protein_simulation/"
+            loc = f"{pre}/TM_pred/{pdb}_topo"
+            with open(loc) as f:
+                a = f.readlines()
+            assert len(a) % 3 == 0
+            chain_count = len(a) // 3
+            seq = ""
+            for i in range(chain_count):
+                seq_i = (a[i*3+2]).strip()
+                seq += seq_i
+            assert np.alltrue([i in ["0", "1"] for i in seq])
+
+            res_list = []
+            first = None
+            count = 1
+            previousEnd = 0
+            # print("g_all = [")
+            out = "[\n"
+            for i, res in enumerate(seq):
+                if res == "0":
+                    if len(res_list) > 0:
+                        # print(f"g{count} =", res_list)
+                        print(res_list, ", ")
+                        out += f"    {res_list},\n"
+                        count += 1
+                        last = res_list[-1]
+                        first = res_list[0] if first is None else first
+                        span = res_list[0] - previousEnd
+                        previousEnd = last
+                    res_list = []
+                if res == "1":
+                    res_list.append(i)
+            out += "]\n"
+            with fileinput.FileInput(toFile, inplace=True) as file:
+                for line in file:
+                    tmp = line.replace("GALL", out).replace("FIRST", str(first)).replace("LAST", str(last))
+                    tmp = tmp.replace("RESMEMB", f"{MembranePart}")
+                    tmp = tmp.replace("RESGLOBULAR", f"{GlobularPart}")
+                    print(tmp, end='')
+if args.day == "aug16":
+    if args.mode == 1:
+        name = args.label
+        check_and_correct_fragment_memory(fragFile=f"{name}.mem")
+        relocate(fileLocation=f"{name}.mem", toLocation=f"fraglib_{name}")
+        replace(f"{name}.mem", f"/Users/weilu/openmmawsem//Gros/", f"./fraglib_{name}/")
+
+if args.day == "aug15":
+    if args.mode == 1:
+        pdb_list = ["1fs3"]
+        for pdb in pdb_list:
+            pdbID = pdb
+            raptorX_file = f"contactmap.txt"
+            convertRaptorToInput(pdbID, raptorX_file)
+            print(pdb)
+            do(f"wc ~/opt/gremlin/protein/{pdb}/raptor/go_rnativeCACA.dat")
+            # do(f"wc ~/Research/server/jul_2019/hybrid_protein_simulation/setup/{pdb}/ssweight")
+            print("--")
+    if args.mode == 2:
+        check_and_correct_fragment_memory(fragFile="new_frags_HA.mem")
+        relocate(fileLocation="new_frags_HA.mem", toLocation="fraglib_new_HA")
+        replace(f"new_frags_HA.mem", f"/Users/weilu/openmmawsem//Gros/", "./fraglib_new_HA/")
+
+if args.day == "aug14":
+    if args.mode == 1:
+        # pdb = "6e67A"
+        for pdb in dataset["hybrid"]:
+            # part = "globular"
+            part = "membrane"
+            with open(f"plot_script/show_{pdb}_{part}.pml", "w") as out:
+                # out.write(f"load native_{part}.pdb\n")
+                a = f"{pdb}_best_{part}"
+                out.write(f"load ../best_Q_structures/{a}.pdb\n")
+                b = f"{pdb}_native_{part}"
+                out.write(f"load ../native_structures/{b}.pdb\n")
+                out.write(f'cealign {a}, {b}\ncmd.spectrum("count",selection="({a})&*/CA")\ncmd.spectrum("count",selection="({b})&*/CA")\n')
+                out.write("orient\n")
+    if args.mode == 2:
+        part = "globular"
+        for pdb in dataset["hybrid"]:
+            do(f"pymol show_{pdb}_{part}.pml")
+
+if args.day == "aug12":
+    if args.mode == 1:
+        check_and_correct_fragment_memory(fragFile="frags_HA.mem")
+        relocate(fileLocation="frags_HA.mem", toLocation="fraglib_HA")
+        replace(f"frags_HA.mem", f"/Users/weilu/openmmawsem//Gros/", "./fraglib_HA/")
+
+if args.day == "aug11":
+    if args.mode == 1:
+        infoLocation = "/Users/weilu/Research/database/hybrid_prediction_database/length_info.csv"
+        info = pd.read_csv(infoLocation, index_col=0)
+        # get_two_part_from_eye
+        part_info = pd.read_csv("/Users/weilu/Research/database/hybrid_prediction_database/part_info.csv", names=["Protein", "Range"])
+        part_info = part_info.merge(info, on="Protein")
+        # pdb = "1pv6"
+        do("mkdir -p forces_recompute")
+        for pdb in dataset["hybrid"]:
+            GlobularPart, MembranePart = get_two_part_from_eye_seperation(pdb, part_info)
+            forceLocation = "forces_recompute"
+            do(f"cp forces/forces_setup_{pdb}.py {forceLocation}/forces_setup_{pdb}.py")
+            with fileinput.FileInput(f"{forceLocation}/forces_setup_{pdb}.py", inplace=True) as file:
+                for line in file:
+                    fromLine = 'MembranePart ='
+                    toLine = f'MembranePart ={MembranePart}\n#MembranePart ='
+                    tmp = line.replace(fromLine, toLine)
+                    fromLine = 'GlobularPart ='
+                    toLine = f'GlobularPart ={GlobularPart}\n#GlobularPart ='
+                    tmp = tmp.replace(fromLine, toLine)
+                    print(tmp, end='')
+
+
+if args.day == "aug10":
+    def myRead(fileLocation, skip=0, strip=False):
+        # read fragments.
+        with open(fileLocation) as f:
+            a = f.readlines()
+        a = a[skip:]
+        if strip:
+            a = [i.strip() for i in a]
+        return a
+    if args.mode == 1:
+        for pdb in dataset["hybrid"]:
+            do(f"gg.py -d jun26 -m 1 -l {pdb}")
+    if args.mode == 4:
+        infoLocation = "/Users/weilu/Research/database/hybrid_prediction_database/length_info.csv"
+        info = pd.read_csv(infoLocation, index_col=0)
+        # get_two_part_from_eye
+        part_info = pd.read_csv("/Users/weilu/Research/database/hybrid_prediction_database/part_info.csv", names=["Protein", "Range"])
+        part_info = part_info.merge(info, on="Protein")
+
+        for pdb in dataset["hybrid"]:
+            cd(pdb+"_HA")
+            GlobularPart, MembranePart = get_two_part_from_eye_seperation(pdb, part_info)
+            # print(pdb)
+            # print(GlobularPart)
+            # print(MembranePart)
+            fileLocation = "membranePart/frags.mem"
+            mem = myRead(fileLocation, skip=4)
+            fileLocation = "globularPart/frags.mem"
+            globular = myRead(fileLocation, skip=4)
+            mix_frag(globular, mem, GlobularPart, MembranePart)
+            check_and_correct_fragment_memory(fragFile="HA_combined.mem")
+            relocate(fileLocation="HA_combined.mem", toLocation="HA_frags")
+            replace(f"HA_combined.mem", f"/Users/weilu/openmmawsem//Gros/", "./HA_frags/")
+            cd("..")
+
+#     if args.mode == 2:
+#         # pdb = "6e67A"
+#         pdb = args.label
+#         fileLocation = "membranePart/frags.mem"
+#         mem = myRead(fileLocation, skip=4)
+#         fileLocation = "globularPart/frags.mem"
+#         globular = myRead(fileLocation, skip=4)
+
+#         probFile= f"/Users/weilu/Research/server/jun_2019/simluation_hybrid/TM_pred/{pdb}_PureTM/{pdb}.prob"
+#         GlobularPart, MembranePart = get_two_part_from_prediction(probFile)
+
+#         out = """[Target]
+# query
+
+# [Memories]
+# """
+#         n = len(mem)//20
+#         for i in range(n):
+#             if i in MembranePart:
+#                 out += "".join(mem[i*20:(i+1)*20])
+#             else:
+#                 out += "".join(globular[i*20:(i+1)*20])
+
+#         with open("HA_combined.mem", "w") as o:
+#             o.write(out)
+
+#     if args.mode == 3:
+#         # pdb = "6e67A"
+#         pdb = args.label
+#         check_and_correct_fragment_memory(fragFile="HA_combined.mem")
+#         relocate(fileLocation="HA_combined.mem", toLocation="HA_frags")
+#         replace(f"HA_combined.mem", f"/Users/weilu/openmmawsem//Gros/", "./HA_frags/")
+    # if args.mode == 11:
+    #     cmd = "pymol "
+    #     for pdb in pdb_list:
+    #         cmd += f"setup/{pdb}/{pdb}.pdb "
+    #     do(cmd)
+
+if args.day == "jun26":
+    if args.mode == 1:
+        # pdb = "6e67B"
+        pdb = args.label
+        brain_damage = 1
+        do("mkdir -p frag_database")
+        cd("frag_database")
+        do(f"mkdir {pdb}_HE")
+        cd(f"{pdb}_HE")
+        # brain_damage = 0
+        # do("mkdir -p frag_database")
+        # cd("frag_database")
+        # do(f"mkdir {pdb}_HA")
+        # cd(f"{pdb}_HA")
+
+        do(f"cp ../../setup/{pdb}/{pdb}.fasta .")
+        do("mkdir globularPart")
+        cd("globularPart")
+        do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/openmmawsem/database/cullpdb_pc80_res3.0_R1.0_d160504_chains29712 ../{pdb}.fasta 20 {brain_damage} 9 > logfile")
+        cd("..")
+
+        do("mkdir membranePart")
+        cd("membranePart")
+        do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/Research/optimization/fragment/self_culled/cullpdb_pc25_res3.0_R0.3_d190618_chains497 ../{pdb}.fasta 20 {brain_damage} 9 > logfile")
+        cd("..")
+
+    if args.mode == 2:
+        check_and_correct_fragment_memory(fragFile="combined.mem")
+        relocate(fileLocation="combined.mem", toLocation="fraglib")
+        replace(f"combined.mem", f"/Users/weilu/openmmawsem//Gros/", "./fraglib/")
+    if args.mode == 3:
+        relocate(fileLocation="combined.mem", toLocation="fraglib")
+    if args.mode == 4:
+        replace(f"combined.mem", f"/Users/weilu/openmmawsem//Gros/", "./fraglib/")
+    if args.mode == 5:
+        probFile= "/Users/weilu/Research/server/jun_2019/simluation_hybrid/TM_pred/6e67A_PureTM/6e67A.prob"
+        GlobularPart, MembranePart = get_two_part_from_prediction(probFile)
+
+if args.day == "aug01":
+    if args.mode == 1:
+        pdb = "lysozyme"
+        line = "lysozyme.pdb"
+        pdbToFasta(pdb, line, f"{pdb}.fasta")
+    if args.mode == 2:
+        pdb_list = ["4rws"]
+        for pdb in pdb_list:
+            pdbID = pdb
+            raptorX_file = f"{pdbID}.txt"
+            convertRaptorToInput(pdbID, raptorX_file)
+            print(pdb)
+            do(f"wc ~/opt/gremlin/protein/{pdb}/raptor/go_rnativeCACA.dat")
+            # do(f"wc ~/Research/server/jul_2019/hybrid_protein_simulation/setup/{pdb}/ssweight")
+            print("--")
+if args.day == "jul27":
+    if args.mode == 1:
+        # pdb_list = ["5d91", "2xov_complete", "3kp9", "4a2n"]
+        pdb_list = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91"]
+        pdb_list = ["4nv6", "4p79", "5dsg", "6g7o", "6a93", "2jo1", "1py6", "1pv6", "1u19"]
+        for pdb in pdb_list:
+            do(f"cp ~/opt/gremlin/protein/{pdb}/raptor/go_rnativeC* {pdb}/")
+
+if args.day == "jul22":
+    # two chain assembly.
+    pdb_list = ["6iu3"]
+    if args.mode == 1:
+        do("mkdir -p original_pdbs")
+        for pdb in pdb_list:
+            do(f"wget https://opm-assets.storage.googleapis.com/pdb/{pdb}.pdb")
+            do(f"mv {pdb}.pdb original_pdbs/")
+        cleanPdb(pdb_list, source="original_pdbs", chain=-1, formatName=False)
+        create_project_for_pdb_list(pdb_list, frag=True)
+
+if args.day == "jul21":
+    pdb_list = ["4nv6", "4p79", "5dsg", "6g7o", "6a93", "5xpd", "3kp9", "4a2n", "5d91", "2jo1"]
+    pdb_list += ["1py6", "1pv6", "1u19"]
+    pdb_list += ["2xov_complete", "6e67A"]
+    if args.mode == 1:
+        do("mkdir -p original_pdbs")
+        for pdb in pdb_list:
+            do(f"wget https://opm-assets.storage.googleapis.com/pdb/{pdb}.pdb")
+            do(f"mv {pdb}.pdb original_pdbs/")
+        cleanPdb(pdb_list, source="original_pdbs", chain=-1, formatName=False)
+    if args.mode == 2:
+        create_project_for_pdb_list(pdb_list, frag=True)
+if args.day == "jul16":
+    from Bio.PDB import *
+
+    class ExtractResidues(Select):
+
+        def __init__(self, ResidueIndexGroup, resList):
+            super(ExtractResidues, self).__init__()
+            self.ResidueIndexGroup = ResidueIndexGroup
+            self.resList = resList
+
+        def accept_residue(self, residue):
+            if self.resList.index(residue) in self.ResidueIndexGroup:
+                return True
+            else:
+                return False
+
+    def extractResidues(structure, toName, ResidueIndexGroup):
+        resList = list(structure.get_residues())
+        io = PDBIO()
+        io.set_structure(structure)
+        io.save(toName, ExtractResidues(ResidueIndexGroup, resList))
+
+    if args.mode == 1:
+        # pdb = "2xov_complete"
+        pdb = args.label
+        # probFile= f"/Users/weilu/Research/server/jun_2019/simluation_hybrid/TM_pred/{pdb}_PureTM/{pdb}.prob"
+        probFile= f"/Users/weilu/Research/server/jul_2019/group1_hybrid_simulation/TM_pred/{pdb}_PureTM/{pdb}.prob"
+        GlobularPart, MembranePart = get_two_part_from_prediction(probFile)
+        if pdb == "2xov_complete":
+            GlobularPart = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62]
+
+        # print(GlobularPart, MembranePart)
+        # fileLocation = "lastFrame.pdb"
+
+
+        maxQList = glob.glob("max_Q*.pdb")
+        for maxQ in maxQList:
+            fileLocation = maxQ
+            parser = PDBParser()
+            structure = parser.get_structure('X', fileLocation)
+            extractResidues(structure, f"{maxQ}_globular.pdb", GlobularPart)
+            extractResidues(structure, f"{maxQ}_membrane.pdb", MembranePart)
+
+        fileLocation = "crystal_structure.pdb"
+        parser = PDBParser()
+        structure = parser.get_structure('X', fileLocation)
+        extractResidues(structure, "native_globular.pdb", GlobularPart)
+        extractResidues(structure, "native_membrane.pdb", MembranePart)
+
+        fileLocation = "lastFrame.pdb"
+        parser = PDBParser()
+        structure = parser.get_structure('X', fileLocation)
+        extractResidues(structure, "lastFrame_globular.pdb", GlobularPart)
+        extractResidues(structure, "lastFrame_membrane.pdb", MembranePart)
+
+    if args.mode == 2:
+        location = "info.dat"
+        t = pd.read_csv(location, sep="\s+")
+        # skip first two.
+        t = t.query("Steps > 1").reset_index(drop=True)
+        frame = t["Q_wat"].idxmax()
+
+        location = "movie.pdb"
+        with open(location) as f:
+            a = f.readlines()
+        n = len(a)
+        # get the position of every model title
+        model_title_index_list = []
+        for i in range(n):
+            if len(a[i]) >= 5 and a[i][:5] == "MODEL":
+                model_title_index = i
+                model_title_index_list.append(model_title_index)
+        model_title_index_list.append(n)
+        check_array = np.diff(model_title_index_list)
+        if not np.allclose(check_array, check_array[0]):
+            print("!!!! Someting is wrong  !!!!")
+            print(check_array)
+        else:
+            size = check_array[0]
+        with open(f"max_Q_wat_frame_{frame}.pdb", "w") as out:
+            out.write("".join(a[size*frame:size*(frame+1)]))
+
+    if args.mode == 3:
+        # pdb = "6e67A"
+        pdb = args.label
+        part = "globular"
+        with open(f"show_{pdb}_{part}.pml", "w") as out:
+            out.write(f"load native_{part}.pdb\n")
+            out.write(f"load lastFrame_{part}.pdb\n")
+            out.write(f'cealign native_{part}, lastFrame_{part}\ncmd.spectrum("count",selection="(lastFrame_{part})&*/CA")\ncmd.spectrum("count",selection="(native_{part})&*/CA")\n')
+            out.write("orient\n")
+
+if args.day == "jul03":
+    if args.mode == 1:
+        pdb_list_A = ["4nv6", "4p79", "5dsg", "6g7o", "6a93"]
+        pdb_list_B = ["4zyo", "5n6m"]
+        pdb_list_C = ["4rws", "4xt3", "5uiw"]  # two chains.
+        pdb_list_D = ["5uig"]
+        pdb_list_E = ["2rh1"]
+        pdb_list = pdb_list_A + pdb_list_B + pdb_list_C + pdb_list_D + pdb_list_E
+        pdb_list = ["5uiw"]
+        pdb_list = pdb_list_C
+        do("mkdir -p original_pdbs")
+        for pdb in pdb_list:
+            do(f"wget https://opm-assets.storage.googleapis.com/pdb/{pdb}.pdb")
+            do(f"mv {pdb}.pdb original_pdbs/")
+        cleanPdb(pdb_list, source="original_pdbs", chain=-1, formatName=False)
+    if args.mode == 2:
+        # two chain, in connection.
+        pdb_list_C = ["4rws", "4xt3", "5uiw"]
+        pdb_list = ["4rws"]
+        create_project_for_pdb_list(pdb_list)
+
+if args.day == "jul02":
+    pdb_list = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91", "2jo1"]
+    if args.mode == 1:
+        # pdb = "5d91"
+        # part = "membrane"
+        # part = "globular"
+        # pdb_list = ["5d91", "2xov_complete", "3kp9", "4a2n"]
+        # pdb_list = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91"]
+        pdb_list = ["2xov_complete", "5xpd", "3kp9", "4a2n", "5d91"]
+        part_list = ["globular", "membrane"]
+        part_list = ["globular"]
+        do("mkdir -p best_pml")
+        for pdb in pdb_list:
+            for part in part_list:
+                if part == "globular":
+                    loc = "wat"
+                else:
+                    loc = "mem"
+                with open(f"best_pml/show_{part}_{pdb}.pml", "w") as out:
+                    out.write(f"load {pdb}/0/native_{part}.pdb\n")
+                    out.write(f"load Q_{loc}_max/{pdb}_best_{part}.pdb\n")
+                    out.write(f'cealign native_{part}, {pdb}_best_{part}\ncmd.spectrum("count",selection="({pdb}_best_{part})&*/CA")\ncmd.spectrum("count",selection="(native_{part})&*/CA")\n')
+                    out.write("orient\n")
+                    out.write("ray 1000, 1000\n")
+                    out.write(f"save snapshot/{part}_{pdb}.png")
+                    # out.write("exit")
+                cmd = f"pymol best_pml/show_{part}_{pdb}.pml"
+                out = getFromTerminal(cmd)
+                with open(f"log/{part}_{pdb}", "w") as o:
+                    o.write(out)
+                # print(out)
+
+if args.day == "jul01":
+    pdb_list = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91", "2jo1"]
+    if args.mode == 6:
+        # pdb = "5d91"
+        # part = "membrane"
+        # part = "globular"
+        # pdb_list = ["5d91", "2xov_complete", "3kp9", "4a2n"]
+        pdb_list = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91"]
+        part_list = ["membrane", "globular"]
+        do("mkdir -p pml")
+        for pdb in pdb_list:
+            for part in part_list:
+                with open(f"pml/show_{pdb}_{part}.pml", "w") as out:
+                    out.write(f"load {pdb}/0/native_{part}.pdb\n")
+                    out.write(f"load {pdb}/0/lastFrame_{part}.pdb\n")
+                    out.write(f'cealign native_{part}, lastFrame_{part}\ncmd.spectrum("count",selection="(lastFrame_{part})&*/CA")\ncmd.spectrum("count",selection="(native_{part})&*/CA")\n')
+                    out.write("orient\n")
+                # do("pymol 5d91/0/lastFrame_membrane.pdb 5d91/0/native_membrane.pdb")
+    if args.mode == 5:
+        # pdb_list = ["5d91", "2xov_complete", "3kp9", "4a2n"]
+        pdb_list = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91"]
+        for pdb in pdb_list:
+            cd(pdb+"/0")
+            do("movie.py -m 4 123")
+            do(f"gg.py -d jun29 -m 2 -l {pdb}")
+            do(f"gg.py -d jun29 -m 1 -l {pdb}")
+            cd("../..")
+    if args.mode == 4:
+        for pdb in pdb_list:
+            with fileinput.FileInput(f"forces_setup_{pdb}.py", inplace=True) as file:
+                for line in file:
+                    tmp = line.replace("# er_term(oa)", "er_term(oa)")
+                    print(tmp, end='')
+
+    if args.mode == 3:
+        # pdb_list = ["5d91", "2xov_complete", "3kp9", "4a2n"]
+        pdb_list = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91"]
+        for pdb in pdb_list:
+            do(f"cp ~/opt/gremlin/protein/{pdb}/raptor/go_rnativeC* {pdb}/")
+    if args.mode == 1:
+        for pdb in pdb_list:
+            print(pdb)
+            do(f"cat {pdb}/{pdb}.fasta")
+    if args.mode == 2:
+
+        # pdbID=args.label
+        # raptorX_file = args.label
+        pdb_list = ["4nv6", "4p79", "5dsg", "6g7o", "6a93", "2jo1", "1py6", "1pv6", "1u19"]
+        for pdb in pdb_list:
+            pdbID = pdb
+            raptorX_file = f"{pdbID}/contactmap.txt"
+            convertRaptorToInput(pdbID, raptorX_file)
+            print(pdb)
+            do(f"wc ~/opt/gremlin/protein/{pdb}/raptor/go_rnativeCACA.dat")
+            do(f"wc ~/Research/server/jul_2019/hybrid_protein_simulation/setup/{pdb}/ssweight")
+            print("--")
+if args.day == "jun30":
+    if args.mode == 1:
+        pdb_list = ["lastFrame"]
+        cleanPdb(pdb_list, source="./", chain=-1, formatName=False)
+
+if args.day == "jun28":
+    # time.sleep(60*60*2)
+    pdb_list = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91", "2jo1"]
+
+if args.day == "jun27":
+    pdb_list = ["5xpd", "3kp9", "4a2n", "5d91", "5uiw", "6akg", "4xt3"]
+    if args.mode == 1:
+        # pdb_list = ['1xrd', '5uiw', '3kp9', '3e9j', '2n7r', '5tcx', '4aw6', '5d91', '4zyo', '5ktf', '5mm0', '6bms']
+        # pdb_list = ['2n7r', '1jo5', '5ktf', '2moz', '3zd0', '2lor', '2ksr', '3wkv', '4p79', '4a2n', '5tcx', '4b4a', '3wo7', '3tx3', '3ddl', '5jwy', '3kp9', '5xpd', '4zr1', '6gci', '6a2j', '4jr9', '4il3', '6ids', '5n6m', '6bug', '4dji']
+        # a = pd.read_csv("/Users/weilu/Research/database/hybrid_prediction_database/picked2.csv", index_col=0)
+        # pdb_list = a["Protein"].to_list()
+        print(pdb_list)
+        do("mkdir -p original_pdbs")
+        for pdb in pdb_list:
+            do(f"wget https://opm-assets.storage.googleapis.com/pdb/{pdb}.pdb")
+            do(f"mv {pdb}.pdb original_pdbs/")
+        cleanPdb(pdb_list, source="original_pdbs", chain=-1, formatName=False)
+    if args.mode == 2:
+        do("mkdir -p setup")
+        cd("setup")
+        for pdb in pdb_list:
+            do(f"mkdir -p {pdb}")
+            cd(pdb)
+            do(f"mm_create_project.py ../../cleaned_pdbs/{pdb}.pdb --extended --membrane")
+            cd("..")
+
+# if args.day == "jun26":
+#     if args.mode == 1:
+#         # pdb = "6e67B"
+#         pdb = args.label
+#         # do("mkdir frag_database")
+#         # cd("frag_database")
+#         do(f"mkdir {pdb}_HA")
+#         cd(f"{pdb}_HA")
+#         do(f"cp ../../setup/{pdb}/{pdb}.fasta .")
+#         do("mkdir globularPart")
+#         cd("globularPart")
+#         do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/openmmawsem/database/cullpdb_pc80_res3.0_R1.0_d160504_chains29712 ../{pdb}.fasta 20 0 9 > logfile")
+#         cd("..")
+
+#         do("mkdir membranePart")
+#         cd("membranePart")
+#         do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/Research/optimization/fragment/self_culled/cullpdb_pc25_res3.0_R0.3_d190618_chains497 ../{pdb}.fasta 20 0 9 > logfile")
+#         cd("..")
+
+#     if args.mode == 2:
+#         check_and_correct_fragment_memory(fragFile="combined.mem")
+#         relocate(fileLocation="combined.mem", toLocation="fraglib")
+#         replace(f"combined.mem", f"/Users/weilu/openmmawsem//Gros/", "./fraglib/")
+#     if args.mode == 3:
+#         relocate(fileLocation="combined.mem", toLocation="fraglib")
+#     if args.mode == 4:
+#         replace(f"combined.mem", f"/Users/weilu/openmmawsem//Gros/", "./fraglib/")
+#     if args.mode == 5:
+#         probFile= "/Users/weilu/Research/server/jun_2019/simluation_hybrid/TM_pred/6e67A_PureTM/6e67A.prob"
+#         GlobularPart, MembranePart = get_two_part_from_prediction(probFile)
+
+if args.day == "jun23":
+    if args.mode == 1:
+        pdb_list = ["2mja", "2lep"]
+        downloadPdb(pdb_list)
+        # do("cp zimPosition back_zimPosition")
 
 if args.day == "jun17":
     if args.mode == 3:
@@ -1175,6 +1775,11 @@ if args.day == "jan06":
 if args.day == "jan03":
     if args.mode == 1:
         convert_openMM_to_standard_pdb(fileName="movie.pdb")
+
+
+
+'''
+########----------------------2018-------------------------#######
 if args.day == "dec13":
     if args.mode == 1:
         pdb_list = ["T0958"]
@@ -1489,7 +2094,7 @@ if args.day == "jul20":
                 duplicate_pdb("one_abeta42.pdb", to, offset_x=i*40.0, offset_y=j*40.0, offset_z=30.0, new_chain=table[count])
                 do(f"cat {to} >> crystal_structure.pdb")
                 count += 1
-'''
+
 if args.day == "jul11":
     if args.mode == 1:
         do("rm crystal_structure.pdb")
