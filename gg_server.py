@@ -7,7 +7,7 @@ from random import seed, randint
 import argparse
 import platform
 from datetime import datetime
-import imp
+# import imp
 import glob
 from time import sleep
 import fileinput
@@ -583,6 +583,7 @@ dataset["combined"] = dataset["old"] + dataset["new"]
 
 dataset["may13"] = ['1r69', '3icb', '256b', '4cpv', '2mhr', '1mba', '2fha', '1fc2', '1enh', '2gb1', '2cro', '1ctf', '4icb']
 dataset["membrane"] = ["2bg9", "1j4n", "1py6_SD", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19"]
+dataset["hybrid"] = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91", "4nv6", "4p79", "5dsg", "6g7o", "6a93", "2jo1", "1py6", "1pv6", "1u19"]
 
 # def returnSteps(p):
 #     if p in "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", "):
@@ -623,6 +624,500 @@ def slurmRun(slurmFileName, cmd, template=scavenge_slurm, memory=1):
     a = getFromTerminal(f"sbatch {slurmFileName}")
     jobId = a.split(" ")[-1].strip()
     return jobId
+
+if args.day == "tmpred":
+    pdb_list = ["4nv6", "4p79", "5dsg", "6g7o", "6a93", "5xpd", "3kp9", "4a2n", "5d91", "2jo1"]
+    pdb_list += ["1py6", "1pv6", "1u19"]
+    pdb_list += ["2xov_complete", "6e67A"]
+    if args.mode == 1:
+        do("mkdir -p TM_pred")
+        cd("TM_pred")
+        # pdb = "4rws"
+        # pdb = args.label
+        # do(f"/projects/pw8/wl45/topology_prediction/PureseqTM_Package/PureseqTM.sh -i ../setup/{pdb}/{pdb}.fasta")
+        for pdb in pdb_list:
+            do(f"/projects/pw8/wl45/topology_prediction/PureseqTM_Package/PureseqTM_proteome.sh -i ../setup/{pdb}/{pdb}.fasta")
+        cd("..")
+    if args.mode == 2:
+        for pdb in pdb_list:
+            PredictedZimAndForceSetupFile(pdb, forceLocation="forces")
+    if args.mode == 3:
+        for pdb in pdb_list:
+            print(pdb)
+            do(f"cat setup/{pdb}/{pdb}.fasta")
+
+if args.day == "sep25":
+    do("gg_server.py -d sep02 -m 1 -l cannabinoid_receptor.fasta")
+if args.day == "sep19":
+    # shuffle iter0.
+    from pyCodeLib import *
+    import warnings
+    warnings.filterwarnings('ignore')
+    n_decoys = 1000
+    separateDecoysNum = -1
+
+    if args.mode == 44:
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d jun10 -m 4"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 1:
+        do("mkdir proteins_name_list")
+        do("mkdir slurms")
+        do("mkdir data")
+        do("mkdir -p decoys")
+        do("mkdir -p gammas")
+        do("mkdir -p outs")
+        do("mkdir -p ../phis")
+        proteins = f"protein_list"
+        # generate_decoy_sequences(proteins, separateDecoysNum=separateDecoysNum, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+    if args.mode == 2:
+        # time.sleep(16000)
+        with open("protein_list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(1):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i)
+        n = i
+        i = 0
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d sep19 -m 222 -l {proteins}")
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        waitForJobs(jobIdList, sleepInterval=300)
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d sep19 -m 4"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 22:
+        protein = args.label
+        do(f"python3 ~/opt/compute_phis.py -m 0 {protein}")
+        # do("python3 ~/opt/compute_phis.py -m 0 test_protein")
+    if args.mode == 222:
+        proteins = args.label
+        evaluate_phis_over_training_set_for_native_structures_Wei(proteins, "phi_list.txt",
+                    decoy_method='shuffle', max_decoys=1e+10, tm_only=False, num_processors=1, separateDecoysNum=separateDecoysNum)
+    if args.mode == 3:
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d sep19 -m 4"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 4:
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+                                        num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False)
+
+
+if args.day == "sep02":
+    if args.mode == 1:
+        dmp_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=commons
+#SBATCH --partition=scavenge
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem-per-cpu=10G
+#SBATCH --time=04:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+#SBATCH -o outs/slurm-%j.out
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun {}\n'''
+
+        if args.label[-6:] == ".fasta":
+            pdb = args.label[:-6]
+        else:
+            pdb = args.label
+        # folder = pdb
+        folder = "DMP"
+        do(f"mkdir -p {folder}")
+        os.chdir(folder)
+        os.system(f"cp ../{pdb}.fasta .")
+        cmd = f"bash /projects/pw8/wl45/DeepMetaPSICOV/run_DMP.sh -i {pdb}.fasta"
+        do("mkdir -p outs")
+        out = slurmRun(f"{pdb}.slurm", cmd, template=dmp_slurm)
+        print(out)
+        os.chdir("..")
+if args.day == "aug20":
+    if args.mode == 1:
+        # pdb = args.label
+        if args.label[-6:] == ".fasta":
+            pdb = args.label[:-6]
+        else:
+            pdb = args.label
+        do("mkdir -p TM_pred")
+        cd("TM_pred")
+        os.system(f"cp ../{pdb}.fasta .")
+        # pdb = "4rws"
+        # pdb = args.label
+        # do(f"/projects/pw8/wl45/topology_prediction/PureseqTM_Package/PureseqTM.sh -i ../setup/{pdb}/{pdb}.fasta")
+        # do(f"/projects/pw8/wl45/topology_prediction/PureseqTM_Package/PureseqTM_proteome.sh -i ../setup/{pdb}/{pdb}.fasta")
+        do(f"/projects/pw8/wl45/topology_prediction/PureseqTM_Package/PureseqTM_proteome.sh -i {pdb}.fasta")
+        cd("..")
+
+if args.day == "aug15":
+    if args.mode == 1:
+        for pdb in pdb_list:
+            folder = pdb
+            os.mkdir(folder)
+            os.chdir(folder)
+            os.system(f"cp ../fastas/{pdb}.fasta .")
+            cmd = f"bash /projects/pw8/wl45/DeepMetaPSICOV/run_DMP.sh -i {pdb}.fasta"
+            out = slurmRun(f"{pdb}.slurm", cmd)
+            print(out)
+            os.chdir("..")
+if args.day == "aug11":
+    if args.mode == 1:
+        # pdb = "1pv6"
+        do("mkdir -p forces_recompute")
+        for pdb in dataset["hybrid"]:
+            forceLocation = "forces_recompute"
+            do(f"cp forces/forces_setup_{pdb}.py {forceLocation}/forces_setup_{pdb}.py")
+            with fileinput.FileInput(f"{forceLocation}/forces_setup_{pdb}.py", inplace=True) as file:
+                for line in file:
+                    fromLine = 'MembranePart ='
+                    toLine = 'MembranePart =[1,2]\nMembranePart ='
+                    tmp = line.replace(fromLine, toLine)
+                    print(tmp, end='')
+
+if args.day == "aug10":
+    if args.mode == 1:
+        for pdb in dataset["hybrid"]:
+            do(f"cp -r frag_database/{pdb}_HA/HA_combined.mem setup/{pdb}/")
+            do(f"cp -r frag_database/{pdb}_HA/HA_frags setup/{pdb}/")
+    if args.mode == 2:
+        # pdb = "1pv6"
+        for pdb in dataset["hybrid"]:
+            forceLocation = "forces_HA"
+            do(f"cp forces/forces_setup_{pdb}.py {forceLocation}/forces_setup_{pdb}.py")
+            with fileinput.FileInput(f"{forceLocation}/forces_setup_{pdb}.py", inplace=True) as file:
+                for line in file:
+                    fromLine = 'fragment_memory_term(oa, frag_file_list_file="./frags.mem", npy_frag_table="./frags.npy", UseSavedFragTable=True),'
+                    toLine = 'fragment_memory_term(oa, frag_file_list_file="./HA_combined.mem", npy_frag_table="./HA_combined.npy", UseSavedFragTable=True),'
+                    tmp = line.replace(fromLine, toLine)
+                    print(tmp, end='')
+if args.day == "jul18":
+    if args.mode == 1:
+        pdb = "5d91"
+        for i in range(3):
+            cmd = f"mm_run_with_pulling_start.py setup/{pdb}/{pdb} --to cpu1/{pdb}/{i} -s 1e4 --platform CPU -t 1 -f energy_forces_with_er/forces_setup_{pdb}.py --subMode 3"
+            jobId = slurmRun(f"slurms/{pdb}_{i}.slurm", cmd, memory=5)
+            print(jobId)
+
+
+if args.day == "jun29":
+    pdb_list = ["2jo1", "2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91"]
+    if args.mode == 1:
+        for pdb in pdb_list:
+            if pdb == "6e67A":
+                continue
+            print(pdb)
+            do(f"cp -r frag_database/{pdb}_HA/HA_frags setup/{pdb}/")
+            do(f"cp frag_database/{pdb}_HA/HA_combined.mem setup/{pdb}/")
+    if args.mode == 2:
+        for pdb in pdb_list:
+            # do(f"cp forces_setup_{pdb}.py energy_forces/")
+            # replace(f"energy_forces/forces_setup_{pdb}.py", "single_frags", "HA_combined")
+            for i in range(3):
+                cmd = f"python mm_analysis.py setup/{pdb}/{pdb} -t second_small_batch/{pdb}/{i}/movie.dcd --subMode 3 -f energy_forces/forces_setup_{pdb}.py -o frag_ha_energy.dat"
+                slurmRun(f"{pdb}_{i}.slurm", cmd, memory=5)
+    if args.mode == 3:
+        pdb = "2xov_complete"
+        for i in range(3):
+            cmd = f"mm_analysis.py setup/2xov_complete/2xov_complete -t second_small_batch/2xov_complete/{i}/movie.dcd --subMode 3 -f forces_setup_2xov_complete.py"
+            jobId = slurmRun(f"slurms/{pdb}_{i}.slurm", cmd, memory=5)
+            print(jobId)
+
+if args.day == "jun27":
+    pdb_list = ["2jo1", "2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91"]
+    # pdb_list = ["5xpd", "3kp9", "4a2n", "5d91"]
+    # pdb_list = ["4xt3", "5uiw", "6akg"]
+    if args.mode == 1:
+        for pdb in pdb_list:
+            cd("TM_pred")
+            do(f"/projects/pw8/wl45/topology_prediction/PureseqTM_Package/PureseqTM.sh -i ../setup/{pdb}/{pdb}.fasta")
+            cd("..")
+            do(f"gg_server.py -d jun24 -m 2 -l {pdb}")
+    # if args.mode == 2:
+
+if args.day == "jun24":
+    if args.mode == 1:
+        # do("/projects/pw8/wl45/topology_prediction/PureseqTM_Package/PureseqTM.sh -i crystal_structure.fasta")
+        print("This script will predict TM topology, create zimPosition, set up force-step file.")
+        pdb = args.label
+        cd("TM_pred")
+        do(f"/projects/pw8/wl45/topology_prediction/PureseqTM_Package/PureseqTM.sh -i ../setup/{pdb}/{pdb}.fasta")
+        cd("..")
+        do(f"gg_server.py -d jun24 -m 2 -l TM_pred/6e67B_PureTM/{pdb}.prob")
+    if args.mode == 2:
+        # predict TM topology, create zimPosition, set up force-step file.
+
+        pdb = args.label
+        # pdb = "6e67A"
+        # pdb = "6e67B"
+        do(f"cp forces_setup.py forces_setup_{pdb}.py")
+        # probFile =args.label
+        # print(probFile)
+        probFile = f"TM_pred/{pdb}_PureTM/{pdb}.prob"
+        with open(f"{probFile}") as f:
+            a = f.readlines()
+        res_list = []
+        first = None
+        count = 1
+        previousEnd = 0
+        # print("g_all = [")
+        zimOut = open("zimPosition", "w")
+        out = "[\n"
+        for i, line in enumerate(a[3:]):
+            prob = float(line.strip().split()[3])
+            res = "0" if prob < 0.5 else "1"
+            o = "2" if res == "1" else "1"
+            zimOut.write(o+"\n")
+            if res == "0":
+                if len(res_list) > 0:
+                    # print(f"g{count} =", res_list)
+                    print(res_list, ", ")
+                    out += f"    {res_list},\n"
+                    count += 1
+                    last = res_list[-1]
+                    first = res_list[0] if first is None else first
+                    span = res_list[0] - previousEnd
+                    if span > 30:
+                        print(f"{pdb} Globular", previousEnd, res_list[0])
+                        globular = list(range(previousEnd+10, res_list[0]-10))
+                    previousEnd = last
+                res_list = []
+            if res == "1":
+                res_list.append(i)
+        n = len(a[3:])
+        print(f"{pdb}: size {n}")
+        span = n - previousEnd
+        if span > 30:
+            print(f"{pdb} Globular", previousEnd, n)
+            globular = list(range(previousEnd+10, n-10))
+
+        out += "]\n"
+        zimOut.close()
+
+        membranePart = []
+        for i in range(first-5, last+5):
+            if i not in globular:
+                membranePart.append(i)
+        # print("]")
+        # replace(, "GALL", out)
+        # , backup='.bak'
+        with fileinput.FileInput(f"forces_setup_{pdb}.py", inplace=True) as file:
+            for line in file:
+                tmp = line.replace("GALL", out).replace("FIRST", str(first)).replace("LAST", str(last))
+                tmp = tmp.replace("RESMEMB", f"{membranePart}")
+                tmp = tmp.replace("RESGLOBULAR", f"{globular}")
+                print(tmp, end='')
+        do(f"cp zimPosition setup/{pdb}/PredictedZim")
+
+
+
+# def PredictedZimAndForceSetupFile(pdb):
+#     do(f"cp forces_setup.py forces_setup_{pdb}.py")
+#     # probFile =args.label
+#     # print(probFile)
+#     probFile = f"TM_pred/{pdb}_PureTM/{pdb}.prob"
+#     with open(f"{probFile}") as f:
+#         a = f.readlines()
+#     res_list = []
+#     first = None
+#     count = 1
+#     previousEnd = 0
+#     # print("g_all = [")
+#     zimOut = open("zimPosition", "w")
+#     out = "[\n"
+#     for i, line in enumerate(a[3:]):
+#         prob = float(line.strip().split()[3])
+#         res = "0" if prob < 0.5 else "1"
+#         o = "2" if res == "1" else "1"
+#         zimOut.write(o+"\n")
+#         if res == "0":
+#             if len(res_list) > 0:
+#                 # print(f"g{count} =", res_list)
+#                 print(res_list, ", ")
+#                 out += f"    {res_list},\n"
+#                 count += 1
+#                 last = res_list[-1]
+#                 first = res_list[0] if first is None else first
+#                 span = res_list[0] - previousEnd
+#                 if span > 30:
+#                     print(f"{pdb} Globular", previousEnd, res_list[0])
+#                     globular = list(range(previousEnd+10, res_list[0]-10))
+#                 previousEnd = last
+#             res_list = []
+#         if res == "1":
+#             res_list.append(i)
+#     n = len(a[3:])
+#     print(f"{pdb}: size {n}")
+#     span = n - previousEnd
+#     if span > 30:
+#         print(f"{pdb} Globular", previousEnd, n)
+#         globular = list(range(previousEnd+10, n-10))
+
+#     out += "]\n"
+#     zimOut.close()
+
+#     membranePart = []
+#     for i in range(first-5, last+5):
+#         if i not in globular:
+#             membranePart.append(i)
+#     # print("]")
+#     # replace(, "GALL", out)
+#     # , backup='.bak'
+#     with fileinput.FileInput(f"forces_setup_{pdb}.py", inplace=True) as file:
+#         for line in file:
+#             tmp = line.replace("GALL", out).replace("FIRST", str(first)).replace("LAST", str(last))
+#             tmp = tmp.replace("RESMEMB", f"{membranePart}")
+#             tmp = tmp.replace("RESGLOBULAR", f"{globular}")
+#             print(tmp, end='')
+#     do(f"cp zimPosition setup/{pdb}/PredictedZim")
+
+# def PredictedZimAndForceSetupFile(pdb, forceLocation="."):
+#     do(f"mkdir -p {forceLocation}")
+#     do(f"cp forces_setup.py {forceLocation}/forces_setup_{pdb}.py")
+#     # probFile =args.label
+#     # print(probFile)
+#     # probFile = f"TM_pred/{pdb}_PureTM/{pdb}.prob"
+#     topFile = f"TM_pred/{pdb}_topo"
+#     with open(f"{topFile}") as f:
+#         a = f.readlines()
+#     assert len(a) == 3
+#     res_list = []
+#     first = None
+#     count = 1
+#     previousEnd = 0
+#     # print("g_all = [")
+#     zimOut = open("zimPosition", "w")
+#     out = "[\n"
+#     topo = a[2].strip()
+
+#     cutoff = 30 if pdb != "1py6" else 15
+#     linkerSize = 10 if pdb != "1py6" else 5
+#     for i, res in enumerate(topo):
+#         o = "2" if res == "1" else "1"
+#         zimOut.write(o+"\n")
+#         if res == "0":
+#             if len(res_list) > 0:
+#                 # print(f"g{count} =", res_list)
+#                 print(res_list, ", ")
+#                 out += f"    {res_list},\n"
+#                 count += 1
+#                 last = res_list[-1]
+#                 first = res_list[0] if first is None else first
+#                 span = res_list[0] - previousEnd
+#                 if span > cutoff:
+#                     print(f"{pdb} Globular", previousEnd, res_list[0])
+#                     globular = list(range(previousEnd+linkerSize, res_list[0]-linkerSize))
+#                 previousEnd = last
+#             res_list = []
+#         if res == "1":
+#             res_list.append(i)
+#     n = len(topo)
+#     print(f"{pdb}: size {n}")
+#     span = n - previousEnd
+#     if span > cutoff:
+#         print(f"{pdb} Globular", previousEnd, n)
+#         globular = list(range(previousEnd+linkerSize, n-linkerSize))
+
+#     out += "]\n"
+#     zimOut.close()
+
+#     membranePart = []
+#     for i in range(first-5, last+5):
+#         if i not in globular:
+#             membranePart.append(i)
+#     # print("]")
+#     # replace(, "GALL", out)
+#     # , backup='.bak'
+#     with fileinput.FileInput(f"{forceLocation}/forces_setup_{pdb}.py", inplace=True) as file:
+#         for line in file:
+#             tmp = line.replace("GALL", out).replace("FIRST", str(first)).replace("LAST", str(last))
+#             tmp = tmp.replace("RESMEMB", f"{membranePart}")
+#             tmp = tmp.replace("RESGLOBULAR", f"{globular}")
+#             print(tmp, end='')
+#     do(f"cp zimPosition setup/{pdb}/PredictedZim")
+
+if args.day == "jun20":
+    if args.mode == 1:
+        with open("protein_list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(3):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i)
+        n = i
+        i = 0
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d jun20 -m 2 -l {proteins}")
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        waitForJobs(jobIdList, sleepInterval=300)
+    if args.mode == 2:
+        from pyCodeLib import *
+        proteinlist = readList(args.label)
+        limit = 60
+        for name in proteinlist:
+            input_pdb_filename = f"../database/dompdb/{name}"
+            structure = parse_pdb(input_pdb_filename)
+            res_list = get_res_list(structure)
+            neighbor_list = get_neighbor_list(structure)
+
+            phi = phi_relative_k_well(res_list, neighbor_list, parameter_list="")
+            np.savetxt(f"../phis/phi_relative_k_well_{name}_native_4.5_6.5_5.0_10", [phi], fmt='%1.4f')
+            phis_list = []
+            q_list = []
+            offset_all = np.arange(1, limit, 1)
+            for offset in offset_all:
+                phi = phi_relative_k_well(res_list, neighbor_list, parameter_list="", z_m_high=offset)
+                q = interaction_well(offset, 12, 18, 1)
+                print(phi)
+                phis_list.append(phi)
+                q_list.append(q)
+            # np.savetxt(f"../phis/{name}_phis_high", phis_list, fmt='%1.4f')
+            offset_all = np.arange(-limit, -1, 1)
+            for offset in offset_all:
+                phi = phi_relative_k_well(res_list, neighbor_list, parameter_list="", z_m_low=offset)
+                q = interaction_well(offset, -18, -12, 1)
+                print(phi)
+                phis_list.append(phi)
+                q_list.append(q)
+            np.savetxt(f"../phis/phi_relative_k_well_{name}_decoys_shifted_4.5_6.5_5.0_10", phis_list, fmt='%1.4f')
+            np.savetxt(f"../phis/phi_relative_k_well_{name}_decoysQ_shifted_4.5_6.5_5.0_10", q_list, fmt='%1.4f')
 
 if args.day == "jun14":
     if args.mode == 1:
@@ -732,8 +1227,10 @@ if args.day == "jun10":
         replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
         do(f"sbatch slurms/run_on_scavenge.slurm")
     if args.mode == 11:
-        do("mkdir proteins_name_list")
-        do("mkdir slurms")
+        n = 10
+        # n = 1000
+        do("mkdir -p proteins_name_list")
+        do("mkdir -p slurms")
         do("mkdir -p decoys/multiShuffle")
         do("mkdir -p gammas")
         do('mkdir -p outs')
@@ -742,7 +1239,7 @@ if args.day == "jun10":
             content = f.readlines()
         for line in content:
             name = line.strip()
-            generate_multiShuffle(name, num_decoys=1000, nameMode=1)
+            generate_multiShuffle(name, num_decoys=n, nameMode=1)
     if args.mode == 111:
         # filter out protein with small MSAs.
         with open("protein_list") as f:
@@ -793,7 +1290,8 @@ if args.day == "jun10":
 
     if args.mode == 2:
         proteins = args.label
-        sampleK=1000
+        sampleK=2
+        # sampleK=1000
         evaluate_phis_over_training_set_for_native_structures_Wei(proteins, "phi_list.txt", decoy_method='multiShuffle', max_decoys=1e+10, tm_only=False, num_processors=1, multi_seq=True, sampleK=sampleK)
 
     if args.mode == 22:
@@ -1725,6 +2223,7 @@ if args.day == "may02":
         warnings.filterwarnings('ignore')
         # complete_proteins = "iter0.txt"
         complete_proteins = "protein_list"
+        n_decoys = 118
         # complete_proteins = "top70"
         A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shifted',
                                         num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, withBiased=True)
@@ -4947,6 +5446,9 @@ if args.day == "jan06":
         do(f"run.py -n 20 {name} --commons 2 -s {steps} --runs 3")
         cd("..")
 
+'''
+
+#####----------------------------2018--------------------------------------------
 if args.day == "dec30":
     pdb_list = "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", ")
     if args.mode == 1:
@@ -5553,7 +6055,7 @@ if args.day == "aug15":
 
 
 
-'''
+
 if args.day == "aug11":
     if args.mode == 1:
         temp_list = ["all"]

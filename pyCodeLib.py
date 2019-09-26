@@ -1467,19 +1467,20 @@ def phi_relative_k_well(res_list, neighbor_list, parameter_list, z_m_high=None, 
         z_m_low = -z_m
     density_threshold = 2.6
     density_kappa = 7.0
-
+    # print("z_m_high", z_m_high)
     for res1globalindex, res1 in enumerate(res_list):
         res1index = get_local_index(res1)
         res1chain = get_chain(res1)
         rho_i = cb_density[res1globalindex]
         z1 = get_z_position(res1)
-        alphaMembrane1 = interaction_well_2(z1, -z_m_low, z_m_high, eta_switching)
+        # print("res1globalindex", res1globalindex, "z1", z1)
+        alphaMembrane1 = interaction_well_2(z1, z_m_low, z_m_high, eta_switching)
         for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
             res2index = get_local_index(res2)
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
             z2 = get_z_position(res2)
-            alphaMembrane2 = interaction_well_2(z1, -z_m_low, z_m_high, eta_switching)
+            alphaMembrane2 = interaction_well_2(z1, z_m_low, z_m_high, eta_switching)
             rho_j = cb_density[res2globalindex]
             if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
@@ -3169,8 +3170,11 @@ def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_me
         phi_i_decoy_reshaped = np.reshape(phi_i_protein_i_decoy,
                                             (len(training_set) * num_decoys, total_phis))
         # average_phi_decoy = np.average(phi_i_decoy_reshaped, axis=0)
-        average_phi_decoy = np.sum(phi_i_decoy_reshaped, axis=0) / normalization
+        # print("normalization", normalization)
+        # print("phi_i_decoy_reshaped", phi_i_decoy_reshaped)
 
+        average_phi_decoy = np.sum(phi_i_decoy_reshaped, axis=0) / normalization
+        # print("average_phi_decoy", average_phi_decoy)
         # Output to a file;
         file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
             '/')[-1].split('.')[0], full_parameters_string)
