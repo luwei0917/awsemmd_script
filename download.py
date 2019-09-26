@@ -28,7 +28,6 @@ parser = argparse.ArgumentParser(
     run simulations")
 
 parser.add_argument("protein", help="The name of the protein")
-parser.add_argument("protein", help="The name of the protein")
 args = parser.parse_args()
 
 pdb = args.protein

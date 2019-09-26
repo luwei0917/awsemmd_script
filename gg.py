@@ -131,10 +131,27 @@ query
         o.write(out)
 
 
+
+
+if args.day == "sep20":
+    if args.mode == 1:
+        iteration = "trial_1"
+        pre = "./trial_1/"
+        do(f"mkdir -p {pre}")
+        iter_gamma = np.loadtxt("/Users/weilu/Research/server/sep_2019/peptide_optimization/saved_gammas/mixed_original_and_cutoff100_impose_Aprime_constraint")
+        gamma_for_simulation = pre + f"gamma.dat"
+        burial_gamma_for_simulation = pre + f"burial_gamma.dat"
+        gamma_format_convertion_iteration_to_simulation(iter_gamma, gamma_for_simulation, burial_gamma_for_simulation=burial_gamma_for_simulation)
+        # do("mv original_*.dat for_simulation/")
+
+if args.day == "aug20":
+    if args.mode == 1:
+        get_PredictedZim("4rws_topo", "PredictedZim")
 if args.day == "aug19":
     if args.mode == 1:
         for pdb in dataset["hybrid"]:
-            do(f"pymol show_{pdb}_globular.pml")
+            # do(f"pymol show_{pdb}_globular.pml")
+            do(f"pymol show_{pdb}_membrane.pml")
     if args.mode == 2:
         infoLocation = "/Users/weilu/Research/database/hybrid_prediction_database/length_info.csv"
         info = pd.read_csv(infoLocation, index_col=0)

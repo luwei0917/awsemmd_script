@@ -1784,6 +1784,27 @@ def convertDMPToInput(pdbID, dmp_file, fasta_file, pre='/Users/weilu/opt/gremlin
         np.savetxt(directory + 'go_rnativeCACA.dat', rnative_matrixCACA, fmt='%10.5f')
         np.savetxt(directory + 'go_rnativeCBCB.dat', rnative_matrixCBCB, fmt='%10.5f')
 
+def get_PredictedZim(topo, zimFile):
+    loc = topo
+    with open(loc) as f:
+        a = f.readlines()
+    assert len(a) % 3 == 0
+    chain_count = len(a) // 3
+    seq = ""
+    for i in range(chain_count):
+        seq_i = (a[i*3+2]).strip()
+        seq += seq_i
+    assert np.alltrue([i in ["0", "1"] for i in seq])
+
+    with open(zimFile, "w") as out:
+        for i in seq:
+            if i == "0":
+                out.write(f"1\n")
+            elif i == "1":
+                out.write("2\n")
+            else:
+                raise
+
 # def get_inside_or_not_table(pdb_file):
 #     parser = PDBParser(PERMISSIVE=1)
 #     structure = parser.get_structure('X', pdb_file)
