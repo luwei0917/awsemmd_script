@@ -45,3 +45,7 @@ if args.mode == 0:
     cmd = f"rsync -a --exclude='*.pkl' --exclude='*.dat' --exclude='*.out' {my_from} {my_to}"
     print(cmd)
     os.system(cmd)
+if args.mode == 1:
+    cmd = f"rsync -a --exclude='fraglib' {my_from} {my_to}"
+    print(cmd)
+    os.system(cmd)

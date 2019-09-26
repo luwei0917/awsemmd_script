@@ -191,6 +191,92 @@ def fill_chain(From, To, chain="A"):
                 a = "".join(tmp)
                 out.write(a)
 
+def get_two_part_from_prediction(topFile):
+    with open(f"{topFile}") as f:
+        a = f.readlines()
+    assert len(a) == 3
+    res_list = []
+    first = None
+    count = 1
+    previousEnd = 0
+    # print("g_all = [")
+    topo = a[2].strip()
+    cutoff = 30 if pdb != "1py6" else 15
+    linkerSize = 10 if pdb != "1py6" else 5
+    for i, res in enumerate(topo):
+        o = "2" if res == "1" else "1"
+        if res == "0":
+            if len(res_list) > 0:
+                # print(f"g{count} =", res_list)
+                # print(res_list, ", ")
+                count += 1
+                last = res_list[-1]
+                first = res_list[0] if first is None else first
+                span = res_list[0] - previousEnd
+                if span > cutoff:
+                    # print(f"{pdb} Globular", previousEnd, res_list[0])
+                    globular = list(range(previousEnd+linkerSize, res_list[0]-linkerSize))
+                previousEnd = last
+            res_list = []
+        if res == "1":
+            res_list.append(i)
+    n = len(topo)
+    # print(f"{pdb}: size {n}")
+    span = n - previousEnd
+    if span > cutoff:
+        # print(f"{pdb} Globular", previousEnd, n)
+        globular = list(range(previousEnd+linkerSize, n-linkerSize))
+
+    membranePart = []
+    for i in range(first-5, last+5):
+        if i not in globular:
+            membranePart.append(i)
+    return membranePart, globular
+# def get_two_part_from_prediction(probFile):
+#     #   probFile = f"TM_pred/{pdb}_PureTM/{pdb}.prob"
+#     with open(f"{probFile}") as f:
+#         a = f.readlines()
+#     res_list = []
+#     first = None
+#     count = 1
+#     previousEnd = 0
+#     # print("g_all = [")
+#     out = "[\n"
+#     for i, line in enumerate(a[3:]):
+#         prob = float(line.strip().split()[3])
+#         res = "0" if prob < 0.5 else "1"
+#         o = "2" if res == "1" else "1"
+
+#         if res == "0":
+#             if len(res_list) > 0:
+#                 # print(f"g{count} =", res_list)
+#                 print(res_list, ", ")
+#                 out += f"    {res_list},\n"
+#                 count += 1
+#                 last = res_list[-1]
+#                 first = res_list[0] if first is None else first
+#                 span = res_list[0] - previousEnd
+#                 if span > 30:
+#                     print("Globular", previousEnd, res_list[0])
+#                     globular = list(range(previousEnd+10, res_list[0]-10))
+#                 previousEnd = last
+#             res_list = []
+#         if res == "1":
+#             res_list.append(i)
+#     n = len(a[3:])
+#     print(f"size {n}")
+#     span = n - previousEnd
+#     if span > 30:
+#         print(f" Globular", previousEnd, n)
+#         globular = list(range(previousEnd+10, n-10))
+#     out += "]\n"
+
+#     membranePart = []
+#     for i in range(first-5, last+5):
+#         if i not in globular:
+#             membranePart.append(i)
+#     return globular, membranePart
+
 def compute_native_contacts(coords, MAX_OFFSET=4, DISTANCE_CUTOFF=9.5):
     native_coords = np.array(coords)
     a= native_coords[:,np.newaxis]
@@ -1150,6 +1236,17 @@ def generate_SEQRES(fastaFile):
         c += 1
     return template
 
+def getSeqFromFasta(fastaFile):
+    # "/Users/weilu/Research/server/aug_2019/hybrid_protein_simulation/setup/1pv6/1pv6.fasta"
+    with open(fastaFile) as f:
+        a = f.readlines()
+    seq = ""
+    for line in a:
+        if line[0] == ">":
+            continue
+        seq += line.strip()
+    return seq
+
 def cleanPdb1(pdb_list, chain=None, source=None, toFolder="cleaned_pdbs", formatName=False, verbose=False, removeTwoEndsMissingResidues=True):
     from pdbfixer import PDBFixer
     from simtk.openmm.app import PDBFile
@@ -1526,6 +1623,187 @@ def get_complete_data(pre, folder_list, pdb_list, formatName=True, **kwargs):
     data = pd.concat(complete_all_data)
     data = data.reindex(columns=my_reorder(data.columns, ["Name", "Folder"]))
     return data
+
+
+def convertRaptorToInput(pdbID, raptorX_file):
+        # pdbID = "2xov_complete_2"
+        # read in median distances for pairwise interactions (obtained from analysis of the pdb)
+        directory='/Users/weilu/opt/gremlin/'
+        distancesCACB=pd.read_csv(directory+'CACBmediandist.dat', delim_whitespace=True, header=None)
+        distancesCACA=pd.read_csv(directory+'CACAmediandist.dat', delim_whitespace=True, header=None)
+        distancesCBCB=pd.read_csv(directory+'CBCBmediandist.dat', delim_whitespace=True, header=None)
+        distancesCACB.columns = ['i', 'j', 'dist']
+        distancesCACA.columns = ['i', 'j', 'dist']
+        distancesCBCB.columns = ['i', 'j', 'dist']
+        # if you want to filter the gremlin data, adjust the parameters below
+        filter_threshold=0.5
+        column=4
+        name='raptorX.5.'
+
+
+        # make sure that there is a sequence file for the protein and the downloaded gremlin data in the proper directories
+        # read and parse raptorX contact prediction data
+        # directory = "/Users/weilu/opt/gremlin/protein/" + pdbID + "/"
+        # raptorX_file=directory+"raptor." + pdbID + ".dat"
+        count=0
+        pairs=[]
+        seq=''
+        with open(raptorX_file) as f:
+            for line in f:
+                count+=1
+                if count<6:
+                    continue
+                elif line.split()[0]!='END' and len(line.split())==5:
+                    pairs.append(line.split())
+                elif len(pairs)==0:
+                    seq+=line.split()[0]
+        n=len(seq)
+    #     print(n)
+        rnative_matrixCACB=np.ones([n,n])*99
+        rnative_matrixCACA=np.ones([n,n])*99
+        rnative_matrixCBCB=np.ones([n,n])*99
+        for pair in pairs:
+            i=int(pair[0])
+            j=int(pair[1])
+            irestype=seq[i-1]
+            jrestype=seq[j-1]
+            if float(pair[column]) > filter_threshold:
+                if sum((distancesCACB['i']==irestype)&(distancesCACB['j']==jrestype))>0: #check if pair is in correct order
+                    well_centerCACB = distancesCACB[(distancesCACB['i']==irestype)&(distancesCACB['j']==jrestype)]['dist'].values[0]
+                    well_centerCACA = distancesCACA[(distancesCACA['i']==irestype)&(distancesCACA['j']==jrestype)]['dist'].values[0]
+                    well_centerCBCB = distancesCBCB[(distancesCBCB['i']==irestype)&(distancesCBCB['j']==jrestype)]['dist'].values[0]
+                else:
+                    well_centerCACB = distancesCACB[(distancesCACB['i']==jrestype)&(distancesCACB['j']==irestype)]['dist'].values[0]
+                    well_centerCACA = distancesCACA[(distancesCACA['i']==jrestype)&(distancesCACA['j']==irestype)]['dist'].values[0]
+                    well_centerCBCB = distancesCBCB[(distancesCBCB['i']==jrestype)&(distancesCBCB['j']==irestype)]['dist'].values[0]
+
+                rnative_matrixCACB[i-1, j-1] = well_centerCACB
+                rnative_matrixCACB[j-1, i-1] = well_centerCACB
+                rnative_matrixCACA[i-1, j-1] = well_centerCACA
+                rnative_matrixCACA[j-1, i-1] = well_centerCACA
+                rnative_matrixCBCB[i-1, j-1] = well_centerCBCB
+                rnative_matrixCBCB[j-1, i-1] = well_centerCBCB
+        import matplotlib.pyplot as plt
+
+        plt.matshow(rnative_matrixCACB)
+        # plt.show()
+        fig = plt.gcf()
+        directory = "/Users/weilu/opt/gremlin/protein/" + pdbID + "/raptor/"
+        os.system("mkdir -p " + directory)
+        figureDirectory = f"{directory}/contact.png"
+        fig.savefig(figureDirectory)
+        os.system(f"cp {raptorX_file} {directory}")
+
+        np.savetxt(directory + 'go_rnativeCACB.dat', rnative_matrixCACB, fmt='%10.5f')
+        np.savetxt(directory + 'go_rnativeCACA.dat', rnative_matrixCACA, fmt='%10.5f')
+        np.savetxt(directory + 'go_rnativeCBCB.dat', rnative_matrixCBCB, fmt='%10.5f')
+
+def get_contactFromDMP(fileLocation, n, threshold=0.2):
+    a = np.zeros((n,n))
+    c_list = []
+    with open(fileLocation, "r") as f:
+    #     for i in range(9):
+    #         next(f)
+        for line in f:
+    #         print(line)
+            try:
+                i,j,_,_,_,p = line.split(" ")
+    #             print(i,j,p)
+                a[int(i)-1,int(j)-1] = float(p)
+                a[int(j)-1,int(i)-1] = float(p)
+                if float(p) > threshold:
+                    c_list.append([int(i),int(j),float(p)])
+            except Exception as e:
+                print(e)
+                pass
+    return a, np.array(c_list)
+
+def convertDMPToInput(pdbID, dmp_file, fasta_file, pre='/Users/weilu/opt/gremlin/'):
+        # pdbID = "2xov_complete_2"
+        # read in median distances for pairwise interactions (obtained from analysis of the pdb)
+        directory=pre
+        distancesCACB=pd.read_csv(directory+'CACBmediandist.dat', delim_whitespace=True, header=None)
+        distancesCACA=pd.read_csv(directory+'CACAmediandist.dat', delim_whitespace=True, header=None)
+        distancesCBCB=pd.read_csv(directory+'CBCBmediandist.dat', delim_whitespace=True, header=None)
+        distancesCACB.columns = ['i', 'j', 'dist']
+        distancesCACA.columns = ['i', 'j', 'dist']
+        distancesCBCB.columns = ['i', 'j', 'dist']
+        # if you want to filter the gremlin data, adjust the parameters below
+        filter_threshold=0.5
+        column=2
+
+        seq = ""
+        with open(fasta_file) as f:
+            for line in f:
+                if line[0] == ">":
+                    continue
+                seq += line.strip()
+        # seq
+
+        n=len(seq)
+        _, dmp_pairs = get_contactFromDMP(dmp_file, n=n)
+
+    #     print(n)
+        rnative_matrixCACB=np.ones([n,n])*99
+        rnative_matrixCACA=np.ones([n,n])*99
+        rnative_matrixCBCB=np.ones([n,n])*99
+        for pair in dmp_pairs:
+            i=int(pair[0])
+            j=int(pair[1])
+            irestype=seq[i-1]
+            jrestype=seq[j-1]
+            if float(pair[column]) > filter_threshold:
+                if sum((distancesCACB['i']==irestype)&(distancesCACB['j']==jrestype))>0: #check if pair is in correct order
+                    well_centerCACB = distancesCACB[(distancesCACB['i']==irestype)&(distancesCACB['j']==jrestype)]['dist'].values[0]
+                    well_centerCACA = distancesCACA[(distancesCACA['i']==irestype)&(distancesCACA['j']==jrestype)]['dist'].values[0]
+                    well_centerCBCB = distancesCBCB[(distancesCBCB['i']==irestype)&(distancesCBCB['j']==jrestype)]['dist'].values[0]
+                else:
+                    well_centerCACB = distancesCACB[(distancesCACB['i']==jrestype)&(distancesCACB['j']==irestype)]['dist'].values[0]
+                    well_centerCACA = distancesCACA[(distancesCACA['i']==jrestype)&(distancesCACA['j']==irestype)]['dist'].values[0]
+                    well_centerCBCB = distancesCBCB[(distancesCBCB['i']==jrestype)&(distancesCBCB['j']==irestype)]['dist'].values[0]
+
+                rnative_matrixCACB[i-1, j-1] = well_centerCACB
+                rnative_matrixCACB[j-1, i-1] = well_centerCACB
+                rnative_matrixCACA[i-1, j-1] = well_centerCACA
+                rnative_matrixCACA[j-1, i-1] = well_centerCACA
+                rnative_matrixCBCB[i-1, j-1] = well_centerCBCB
+                rnative_matrixCBCB[j-1, i-1] = well_centerCBCB
+        import matplotlib.pyplot as plt
+
+        plt.imshow(rnative_matrixCACB, origin=0)
+        # plt.show()
+        fig = plt.gcf()
+        directory = f"{pre}/protein/" + pdbID + "/DMP/"
+        os.system("mkdir -p " + directory)
+        figureDirectory = f"{directory}/contact.png"
+        fig.savefig(figureDirectory)
+        os.system(f"cp {dmp_file} {directory}")
+        os.system(f"cp {fasta_file} {directory}")
+
+        np.savetxt(directory + 'go_rnativeCACB.dat', rnative_matrixCACB, fmt='%10.5f')
+        np.savetxt(directory + 'go_rnativeCACA.dat', rnative_matrixCACA, fmt='%10.5f')
+        np.savetxt(directory + 'go_rnativeCBCB.dat', rnative_matrixCBCB, fmt='%10.5f')
+
+def get_PredictedZim(topo, zimFile):
+    loc = topo
+    with open(loc) as f:
+        a = f.readlines()
+    assert len(a) % 3 == 0
+    chain_count = len(a) // 3
+    seq = ""
+    for i in range(chain_count):
+        seq_i = (a[i*3+2]).strip()
+        seq += seq_i
+    assert np.alltrue([i in ["0", "1"] for i in seq])
+
+    with open(zimFile, "w") as out:
+        for i in seq:
+            if i == "0":
+                out.write(f"1\n")
+            elif i == "1":
+                out.write("2\n")
+            else:
+                raise
 
 # def get_inside_or_not_table(pdb_file):
 #     parser = PDBParser(PERMISSIVE=1)

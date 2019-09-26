@@ -94,10 +94,10 @@ if args.mode == 0:
 elif args.mode == 1:
     computePhisForDecoys(args.proteins)
 elif args.mode == 2:
-    computePhisForDecoys(args.proteins, withBiased=True)
+    computePhisForDecoys(args.proteins, withBiased=True, pickle=False)
 elif args.mode == 3:
     # use the native structure name. but partial data.
-    computePhisForDecoys(args.proteins, withBiased=True, mode=1)
+    computePhisForDecoys(args.proteins, withBiased=True, mode=1, pickle=False)
 if args.mode == 4:
     computePhis(args.proteins, multiSeq=True, sampleK=1000)
 if args.mode == 5:

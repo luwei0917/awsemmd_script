@@ -6,6 +6,7 @@ from time import sleep
 import subprocess
 # import imp
 from small_script.myFunctions import shrinkage
+import fileinput
 
 parser = argparse.ArgumentParser(description="written by Wei Lu.")
 parser.add_argument("protein", help="The name of the protein")
@@ -31,14 +32,19 @@ cd = os.chdir
 def replace(TARGET, FROM, TO):
     os.system("sed -i.bak 's@{}@{}@g' {}".format(FROM,TO,TARGET))
 
-
+def replace_v2(TARGET, FROM, TO):
+    with fileinput.FileInput(TARGET, inplace=True) as file:
+        for line in file:
+            tmp = line.replace(FROM, TO)
+            print(tmp, end='')
 if args.fix >= 0:
     do(f"python ~/opt/small_script/PBC_fixer.py -n {args.fix}")
 
 if args.mode == 4:
     # add the native as initial frames.
     if args.submode == 1:
-        do("cat native.pdb >> tmp.pdb")
+        for i in range(5):
+            do("cat native.pdb >> tmp.pdb")
     do("cat movie.pdb >> tmp.pdb")
     do("mv tmp.pdb movie.pdb")
     do("python ~/openmmawsem/helperFunctions/convertOpenmmTrajectoryToStandardMovie.py movie.pdb")
@@ -48,6 +54,15 @@ if args.mode == 4:
 
     replace("with_membrane.tcl", "MEMUP", str(args.membraneCenter+15))
     replace("with_membrane.tcl", "MEMDOWN", str(args.membraneCenter-15))
+
+    showCYS = '''\
+mol selection resname CYS and type CB
+mol color ColorID 0
+mol addrep top
+mol modstyle 1 0 VDW 1 12
+mol smoothrep 0 1 5
+'''
+    replace_v2("with_membrane.tcl", "#CYS", showCYS)
     do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e with_membrane.tcl")
 
 protein_name = args.protein.split('.')[0]

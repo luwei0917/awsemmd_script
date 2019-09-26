@@ -16,6 +16,8 @@ mol color ColorID 1
 mol selection all
 mol addrep top
 
+#CYS
+
 axes location off
 display projection orthographic
 display cuedensity 0

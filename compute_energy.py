@@ -97,14 +97,36 @@ for i in range(20):
         protein_gamma_ijm[m][j][i] = gamma_mediated[count][0]
         count += 1
 
+# def compute_chi(data):
+#     ca_all = data.query("type == 'CA'")[["x","y","z"]].values
+#     cb_all = data.query("type == 'CB'")[["x","y","z"]].values
+#     c_all = data.query("type == 'C'")[["x","y","z"]].values
+#     n_all = data.query("type == 'N'")[["x","y","z"]].values
+#     print(len(ca_all), len(cb_all), len(c_all), len(n_all))
+#     energy = 0
+#     for i in range(len(n_all)):
+#         ca = ca_all[i]
+#         cb = cb_all[i]
+#         c = c_all[i]
+#         n = n_all[i]
+#         chi0 = -0.83
+#         k_chi = 20*4.184
+#         r_ca_cb = cb-ca
+#         r_c_ca = ca-c
+#         r_ca_n = n-ca
+#         norm_r_ca_cb = np.sum(r_ca_cb**2)**0.5
+#         norm_r_c_ca = np.sum(r_c_ca**2)**0.5
+#         norm_r_ca_n = np.sum(r_ca_n**2)**0.5
+#         a = np.cross(-r_c_ca,r_ca_n)/norm_r_c_ca/norm_r_ca_n
+#         chi = np.dot(a,r_ca_cb)/norm_r_ca_cb
+#         dchi = chi - chi0
+#         energy += k_chi*dchi*dchi
+#     return energy
+
 def compute_chi(data):
-    ca_all = data.query("type == 'CA'")[["x","y","z"]].values
-    cb_all = data.query("type == 'CB'")[["x","y","z"]].values
-    c_all = data.query("type == 'C'")[["x","y","z"]].values
-    n_all = data.query("type == 'N'")[["x","y","z"]].values
-    print(len(ca_all), len(cb_all), len(c_all), len(n_all))
+    res_list = get_res_list(structure)
     energy = 0
-    for i in range(len(n_all)):
+    for res1globalindex, res1 in enumerate(res_list):
         ca = ca_all[i]
         cb = cb_all[i]
         c = c_all[i]
@@ -559,6 +581,8 @@ def read_beta_parameters():
 
 pdb = (args.protein).split(".")[0]
 structure = parse_pdb(pdb)
+e_chi = compute_chi(structure)
+print("Chi", e_chi)
 e_mediated = compute_mediated(structure)
 e_direct = compute_direct(structure)
 e_burial = compute_burial(structure)

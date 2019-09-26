@@ -215,9 +215,15 @@ def get_interaction_atom(residue):
         # print(residue)
         # print("----------Use CA instead---------------")
         # probably because mutation.
-        res = residue['CA']
-        return res
-        # raise
+        try:
+            res = residue['CA']
+            return res
+            # raise
+        except:
+            # print("no CA found, work around is to just use any atom")
+            # return list(residue.get_atoms())[0]
+            print("need debug", residue)
+            raise
 
 
 def get_interaction_distance(res1, res2):
@@ -2478,7 +2484,7 @@ def read_native_phi(protein, phi_list, total_phis, jackhmmer=False, mode=0, simu
                 # print(line, len(line))
 
                 line = line.strip().split()
-                print(len(line))
+                # print(len(line))
                 for i_value, value_i in enumerate(line):
                     try:
                         phi_native[i_phi] = float(line[i_value])
