@@ -35,27 +35,38 @@ parser = argparse.ArgumentParser(
     automatic copy the template file, \
     run simulation and analysis")
 
-parser.add_argument("protein", help="The name of the protein")
+parser.add_argument("file", help="The name of the pdb or fasta file")
 parser.add_argument("-v", "--verbose", action="store_true", default=False)
 # parser.add_argument("-l", "--label", type=str, default="/Users/weilu/opt/ff_contact/1r69/")
 # parser.add_argument("-f", "--familyFold", action="store_true", default=False)
 args = parser.parse_args()
 
 
-parser = PDBParser(PERMISSIVE=1,QUIET=True)
-structure = parser.get_structure("X", args.protein)
-count = 0
-for res in structure.get_residues():
-    if res.get_id()[0] != " ":
-        continue   # skip
-    try:
-        res["CA"].get_vector()
-    except:
-        print(structure, res.get_full_id())
-        continue
-    count += 1
-    if args.verbose:
-        print(count, res.get_full_id()[2], res.get_id()[1], res.get_id()[1]-count)
-size = count
-print(args.protein, size)
-# print("-----")
+if args.file[-4:] == ".pdb":
+    parser = PDBParser(PERMISSIVE=1,QUIET=True)
+    structure = parser.get_structure("X", args.file)
+    count = 0
+    for res in structure.get_residues():
+        if res.get_id()[0] != " ":
+            continue   # skip
+        try:
+            res["CA"].get_vector()
+        except:
+            print(structure, res.get_full_id())
+            continue
+        count += 1
+        if args.verbose:
+            print(count, res.get_full_id()[2], res.get_id()[1], res.get_id()[1]-count)
+    size = count
+    print(args.file, size)
+    # print("-----")
+if args.file[-6:] == ".fasta":
+    seq = ""
+    with open(args.file) as f:
+        for line in f:
+            if line[0] == ">":
+                continue
+            seq += line.strip()
+    # seq
+    n=len(seq)
+    print(args.file, n)

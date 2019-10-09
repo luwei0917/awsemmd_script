@@ -409,7 +409,7 @@ def plot_contact_well(gammas, invert_sign=True, fix_colorbar=True, inferBound=Fa
         ax.set_xticklabels(hydrophobicity_letters)
         ax.set_yticklabels(hydrophobicity_letters)
 
-    plt.savefig('direct_contact.pdf')
+    # plt.savefig('direct_contact.pdf')
     plt.show()
 
 
@@ -3640,7 +3640,7 @@ def evaluate_hamiltonian(protein, hamiltonian, training_set_file, training_decoy
     return z_score, e_native, e_mg, e_mg_std
 
 
-def evaluate_hamiltonian_wei(protein, hamiltonian, training_set_file, gamma_file_name, test_decoy_method, num_decoys, use_filtered_gammas=True, **kwargs):
+def evaluate_hamiltonian_wei(protein, hamiltonian, training_set_file, gamma_file_name, test_decoy_method, num_decoys, use_filtered_gammas=True, outputDecoy=False, **kwargs):
     phi_list = read_phi_list(hamiltonian)
     training_set = read_column_from_file(training_set_file, 1)
     # read in Hamiltonian
@@ -3684,6 +3684,8 @@ def evaluate_hamiltonian_wei(protein, hamiltonian, training_set_file, gamma_file
     # if protein == "1r69":
     #     print(phi_i_decoy)
         # print(e_decoy)
+    if outputDecoy:
+        return e_native, e_decoy
     return z_score, e_native, e_mg, e_mg_std
 
 def validate_hamiltonian_wei(hamiltonian, training_set_file, gamma_file_name, training_decoy_method, num_decoys, test_set_file=None, test_decoy_method=None, use_filtered_gammas=False, **kwargs):

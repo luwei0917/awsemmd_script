@@ -40,7 +40,7 @@ def replace_v2(TARGET, FROM, TO):
 if args.fix >= 0:
     do(f"python ~/opt/small_script/PBC_fixer.py -n {args.fix}")
 
-if args.mode == 4:
+if args.mode == 4 or args.mode == 5:
     # add the native as initial frames.
     if args.submode == 1:
         for i in range(5):
@@ -63,6 +63,8 @@ mol modstyle 1 0 VDW 1 12
 mol smoothrep 0 1 5
 '''
     replace_v2("with_membrane.tcl", "#CYS", showCYS)
+    if args.mode == 5:
+        exit()
     do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e with_membrane.tcl")
 
 protein_name = args.protein.split('.')[0]

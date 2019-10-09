@@ -131,7 +131,317 @@ query
         o.write(out)
 
 
+def get_aligned_info(p1, p2):
+    # do(f"~/opt/TMalign/TMalign {p1} {p2} > tm_log")
+    cmd = f"~/opt/TMalign/TMalign {p1} {p2} | grep -A 1 'Aligned'"
+    output = getFromTerminal(cmd)
+    # print(output)
+    line = output.split("\n")[0]
+    line2 = output.split("\n")[1]
+    aligned_length,rmsd,seqid = line.split(",")
+    aligned_length = int(aligned_length.split("=")[1])
+    rmsd = float(rmsd.split("=")[1])
+    tmscore = float(line2.split(",")[0].split("=")[-1].strip().split(" ")[0])
+    seqid = float(seqid.split("=")[-1])
+    # print("aligned_length, rmsd, tmscore, seqid")
+    # print(aligned_length, rmsd, tmscore, seqid)
+    return aligned_length, rmsd, tmscore, seqid
 
+if args.day == "jul21":
+    pdb_list = ["4nv6", "4p79", "5dsg", "6g7o", "6a93", "5xpd", "3kp9", "4a2n", "5d91", "2jo1"]
+    pdb_list += ["1py6", "1pv6", "1u19"]
+    pdb_list += ["2xov_complete", "6e67A"]
+    if args.mode == 1:
+        do("mkdir -p original_pdbs")
+        for pdb in pdb_list:
+            do(f"wget https://opm-assets.storage.googleapis.com/pdb/{pdb}.pdb")
+            do(f"mv {pdb}.pdb original_pdbs/")
+        cleanPdb(pdb_list, source="original_pdbs", chain=-1, formatName=False)
+    if args.mode == 2:
+        create_project_for_pdb_list(pdb_list, frag=True)
+
+if args.mode == "oct09":
+    if args.mode == 1:
+        # convert Porter5 format
+        # pdb = "cannabinoid_receptor"
+        # name = "serotonin_1A_receptor"
+        # name = "cannabinoid_receptor"
+        name = "beta_2_adrenergic_receptor"
+        from_secondary = f"secondary/{name}/{name}_PROP/{name}.ss3"
+        to_ssweight = f"{name}/setup/ssweight"
+
+        data = pd.read_csv(from_secondary, comment="#", names=["i", "Res", "ss3", "Helix", "Sheet", "Coil"], sep="\s+")
+        # print(data)
+        with open(to_ssweight, "w") as out:
+            for i, line in data.iterrows():
+                if line["ss3"] == "H":
+                    out.write("1.0 0.0\n")
+                if line["ss3"] == "E":
+                    out.write("0.0 1.0\n")
+                if line["ss3"] == "C":
+                    out.write("0.0 0.0\n")
+        cd("..")
+
+        fasta_file = f"../original_fasta_files/{name}.fasta"
+        DMP_file = f"DMP/{name}/{name}.deepmetapsicov.con"
+        convertDMPToInput(name, DMP_file, fasta_file)
+        do(f"cp ~/opt/gremlin/protein/{name}/DMP/go_rnativeC* {name}/setup/")
+        # name = "serotonin_1A_receptor"
+
+        topo_name = f"TM_pred/{name}/{name}_topo"
+        get_PredictedZim(topo_name, f"{name}/setup/PredictedZim")
+        get_PredictedZimSide(topo_name, f"{name}/setup/PredictedZimSide")
+
+if args.day == "oct08":
+    if args.mode == 1:
+        name = "1su4.pdb"
+        print(name , computeRg(name))
+    if args.mode == 2:
+        do("python3 -m jpredapi submit --mode=single --format=fasta --file=cannabinoid_receptor.fasta ")
+        do("python3 -m jpredapi status --results=jpred_sspred/results --extract --jobid=jp_05vaP_r")
+        # jp_05vaP_r
+    if args.mode == 3:
+        for pdb in dataset["membrane"]:
+            do(f"mkdir -p setups/{pdb}")
+            cd(f"setups/{pdb}")
+            do(f"mm_create_project.py ../../extracted/{pdb}.pdb")
+            cd("../..")
+    if args.mode == 4:
+        # pdb = "6e67B"
+        # pdb = args.label
+        # pdb = "cannabinoid_receptor"
+        brain_damage = 1
+        do("mkdir -p frag_database")
+        cd("frag_database")
+        for pdb in dataset["membrane"]:
+            do(f"mkdir {pdb}_HE")
+            cd(f"{pdb}_HE")
+
+            # brain_damage = 0
+            # do("mkdir -p frag_database")
+            # cd("frag_database")
+            # do(f"mkdir {pdb}_HA")
+            # cd(f"{pdb}_HA")
+
+            # do(f"cp ../../setup/{pdb}/{pdb}.fasta .")
+            # do(f"cp ../../../original_fasta_files/{pdb}.fasta .")
+            do(f"cp ../../setups/{pdb}/{pdb}.fasta .")
+            do("mkdir globularPart")
+            cd("globularPart")
+            do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/openmmawsem/database/cullpdb_pc80_res3.0_R1.0_d160504_chains29712 ../{pdb}.fasta 20 {brain_damage} 9 > logfile")
+            check_and_correct_fragment_memory(fragFile="frags.mem")
+            cd("..")
+
+            do("mkdir membranePart")
+            cd("membranePart")
+            do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/openmmawsem/database/membrane_database/cullpdb_pc25_res3.0_R0.3_d190618_chains497 ../{pdb}.fasta 20 {brain_damage} 9 > logfile")
+            check_and_correct_fragment_memory(fragFile="frags.mem")
+            # do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/Research/optimization/fragment/self_culled/cullpdb_pc25_res3.0_R0.3_d190618_chains497 ../{pdb}.fasta 20 {brain_damage} 9 > logfile")
+            cd("..")
+            cd("..")
+    if args.mode == 5:
+        check_and_correct_fragment_memory(fragFile="frags.mem")
+        # relocate(fileLocation="combined.mem", toLocation="fraglib")
+        # replace(f"combined.mem", f"/Users/weilu/openmmawsem//Gros/", "./fraglib/")
+if args.day == "oct05":
+    # if args.day == "jun26":
+    if args.mode == 1:
+        # pdb = "6e67B"
+        # pdb = args.label
+        pdb = "cannabinoid_receptor"
+        brain_damage = 1
+        do("mkdir -p frag_database")
+        cd("frag_database")
+        do(f"mkdir {pdb}_HE")
+        cd(f"{pdb}_HE")
+        # brain_damage = 0
+        # do("mkdir -p frag_database")
+        # cd("frag_database")
+        # do(f"mkdir {pdb}_HA")
+        # cd(f"{pdb}_HA")
+
+        # do(f"cp ../../setup/{pdb}/{pdb}.fasta .")
+        do(f"cp ../../../original_fasta_files/{pdb}.fasta .")
+        do("mkdir globularPart")
+        cd("globularPart")
+        do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/openmmawsem/database/cullpdb_pc80_res3.0_R1.0_d160504_chains29712 ../{pdb}.fasta 20 {brain_damage} 9 > logfile")
+        cd("..")
+
+        do("mkdir membranePart")
+        cd("membranePart")
+        do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/openmmawsem/database/membrane_database/cullpdb_pc25_res3.0_R0.3_d190618_chains497 ../{pdb}.fasta 20 {brain_damage} 9 > logfile")
+        # do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/Research/optimization/fragment/self_culled/cullpdb_pc25_res3.0_R0.3_d190618_chains497 ../{pdb}.fasta 20 {brain_damage} 9 > logfile")
+        cd("..")
+
+    if args.mode == 2:
+        check_and_correct_fragment_memory(fragFile="combined.mem")
+        relocate(fileLocation="combined.mem", toLocation="fraglib")
+        replace(f"combined.mem", f"/Users/weilu/openmmawsem//Gros/", "./fraglib/")
+    if args.mode == 3:
+        relocate(fileLocation="combined.mem", toLocation="fraglib")
+    if args.mode == 4:
+        replace(f"combined.mem", f"/Users/weilu/openmmawsem//Gros/", "./fraglib/")
+    if args.mode == 5:
+        probFile= "/Users/weilu/Research/server/jun_2019/simluation_hybrid/TM_pred/6e67A_PureTM/6e67A.prob"
+        GlobularPart, MembranePart = get_two_part_from_prediction(probFile)
+    if args.mode == 6:
+        # crystal = "../5u09_clean.pdb"
+        crystal = "4iar_clean.pdb"
+        aligned_length, rmsd, tmscore, seqid = get_aligned_info(crystal, "0/lastFrame.pdb")
+        print(aligned_length, rmsd, tmscore, seqid)
+    if args.mode == 7:
+        do("~/opt/TMalign/TMalign awsem.pdb {}.pdb -o result".format(protein_name))
+        do("cp result_all_atm result_all_atm.pdb")
+        do("pymol ~/opt/plot_scripts/tmalign_all.pml")
+    if args.mode == 8:
+        template = "../4iar_clean.pdb"
+        tm_info = open("tm_info.dat", "w")
+        tm_info.write("i, aligned_length, rmsd, tmscore, seqid\n")
+        for i in range(20):
+            print(i)
+            cd(f"{i}")
+            aligned_length, rmsd, tmscore, seqid = get_aligned_info(template, "lastFrame.pdb")
+            print(aligned_length, rmsd, tmscore, seqid)
+            # template = "../../5u09_clean.pdb"
+            target = "lastFrame.pdb"
+            do(f"~/opt/TMalign/TMalign {template} {target} -o result > tm_log")
+            do("cp result_all_atm result_all_atm.pdb")
+            do("cp ~/opt/plot_scripts/tmalign_all.pml .")
+            cd("..")
+            tm_info.write(f"{i}, {aligned_length}, {rmsd}, {tmscore}, {seqid}\n")
+            # do("pymol ~/opt/plot_scripts/tmalign_all.pml")
+        tm_info.close()
+    if args.mode == 9:
+        import matplotlib.pyplot as plt
+        # name = "cannabinoid_receptor"
+        # n = 472
+        # fileLocation = f"/Users/weilu/Research/server/oct_2019/draw_contact_for_DMP/{name}.deepmetapsicov.con"
+        name = "serotonin_1A_receptor"
+        n = 422
+        fileLocation = f"/Users/weilu/Research/server/oct_2019/GPCRs_reorder/simulation_setups/DMP/{name}/{name}.deepmetapsicov.con"
+        a, _ = get_contactFromDMP(fileLocation, n)
+
+        # pdbFile = "/Users/weilu/Research/server/oct_2019/draw_contact_for_DMP/5xr8_clean.pdb"
+        # pdbFile = "../5u09_clean.pdb"
+        crystal = "4iar_clean.pdb"
+        data = getContactMapFromPDB(crystal, n)
+        DMP_cutoff = 0.5
+        do("mkdir -p figures")
+        for i in range(20):
+            print(i)
+            # pdbFile = "/Users/weilu/Research/server/oct_2019/draw_contact_for_DMP/lastFrame.pdb"
+            pdbFile = f"{i}/lastFrame.pdb"
+            lastFrame = getContactMapFromPDB(pdbFile, n)
+
+            data_s = data.astype(float)
+            t_s = lastFrame.astype(float)
+            combined = data_s + t_s * 2
+            upper = combined * np.tri(n, k=-1)
+
+            data_s = data.astype(float)
+            t_s = (a>DMP_cutoff).astype(float)
+            combined = data_s + t_s * 2
+            lower = combined * (1 - np.tri(n, k=0))
+            combined = upper + lower
+            from matplotlib import colors
+            # red is in crystal but not in predicted.
+            # blue is in predicted but not in crystal
+            # black is in both
+            cmap = colors.ListedColormap(['white', '#e6194B', '#4363d8', '#bfef45'])
+            # cmap = colors.ListedColormap(['white', 'red', 'blue', '#bfef45'])
+
+            bounds=[-1,0.1, 1.1, 2.1, 3.1]
+            norm = colors.BoundaryNorm(bounds, cmap.N)
+            plt.imshow(combined, origin="bottom", cmap=cmap, norm=norm)
+            aligned_length, rmsd, tmscore, seqid = get_aligned_info(crystal, f"{i}/lastFrame.pdb")
+            tm_line = f"{i}, Aligned: {aligned_length}, RMSD: {rmsd}, TMscore: {tmscore}, {seqid}\n"
+            plt.title(tm_line+"Red is only in crystal, Blue is only in Predicted(upper), DMP in lower part")
+
+            # plt.savefig("contact_5u09.png")
+            plt.savefig(f"figures/contact_{i}_cutoff_{DMP_cutoff}.png")
+        # plt.show()
+    if args.mode == 11:
+        for i in range(1, 20):
+            print(i)
+            cd(f"{i}")
+            do("movie.py -m 5 123")
+            cd("..")
+    if args.mode == 12:
+        do("cp -r serotonin_1A_receptor ~/Research/server/oct_2019/GPCRs_reorder/simulation_setups/")
+
+if args.day == "oct02":
+    if args.mode == 1:
+        # using Porter5 to generate ss3 file.
+        name = "serotonin_1A_receptor"
+
+        # fastaFile = "beta_2_adrenergic_receptor.fasta"
+        do("mkdir -p porter5")
+        cd("porter5")
+        sourceFasta = f"../../original_fasta_files/{name}.fasta"
+        do(f"cp {sourceFasta} .")
+        fastaFile = f"{name}.fasta"
+        do(f"python ~/Documents/Porter5/Porter5.py -i {fastaFile} --cpu 2")
+
+    if args.mode == 2:
+        # setup simulation folder
+        do("mkdir -p setup")
+        cd("setup")
+        fastaFile = "beta_2_adrenergic_receptor.fasta"
+        do(f"mm_create_project.py ../{fastaFile} --hybrid")
+
+if args.day == "sep28":
+    if args.mode == 1:
+        # convert Porter5 format
+        # pdb = "cannabinoid_receptor"
+        # pdb = "beta_2_adrenergic_receptor"
+        # name = "serotonin_1A_receptor"
+        name = "cannabinoid_receptor"
+        from_secondary = f"secondary/{name}/{name}_PROP/{name}.ss3"
+        to_ssweight = f"{name}/setup/ssweight"
+
+        data = pd.read_csv(from_secondary, comment="#", names=["i", "Res", "ss3", "Helix", "Sheet", "Coil"], sep="\s+")
+        # print(data)
+        with open(to_ssweight, "w") as out:
+            for i, line in data.iterrows():
+                if line["ss3"] == "H":
+                    out.write("1.0 0.0\n")
+                if line["ss3"] == "E":
+                    out.write("0.0 1.0\n")
+                if line["ss3"] == "C":
+                    out.write("0.0 0.0\n")
+        cd("..")
+        # cd("porter5")
+        # data = pd.read_csv(from_secondary, sep="\t")
+        # data = data.reset_index(drop=True).reset_index()
+        # def chosen(data):
+        #     top = max(data["Helix"], data["Sheet"], data["Coil"])
+        #     if data["Helix"] == top:
+        #         return 0
+        #     elif data["Sheet"] == top:
+        #         return 1
+        #     else:
+        #         return 2
+        # data["chosen"] = data.apply(chosen, axis=1)
+        # with open("ssweight", "w") as out:
+        #     for i, line in data.iterrows():
+        #         if line["chosen"] == 0:
+        #             out.write("1 0\n")
+        #         if line["chosen"] == 1:
+        #             out.write("0 1\n")
+        #         if line["chosen"] == 2:
+        #             out.write("0 0\n")
+
+
+
+    if args.mode == 2:
+        # convert DMP result
+        # pdbID = args.label
+        name = "serotonin_1A_receptor"
+        # fasta_file = f"{name}.fasta"
+        fasta_file = f"../original_fasta_files/{name}.fasta"
+        DMP_file = f"DMP/{name}/{name}.deepmetapsicov.con"
+        convertDMPToInput(name, DMP_file, fasta_file)
+        do(f"cp ~/opt/gremlin/protein/{name}/DMP/go_rnativeC* {name}/setup/")
 
 if args.day == "sep20":
     if args.mode == 1:
@@ -778,7 +1088,7 @@ if args.day == "jun06":
     pdb_list = ["2bg9", "1j4n", "1py6_SD", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19"]
     if args.mode == 1:
         # downloadPdb(pdb_list)
-        # pdb_list = ["2bg9", "1j4n", "1py6", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19", "2rh1"]
+        pdb_list = ["2bg9", "1j4n", "1py6", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19", "2rh1"]
         # pdb_list = ["2xov"]
         # pdb_list = ["2bs2", "1py6", "1u19", "2rh1"]
         do("mkdir -p original_pdbs")

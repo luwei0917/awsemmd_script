@@ -67,6 +67,9 @@ elif(platform.system() == 'Linux'):
 else:
     print("system unkown")
 
+
+# pre = "/Users/weilu/Research/server/sep_2019/saved_gammas/no_mix"
+pre = "/Users/weilu/Research/server/sep_2019/saved_gammas/Sep28_trial_5_cutoff500_impose_Aprime_constraint"
 if args.membrane:
     gamma_direct, gamma_mediated = read_gamma(f"{pre}/membrane_gamma.dat")
 else:
@@ -145,6 +148,39 @@ def compute_chi(data):
         energy += k_chi*dchi*dchi
     return energy
 
+
+def compute_debye_huckel(data):
+    res_list = get_res_list(structure)
+    k_dh = 4.15
+    debye_huckel = 0
+    k_screening = 1.0
+    screening_length = 10  # (in the unit of A)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2globalindex, res2 in enumerate(res_list):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex > res1globalindex:
+                res1Name = three_to_one(res1.get_resname())
+                res2Name = three_to_one(res2.get_resname())
+                charge_1 = 0
+                charge_2 = 0
+                if res1Name == "R" or res1Name == "K":
+                    charge_1 = 1
+                if res1Name == "D" or res1Name == "E":
+                    charge_1 = -1
+                if res2Name == "R" or res2Name == "K":
+                    charge_2 = 1
+                if res2Name == "D" or res2Name == "E":
+                    charge_2 = -1
+                if charge_1 * charge_2 != 0:
+                    r = get_interaction_distance(res1, res2)
+                    debye_huckel += charge_1*charge_2/r*math.exp(-k_screening*r/screening_length)
+    debye_huckel *= k_dh
+    return debye_huckel
+
 input_pdb_filename = "/Users/weilu/Research/server_backup/jan_2019/compute_energy/12asA00"
 def compute_mediated(structure, kappa=5.0):
     res_list = get_res_list(structure)
@@ -168,7 +204,27 @@ def compute_mediated(structure, kappa=5.0):
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
             rho_j = cb_density[res2globalindex]
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if 1 is wrong. because B20 will interact with A1 twice.
+            if_1 = res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex)
+            # if 2 is the correct one. should be used.
+            if_2 = res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex)
+            if_3 = res2globalindex - res1globalindex >= min_seq_sep
+            # if if_1 and not if_2:
+            #     print("true 1, false 2",res2globalindex, res1globalindex, res2chain, res1chain, res2index, res1index)
+            # if not if_1 and if_2:
+            #     print("false 1, true 2", res2globalindex, res1globalindex, res2chain, res1chain, res2index, res1index)
+            # if if_3 and not if_1:
+            #     print("true 3, false 1",res2globalindex, res1globalindex, res2chain, res1chain, res2index, res1index)
+            # if not if_3 and if_1:
+            #     print("false 3, true 1, if3 stricker than if1,",res2globalindex, res1globalindex, res2chain, res1chain, res2index, res1index)
+            if if_3 and not if_2:
+                print("true 3, false 2",res2globalindex, res1globalindex, res2chain, res1chain, res2index, res1index)
+            if not if_3 and if_2:
+                print("false 3, true 2, if3 stricker than if2,",res2globalindex, res1globalindex, res2chain, res1chain, res2index, res1index)
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain):
+            # if res2globalindex - res1globalindex >= min_seq_sep:
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
@@ -199,7 +255,10 @@ def compute_direct(structure, kappa=5.0):
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
 
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2globalindex - res1globalindex >= min_seq_sep:
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                # print(i)
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
@@ -242,6 +301,7 @@ def compute_direct_2(input_pdb_filename):
                     x,y,z = residue["CB"].get_coord()
                 _all.append([x,y,z])
     v_direct = 0
+    data = np.array(_all)
     n = len(data)
     for i in range(n):
         x, y, z = data[i]
@@ -283,7 +343,8 @@ def compute_mediated_multiDensity(structure, kappa=5.0):
             res2globalindex = get_global_index(res_list, res2)
             rho_j = cb_density[res2globalindex]
             rho_j_weight = weight_density[res2globalindex]
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 protein_gamma = protein_gamma_ijm[0][res1type][res2type]
@@ -345,7 +406,8 @@ def compute_direct_family_fold(structure, f_direct, kappa=5.0):
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
 
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
@@ -378,7 +440,8 @@ def compute_mediated_family_fold(structure, f_water, f_protein, kappa=5.0):
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
             rho_j = cb_density[res2globalindex]
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
@@ -447,7 +510,8 @@ def compute_direct_multiLetter(structure, kappa=5.0):
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
 
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
 
@@ -499,7 +563,8 @@ def compute_mediated_multiLetter(structure, kappa=5.0):
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
             rho_j = cb_density[res2globalindex]
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
@@ -581,8 +646,10 @@ def read_beta_parameters():
 
 pdb = (args.protein).split(".")[0]
 structure = parse_pdb(pdb)
-e_chi = compute_chi(structure)
-print("Chi", e_chi)
+e_debye_huckel = compute_debye_huckel(structure)
+print("Debye Huckel", e_debye_huckel)
+# e_chi = compute_chi(structure)
+# print("Chi", e_chi)
 e_mediated = compute_mediated(structure)
 e_direct = compute_direct(structure)
 e_burial = compute_burial(structure)
@@ -594,10 +661,12 @@ out_line = " ".join([f"{i:<20}" for i in name_list])
 print(out_line)
 # print(e_mediated, e_direct, e_mediated + e_direct, e_burial, e_mediated + e_direct + e_burial)
 
-energy_out_list = [-e_mediated, -e_direct, -(e_mediated+e_direct), e_burial, -(e_mediated + e_direct + e_burial)]
+energy_out_list = [-e_mediated, -e_direct, -(e_mediated+e_direct), -e_burial, -(e_mediated + e_direct + e_burial)]
 out_line = " ".join([f"{pdb:<20}"] + ["{0:<20.3f}".format(i) for i in energy_out_list])
 print(out_line)
 
+# print(compute_direct_2("8ab.pdb"))
+exit()
 if args.familyFold:
     pre = args.label
     # pre = "/Users/weilu/Research/server/may_2019/family_fold/ff_contact/1r69/"

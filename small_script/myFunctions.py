@@ -1702,13 +1702,13 @@ def get_contactFromDMP(fileLocation, n, threshold=0.2):
     a = np.zeros((n,n))
     c_list = []
     with open(fileLocation, "r") as f:
-    #     for i in range(9):
-    #         next(f)
+        # for i in range(9):
+        #     next(f)
         for line in f:
-    #         print(line)
+            # print(line)
             try:
                 i,j,_,_,_,p = line.split(" ")
-    #             print(i,j,p)
+                # print(i,j,p)
                 a[int(i)-1,int(j)-1] = float(p)
                 a[int(j)-1,int(i)-1] = float(p)
                 if float(p) > threshold:
@@ -1721,6 +1721,7 @@ def get_contactFromDMP(fileLocation, n, threshold=0.2):
 def convertDMPToInput(pdbID, dmp_file, fasta_file, pre='/Users/weilu/opt/gremlin/'):
         # pdbID = "2xov_complete_2"
         # read in median distances for pairwise interactions (obtained from analysis of the pdb)
+        print("converting DMP to simulation input")
         directory=pre
         distancesCACB=pd.read_csv(directory+'CACBmediandist.dat', delim_whitespace=True, header=None)
         distancesCACA=pd.read_csv(directory+'CACAmediandist.dat', delim_whitespace=True, header=None)
@@ -1804,6 +1805,29 @@ def get_PredictedZim(topo, zimFile):
                 out.write("2\n")
             else:
                 raise
+
+def getContactMapFromPDB(pdbFile, n):
+    # n = 472
+    # pdbFile = "/Users/weilu/Research/server/oct_2019/draw_contact_for_DMP/5xr8_clean.pdb"
+    cutoff = 9.5
+    MAX_OFFSET = 0
+    parser = PDBParser()
+    structure = parser.get_structure('target', pdbFile)
+    contact_table = np.ones((n,n)) * 99
+    all_residues = list(structure.get_residues())
+    for idx_i, res1 in enumerate(all_residues):
+        i = res1.get_id()[1] - 1
+        for idx_j, res2 in enumerate(all_residues):
+            j = res2.get_id()[1] - 1
+            contact_table[i][j] = res1["CA"]-res2["CA"]
+
+    data = (contact_table < cutoff)
+    remove_band = np.eye(n)
+    for i in range(1, MAX_OFFSET):
+        remove_band += np.eye(n, k=i)
+        remove_band += np.eye(n, k=-i)
+    data[remove_band==1] = 0
+    return data
 
 # def get_inside_or_not_table(pdb_file):
 #     parser = PDBParser(PERMISSIVE=1)
