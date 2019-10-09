@@ -1339,7 +1339,7 @@ def extractTransmembrane(toLocation, location, cutoff=15):
 
     class Transmembrane(Select):
         def accept_residue(self, residue):
-            if abs(residue["CA"].get_vector()[-1]) < cutoff:
+            if residue.get_id()[0] == ' ' and abs(residue["CA"].get_vector()[-1]) < cutoff:
                 return 1
             else:
                 return 0
@@ -1802,6 +1802,39 @@ def get_PredictedZim(topo, zimFile):
                 out.write(f"1\n")
             elif i == "1":
                 out.write("2\n")
+            else:
+                raise
+
+def flip_side(side):
+#     return side * -1
+    if side == "down":
+        return "up"
+    if side == "up":
+        return "down"
+
+def get_PredictedZimSide(topo, zimFile):
+    loc = topo
+    with open(loc) as f:
+        a = f.readlines()
+    assert len(a) % 3 == 0
+    chain_count = len(a) // 3
+    seq = ""
+    for i in range(chain_count):
+        seq_i = (a[i*3+2]).strip()
+        seq += seq_i
+    assert np.alltrue([i in ["0", "1"] for i in seq])
+
+    side = "down"
+    with open(zimFile, "w") as out:
+        for i in seq:
+            if i == "0":
+                out.write(f"{side}\n")
+                inMiddle = False
+            elif i == "1":
+                out.write("middle\n")
+                if not inMiddle:
+                    side = flip_side(side)
+                    inMiddle = True
             else:
                 raise
 

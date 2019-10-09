@@ -722,7 +722,8 @@ def phi_pairwise_contact_well(res_list_tmonly, res_list_entire, neighbor_list, p
                 res2index = get_local_index(res2)
                 res2chain = get_chain(res2)
                 res2globalindex = get_global_index(res_list_entire, res2)
-                if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                     res1type = get_res_type(res_list_entire, res1)
                     res2type = get_res_type(res_list_entire, res2)
                     rij = get_interaction_distance(res1, res2)
@@ -752,7 +753,8 @@ def phi_pairwise_contact_well(res_list, neighbor_list, parameter_list):
             res2index = get_local_index(res2)
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
@@ -830,6 +832,37 @@ def phi_burial_well(res_list, neighbor_list, parameter_list):
             phis_to_return.append(phi_burial[i][j])
     return phis_to_return
 
+def phi_debye_huckel_well(res_list, neighbor_list, parameter_list):
+    k_dh = 4.15
+    debye_huckel = 0
+    k_screening = 1.0
+    screening_length = 10  # (in the unit of A)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2globalindex, res2 in enumerate(res_list):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex > res1globalindex:
+                res1Name = three_to_one(res1.get_resname())
+                res2Name = three_to_one(res2.get_resname())
+                charge_1 = 0
+                charge_2 = 0
+                if res1Name == "R" or res1Name == "K":
+                    charge_1 = 1
+                if res1Name == "D" or res1Name == "E":
+                    charge_1 = -1
+                if res2Name == "R" or res2Name == "K":
+                    charge_2 = 1
+                if res2Name == "D" or res2Name == "E":
+                    charge_2 = -1
+                if charge_1 * charge_2 != 0:
+                    r = get_interaction_distance(res1, res2)
+                    debye_huckel += charge_1*charge_2/r*math.exp(-k_screening*r/screening_length)
+    debye_huckel *= k_dh
+    return [debye_huckel]
+
 def phi_burial_multiDensity_well(res_list, neighbor_list, parameter_list):
     kappa = parameter_list[0]
     kappa = float(kappa)
@@ -884,7 +917,8 @@ def phi_density_mediated_contact_well(res_list, neighbor_list, parameter_list):
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
             rho_j = cb_density[res2globalindex]
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
@@ -936,7 +970,8 @@ def phi_contact_hybrid_well(res_list, neighbor_list, parameter_list):
             z2 = get_z_position(res2)
             alphaMembrane2 = interaction_well_2(z1, -z_m, z_m, eta_switching)
 
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
@@ -1028,7 +1063,8 @@ def phi_contact_membrane_well(res_list, neighbor_list, parameter_list):
             # z2 = get_z_position(res2)
             # alphaMembrane2 = interaction_well_2(z1, -z_m, z_m, eta_switching)
 
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
@@ -1113,7 +1149,8 @@ def phi_contact_only_membrane_well(res_list, neighbor_list, parameter_list):
             # z2 = get_z_position(res2)
             # alphaMembrane2 = interaction_well_2(z1, -z_m, z_m, eta_switching)
 
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
@@ -1193,7 +1230,8 @@ def phi_pairwise_contact_multiLetter_well(res_list, neighbor_list, parameter_lis
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
 
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
@@ -1236,7 +1274,8 @@ def phi_density_mediated_contact_multiLetter_well(res_list, neighbor_list, param
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
             rho_j = cb_density[res2globalindex]
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
@@ -1383,7 +1422,8 @@ def phi_normalize_relative_k(res_list, neighbor_list, parameter_list):
             res2index = get_local_index(res2)
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 res1type_HP = get_res_type_HP(res_list, res1)
@@ -1408,7 +1448,8 @@ def phi_normalize_relative_k(res_list, neighbor_list, parameter_list):
             res2chain = get_chain(res2)
             res2globalindex = get_global_index(res_list, res2)
             rho_j = cb_density[res2globalindex]
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 res1type_HP = get_res_type_HP(res_list, res1)
@@ -1488,7 +1529,8 @@ def phi_relative_k_well(res_list, neighbor_list, parameter_list, z_m_high=None, 
             z2 = get_z_position(res2)
             alphaMembrane2 = interaction_well_2(z1, z_m_low, z_m_high, eta_switching)
             rho_j = cb_density[res2globalindex]
-            if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
@@ -1791,7 +1833,8 @@ def make_helix_docking_contacts_tcl(input_file_name, output_file_name):
 #                 rho_0 = density_threshold
 #                 kappa = density_kappa
 
-#                 if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+#                 # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+#                 if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
 #                     res1type = get_res_type(res_list_entire, res1)
 #                     res2type = get_res_type(res_list_entire, res2)
 #                     rij = get_interaction_distance(res1, res2)
@@ -1867,7 +1910,8 @@ def make_helix_docking_contacts_tcl(input_file_name, output_file_name):
 #                 rho_0 = density_threshold
 #                 kappa = density_kappa
 
-#                 if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+#                 # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+#                 if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
 #                     res1type = get_res_type(res_list_entire, res1)
 #                     res2type = get_res_type(res_list_entire, res2)
 #                     rij = get_interaction_distance(res1, res2)
@@ -2020,7 +2064,9 @@ def evaluate_phis_for_protein_Wei(protein, phi_list, decoy_method, max_decoys, m
         for phi, parameters in phi_list:
             phiF = globals()[phi]
             parameters_string = get_parameters_string(parameters)
+            mutate_whole_sequence(res_list, sequence)
             print(phi, parameters, parameters_string)
+            # print("Naitve seq", get_sequence_from_structure(structure))
             # check to see if the decoys are already generated
             # number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)))
             # if not number_of_lines_in_file >= 1:
@@ -2079,6 +2125,7 @@ def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_dec
             phiF = globals()[phi]
             parameters_string = get_parameters_string(parameters)
             print(phi, parameters, parameters_string)
+            mutate_whole_sequence(res_list, sequence)
             # check to see if the decoys are already generated
             # number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)))
             # if not number_of_lines_in_file >= 1:
