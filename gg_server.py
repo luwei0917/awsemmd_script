@@ -646,14 +646,115 @@ if args.day == "tmpred":
             print(pdb)
             do(f"cat setup/{pdb}/{pdb}.fasta")
 
+if args.day == "dmp":
+    dmp_slurm = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=commons
+#SBATCH --partition=scavenge
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem-per-cpu=10G
+#SBATCH --time=04:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+#SBATCH -o outs/slurm-%j.out
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun {}\n'''
+
+    if args.label[-6:] == ".fasta":
+        pdb = args.label[:-6]
+    else:
+        pdb = args.label
+    # folder = pdb
+    # folder = "DMP"
+    # do(f"mkdir -p {folder}")
+    # os.chdir(folder)
+    # os.system(f"cp ../{pdb}.fasta .")
+    cmd = f"bash /projects/pw8/wl45/DeepMetaPSICOV/run_DMP.sh -i {pdb}.fasta"
+    do("mkdir -p outs")
+    out = slurmRun(f"{pdb}.slurm", cmd, template=dmp_slurm)
+    print(out)
+    # os.chdir("..")
+
+if args.day == "oct09":
+    if args.mode == 1:
+        # get DMP prediction
+        name = "beta_2_adrenergic_receptor"
+        folder = f"DMP/{name}"
+        do(f"mkdir -p {folder}")
+        cd(folder)
+        do(f"cp ../../../original_fasta_files/{name}.fasta .")
+        do(f"gg_server.py -d dmp -l {name}.fasta")
+        cd("../..")
+
+        # get TM prediction
+        folder = f"TM_pred/{name}"
+        do(f"mkdir -p {folder}")
+        cd(folder)
+        do(f"cp ../../../original_fasta_files/{name}.fasta .")
+        do(f"/projects/pw8/wl45/topology_prediction/PureseqTM_Package/PureseqTM_proteome.sh -i {name}.fasta")
+        cd("../..")
+
+        # get secondary structure prediction
+        folder = f"secondary/{name}"
+        do(f"mkdir -p {folder}")
+        cd(folder)
+        do(f"cp ../../../original_fasta_files/{name}.fasta .")
+        do(f"/projects/pw8/wl45/build/Predict_Property/Predict_Property.sh -i {name}.fasta")
+        cd("../..")
+
+if args.day == "oct05":
+    if args.mode == 1:
+        # get DMP prediction
+        name = "serotonin_1A_receptor"
+        folder = f"DMP/{name}"
+        do(f"mkdir -p {folder}")
+        cd(folder)
+        do(f"cp ../../../original_fasta_files/{name}.fasta .")
+        do(f"gg_server.py -d dmp -l {name}.fasta")
+        cd("../..")
+    if args.mode == 2:
+        # get TM prediction
+        name = "serotonin_1A_receptor"
+        folder = f"TM_pred/{name}"
+        do(f"mkdir -p {folder}")
+        cd(folder)
+        do(f"cp ../../../original_fasta_files/{name}.fasta .")
+        do(f"/projects/pw8/wl45/topology_prediction/PureseqTM_Package/PureseqTM_proteome.sh -i {name}.fasta")
+        cd("../..")
+    if args.mode == 3:
+        # get secondary structure prediction
+        # name = "serotonin_1A_receptor"
+        name = "beta_2_adrenergic_receptor"
+        # name = "cannabinoid_receptor"
+        folder = f"secondary/{name}"
+        do(f"mkdir -p {folder}")
+        cd(folder)
+        do(f"cp ../../../original_fasta_files/{name}.fasta .")
+        do(f"/projects/pw8/wl45/build/Predict_Property/Predict_Property.sh -i {name}.fasta")
+# if args.day == "oct02":
+#     if args.mode == 1:
+#         # get DMP prediction
+#         do("gg_server.py -d dmp -l beta_2_adrenergic_receptor.fasta")
 if args.day == "sep25":
-    do("gg_server.py -d sep02 -m 1 -l cannabinoid_receptor.fasta")
+    if args.mode == 1:
+        do("gg_server.py -d sep02 -m 1 -l cannabinoid_receptor.fasta")
+    if args.mode == 2:
+        # topo_name = "cannabinoid_receptor_topo"
+        # get_PredictedZim(topo_name, "PredictedZim")
+        name = "serotonin_1A_receptor"
+        topo_name = f"TM_pred/{name}/{name}_topo"
+        get_PredictedZim(topo_name, f"{name}/setup/PredictedZim")
+        get_PredictedZimSide(topo_name, f"{name}/setup/PredictedZimSide")
 if args.day == "sep19":
     # shuffle iter0.
     from pyCodeLib import *
     import warnings
     warnings.filterwarnings('ignore')
-    n_decoys = 1000
+    n_decoys = 100
     separateDecoysNum = -1
 
     if args.mode == 44:
@@ -662,9 +763,9 @@ if args.day == "sep19":
         replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
         do(f"sbatch slurms/run_on_scavenge.slurm")
     if args.mode == 1:
-        do("mkdir proteins_name_list")
-        do("mkdir slurms")
-        do("mkdir data")
+        do("mkdir -p proteins_name_list")
+        do("mkdir -p slurms")
+        # do("mkdir -p data")
         do("mkdir -p decoys")
         do("mkdir -p gammas")
         do("mkdir -p outs")
@@ -724,39 +825,7 @@ if args.day == "sep19":
                                         num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False)
 
 
-if args.day == "sep02":
-    if args.mode == 1:
-        dmp_slurm = '''\
-#!/bin/bash
-#SBATCH --job-name=CTBP_WL
-#SBATCH --account=commons
-#SBATCH --partition=scavenge
-#SBATCH --ntasks=1
-#SBATCH --threads-per-core=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem-per-cpu=10G
-#SBATCH --time=04:00:00
-#SBATCH --mail-user=luwei0917@gmail.com
-#SBATCH --mail-type=FAIL
-#SBATCH -o outs/slurm-%j.out
-echo "My job ran on:"
-echo $SLURM_NODELIST
-srun {}\n'''
 
-        if args.label[-6:] == ".fasta":
-            pdb = args.label[:-6]
-        else:
-            pdb = args.label
-        # folder = pdb
-        folder = "DMP"
-        do(f"mkdir -p {folder}")
-        os.chdir(folder)
-        os.system(f"cp ../{pdb}.fasta .")
-        cmd = f"bash /projects/pw8/wl45/DeepMetaPSICOV/run_DMP.sh -i {pdb}.fasta"
-        do("mkdir -p outs")
-        out = slurmRun(f"{pdb}.slurm", cmd, template=dmp_slurm)
-        print(out)
-        os.chdir("..")
 if args.day == "aug20":
     if args.mode == 1:
         # pdb = args.label
