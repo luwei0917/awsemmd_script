@@ -95,6 +95,7 @@ base_slurm = '''\
 #SBATCH --time=1-00:00:00
 #SBATCH --mail-user=luwei0917@gmail.com
 #SBATCH --mail-type=FAIL
+#SBATCH -o outs/slurm-%j.out
 echo "My job ran on:"
 echo $SLURM_NODELIST
 srun {}\n'''
@@ -679,6 +680,336 @@ srun {}\n'''
     print(out)
     # os.chdir("..")
 
+if args.day == "oct22":
+    # from jun20
+    # relative k computation, change is from change upper or lower to shift center.(which is the original idea, but instead of shift pdb, now shift the membrane.)
+    # relative k now also compute the burial term and the membrane term.
+    if args.mode == 1:
+        do(f"mkdir -p proteins_name_list")
+        # do(f"mkdir -p decoys/shifted")
+        do(f"mkdir -p gammas")
+        do(f"mkdir -p outs")
+        do("mkdir -p ../phis")
+        do("mkdir slurms")
+        with open("protein_list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(3):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i)
+        n = i
+        i = 0
+        jobIdList = []
+        # exit()
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d oct22 -m 2 -l {proteins}")
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        waitForJobs(jobIdList, sleepInterval=300)
+    if args.mode == 2:
+        from pyCodeLib import *
+        proteinlist = readList(args.label)
+        print(proteinlist)
+        limit = 30
+        for name in proteinlist:
+            print(name)
+            input_pdb_filename = f"../database/dompdb/{name}"
+            structure = parse_pdb(input_pdb_filename)
+            res_list = get_res_list(structure)
+            neighbor_list = get_neighbor_list(structure)
+
+            phi = phi_relative_k_with_membrane_well(res_list, neighbor_list, parameter_list="")
+            np.savetxt(f"../phis/phi_relative_k_with_membrane_well_{name}_native_4.5_6.5_5.0_10", [phi], fmt='%1.4f')
+            phis_list = []
+            q_list = []
+            z_m_all = np.arange(-limit, limit, 1)
+            for z_m in z_m_all:
+                phi = phi_relative_k_with_membrane_well(res_list, neighbor_list, parameter_list="", z_m_high=z_m+15, z_m_low=z_m-15)
+                q = interaction_well(z_m, -5, 5, 0.2)
+                # q = 0
+                print(phi, q)
+                phis_list.append(phi)
+                q_list.append(q)
+            np.savetxt(f"../phis/phi_relative_k_with_membrane_well_{name}_decoys_shifted_4.5_6.5_5.0_10", phis_list, fmt='%1.4f')
+            np.savetxt(f"../phis/phi_relative_k_with_membrane_well_{name}_decoysQ_shifted_4.5_6.5_5.0_10", q_list, fmt='%1.4f')
+        print("done", args.label)
+    if args.mode == 4:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        print(datetime.datetime.now())
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shifted',
+                                        num_decoys=50, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False)
+
+
+if args.day == "oct20":
+    # from jun20
+    # relative k computation, change is from change upper or lower to shift center.(which is the original idea, but instead of shift pdb, now shift the membrane.)
+    if args.mode == 1:
+        do(f"mkdir -p proteins_name_list")
+        # do(f"mkdir -p decoys/shifted")
+        do(f"mkdir -p gammas")
+        do(f"mkdir -p outs")
+        do("mkdir -p ../phis")
+        do("mkdir slurms")
+        with open("protein_list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(3):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i)
+        n = i
+        i = 0
+        jobIdList = []
+        # exit()
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d oct20 -m 2 -l {proteins}")
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        waitForJobs(jobIdList, sleepInterval=300)
+    if args.mode == 2:
+        from pyCodeLib import *
+        proteinlist = readList(args.label)
+        print(proteinlist)
+        limit = 30
+        for name in proteinlist:
+            input_pdb_filename = f"../database/dompdb/{name}"
+            structure = parse_pdb(input_pdb_filename)
+            res_list = get_res_list(structure)
+            neighbor_list = get_neighbor_list(structure)
+
+            phi = phi_relative_k_well(res_list, neighbor_list, parameter_list="")
+            np.savetxt(f"../phis/phi_relative_k_well_{name}_native_4.5_6.5_5.0_10", [phi], fmt='%1.4f')
+            phis_list = []
+            q_list = []
+            z_m_all = np.arange(5, limit, 1)
+            for z_m in z_m_all:
+                phi = phi_relative_k_well(res_list, neighbor_list, parameter_list="", z_m_high=z_m+15, z_m_low=z_m-15)
+                q = interaction_well(z_m, -5, 5, 0.2)
+                # q = 0
+                print(phi, q)
+                phis_list.append(phi)
+                q_list.append(q)
+            # np.savetxt(f"../phis/{name}_phis_high", phis_list, fmt='%1.4f')
+            z_m_all = np.arange(-limit, -5, 1)
+            for z_m in z_m_all:
+                phi = phi_relative_k_well(res_list, neighbor_list, parameter_list="", z_m_high=z_m+15, z_m_low=z_m-15)
+                q = interaction_well(z_m, -5, 5, 0.2)
+                # q = 0
+                print(phi, q)
+                phis_list.append(phi)
+                q_list.append(q)
+            np.savetxt(f"../phis/phi_relative_k_well_{name}_decoys_shifted_4.5_6.5_5.0_10", phis_list, fmt='%1.4f')
+            np.savetxt(f"../phis/phi_relative_k_well_{name}_decoysQ_shifted_4.5_6.5_5.0_10", q_list, fmt='%1.4f')
+        print("done", args.label)
+    if args.mode == 4:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        print(datetime.datetime.now())
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shifted',
+                                        num_decoys=50, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False)
+
+
+if args.day == "oct17":
+    if args.mode == 1:
+        # get DMP prediction
+        # name = "beta_2_adrenergic_receptor"
+        for name in dataset["membrane"]:
+            folder = f"DMP/{name}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"cp ../../setups/{name}/{name}.fasta .")
+            do(f"gg_server.py -d dmp -l {name}.fasta")
+            cd("../..")
+
+            # get TM prediction
+            folder = f"TM_pred/{name}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"cp ../../setups/{name}/{name}.fasta .")
+            do(f"/projects/pw8/wl45/topology_prediction/PureseqTM_Package/PureseqTM_proteome.sh -i {name}.fasta")
+            cd("../..")
+
+            # get secondary structure prediction
+            folder = f"secondary/{name}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"cp ../../setups/{name}/{name}.fasta .")
+            do(f"/projects/pw8/wl45/build/Predict_Property/Predict_Property.sh -i {name}.fasta")
+            cd("../..")
+    if args.mode == 2:
+        # convert Porter5 format
+        # pdb = "cannabinoid_receptor"
+        # name = "serotonin_1A_receptor"
+        # name = "cannabinoid_receptor"
+
+        for name in dataset["membrane"]:
+            toPre = f"setups/{name}"
+            # from_secondary = f"secondary/{name}/{name}_PROP/{name}.ss3"
+            # to_ssweight = f"{toPre}/ssweight"
+            # print("convert ssweight")
+
+            # data = pd.read_csv(from_secondary, comment="#", names=["i", "Res", "ss3", "Helix", "Sheet", "Coil"], sep="\s+")
+            # # print(data)
+            # with open(to_ssweight, "w") as out:
+            #     for i, line in data.iterrows():
+            #         if line["ss3"] == "H":
+            #             out.write("1.0 0.0\n")
+            #         if line["ss3"] == "E":
+            #             out.write("0.0 1.0\n")
+            #         if line["ss3"] == "C":
+            #             out.write("0.0 0.0\n")
+
+            # fasta_file = f"../original_fasta_files/{name}.fasta"
+            # DMP_file = f"DMP/{name}/{name}.deepmetapsicov.con"
+            # convertDMPToInput(name, DMP_file, fasta_file)
+            # do(f"cp ~/opt/gremlin/protein/{name}/DMP/go_rnativeC* {name}/setup/")
+
+            # name = "serotonin_1A_receptor"
+            print("convert predictedZim")
+            topo_name = f"TM_pred/{name}/{name}_topo"
+            get_PredictedZim(topo_name, f"{toPre}/PredictedZim")
+            get_PredictedZimSide(topo_name, f"{toPre}/PredictedZimSide")
+    if args.mode ==3:
+        cmd = "python mm_run_with_pulling_start.py setups/2bg9/2bg9 --to test1 --subMode 0 --platform CPU"
+
+if args.day == "oct16":
+    # from apr31
+    # membrane contact optimization.
+    from pyCodeLib import *
+    import warnings
+    warnings.filterwarnings('ignore')
+    # n_decoys = 1000
+    n_decoys = 2000
+    # n_decoys = 4000
+    # n_decoys = 8000
+    separateDecoysNum = -1
+    proteins = "protein_list"
+    if args.mode == 1:
+        do("mkdir proteins_name_list")
+        do("mkdir slurms")
+        do("mkdir -p decoys")
+        do("mkdir -p gammas")
+        do("mkdir -p outs")
+        do("mkdir -p ../phis")
+        proteins = f"protein_list"
+        # generate_decoy_sequences(proteins, separateDecoysNum=separateDecoysNum, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+    if args.mode == 2:
+        # time.sleep(16000)
+        with open("protein_list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(1):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i)
+        n = i
+        i = 0
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d oct16 -m 222 -l {proteins}")
+            # jobId = slurmRun(f"slurms/compute_z_{i}.slurm", f"python3 compute_z_score.py {proteins}")
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        # exit()
+        waitForJobs(jobIdList, sleepInterval=300)
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d oct16 -m 4"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 22:
+        protein = args.label
+        do(f"python3 ~/opt/compute_phis.py -m 0 {protein}")
+        # do("python3 ~/opt/compute_phis.py -m 0 test_protein")
+    if args.mode == 222:
+        proteins = args.label
+        generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+        evaluate_phis_over_training_set_for_native_structures_Wei(proteins, "phi_list.txt",
+                    decoy_method='shuffle', max_decoys=1e+10, tm_only=False, num_processors=1, separateDecoysNum=separateDecoysNum)
+        print(proteins, "done")
+    if args.mode == 3:
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d oct16 -m 4"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 4:
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        print(datetime.datetime.now())
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+                                        num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False)
+    if args.mode == 5:
+        # time.sleep(16000)
+        with open("protein_list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(1):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i)
+        n = i
+        i = 0
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d oct16 -m 222 -l {proteins}")
+            jobId = slurmRun(f"slurms/compute_z_{i}.slurm", f"python3 compute_z_score.py {proteins}")
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            # do(f"cat {proteins} >> iter0_complete.txt")
+
+
 if args.day == "oct09":
     if args.mode == 1:
         # get DMP prediction
@@ -751,6 +1082,7 @@ if args.day == "sep25":
         get_PredictedZimSide(topo_name, f"{name}/setup/PredictedZimSide")
 if args.day == "sep19":
     # shuffle iter0.
+    # ligand optimization.
     from pyCodeLib import *
     import warnings
     warnings.filterwarnings('ignore')
@@ -773,7 +1105,7 @@ if args.day == "sep19":
         proteins = f"protein_list"
         # generate_decoy_sequences(proteins, separateDecoysNum=separateDecoysNum, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
     if args.mode == 2:
-        # time.sleep(16000)
+        # time.sleep(36000)
         with open("protein_list") as f:
             content = f.readlines()
         pos = 0
@@ -794,10 +1126,11 @@ if args.day == "sep19":
         for i in range(n):
             proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
             # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
-            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d sep19 -m 222 -l {proteins}")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d sep19 -m 222 -l {proteins}", template=base_slurm)
             # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
             jobIdList.append(jobId)
             do(f"cat {proteins} >> iter0_complete.txt")
+        exit()
         waitForJobs(jobIdList, sleepInterval=300)
         with open(f"slurms/run_on_scavenge.slurm", "w") as out:
             out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d sep19 -m 4"))
