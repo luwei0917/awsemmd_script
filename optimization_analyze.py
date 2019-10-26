@@ -178,3 +178,7 @@ for cutoff_i in cutoff_list:
     # save_gamma_pre = "/Users/weilu/Research/server/sep_2019/saved_gammas/"
 
     np.savetxt(f"{save_gamma_pre}/{trial_name}_cutoff{cutoff_i}_impose_Aprime_constraint", gamma_new)
+
+    name = f"{save_gamma_pre}/{trial_name}_cutoff{cutoff_i}_impose_Aprime_constraint"
+    cmd = f"convert_to_simulation_format.py {name} Oct26_{name}"
+    do(cmd)
