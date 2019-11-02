@@ -147,10 +147,79 @@ def get_aligned_info(p1, p2):
     # print(aligned_length, rmsd, tmscore, seqid)
     return aligned_length, rmsd, tmscore, seqid
 
-if args.day == "jul21":
+if args.day == "oct30":
+    fromPdb = "1a91.pdb"
+    toPdb = "1a91_rotation_3.pdb"
+    rotation_and_translation(fromPdb, toPdb, rotation_axis=(1,0,0), degree=0, translation=(0,0,10))
+
+if args.day == "oct25":
+    # benchmark_list = ["sos", "6g57", "5m2o", "unk2", "pex22", "6q64", "6btc", "1tt8"]
+    # benchmark_list = ['6n7n_monomer_proteindna']   # include DNA
+    benchmark_list = ['p53_tetramer_proteinonly', '6n7n_hexamer_proteinonly', '5xjy', '5uar', '5dqq']
+    # benchmark_list = ['6n7n_hexamer_proteinonly', '5xjy', '5uar', '5dqq']
+    if args.mode == 1:
+        # a = generate_SEQRES("/Users/weilu/Research/server/oct_2019/benchmark/20191025_benchmark/1tt8.fasta")
+        # print(a)
+        for pdb in benchmark_list:
+            a = generate_SEQRES(f"/Users/weilu/Research/server/oct_2019/benchmark/20191025_benchmark/original/{pdb}.fasta")
+            with open(pdb+".pdb", "w") as o:
+                o.write(a)
+    if args.mode == 2:
+        # a = generate_SEQRES("/Users/weilu/Research/server/oct_2019/benchmark/20191025_benchmark/1tt8.fasta")
+        # print(a)
+        for pdb in benchmark_list:
+            folder = f"setups/{pdb}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"mm_create_project.py ../../original/{pdb}.pdb --extended")
+            # do(f"mm_create_project.py ../../original/{pdb}.fasta")
+            cd("../..")
+    if args.mode == 3:
+        for pdb in benchmark_list:
+            # do(f"cp setups/{pdb}/cleaned_pdbs/{pdb}.pdb cleaned_pdbs/")
+            # do(f"cp setups/{pdb}/crystal_structure-cleaned.pdb cleaned_pdbs/{pdb}.pdb")
+            do(f"cp setups/{pdb}/{pdb}.fasta cleaned_pdbs/")
+    if args.mode == 4:
+        for pdb in benchmark_list:
+            do(f"python mm_evaluate_native.py setups/{pdb}/{pdb} --to native/{pdb}")
+if args.day == "oct19":
+    if args.mode == 1:
+        sys.path.insert(0, "/Users/weilu/openmmawsem")
+        # name = "1iwg"
+        import openmmawsem
+        import helperFunctions.myFunctions
+        for name in dataset["membrane"]:
+            cd(f"setups/{name}")
+            do(f"python3 /Users/weilu/openmmawsem/helperFunctions/fasta2pdb.py extended -f {name}.fasta")
+            helperFunctions.myFunctions.add_chain_to_pymol_pdb("extended.pdb")  # only work for one chain only now
+            input_pdb_filename, cleaned_pdb_filename = openmmawsem.prepare_pdb("extended.pdb", "A")
+            openmmawsem.ensure_atom_order(input_pdb_filename)
+            cd("../..")
+    if args.mode == 2:
+        for pdb in dataset["membrane"]:
+            do(f"cp ../original_pdbs/{pdb}.pdb {pdb}_complete.pdb")
+    if args.mode == 3:
+        for pdb in dataset["membrane"]:
+            print(pdb)
+            do(f"python ~/opt/small_script/extract_membrane_part.py {pdb}_complete.pdb {pdb}_membrane.pdb")
+    if args.mode == 4:
+        sys.path.insert(0, "/Users/weilu/openmmawsem")
+        # name = "1iwg"
+        import openmmawsem
+        import helperFunctions.myFunctions
+        for name in dataset["membrane"]:
+            print(name)
+            cd(f"setups/{name}")
+            do("grep -E 'CB|CA  GLY' crystal_structure-cleaned.pdb > cbs.data")
+            do("""awk '{if($9>15) print "1"; else if($9<-15) print "3"; else print "2"}'  cbs.data  > zimPosition""")
+            helperFunctions.myFunctions.create_zim(f"crystal_structure.fasta", tableLocation=f"/Users/weilu/openmmawsem/helperFunctions")
+            cd("../..")
+
+if args.day == "oct16":
     pdb_list = ["4nv6", "4p79", "5dsg", "6g7o", "6a93", "5xpd", "3kp9", "4a2n", "5d91", "2jo1"]
     pdb_list += ["1py6", "1pv6", "1u19"]
     pdb_list += ["2xov_complete", "6e67A"]
+    pdb_list = ["6e67", "5xpd", "3kp9", "4a2n", "5d91", "4nv6", "4p79", "5dsg", "6g7o", "6a93", "1py6", "1pv6", "1u19"]
     if args.mode == 1:
         do("mkdir -p original_pdbs")
         for pdb in pdb_list:
@@ -160,7 +229,7 @@ if args.day == "jul21":
     if args.mode == 2:
         create_project_for_pdb_list(pdb_list, frag=True)
 
-if args.mode == "oct09":
+if args.day == "oct09":
     if args.mode == 1:
         # convert Porter5 format
         # pdb = "cannabinoid_receptor"
@@ -169,6 +238,7 @@ if args.mode == "oct09":
         name = "beta_2_adrenergic_receptor"
         from_secondary = f"secondary/{name}/{name}_PROP/{name}.ss3"
         to_ssweight = f"{name}/setup/ssweight"
+        print("convert ssweight")
 
         data = pd.read_csv(from_secondary, comment="#", names=["i", "Res", "ss3", "Helix", "Sheet", "Coil"], sep="\s+")
         # print(data)
@@ -180,14 +250,13 @@ if args.mode == "oct09":
                     out.write("0.0 1.0\n")
                 if line["ss3"] == "C":
                     out.write("0.0 0.0\n")
-        cd("..")
 
         fasta_file = f"../original_fasta_files/{name}.fasta"
         DMP_file = f"DMP/{name}/{name}.deepmetapsicov.con"
         convertDMPToInput(name, DMP_file, fasta_file)
         do(f"cp ~/opt/gremlin/protein/{name}/DMP/go_rnativeC* {name}/setup/")
         # name = "serotonin_1A_receptor"
-
+        print("convert predictedZim")
         topo_name = f"TM_pred/{name}/{name}_topo"
         get_PredictedZim(topo_name, f"{name}/setup/PredictedZim")
         get_PredictedZimSide(topo_name, f"{name}/setup/PredictedZimSide")
@@ -243,6 +312,23 @@ if args.day == "oct08":
         check_and_correct_fragment_memory(fragFile="frags.mem")
         # relocate(fileLocation="combined.mem", toLocation="fraglib")
         # replace(f"combined.mem", f"/Users/weilu/openmmawsem//Gros/", "./fraglib/")
+    if args.mode == 6:
+        # oct08
+        for pdb in dataset["membrane"]:
+            cmd = f"cp frag_database/{pdb}_HE/globularPart/frags.mem setups/{pdb}/globular.mem"
+            do(cmd)
+            cmd = f"cp frag_database/{pdb}_HE/membranePart/frags.mem setups/{pdb}/membrane.mem"
+            do(cmd)
+    if args.mode == 7:
+        # oct08
+        for pdb in dataset["membrane"]:
+            print(pdb)
+            cmd = f"python mm_evaluate_native.py setups/{pdb}/{pdb} --to native_contact_energy/{pdb} --subMode 0"
+            do(cmd)
+            # cmd = f"python mm_evaluate_native.py setups/{pdb}/{pdb} --to native_energy/{pdb}_globular --subMode 1"
+            # do(cmd)
+            # cmd = f"python mm_evaluate_native.py setups/{pdb}/{pdb} --to native_energy/{pdb}_membrane --subMode 2"
+            # do(cmd)
 if args.day == "oct05":
     # if args.day == "jun26":
     if args.mode == 1:
@@ -294,7 +380,11 @@ if args.day == "oct05":
         do("cp result_all_atm result_all_atm.pdb")
         do("pymol ~/opt/plot_scripts/tmalign_all.pml")
     if args.mode == 8:
-        template = "../4iar_clean.pdb"
+        # name = "serotonin_1A_receptor"
+        name = "cannabinoid_receptor"
+        cryslal_look_up_data = {"serotonin_1A_receptor":"/Users/weilu/opt/gremlin/protein/serotonin_1A_receptor/DMP/4iar_clean.pdb",
+                                "cannabinoid_receptor":"/Users/weilu/opt/gremlin/protein/cannabinoid_receptor/DMP/5tgz_clean.pdb"}
+        template =cryslal_look_up_data[name]
         tm_info = open("tm_info.dat", "w")
         tm_info.write("i, aligned_length, rmsd, tmscore, seqid\n")
         for i in range(20):
@@ -312,21 +402,33 @@ if args.day == "oct05":
             # do("pymol ~/opt/plot_scripts/tmalign_all.pml")
         tm_info.close()
     if args.mode == 9:
+        #  gg.py -d oct05 -m 9
         import matplotlib.pyplot as plt
         # name = "cannabinoid_receptor"
         # n = 472
         # fileLocation = f"/Users/weilu/Research/server/oct_2019/draw_contact_for_DMP/{name}.deepmetapsicov.con"
         name = "serotonin_1A_receptor"
         n = 422
-        fileLocation = f"/Users/weilu/Research/server/oct_2019/GPCRs_reorder/simulation_setups/DMP/{name}/{name}.deepmetapsicov.con"
+        # fileLocation = f"/Users/weilu/Research/server/oct_2019/GPCRs_reorder/simulation_setups/DMP/{name}/{name}.deepmetapsicov.con"
+        fileLocation = f"/Users/weilu/opt/gremlin/protein/{name}/DMP/{name}.deepmetapsicov.con"
+
         a, _ = get_contactFromDMP(fileLocation, n)
 
         # pdbFile = "/Users/weilu/Research/server/oct_2019/draw_contact_for_DMP/5xr8_clean.pdb"
         # pdbFile = "../5u09_clean.pdb"
-        crystal = "4iar_clean.pdb"
+        cryslal_look_up_data = {"serotonin_1A_receptor":"/Users/weilu/opt/gremlin/protein/serotonin_1A_receptor/DMP/4iar_clean.pdb",
+                                "cannabinoid_receptor":"/Users/weilu/opt/gremlin/protein/cannabinoid_receptor/DMP/5tgz_clean.pdb"}
+        crystal =cryslal_look_up_data[name]
         data = getContactMapFromPDB(crystal, n)
         DMP_cutoff = 0.5
+        # DMP_cutoff = 0.1
+        # DMP_cutoff = 0.05
         do("mkdir -p figures")
+        t_s = a.astype(float)
+        plt.imshow(t_s, origin="bottom", cmap="Greys")
+        plt.colorbar()
+        plt.savefig(f"figures/DMP.png", dpi=300)
+        plt.figure()
         for i in range(20):
             print(i)
             # pdbFile = "/Users/weilu/Research/server/oct_2019/draw_contact_for_DMP/lastFrame.pdb"
@@ -358,10 +460,10 @@ if args.day == "oct05":
             plt.title(tm_line+"Red is only in crystal, Blue is only in Predicted(upper), DMP in lower part")
 
             # plt.savefig("contact_5u09.png")
-            plt.savefig(f"figures/contact_{i}_cutoff_{DMP_cutoff}.png")
+            plt.savefig(f"figures/contact_{i}_cutoff_{DMP_cutoff}.png", dpi=300)
         # plt.show()
     if args.mode == 11:
-        for i in range(1, 20):
+        for i in range(0, 20):
             print(i)
             cd(f"{i}")
             do("movie.py -m 5 123")

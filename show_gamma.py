@@ -35,6 +35,10 @@ def plot_contact_well(gammas, ax, fig, invert_sign=True, fix_colorbar=True, infe
     if fix_colorbar:
         cax = ax.pcolor(interaction_matrix, vmin=vmin,
                         vmax=vmax, cmap="bwr")
+        # cax = ax.pcolor(interaction_matrix, vmin=vmin,
+        #                 vmax=vmax, cmap="coolwarm")
+        # cax = ax.pcolor(interaction_matrix, vmin=vmin,
+        #                 vmax=vmax, cmap="jet")
     else:
         cax = ax.pcolor(interaction_matrix, cmap="RdBu_r")
     fig.colorbar(cax)
@@ -124,5 +128,8 @@ plt.rcParams['figure.figsize'] = 0.9*np.array([scale*16.18033*3, scale*10/0.8])
 # gamma = np.loadtxt(location)
 gamma = np.loadtxt(args.location)
 plot_contact_well_all(gamma, inferBound=True, invert_sign=True, vmin=-2, vmax=2,title=args.title)
+# plot_contact_well_all(gamma, inferBound=False, invert_sign=True, vmin=-1, vmax=1,title=args.title)
+# plot_contact_well_all(gamma, inferBound=False, invert_sign=True, vmin=-3, vmax=3,title=args.title)
+# plot_contact_well_all(gamma, inferBound=False, invert_sign=True, vmin=-0.2, vmax=0.2,title=args.title)
 plt.savefig(args.output)
 plt.show()

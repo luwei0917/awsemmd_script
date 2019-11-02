@@ -1114,6 +1114,7 @@ def getFragPdb(pdbId, i, outFile=None):
 # ratio = np.std(water_gamma_formated)/np.std(membrane_gamma_formated)
 # membrane_gamma_formated_rescaled = membrane_gamma_formated * ratio
 def simulation_to_iteration_gamma(membrane_gamma):
+    membrane_gamma = -membrane_gamma
     direct = membrane_gamma[:210][:,0]
     protein = membrane_gamma[210:][:,0]
     water = membrane_gamma[210:][:,1]
@@ -1213,6 +1214,7 @@ def replace(TARGET, FROM, TO):
     os.system("sed -i.bak 's@{}@{}@g' {}".format(FROM,TO,TARGET))
 
 def generate_SEQRES(fastaFile):
+    from Bio.PDB.Polypeptide import one_to_three, three_to_one
     # fastaFile = "/Users/weilu/Research/server/april_2019/complete_2xov/P09391.fasta"
     with open(fastaFile) as input_data:
         data = ""
@@ -1860,6 +1862,26 @@ def get_PredictedZimSide(topo, zimFile):
                     inMiddle = True
             else:
                 raise
+
+def rotation_and_translation(fromPdb, toPdb, rotation_axis=(1,0,0), degree=90, translation=(0,0,0)):
+    from Bio.PDB import Vector
+    from Bio.PDB import rotaxis2m
+    import math
+    rotation_axis = Vector(rotation_axis)
+    radian=math.radians(degree)
+    # Parse the structure file
+    structure = PDBParser().get_structure("x", fromPdb)[0]
+
+    # Iterate through all atoms and rotate by 90 degress
+    rotation_matrix = rotaxis2m(radian, rotation_axis)
+
+    translation_matrix = np.array(translation, 'f')
+    for atom in structure.get_atoms():
+        atom.transform(rotation_matrix, translation_matrix)
+
+    io = PDBIO()
+    io.set_structure(structure)
+    io.save(toPdb)
 
 # def get_inside_or_not_table(pdb_file):
 #     parser = PDBParser(PERMISSIVE=1)
