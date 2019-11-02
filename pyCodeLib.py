@@ -836,7 +836,8 @@ def phi_debye_huckel_well(res_list, neighbor_list, parameter_list):
     k_dh = 4.15
     debye_huckel = 0
     k_screening = 1.0
-    screening_length = 10  # (in the unit of A)
+    screening_length = 10.0  # (in the unit of A)
+    min_seq_sep = 1
     for res1globalindex, res1 in enumerate(res_list):
         res1index = get_local_index(res1)
         res1chain = get_chain(res1)
@@ -844,20 +845,21 @@ def phi_debye_huckel_well(res_list, neighbor_list, parameter_list):
             res2index = get_local_index(res2)
             res2chain = get_chain(res2)
             # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
-            if res2globalindex > res1globalindex:
+            # if res2globalindex > res1globalindex:
+            if res2globalindex >= res1globalindex + min_seq_sep:
                 res1Name = three_to_one(res1.get_resname())
                 res2Name = three_to_one(res2.get_resname())
-                charge_1 = 0
-                charge_2 = 0
+                charge_1 = 0.0
+                charge_2 = 0.0
                 if res1Name == "R" or res1Name == "K":
-                    charge_1 = 1
+                    charge_1 = 1.0
                 if res1Name == "D" or res1Name == "E":
-                    charge_1 = -1
+                    charge_1 = -1.0
                 if res2Name == "R" or res2Name == "K":
-                    charge_2 = 1
+                    charge_2 = 1.0
                 if res2Name == "D" or res2Name == "E":
-                    charge_2 = -1
-                if charge_1 * charge_2 != 0:
+                    charge_2 = -1.0
+                if charge_1 * charge_2 != 0.0:
                     r = get_interaction_distance(res1, res2)
                     debye_huckel += charge_1*charge_2/r*math.exp(-k_screening*r/screening_length)
     debye_huckel *= k_dh
@@ -1557,6 +1559,123 @@ def phi_relative_k_well(res_list, neighbor_list, parameter_list, z_m_high=None, 
         phis_to_return.append(phi_relative_k_well[i])
     return phis_to_return
 
+def read_hydrophobicity_scale(seq, tableLocation, isNew=False):
+    seq_dataFrame = pd.DataFrame({"oneLetterCode":list(seq)})
+    # HFscales = pd.read_table("~/opt/small_script/Whole_residue_HFscales.txt")
+    # print(f"reading hydrophobicity scale table from {tableLocation}/Whole_residue_HFscales.txt")
+    HFscales = pd.read_csv(f"{tableLocation}/Whole_residue_HFscales.txt", sep="\t")
+    if not isNew:
+        # Octanol Scale
+        # new and old difference is at HIS.
+        code = {"GLY" : "G", "ALA" : "A", "LEU" : "L", "ILE" : "I",
+                "ARG+" : "R", "LYS+" : "K", "MET" : "M", "CYS" : "C",
+                "TYR" : "Y", "THR" : "T", "PRO" : "P", "SER" : "S",
+                "TRP" : "W", "ASP-" : "D", "GLU-" : "E", "ASN" : "N",
+                "GLN" : "Q", "PHE" : "F", "HIS+" : "H", "VAL" : "V",
+                "M3L" : "K", "MSE" : "M", "CAS" : "C"}
+    else:
+        code = {"GLY" : "G", "ALA" : "A", "LEU" : "L", "ILE" : "I",
+                "ARG+" : "R", "LYS+" : "K", "MET" : "M", "CYS" : "C",
+                "TYR" : "Y", "THR" : "T", "PRO" : "P", "SER" : "S",
+                "TRP" : "W", "ASP-" : "D", "GLU-" : "E", "ASN" : "N",
+                "GLN" : "Q", "PHE" : "F", "HIS0" : "H", "VAL" : "V",
+                "M3L" : "K", "MSE" : "M", "CAS" : "C"}
+    HFscales_with_oneLetterCode = HFscales.assign(oneLetterCode=HFscales.AA.str.upper().map(code)).dropna()
+    data = seq_dataFrame.merge(HFscales_with_oneLetterCode, on="oneLetterCode", how="left")
+    return data
+
+
+def phi_relative_k_with_membrane_well(res_list, neighbor_list, parameter_list, z_m_high=None, z_m_low=None):
+    phi_relative_k_well = np.zeros(2)
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    # attention! we have a minus sign here.
+    gamma_ijm, water_gamma_ijm, protein_gamma_ijm = get_gammas()
+    gamma_ijm = -gamma_ijm
+    water_gamma_ijm = -water_gamma_ijm
+    protein_gamma_ijm = -protein_gamma_ijm
+
+    r_min = 6.5
+    r_max = 9.5
+
+    r_min_I = 4.5
+    r_max_I = 6.5
+    kappa = 5.0
+    min_seq_sep = 10
+    # min_sequence_separation_mem = 13
+    eta_switching = 10
+    z_m = 15
+    if z_m_high is None:
+        z_m_high = z_m
+    if z_m_low is None:
+        z_m_low = -z_m
+    density_threshold = 2.6
+    density_kappa = 7.0
+    # print("z_m_high", z_m_high)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        z1 = get_z_position(res1)
+        # print("res1globalindex", res1globalindex, "z1", z1)
+        alphaMembrane1 = interaction_well_2(z1, z_m_low, z_m_high, eta_switching)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            z2 = get_z_position(res2)
+            alphaMembrane2 = interaction_well_2(z1, z_m_low, z_m_high, eta_switching)
+            rho_j = cb_density[res2globalindex]
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance(res1, res2)
+                _pij_protein = prot_water_switchFunc_sigmaProt(
+                    rho_i, rho_j, density_threshold, density_kappa) * protein_gamma_ijm[0][res1type][res2type]
+                _pij_water = prot_water_switchFunc_sigmaWater(
+                    rho_i, rho_j, density_threshold, density_kappa) * water_gamma_ijm[0][res1type][res2type]
+                water_part = (_pij_protein + _pij_water) * interaction_well(rij, r_min, r_max, kappa)
+                # direct term
+                gamma = gamma_ijm[0][res1type][res2type]
+                water_part += gamma * interaction_well(rij, r_min_I, r_max_I, kappa)
+                _pij_protein = prot_water_switchFunc_sigmaProt(
+                    rho_i, rho_j, density_threshold, density_kappa) * protein_gamma_ijm[1][res1type][res2type]
+                _pij_water = prot_water_switchFunc_sigmaWater(
+                    rho_i, rho_j, density_threshold, density_kappa) * water_gamma_ijm[1][res1type][res2type]
+                membrane_part = (_pij_protein + _pij_water) * interaction_well(rij, r_min, r_max, kappa)
+                gamma = gamma_ijm[1][res1type][res2type]
+                membrane_part += gamma * interaction_well(rij, r_min_I, r_max_I, kappa)
+                phi_relative_k_well[0] += (1 - alphaMembrane1 * alphaMembrane2) * water_part
+                # phi_relative_k_well[1] += (1 - alphaMembrane1 * alphaMembrane2) * membrane_part
+                phi_relative_k_well[1] += alphaMembrane1 * alphaMembrane2 * membrane_part
+
+
+    # Membrane term
+    phi_membrane = 0
+    k_membrane = 1
+    membrane_center = (z_m_high + z_m_low) / 2
+    k_m = 2
+    z_m = 15
+    tanh = np.tanh
+    seq = [three_to_one(res.get_resname()) for res in res_list]
+    sequence = "".join(seq)
+    # hydrophobicityScale_list = read_hydrophobicity_scale(sequence, "/Users/weilu/openmmawsem/helperFunctions")["DGwoct"].values
+    hydrophobicityScale_list = read_hydrophobicity_scale(sequence, "/projects/pw8/wl45/openawsem//helperFunctions")["DGwoct"].values
+
+    # print(hydrophobicityScale_list)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        res1type = get_res_type(res_list, res1)
+        z = res1['CA'].get_coord()[-1]
+        # print res1globalindex, res1index, res1chain, res1type, res1density
+        phi_membrane += k_membrane*(0.5*tanh(k_m*((z-membrane_center)+z_m))+0.5*tanh(k_m*(z_m-(z-membrane_center))))*hydrophobicityScale_list[res1globalindex]
+
+    phis_to_return = []
+    for i in range(2):
+        phis_to_return.append(phi_relative_k_well[i])
+    phis_to_return.append(phi_membrane)
+    return phis_to_return
 
 
 six_letter_code_combinations_index = list(range(210))
@@ -2060,7 +2179,12 @@ def evaluate_phis_for_protein_Wei(protein, phi_list, decoy_method, max_decoys, m
         structure = parse_pdb(os.path.join(structures_directory,protein))
         res_list = get_res_list(structure, tm_only=tm_only)
         neighbor_list = get_neighbor_list(structure, tm_only=tm_only)
-        sequence = get_sequence_from_structure(structure)
+        # sequence = get_sequence_from_structure(structure)
+        databaseLocation = "../"
+        sequences_root_directory = os.path.join(databaseLocation,"database/S20_seq/")
+        with open("%s%s.seq" % (sequences_root_directory, protein), "r") as sequence_file:
+            native_sequence = sequence_file.read().replace('\n', '')
+        sequence = native_sequence
         for phi, parameters in phi_list:
             phiF = globals()[phi]
             parameters_string = get_parameters_string(parameters)
