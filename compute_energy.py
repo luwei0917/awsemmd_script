@@ -69,7 +69,7 @@ else:
 
 
 # pre = "/Users/weilu/Research/server/sep_2019/saved_gammas/no_mix"
-pre = "/Users/weilu/Research/server/sep_2019/saved_gammas/Sep28_trial_5_cutoff500_impose_Aprime_constraint"
+# pre = "/Users/weilu/Research/server/sep_2019/saved_gammas/Sep28_trial_5_cutoff500_impose_Aprime_constraint"
 if args.membrane:
     gamma_direct, gamma_mediated = read_gamma(f"{pre}/membrane_gamma.dat")
 else:
@@ -155,6 +155,7 @@ def compute_debye_huckel(data):
     debye_huckel = 0
     k_screening = 1.0
     screening_length = 10  # (in the unit of A)
+    min_seq_sep = 10
     for res1globalindex, res1 in enumerate(res_list):
         res1index = get_local_index(res1)
         res1chain = get_chain(res1)
@@ -162,7 +163,8 @@ def compute_debye_huckel(data):
             res2index = get_local_index(res2)
             res2chain = get_chain(res2)
             # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
-            if res2globalindex > res1globalindex:
+            # if res2globalindex > res1globalindex:
+            if res2globalindex >= res1globalindex + min_seq_sep:
                 res1Name = three_to_one(res1.get_resname())
                 res2Name = three_to_one(res2.get_resname())
                 charge_1 = 0
@@ -283,6 +285,55 @@ def compute_burial(structure, kappa=4.0):
             # print res1globalindex, res1index, res1chain, res1type, res1density
             v_burial += burial_gamma[i][res1type] * interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
     return v_burial
+
+def read_hydrophobicity_scale(seq, tableLocation, isNew=False):
+    seq_dataFrame = pd.DataFrame({"oneLetterCode":list(seq)})
+    # HFscales = pd.read_table("~/opt/small_script/Whole_residue_HFscales.txt")
+    # print(f"reading hydrophobicity scale table from {tableLocation}/Whole_residue_HFscales.txt")
+    HFscales = pd.read_csv(f"{tableLocation}/Whole_residue_HFscales.txt", sep="\t")
+    if not isNew:
+        # Octanol Scale
+        # new and old difference is at HIS.
+        code = {"GLY" : "G", "ALA" : "A", "LEU" : "L", "ILE" : "I",
+                "ARG+" : "R", "LYS+" : "K", "MET" : "M", "CYS" : "C",
+                "TYR" : "Y", "THR" : "T", "PRO" : "P", "SER" : "S",
+                "TRP" : "W", "ASP-" : "D", "GLU-" : "E", "ASN" : "N",
+                "GLN" : "Q", "PHE" : "F", "HIS+" : "H", "VAL" : "V",
+                "M3L" : "K", "MSE" : "M", "CAS" : "C"}
+    else:
+        code = {"GLY" : "G", "ALA" : "A", "LEU" : "L", "ILE" : "I",
+                "ARG+" : "R", "LYS+" : "K", "MET" : "M", "CYS" : "C",
+                "TYR" : "Y", "THR" : "T", "PRO" : "P", "SER" : "S",
+                "TRP" : "W", "ASP-" : "D", "GLU-" : "E", "ASN" : "N",
+                "GLN" : "Q", "PHE" : "F", "HIS0" : "H", "VAL" : "V",
+                "M3L" : "K", "MSE" : "M", "CAS" : "C"}
+    HFscales_with_oneLetterCode = HFscales.assign(oneLetterCode=HFscales.AA.str.upper().map(code)).dropna()
+    data = seq_dataFrame.merge(HFscales_with_oneLetterCode, on="oneLetterCode", how="left")
+    return data
+
+
+def compute_membrane(structure, kappa=4.0):
+    k_membrane = 1
+    membrane_center = 0
+    k_m = 2
+    z_m = 15
+    tanh = np.tanh
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    # sequence = get_sequence_from_structure(structure)
+    seq = [three_to_one(res.get_resname()) for res in res_list]
+    sequence = "".join(seq)
+    v_membrane = 0
+    hydrophobicityScale_list = read_hydrophobicity_scale(sequence, "/Users/weilu/openmmawsem/helperFunctions")["DGwoct"].values
+    # print(hydrophobicityScale_list)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        res1type = get_res_type(res_list, res1)
+        z = res1['CA'].get_coord()[-1]
+        # print res1globalindex, res1index, res1chain, res1type, res1density
+        v_membrane += k_membrane*(0.5*tanh(k_m*((z-membrane_center)+z_m))+0.5*tanh(k_m*(z_m-(z-membrane_center))))*hydrophobicityScale_list[res1globalindex]
+    return v_membrane
 
 
 input_pdb_filename = "/Users/weilu/Research/server_backup/jan_2019/compute_energy/12asA00.pdb"
@@ -646,6 +697,9 @@ def read_beta_parameters():
 
 pdb = (args.protein).split(".")[0]
 structure = parse_pdb(pdb)
+e_membrane = compute_membrane(structure)
+print("Membrane energy", e_membrane)
+# exit()
 e_debye_huckel = compute_debye_huckel(structure)
 print("Debye Huckel", e_debye_huckel)
 # e_chi = compute_chi(structure)
