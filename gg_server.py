@@ -680,6 +680,221 @@ srun {}\n'''
     print(out)
     # os.chdir("..")
 
+if args.day == "oct31":
+    pdb_list = ["1tt8", "6btc", "6g57", "6q64", "pex22", "sos", "unk2"]
+    if args.mode == 1:
+        # move frag, er, template file into right location.
+        for pdb in pdb_list:
+            do(f"cp ../frag_er_template/{pdb}_extended/run1/frag_HE.mem setups/{pdb}/")
+            do(f"cp ../frag_er_template/{pdb}_extended/run1/go_rnativeC* setups/{pdb}/")
+            do(f"cp ../frag_er_template/{pdb}_extended/run1/rnative.dat setups/{pdb}/")
+            do(f"cp ../frag_er_template/{pdb}_extended/run1/ssweight setups/{pdb}/")
+        pass
+    if args.mode ==2:
+        # pdb_list = ["6btc", "6g57", "6q64", "pex22", "sos", "unk2"]
+        for pdb in pdb_list:
+            print(pdb)
+            if pdb != "unk2":
+                subMode = 1
+            else:
+                subMode = 0
+            do(f"python mm_evaluate_native.py setups/{pdb}/{pdb} --to native/{pdb}_complete --platform CPU --subMode {subMode}")
+            pass
+if args.day == "oct30":
+    # from jun20
+    # also compute rotation.
+    # relative k computation, change is from change upper or lower to shift center.(which is the original idea, but instead of shift pdb, now shift the membrane.)
+    # relative k now also compute the burial term and the membrane term.
+    if args.mode == 1:
+        do(f"mkdir -p proteins_name_list")
+        # do(f"mkdir -p decoys/shifted")
+        do(f"mkdir -p gammas")
+        do(f"mkdir -p outs")
+        do("mkdir -p ../phis")
+        do("mkdir slurms")
+        with open("protein_list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(3):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i)
+        n = i
+        i = 0
+        jobIdList = []
+        # exit()
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d oct30 -m 2 -l {proteins}")
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        waitForJobs(jobIdList, sleepInterval=300)
+    if args.mode == 2:
+        print(datetime.now())
+        from pyCodeLib import *
+        proteinlist = readList(args.label)
+        print(proteinlist)
+        for name in proteinlist:
+            print(name)
+            input_pdb_filename = f"../database/dompdb/{name}"
+            structure = parse_pdb(input_pdb_filename)
+            res_list = get_res_list(structure)
+            neighbor_list = get_neighbor_list(structure)
+            z_m = 0
+            z_m_low = -15
+            z_m_high = 15
+            inside_or_not_table = []
+            for res in res_list:
+                z_loc = res["CA"].get_coord()[-1]
+                if z_loc > z_m_low and z_loc < z_m_high:
+                    inside_or_not_table.append(1)
+                else:
+                    inside_or_not_table.append(0)
+
+            phi = phi_relative_k_with_membrane_well(res_list, neighbor_list, parameter_list="")
+            np.savetxt(f"../phis/phi_relative_k_with_membrane_well_{name}_native_rotation", [phi], fmt='%1.4f')
+            phis_list = []
+            q_list = []
+            # rotation_all = [30] * 12
+            # z_shift_all = [-20] + [2]*20
+            rotation_all = np.arange(0, 180, 30)
+            z_shift_all = np.arange(-20, 20, 4)
+            rotation_axis=Vector(1,0,0)
+            for z_shift in z_shift_all:
+                for degree in rotation_all:
+                    structure = parse_pdb(input_pdb_filename)
+                    # degree = 360
+                    # degree = 0
+                    radian=math.radians(degree)
+                    # Iterate through all atoms and rotate by 90 degress
+                    rotation_matrix = rotaxis2m(radian, rotation_axis)
+                    translation=(0, 0, z_shift)
+                    translation_matrix = np.array(translation, 'f')
+                    # translation = np.array((0, 0, 100), 'f')
+                    # print(translation_matrix)
+                    for atom in structure.get_atoms():
+                        # print(atom.get_coord())
+                        atom.transform(rotation_matrix, translation_matrix)
+                        # print(atom.get_coord())
+                    count = 0
+                    res_list = get_res_list(structure)
+                    neighbor_list = get_neighbor_list(structure)
+                    for i, res in enumerate(res_list):
+                        z_loc = res["CA"].get_coord()[-1]
+                        if z_loc > z_m_low and z_loc < z_m_high:
+                            is_inside = 1
+                        else:
+                            is_inside = 0
+                        if is_inside == inside_or_not_table[i]:
+                            count += 1
+                    # print(count, count/len(inside_or_not_table))
+                    # io = PDBIO()
+                    # io.set_structure(structure)
+                    # io.save(f"p_{z_shift}_{degree}.pdb")
+                    q = count/len(inside_or_not_table)
+
+                    phi = phi_relative_k_with_membrane_well(res_list, neighbor_list, parameter_list="", z_m_high=z_m+15, z_m_low=z_m-15)
+                    # q = interaction_well(z_m, -5, 5, 0.2)
+                    # q = 0
+                    print(phi, q)
+                    phis_list.append(phi)
+                    q_list.append(q)
+            np.savetxt(f"../phis/phi_relative_k_with_membrane_well_{name}_decoys_rotation", phis_list, fmt='%1.4f')
+            np.savetxt(f"../phis/phi_relative_k_with_membrane_well_{name}_decoysQ_rotation", q_list, fmt='%1.4f')
+        print("done", args.label)
+        print(datetime.datetime.now())
+    # if args.mode == 2:
+    #     from pyCodeLib import *
+    #     proteinlist = readList(args.label)
+    #     print(proteinlist)
+    #     for name in proteinlist:
+    #         print(name)
+    #         input_pdb_filename = f"../database/dompdb/{name}"
+    #         structure = parse_pdb(input_pdb_filename)
+    #         res_list = get_res_list(structure)
+    #         neighbor_list = get_neighbor_list(structure)
+    #         z_m = 0
+    #         z_m_low = -15
+    #         z_m_high = 15
+    #         inside_or_not_table = []
+    #         for res in res_list:
+    #             z_loc = res["CA"].get_coord()[-1]
+    #             if z_loc > z_m_low and z_loc < z_m_high:
+    #                 inside_or_not_table.append(1)
+    #             else:
+    #                 inside_or_not_table.append(0)
+
+    #         phi = phi_relative_k_with_membrane_well(res_list, neighbor_list, parameter_list="")
+    #         np.savetxt(f"../phis/phi_relative_k_with_membrane_well_{name}_native_rotation", [phi], fmt='%1.4f')
+    #         phis_list = []
+    #         q_list = []
+    #         # rotation_all = [30] * 12
+    #         # z_shift_all = [-20] + [2]*20
+    #         rotation_all = [60] * 6
+    #         z_shift_all = [-20] + [4]*10
+    #         rotation_axis=Vector(1,0,0)
+    #         z = 0
+    #         rad = 0
+    #         for z_shift in z_shift_all:
+    #             z += z_shift
+    #             translation=(0, 0, z_shift*10)
+    #             translation_matrix = np.array(translation, 'f')
+    #             rotation_matrix = np.identity(3)
+    #             # print(rotation_matrix)
+    #             for atom in structure.get_atoms():
+    #                 # print(atom.get_coord())
+    #                 atom.transform(rotation_matrix, translation_matrix)
+    #             for degree in rotation_all:
+    #                 # degree = 360
+    #                 # degree = 0
+    #                 rad += degree
+    #                 radian=math.radians(degree)
+    #                 # Iterate through all atoms and rotate by 90 degress
+    #                 rotation_matrix = rotaxis2m(radian, rotation_axis)
+
+    #                 translation_matrix = np.array((0, 0, 0), 'f')
+    #                 # translation = np.array((0, 0, 100), 'f')
+    #                 # print(translation_matrix)
+    #                 for atom in structure.get_atoms():
+    #                     # print(atom.get_coord())
+    #                     atom.transform(rotation_matrix, translation_matrix)
+    #                     # print(atom.get_coord())
+    #                 count = 0
+    #                 # res_list = get_res_list(structure)
+    #                 for i, res in enumerate(res_list):
+    #                     z_loc = res["CA"].get_coord()[-1]
+    #                     if z_loc > z_m_low and z_loc < z_m_high:
+    #                         is_inside = 1
+    #                     else:
+    #                         is_inside = 0
+    #                     if is_inside == inside_or_not_table[i]:
+    #                         count += 1
+    #                 # print(count, count/len(inside_or_not_table))
+    #                 io = PDBIO()
+    #                 io.set_structure(structure)
+    #                 io.save(f"p_{z}_{rad}.pdb")
+    #                 q = count/len(inside_or_not_table)
+    #                 res_list = get_res_list(structure)
+    #                 neighbor_list = get_neighbor_list(structure)
+    #                 phi = phi_relative_k_with_membrane_well(res_list, neighbor_list, parameter_list="", z_m_high=z_m+15, z_m_low=z_m-15)
+    #                 # q = interaction_well(z_m, -5, 5, 0.2)
+    #                 # q = 0
+    #                 print(phi, q)
+    #                 phis_list.append(phi)
+    #                 q_list.append(q)
+    #         np.savetxt(f"../phis/phi_relative_k_with_membrane_well_{name}_decoys_rotation", phis_list, fmt='%1.4f')
+    #         np.savetxt(f"../phis/phi_relative_k_with_membrane_well_{name}_decoysQ_rotation", q_list, fmt='%1.4f')
+    #     print("done", args.label)
+
 if args.day == "oct22":
     # from jun20
     # relative k computation, change is from change upper or lower to shift center.(which is the original idea, but instead of shift pdb, now shift the membrane.)

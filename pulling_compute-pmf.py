@@ -5,10 +5,13 @@
 # This script uses the pymbar package: https://github.com/choderalab/pymbar
 # To learn how to use the script: $ python ./compute-pmf.py -help
 import numpy
-numpy.set_printoptions(threshold=numpy.nan) # output full matrices when printing
 import math
 import sys
 import os
+# numpy.set_printoptions(threshold=numpy.nan) # output full matrices when printing
+numpy.set_printoptions(threshold=sys.maxsize) # output full matrices when printing
+
+
 import pickle # used to save files so that the initialization calculations don't have to be repeated
 #import pymbar # used to do the computations of free energy
 #sys.path.append('C:\\Users\\Dell\\Anaconda\\Lib\\site-packages\\pymbar\\')
