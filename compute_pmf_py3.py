@@ -4,19 +4,14 @@
 # 1/30/14 Extending to be able to perform free energy perturbation calculations.
 # This script uses the pymbar package: https://github.com/choderalab/pymbar
 # To learn how to use the script: $ python ./compute-pmf.py -help
-import numpy
-numpy.set_printoptions(threshold=numpy.nan) # output full matrices when printing
+
 import math
 import sys
 import os
 import pickle # used to save files so that the initialization calculations don't have to be repeated
-#import pymbar # used to do the computations of free energy
-#sys.path.append('C:\\Users\\Dell\\Anaconda\\Lib\\site-packages\\pymbar\\')
-#sys.path.append('/home/hht1/programs/anaconda/pkgs/pymbar-3.0.0.beta2-np19py27_1/lib/python2.7/site-packages/pymbar-3.0.0.dev0-py2.7-linux-x86_64.egg/pymbar')
-#sys.path.append('/home/hht1/programs/anaconda/lib/python2.7/site-packages/pymbar-3.0.0.dev0-py2.7-linux-x86_64.egg/pymbar/')
-#sys.path.append('/home/hht1/CODES/pymbar-2.1.0-beta/build/lib.linux-x86_64-2.7/pymbar')
-#sys.path.append('/home/wl45/pymbar/build/lib.linux-ppc64-2.7')
-# sys.path.append('/home/wl45/python/lib/python2.7/site-packages/pymbar-3.0.0.dev0-py2.7-linux-ppc64.egg/pymbar')
+import numpy
+# numpy.set_printoptions(threshold=numpy.nan) # output full matrices when printing
+numpy.set_printoptions(threshold=sys.maxsize)  # output full matrices when printing
 import pymbar
 from pymbar import timeseries # used to subsample data so that the samples are uncorrelated
 os.system("echo 'Time' > time.info")
@@ -98,6 +93,7 @@ for arg in range(len(sys.argv)):
       expectation_columns.append(int(ev_columns))
       expectation_files.append(ev_file)
   elif sys.argv[arg] == "-fep":
+    print("This is experimental. don't use it if you don't know what you are doing.")
     argument_to_split = sys.argv[arg+1]
     fep_column, perturb_from_column = argument_to_split.split(",")
     fep_columns.append(int(fep_column))

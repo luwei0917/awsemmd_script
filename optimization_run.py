@@ -22,6 +22,8 @@ parser = argparse.ArgumentParser(description="Compute phis under the optimizatio
 # parser.add_argument("OptimizationFolder", help="your optimization folder")
 parser.add_argument("-m", "--mode", type=int, default=0)
 parser.add_argument("-l", "--label", type=str, default="label")
+parser.add_argument("-s", "--subMode", type=int, default=0)
+parser.add_argument("-n", "--n_decoys", type=int, default=10)
 args = parser.parse_args()
 
 # if args.test:
@@ -33,8 +35,6 @@ with open('log_optimization_run.txt', 'a') as f:
     f.write('\n')
 
 
-# shuffle iter0.
-# ligand optimization.
 from pyCodeLib import *
 import warnings
 warnings.filterwarnings('ignore')
@@ -73,7 +73,7 @@ echo $SLURM_NODELIST
 srun {}\n'''
 
 
-n_decoys = 10
+n_decoys = args.n_decoys
 separateDecoysNum = -1
 # template = base_slurm
 template = scavenge_slurm
@@ -97,6 +97,20 @@ def slurmRun(slurmFileName, cmd, template=scavenge_slurm, memory=1):
     jobId = a.split(" ")[-1].strip()
     return jobId
 
+def waitForJobs(jobIdList, sleepInterval=30):
+    from datetime import datetime as dt
+    if len(jobIdList) == 0:
+        return
+    previousJobNotFinished = True
+    while previousJobNotFinished:
+        print(f"Waiting for previous jobs {jobIdList}", dt.now())
+        time.sleep(sleepInterval)
+        previousJobNotFinished = False
+        a = getFromTerminal("squeue -u wl45")
+        for jobId in jobIdList:
+            if jobId in a:
+                previousJobNotFinished = True
+    print("Continue Next Script")
 
 if args.mode == 1:
     # time.sleep(36000)
@@ -120,35 +134,45 @@ if args.mode == 1:
     for i in range(n):
         proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
         # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
-        jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/optimization_run.py -m 222 -l {proteins}", template=template)
+        jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/optimization_run.py -m 222 -l {proteins} -s {args.subMode}", template=template)
         # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
         jobIdList.append(jobId)
         do(f"cat {proteins} >> iter0_complete.txt")
     # exit()
     waitForJobs(jobIdList, sleepInterval=300)
     with open(f"slurms/run_on_scavenge.slurm", "w") as out:
-        out.write(base_slurm.format(f"python3 ~/opt/optimization_run.py -m 4"))
+        out.write(base_slurm.format(f"python3 ~/opt/optimization_run.py -m 4 -s {args.subMode}"))
     replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
     do(f"sbatch slurms/run_on_scavenge.slurm")
 if args.mode == 22:
     protein = args.label
     do(f"python3 ~/opt/compute_phis.py -m 0 {protein}")
     # do("python3 ~/opt/compute_phis.py -m 0 test_protein")
+
 if args.mode == 222:
     proteins = args.label
-    evaluate_phis_over_training_set_for_native_structures_Wei(proteins, "phi_list.txt",
-                decoy_method='shuffle', max_decoys=1e+10, tm_only=False, num_processors=1, separateDecoysNum=separateDecoysNum)
+    if args.subMode == 0:
+        evaluate_phis_over_training_set_for_native_structures_Wei(proteins, "phi_list.txt",
+                    decoy_method='shuffle', max_decoys=1e+10, tm_only=False, num_processors=1, separateDecoysNum=separateDecoysNum)
+    if args.subMode == 1:
+        evaluate_phis_over_training_set_for_decoy_structures_Wei(proteins, "phi_list.txt",
+                    decoy_method='rosetta', max_decoys=1e+10, tm_only=False, num_processors=1, pickle=True, withBiased=False, mode=0)
+
 if args.mode == 3:
     with open(f"slurms/run_on_scavenge.slurm", "w") as out:
         out.write(scavenge_slurm.format(f"python3 ~/opt/optimization_run.py -m 4"))
     replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
     do(f"sbatch slurms/run_on_scavenge.slurm")
 if args.mode == 4:
+    if args.subMode == 0:
+        decoy_method = "shuffle"
+    if args.subMode == 1:
+        decoy_method = "rosetta"
     # complete_proteins = "iter0.txt"
     complete_proteins = "protein_list"
     # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
     #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
-    A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+    A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method=decoy_method,
                                     num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False)
 # if args.mode == 44:
 #     with open(f"slurms/run_on_scavenge.slurm", "w") as out:

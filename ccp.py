@@ -7,7 +7,6 @@ from random import seed, randint
 import argparse
 import platform
 from datetime import datetime
-import imp
 import glob
 from time import sleep
 import fileinput
@@ -47,5 +46,9 @@ if args.mode == 0:
     os.system(cmd)
 if args.mode == 1:
     cmd = f"rsync -a --exclude='fraglib' {my_from} {my_to}"
+    print(cmd)
+    os.system(cmd)
+if args.mode == 2:
+    cmd = f"rsync -a --exclude='*.out' --exclude='phis' {my_from} {my_to}"
     print(cmd)
     os.system(cmd)

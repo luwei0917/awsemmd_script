@@ -21,6 +21,7 @@ parser = argparse.ArgumentParser(description="Compute gammas under the optimizat
 # parser.add_argument("DatabaseFolder", help="your database folder")
 # parser.add_argument("OptimizationFolder", help="your optimization folder")
 parser.add_argument("name", help="name of gamma")
+parser.add_argument("-c", "--constant", type=float, default=0)
 # parser.add_argument("-l", "--label", type=str, default="label")
 args = parser.parse_args()
 
@@ -73,23 +74,33 @@ echo $SLURM_NODELIST
 srun {}\n'''
 
 
-n_decoys = 10
-separateDecoysNum = -1
+# n_decoys = 10
+# separateDecoysNum = -1
 # template = base_slurm
 template = scavenge_slurm
 save_gamma_pre = "saved_gammas"
 
 trial_name = args.name
 pre = "gammas/"
-pp = f"protein_list_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0phi_burial_well4.0"
+# pp = f"protein_list_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0phi_burial_well4.0"
 # pp = f"protein_list_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0phi_burial_well4.0phi_debye_huckel_well0"
-
+complete_proteins = "protein_list"
+phi_list = read_phi_list("phi_list.txt")
+training_set = read_column_from_file(complete_proteins, 1)
+total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
+    phi_list, training_set)
+# print(full_parameters_string)
+pp = complete_proteins + "_" + full_parameters_string
 # original gamma is used for compute c, make sure decoy energy is the same for new gamma and original gamma.
 gamma_file_name = "/home/wl45/opt/parameters/original_gamma"
 original_gamma = np.loadtxt(gamma_file_name)
 a = list(original_gamma)
-# a.append(1)
-# original_gamma_deybe = np.array(a)
+# print(total_phis, num_phis)
+if total_phis == 691:
+    a.append(1)
+    original_gamma = np.array(a)
+if total_phis == 630:
+    original_gamma = original_gamma[:630]
 
 def do(cmd, get=False, show=True):
     if get:
@@ -164,13 +175,19 @@ def get_filtered_gamma(pre, cutoff, pp):
 
 
 # we want to impose additional contraint so that A' * gamma = constnat.(-562.23)
-cutoff_list = [100, 200, 300, 400, 500]
-cutoff_list += [10, 20, 30, 40, 50, 80]
+# cutoff_list = [100, 200, 300, 400, 500, 600]
+# cutoff_list += [10, 20, 30, 40, 50, 80]
+cutoff_list = np.arange(100, total_phis, 100)
+print("cutoff_list: ", cutoff_list)
 do("mkdir -p saved_gammas")
 for cutoff_i in cutoff_list:
     A, A_prime, filtered_gamma, filtered_B_inv = get_filtered_gamma(pre, cutoff_i, pp)
     # c = np.dot(A_prime, original_gamma_deybe)
-    c = np.dot(A_prime, original_gamma)
+    if args.constant == 0.0:
+        c = np.dot(A_prime, original_gamma)
+    else:
+        c = args.constant
+    print("A' gamma = constant:", c)
     B_inv = filtered_B_inv
     lambda_2 = (A_prime.dot(B_inv).dot(A) - c) / (A_prime.dot(B_inv).dot(A_prime))
     gamma_new = B_inv.dot(A-A_prime*lambda_2)
