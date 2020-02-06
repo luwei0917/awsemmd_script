@@ -21,6 +21,7 @@ from Bio.PDB.PDBIO import PDBIO
 from Bio.PDB.PDBIO import Select
 from Bio.PDB import PDBList
 from Bio.PDB.Polypeptide import three_to_one
+import io
 # from pdbfixer import PDBFixer
 # from simtk.openmm.app import PDBFile
 
@@ -1883,6 +1884,149 @@ def rotation_and_translation(fromPdb, toPdb, rotation_axis=(1,0,0), degree=90, t
     io.set_structure(structure)
     io.save(toPdb)
 
+def plot_contact_all(gammas, ax, invert_sign=True, fix_colorbar=True, inferBound=0,
+                        vmin=-0.3, vmax=0.3, fix_confidence_colorbar=True, confidence_vmin=0,
+                        confidence_vmax=1.0, plot_confidence=False, confidence_lower=None, confidence_upper=None):
+    hydrophobicity_letters = ['R', 'K', 'N', 'Q', 'D', 'E', 'H', 'Y',
+                          'W', 'S', 'T', 'G', 'P', 'A', 'M', 'C', 'F', 'L', 'V', 'I']
+    hydrophobicity_map = dict(list(zip(hydrophobicity_letters, list(range(20)))))
+    res_type_map_letters = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G',
+                        'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+
+    inverse_res_type_map = dict(list(zip(list(range(20)), res_type_map_letters)))
+    import matplotlib.pyplot as plt
+    size = 20
+    interaction_matrix = np.zeros((size, size))
+    i_content = 0
+    for i in range(size):
+        for j in range(i, size):
+            index1 = hydrophobicity_map[inverse_res_type_map[i]]
+            index2 = hydrophobicity_map[inverse_res_type_map[j]]
+            interaction_matrix[index1][index2] = gammas[i_content]
+            interaction_matrix[index2][index1] = gammas[i_content]
+            i_content += 1
+
+    # The minus sign is here to be consistent with the way AWSEM thinks about gammas
+    if invert_sign:
+        interaction_matrix *= -1
+
+    if inferBound == 1:
+        vmin = np.min(interaction_matrix)
+        vmax = np.max(interaction_matrix)
+    if inferBound == 2:
+        vmin_ = np.min(interaction_matrix)
+        vmax_ = np.max(interaction_matrix)
+
+        vmax = max(abs(vmin_), abs(vmax_))
+        vmin = -vmax
+
+    if fix_colorbar:
+        cax = ax.pcolor(interaction_matrix, vmin=vmin,
+                        vmax=vmax, cmap="bwr")
+    else:
+        cax = ax.pcolor(interaction_matrix, cmap="RdBu_r")
+    # fig.colorbar(cax)
+    plt.colorbar(cax,fraction=0.046, pad=0.04)
+    # put the major ticks at the middle of each cell
+    ax.set_yticks(np.arange(interaction_matrix.shape[0]) + 0.5, minor=False)
+    ax.set_xticks(np.arange(interaction_matrix.shape[1]) + 0.5, minor=False)
+
+    ax.set_xticklabels(hydrophobicity_letters)
+    ax.set_yticklabels(hydrophobicity_letters)
+
+    # plt.savefig('direct_contact.pdf')
+    # plt.show()
+
+def show_together(filtered_gamma, figureName, title="test", inferBound=1, invert_sign=True):
+    import matplotlib.pyplot as plt
+    plt.rcParams['figure.figsize'] = np.array([16.18033, 10])    # golden ratio
+    plt.rcParams['figure.facecolor'] = 'w'
+    plt.rcParams['figure.dpi'] = 100
+    plt.rcParams.update({'font.size': 16})
+    fig = plt.figure()
+    ax1=plt.subplot(1, 3, 1)
+    ax1.set_aspect('equal')
+    plot_contact_all(filtered_gamma[:210], ax1, inferBound=inferBound, invert_sign=invert_sign)
+    ax2=plt.subplot(1, 3, 2)
+    ax2.set_aspect('equal')
+    plot_contact_all(filtered_gamma[210:420], ax2, inferBound=inferBound, invert_sign=invert_sign)
+    ax3=plt.subplot(1, 3, 3)
+    ax3.set_aspect('equal')
+    plot_contact_all(filtered_gamma[420:], ax3, inferBound=inferBound, invert_sign=invert_sign)
+    ax1.title.set_text('Direct')
+    ax2.title.set_text('High density(protein)')
+    ax3.title.set_text('Low density(water)')
+    fig.suptitle(title, fontsize=20, y=0.75)
+    fig.tight_layout()
+    plt.savefig(figureName, dpi=300)
+
+
+def show_together_v2(filtered_gamma, figureName, title="test", inferBound=1, invert_sign=True, n=3, ax_title_list=["Direct", "High density(protein)", "Low density(water)"]):
+    import matplotlib.pyplot as plt
+    # plt.rcParams['figure.figsize'] = np.array([16.18033, 10])    # golden ratio
+    plt.rcParams['figure.figsize'] = np.array([5*n, 5])    # golden ratio
+    plt.rcParams['figure.facecolor'] = 'w'
+    plt.rcParams['figure.dpi'] = 100
+    plt.rcParams.update({'font.size': 16})
+    fig = plt.figure()
+    ax_all = []
+    
+    for i in range(n):
+        ax_i = plt.subplot(1, n, i+1)
+        ax_i.set_aspect('equal')
+        start = i*210
+        end = (i+1)*210
+        plot_contact_all(filtered_gamma[start:end], ax_i, inferBound=inferBound, invert_sign=invert_sign)
+        ax_i.title.set_text(ax_title_list[i])
+        ax_all.append(ax_i)
+
+    fig.suptitle(title, fontsize=20, y=0.75)
+    fig.suptitle(title, fontsize=30)
+    fig.tight_layout()
+    plt.savefig(figureName, dpi=300)
+
+def getAllFrames(movieLocation):
+    # movieLocation = "/Users/weilu/Research/examples/openMM_simulation/test_2/movie.pdb"
+    location = movieLocation
+    with open(location) as f:
+        a = f.readlines()
+    n = len(a)
+    # get the position of every model title
+    model_title_index_list = []
+    for i in range(n):
+        if len(a[i]) >= 5 and a[i][:5] == "MODEL":
+            model_title_index = i
+            model_title_index_list.append(model_title_index)
+    model_title_index_list.append(n)
+    check_array = np.diff(model_title_index_list)
+    if np.allclose(check_array, check_array[0]):
+        size = check_array[0]
+    elif np.allclose(check_array[:-1], check_array[0]) and check_array[-1] == check_array[0] + 1:
+        # this is ok. with extra "END"
+        size = check_array[0]
+    else:
+        print("!!!! Someting is wrong  !!!!")
+        print(check_array)
+
+    return a, n, size
+
+def split_proteins_name_list(pdb_per_txt=1):
+    with open("protein_list") as f:
+        content = f.readlines()
+    pos = 0
+    i = 0
+    n = len(content)
+    # n = 100  # for testing
+    while pos < n:
+        with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+            for ii in range(pdb_per_txt):
+                if pos < n:
+                    out.write(content[pos])
+                pos += 1
+            i += 1
+    print(i)
+    n = i
+    return n
 # def get_inside_or_not_table(pdb_file):
 #     parser = PDBParser(PERMISSIVE=1)
 #     structure = parser.get_structure('X', pdb_file)

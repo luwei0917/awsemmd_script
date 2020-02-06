@@ -20,6 +20,7 @@ from collections import defaultdict
 parser = argparse.ArgumentParser(description="Prepare the optimization folder")
 parser.add_argument("DatabaseFolder", help="your database folder")
 parser.add_argument("OptimizationFolder", help="your optimization folder")
+parser.add_argument("-m", "--mode", type=int, default=0)
 args = parser.parse_args()
 
 # if args.test:
@@ -117,15 +118,7 @@ def getChainsAndSeq(fileLocation):
 
 def create_folders_and_copy_pdbs_and_setup_decoys(pre, pdbFolderList, pdbList, n_decoys=-1):
     # n_decoys = -1 means infer from decoy_list size.
-    do(f"mkdir -p {pre}")
-    do(f"mkdir -p {pre}/database/dompdb")
-    do(f"mkdir -p {pre}/database/S20_seq")
     do(f"mkdir -p {pre}/optimization/decoys/shuffle")
-    do(f"mkdir -p {pre}/phis")
-    do(f"mkdir -p {pre}/optimization/proteins_name_list")
-    do(f"mkdir -p {pre}/optimization/slurms")
-    do(f"mkdir -p {pre}/optimization/gammas")
-    do(f"mkdir -p {pre}/optimization/outs")
     # generate decoys
     protein_list = []
     for pdbFolder in pdbFolderList:
@@ -200,14 +193,60 @@ def create_folders_and_copy_pdbs_and_setup_decoys(pre, pdbFolderList, pdbList, n
     return protein_list
 
 folder = args.DatabaseFolder
-pdbFolderList = glob.glob(f"{folder}/*")
-print(pdbFolderList)
-pdbList = get_pdbList(pdbFolderList)
-print(pdbList)
-pre = args.OptimizationFolder
-# create_folders_and_copy_pdbs_and_setup_decoys(pre, pdbFolderList, pdbList, n_decoys=-1)
-protein_list = create_folders_and_copy_pdbs_and_setup_decoys(pre, pdbFolderList, pdbList, n_decoys=10)
 
+pre = args.OptimizationFolder
+
+do(f"mkdir -p {pre}")
+do(f"mkdir -p {pre}/database/dompdb")
+do(f"mkdir -p {pre}/database/S20_seq")
+do(f"mkdir -p {pre}/phis")
+do(f"mkdir -p {pre}/optimization/proteins_name_list")
+do(f"mkdir -p {pre}/optimization/slurms")
+do(f"mkdir -p {pre}/optimization/gammas")
+do(f"mkdir -p {pre}/optimization/outs")
+
+if args.mode == 0:
+    pdbFolderList = glob.glob(f"{folder}/*")
+    print(pdbFolderList)
+    pdbList = get_pdbList(pdbFolderList)
+    print(pdbList)
+    # create_folders_and_copy_pdbs_and_setup_decoys(pre, pdbFolderList, pdbList, n_decoys=-1)
+    protein_list = create_folders_and_copy_pdbs_and_setup_decoys(pre, pdbFolderList, pdbList, n_decoys=10)
+if args.mode == 1:
+    protein_list = []
+
+    # use specific decoy structures. instead of shuffling the sequence.
+    do(f"mkdir -p {pre}/optimization/decoys/rosetta")
+    p = PDBParser()
+    n_decoys = 50
+    n_seqs = 100
+
+    for idx in range(1, n_seqs+1):
+        # pdb = "1"
+        pdb = str(idx)
+        opt_pdbName = f"p_{pdb}"
+
+        structures = []
+        name_list = []
+        for i in range(1, n_decoys+1):
+            decoy_file_name = f"{i}_pdb/{idx}.pdb"
+            fileLocation = f"{folder}/{decoy_file_name}"
+            pdb_structure = p.get_structure("x", fileLocation)
+            structures.append(pdb_structure)
+            name_list.append(decoy_file_name)
+        a = pd.DataFrame({"Name":name_list})
+        a["structure"] = structures
+        a.to_pickle(f"{pre}/optimization/decoys/rosetta/{opt_pdbName}.pkl")
+
+
+        source = f"{folder}/native_pdb/{pdb}.pdb"
+        target = f"{pre}/database/dompdb/{opt_pdbName}.pdb"
+        mycp(source, target)
+        seq = getSeq(target)
+        fileLocation = f"{pre}/database/S20_seq/{opt_pdbName}.seq"
+        with open(fileLocation, "w") as out:
+            out.write(seq+"\n")
+        protein_list.append(opt_pdbName)
 
 
 ## write protein_list
@@ -220,6 +259,7 @@ phi_list_contact = '''\
 phi_pairwise_contact_well 4.5 6.5 5.0 10
 phi_density_mediated_contact_well 6.5 9.5 5.0 10 2.6 7.0
 phi_burial_well 4.0
+phi_debye_huckel_well 0
 '''
 phi_list = phi_list_contact
 with open(f"{pre}/optimization/phi_list.txt", "w") as out:

@@ -93,6 +93,7 @@ for arg in range(len(sys.argv)):
       expectation_columns.append(int(ev_columns))
       expectation_files.append(ev_file)
   elif sys.argv[arg] == "-fep":
+    print("This is experimental. don't use it if you don't know what you are doing.")
     argument_to_split = sys.argv[arg+1]
     fep_column, perturb_from_column = argument_to_split.split(",")
     fep_columns.append(int(fep_column))

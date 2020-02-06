@@ -85,7 +85,7 @@ def splitString(inputString):
 structures_directory = "../database/dompdb/"
 phis_directory = "../phis/"
 decoys_root_directory = "decoys/"
-aligments_root_directory = "alignments/"
+aligments_root_directory = "../alignments/"
 tms_directory = "/opt/home/xl23/Working/Levine/jason/optimization/awsem/tms/"
 gammas_directory = "gammas/"
 sub_gammas_directory = "sub_gamma/"
@@ -248,13 +248,14 @@ def get_res_type_HP(res_list, residue):
 
 
 def get_res_list(structure, tm_only=False):
-    pdb_id = structure.get_id().split('/')[-1]
+
     res_list = Selection.unfold_entities(structure, 'R')
 
     # Get all residues from a structure
     res_list = [residue for residue in res_list if not is_hetero(residue)]
 
     if tm_only:
+        pdb_id = structure.get_id().split('/')[-1]
         tm = read_column_from_file(os.path.join(
             tms_directory, pdb_id + '.tm'), 1)
         res_list = [residue for i, residue in enumerate(
@@ -281,16 +282,17 @@ def get_sequence_from_structure(structure):
 
 
 def get_neighbor_list(structure, tm_only=False):
-    protein = get_protein_name(structure)
+
     res_list = get_res_list(structure)
     atom_list = [a for a in get_atom_list(
         structure) if not is_hetero(a.get_parent())]
     if tm_only:
+        protein = get_protein_name(structure)
         tm = read_column_from_file(os.path.join(
             tms_directory, protein + '.tm'), 1)
         atom_list = [a for a in atom_list if tm[get_global_index(
             res_list, a.get_parent())] == '2']
-
+    # print(atom_list)
     neighbor_list = NeighborSearch(atom_list)
     return neighbor_list
 
@@ -311,6 +313,10 @@ def read_decoy_sequences(sequence_file_name):
     return sequences
 
 def read_decoy_structures(structure_file_name):
+    if structure_file_name[-3:] == "pkl":
+        a = pd.read_pickle(structure_file_name)
+        structures = a["structure"].tolist()
+        return structures
     structures = []
     with open(structure_file_name, "r") as structure_file:
         for line in structure_file:
@@ -936,6 +942,53 @@ def phi_density_mediated_contact_well(res_list, neighbor_list, parameter_list):
 
     phis_to_return = []
     for i in range(2):
+        for j in range(20):
+            for k in range(j, 20):
+                phis_to_return.append(phi_mediated_contact_well[i][j][k])
+    return phis_to_return
+
+def phi_density_mediated_contact_3_well(res_list, neighbor_list, parameter_list):
+    r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    r_min = float(r_min)
+    r_max = float(r_max)
+    kappa = float(kappa)
+    min_seq_sep = int(min_seq_sep)
+    density_threshold = float(density_threshold)
+    density_kappa = float(density_kappa)
+    phi_mediated_contact_well = np.zeros((3, 20,20))
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            rho_j = cb_density[res2globalindex]
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance(res1, res2)
+                rho_0 = density_threshold
+                density_i = 0.5 * (1 - np.tanh(density_kappa * (rho_i - rho_0)))
+                density_j = 0.5 * (1 - np.tanh(density_kappa * (rho_j - rho_0)))
+                _pij_water = density_i * density_j
+                _pij_partial = (1 - density_i) * density_j + (1 - density_j) * density_i
+                _pij_protein = (1 - density_i) * (1 - density_j)
+
+                phi_mediated_contact_well[0][res1type][res2type] += _pij_protein
+                phi_mediated_contact_well[1][res1type][res2type] += _pij_partial
+                phi_mediated_contact_well[2][res1type][res2type] += _pij_water
+                if not res1type == res2type:
+                    phi_mediated_contact_well[0][res2type][res1type] += _pij_protein
+                    phi_mediated_contact_well[1][res2type][res1type] += _pij_partial
+                    phi_mediated_contact_well[2][res2type][res1type] += _pij_water
+
+    phis_to_return = []
+    for i in range(3):
+        # order is protein, partial, water.
         for j in range(20):
             for k in range(j, 20):
                 phis_to_return.append(phi_mediated_contact_well[i][j][k])
@@ -2236,62 +2289,66 @@ def evaluate_phis_for_protein_Wei(protein, phi_list, decoy_method, max_decoys, m
             else:
                 print("must be at least 1 or -1.")
 def evaluate_phis_for_decoy_protein_Wei(protein, phi_list, decoy_method, max_decoys, tm_only=False, withBiased=False, mode=0, pickle=True):
-        print(protein, withBiased)
-        if mode == 1:
-            baseProtein = protein.split("_")[0]
-        elif mode == 0:
-            baseProtein = protein
-        structure = parse_pdb(os.path.join(structures_directory, baseProtein))
-        res_list = get_res_list(structure)
-        neighbor_list = get_neighbor_list(structure)
-        sequence = get_sequence_from_structure(structure)
-        for phi, parameters in phi_list:
-            phiF = globals()[phi]
-            parameters_string = get_parameters_string(parameters)
-            print(phi, parameters, parameters_string)
-            mutate_whole_sequence(res_list, sequence)
-            # check to see if the decoys are already generated
-            # number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)))
-            # if not number_of_lines_in_file >= 1:
-            output_file = open(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)), 'w')
-            phis_to_write = phiF(res_list, neighbor_list, parameters)
-            output_file.write(str(phis_to_write).strip('[]').replace(',', '')+'\n')
-            output_file.close()
-            # number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)))
-            # if not number_of_lines_in_file >= max_decoys:
-            output_file = open(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
-            # decoy_sequences = read_decoy_sequences(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
-            if withBiased:
-                if pickle:
-                    decoy_structures, Qs = read_decoy_structures_andQ(os.path.join(decoys_root_directory, "%s/%s.pkl" % (decoy_method, protein)))
-                else:
-                    decoy_structures, Qs = read_decoy_structures_andQ(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
-                output_file_Q = open(os.path.join(phis_directory, "%s_%s_decoysQ_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
-                for i_decoy, Q in enumerate(Qs):
-                    if i_decoy >= max_decoys:
-                        print("i_decoy larger than max_decoys")
-                    output_file_Q.write(str(Q)+"\n")
-                output_file_Q.close()
+    print(protein, "with biased", withBiased)
+    if mode == 1:
+        baseProtein = protein.split("_")[0]
+    elif mode == 0:
+        baseProtein = protein
+    structure = parse_pdb(os.path.join(structures_directory, baseProtein))
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    sequence = get_sequence_from_structure(structure)
+    for phi, parameters in phi_list:
+        phiF = globals()[phi]
+        parameters_string = get_parameters_string(parameters)
+        print(phi, parameters, parameters_string)
+        mutate_whole_sequence(res_list, sequence)
+        # check to see if the decoys are already generated
+        # number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)))
+        # if not number_of_lines_in_file >= 1:
+        output_file = open(os.path.join(phis_directory, "%s_%s_native_%s" % (phiF.__name__, protein, parameters_string)), 'w')
+        phis_to_write = phiF(res_list, neighbor_list, parameters)
+        output_file.write(str(phis_to_write).strip('[]').replace(',', '')+'\n')
+        output_file.close()
+        # number_of_lines_in_file = get_number_of_lines_in_file(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)))
+        # if not number_of_lines_in_file >= max_decoys:
+        output_file = open(os.path.join(phis_directory, "%s_%s_decoys_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
+        # decoy_sequences = read_decoy_sequences(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
+        if withBiased:
+            if pickle:
+                decoy_structures, Qs = read_decoy_structures_andQ(os.path.join(decoys_root_directory, "%s/%s.pkl" % (decoy_method, protein)))
+            else:
+                decoy_structures, Qs = read_decoy_structures_andQ(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
+            output_file_Q = open(os.path.join(phis_directory, "%s_%s_decoysQ_%s_%s" % (phiF.__name__, protein, decoy_method, parameters_string)), 'w')
+            for i_decoy, Q in enumerate(Qs):
+                if i_decoy >= max_decoys:
+                    print("i_decoy larger than max_decoys")
+                output_file_Q.write(str(Q)+"\n")
+            output_file_Q.close()
+        else:
+            if pickle:
+                decoy_structures = read_decoy_structures(os.path.join(decoys_root_directory, "%s/%s.pkl" % (decoy_method, protein)))
             else:
                 decoy_structures = read_decoy_structures(os.path.join(decoys_root_directory, "%s/%s.decoys" % (decoy_method, protein)))
 
-            for i_decoy, decoy_structure in enumerate(decoy_structures):
-                if i_decoy % 1000 == 0:
-                    print(i_decoy)
-                if i_decoy >= max_decoys:
-                    break
-                # decoy_structure = parse_pdb(os.path.join(structures_directory,protein))
-                decoy_res_list = get_res_list(decoy_structure)
-                decoy_neighbor_list = get_neighbor_list(decoy_structure)
-                phis_to_write = phiF(decoy_res_list, decoy_neighbor_list, parameters)
-                # if withBiased:
-                #     # phis_to_write *= 1 - Qs[i_decoy]
-                #     # phis_to_write = [x * (1 - float(Qs[i_decoy])) for x in phis_to_write]
-                #     output_file_Q.write(str(Qs[i_decoy])+"\n")
-                output_file.write(str(phis_to_write).strip('[]').replace(',', ' ')+'\n')
-            output_file.close()
+        for i_decoy, decoy_structure in enumerate(decoy_structures):
+            # print(decoy_structure)
+            if i_decoy % 1000 == 0:
+                print(i_decoy)
+            if i_decoy >= max_decoys:
+                break
+            # decoy_structure = parse_pdb(os.path.join(structures_directory,protein))
+            decoy_res_list = get_res_list(decoy_structure)
+            decoy_neighbor_list = get_neighbor_list(decoy_structure)
+            phis_to_write = phiF(decoy_res_list, decoy_neighbor_list, parameters)
             # if withBiased:
-            #     output_file_Q.close()
+            #     # phis_to_write *= 1 - Qs[i_decoy]
+            #     # phis_to_write = [x * (1 - float(Qs[i_decoy])) for x in phis_to_write]
+            #     output_file_Q.write(str(Qs[i_decoy])+"\n")
+            output_file.write(str(phis_to_write).strip('[]').replace(',', ' ')+'\n')
+        output_file.close()
+        # if withBiased:
+        #     output_file_Q.close()
 
 '''
 def evaluate_phis_for_protein(protein, phi_list, decoy_method, max_decoys, tm_only=False, TCRmodeling=False):

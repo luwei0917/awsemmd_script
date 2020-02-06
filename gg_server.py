@@ -118,6 +118,45 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun {}\n'''
 
+gpu_base_slurm = '''\
+#!/bin/bash
+
+#SBATCH --account=commons
+#SBATCH --partition=scavenge
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --cpus-per-task=1
+#SBATCH --gres=gpu:volta:1
+#SBATCH --time=04:00:00
+#SBATCH --mem-per-cpu=10G
+#SBATCH --export=ALL
+#SBATCH -o outs/slurm-%j.out
+#SBATCH --mail-user=luwei0917@gmail.com
+
+module load GCC/8.3.0 CUDA/10.1.168
+
+srun {}
+'''
+
+gpu_commons_slurm = '''\
+#!/bin/bash
+
+#SBATCH --account=commons
+#SBATCH --partition=commons
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --cpus-per-task=1
+#SBATCH --gres=gpu:volta:1
+#SBATCH --time=23:00:00
+#SBATCH --mem-per-cpu=10G
+#SBATCH --export=ALL
+#SBATCH -o outs/slurm-%j.out
+#SBATCH --mail-user=luwei0917@gmail.com
+
+module load GCC/8.3.0 CUDA/10.1.168
+
+srun {}
+'''
 
 # def replace(TARGET, FROM, TO):
 #     do("sed -i.bak 's/{}/{}/g' {}".format(FROM,TO,TARGET))
@@ -266,7 +305,8 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun {}
 '''
-quick_template_large_mem_slurm = '''#!/bin/bash
+quick_template_large_mem_slurm = '''\
+#!/bin/bash
 #SBATCH --job-name=CTBP_WL
 #SBATCH --account=ctbp-common
 #SBATCH --partition=ctbp-common
@@ -531,12 +571,12 @@ def isComplete(a):
                     return 0
     return 1
 
-def generate_multiShuffle(fullName, location="./", num_decoys=1000, nameMode=0):
+def generate_multiShuffle(fullName, alignmentLocation="./", location="./", num_decoys=1000, nameMode=0):
     if nameMode == 0:
-        with open(location+f"alignments/{fullName}_filtered_0.05.seqs") as f:
+        with open(alignmentLocation+f"alignments/{fullName}_filtered_0.05.seqs") as f:
             a = f.readlines()
     elif nameMode == 1:
-        with open(location+f"alignments/{fullName}.seqs") as f:
+        with open(alignmentLocation+f"alignments/{fullName}.seqs") as f:
             a = f.readlines()
 
     # with open(location+f"../database/S20_seq/{fullName}.seq") as f:
@@ -585,7 +625,10 @@ dataset["combined"] = dataset["old"] + dataset["new"]
 dataset["may13"] = ['1r69', '3icb', '256b', '4cpv', '2mhr', '1mba', '2fha', '1fc2', '1enh', '2gb1', '2cro', '1ctf', '4icb']
 dataset["membrane"] = ["2bg9", "1j4n", "1py6_SD", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19"]
 dataset["hybrid"] = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91", "4nv6", "4p79", "5dsg", "6g7o", "6a93", "2jo1", "1py6", "1pv6", "1u19"]
-
+dataset["optimization"] = ['1e0m', '1w4e', '1e0g', '2wqg', '1jo8', '1fex', '2l6r', '1c8c', '1g6p', '1mjc', '2jmc', '1hdn', '1st7', '1n88', '1d6o', '1hcd', '2ga5', '1j5u', '3o4d', '1k0s']
+dataset["optimization_cath"] = ['1a75A00', '1bekA01', '1bqbA02', '1cpcB00', '1cscA02', '1cy5A00', '1dv5A00', '1e8yA05', '1evyA02', '1in4A03', '1l1fA03', '1vq8P01', '1xmkA00', '1zcaA02', '2grhA00', '2ii2A04', '2q6fB03', '2wh6A00', '3g0vA00', '3geuA00', '3h99A03', '3hrdD02', '3ju5A01', '3p1wA03', '4cxfA01', '4i2aA01', '4i4tB03', '4i6uB00', '5kn9A02']
+# '1hcd', '1k0s' have problem in beta sheets. (the crystal structure is more round while prediction is more like a straight sheet)
+dataset["optimization_v2"] = ['1e0m', '1w4e', '1e0g', '2wqg', '1jo8', '1fex', '2l6r', '1c8c', '1g6p', '1mjc', '2jmc', '1hdn', '1st7', '1n88', '1d6o', '2ga5', '1j5u', '3o4d']
 # def returnSteps(p):
 #     if p in "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", "):
 #         steps = 80
@@ -617,11 +660,13 @@ def readList(fileName):
     theList = [b.strip() for b in a]
     return theList
 
-def slurmRun(slurmFileName, cmd, template=scavenge_slurm, memory=1):
+def slurmRun(slurmFileName, cmd, template=scavenge_slurm, memory=1, thread=1):
     with open(slurmFileName, "w") as out:
         out.write(template.format(cmd))
         # out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py -m 1 proteins_name_list/proteins_name_list_{name}.txt"))
     replace(slurmFileName, "#SBATCH --mem-per-cpu=1G", f"#SBATCH --mem-per-cpu={memory}G")
+    replace(slurmFileName, "#SBATCH --cpus-per-task=1", f"#SBATCH --cpus-per-task={thread}")
+
     a = getFromTerminal(f"sbatch {slurmFileName}")
     jobId = a.split(" ")[-1].strip()
     return jobId
@@ -680,6 +725,2487 @@ srun {}\n'''
     print(out)
     # os.chdir("..")
 
+if args.day == "plot":
+    import matplotlib.pyplot as plt
+    cutoff_list = [100, 200, 300, 400, 500, 600]
+    cutoff_list += [10, 20, 30, 40, 50, 80]
+    save_gamma_pre = "saved_gammas"
+    # trial_name = "iter1"
+    trial_name = args.label
+    os.system(f"mkdir -p {save_gamma_pre}/figures")
+    for cutoff_i in cutoff_list:
+        # cutoff_i = 400
+        name = f"{save_gamma_pre}/{trial_name}_cutoff{cutoff_i}_impose_Aprime_constraint"
+        filtered_gamma = np.loadtxt(name)
+        figureName = f"{save_gamma_pre}/figures/{trial_name}_cutoff{cutoff_i}_equal_legend"
+        title = f"{trial_name}_cutoff{cutoff_i}"
+        show_together(filtered_gamma, figureName, title=title, inferBound=2)
+
+def read_simulation_info(folder_list, pdb_list, simulationType, base_path, run_n):
+    all_data = []
+    for folder in folder_list:
+        for pdb in pdb_list:
+            for i in range(run_n):
+                    pre = f"{base_path}/{simulationType}/{folder}/{pdb}/{i}"
+                    info_file = "info.dat"
+                    location = f"{pre}/{info_file}"
+                    try:
+                        tmp = pd.read_csv(location, sep="\s+")
+                        tmp = tmp.assign(Run=i, Protein=pdb, Folder=folder)
+                        all_data.append(tmp)
+                    except:
+                        print(pdb, i, folder)
+                        pass
+    data = pd.concat(all_data)
+    today = datetime.today().strftime('%m-%d')
+    outFile = f"{simulationType}.csv"
+    data.reset_index(drop=True).to_csv(outFile)
+    print(outFile)
+    return outFile
+
+if args.day == "feb06":
+    if args.mode == 1:
+        import matplotlib.pyplot as plt
+        cutoff_list = [100, 200, 300, 400, 500, 600, 700, 800]
+        # cutoff_list += [10, 20, 30, 40, 50, 80]
+        save_gamma_pre = "saved_gammas"
+        # trial_name = "iter1"
+        # trial_name = args.label
+        trial_name = "iter0"
+        os.system(f"mkdir -p {save_gamma_pre}/figures")
+        for cutoff_i in cutoff_list:
+            name = f"{save_gamma_pre}/{trial_name}_cutoff{cutoff_i}_impose_Aprime_constraint"
+            filtered_gamma = np.loadtxt(name)
+            figureName = f"{save_gamma_pre}/figures/{trial_name}_cutoff{cutoff_i}_equal_legend_4_well"
+            title = f"{trial_name}_cutoff{cutoff_i}_4well"
+            show_together_v2(filtered_gamma, figureName, title=title, inferBound=2, n=4, 
+            ax_title_list = ["Direct", "High density(protein)", "Partial", "Low density(water)"])
+            # filtered_gamma = filtered_gamma[210:]
+            # show_together_v2(filtered_gamma, figureName, title=title, inferBound=2)
+            # figureName = f"{save_gamma_pre}/figures/{trial_name}_cutoff{cutoff_i}_equal_legend"
+            # show_together(filtered_gamma, figureName, title=title, inferBound=2)
+if args.day == "feb05":
+    if args.mode == 1:
+        # Cornichon
+        # start from specific topology, 3TH
+        run = "simulation_chainE"
+        x_shift_all = [50]
+        subModeList = [1]
+        force_setup = "forces_setup_chainE_3TH.py"
+        for i in range(5):
+            for subMode in subModeList:
+                cmd = f"python mm_run_with_pulling_start.py chain_E/extended -f {force_setup} --subMode {subMode} --to {run}/3TH_{subMode}_{i} -s 8e6 --reportFrequency 4000 --tempStart 800 --tempEnd 300 --platform CUDA"
+                out = slurmRun(f"slurms/gpu_feb05_{run}_{subMode}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 2:
+        # Cornichon
+        # start from specific topology, 4TH
+        run = "simulation_chainE"
+        x_shift_all = [50]
+        subModeList = [1]
+        force_setup = "forces_setup_chainE_4TH_hand_modify.py"
+        for i in range(5):
+            for subMode in subModeList:
+                cmd = f"python mm_run_with_pulling_start.py chain_E/extended -f {force_setup} --subMode {subMode} --to {run}/4TH_{subMode}_{i} -s 8e6 --reportFrequency 4000 --tempStart 800 --tempEnd 300 --platform CUDA"
+                out = slurmRun(f"slurms/gpu_feb05_4th_{run}_{subMode}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+if args.day == "feb03":
+    data = pd.read_csv("training_set.csv")
+    specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
+    pdb_list = specific_decoys["Protein"].to_list()
+    if args.mode == 1:
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+        iteration = "iteration_0"
+        force_setup = "forces_setup.py"
+        subMode = -1
+        for pdb in pdb_list:
+            for i in range(1):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+if args.day == "jan31":
+    if args.mode == 1:
+        with open("../../cath_dataset_shuffle_optimization/optimization_iter0/protein_list") as f:
+            a = f.readlines()
+        b = [i.strip() for i in a]
+        # print(b)
+        for name in b:
+            do(f"cp -r ../../cath_dataset/dompdb/{name}.pdb .")
+    if args.mode == 2:
+        name = f"protein_list_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0_phi_native_summary.txt"
+        filtered_gamma = np.loadtxt(name)
+        figureName = f"native_phi_change_limit"
+        title = figureName
+        show_together(filtered_gamma, figureName, title=title, inferBound=0, invert_sign=False)
+
+        name = f"protein_list_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0_phi_decoy_summary.txt"
+        filtered_gamma = np.loadtxt(name)
+        figureName = f"decoy_phi_change_limit"
+        title = figureName
+        show_together(filtered_gamma, figureName, title=title, inferBound=0, invert_sign=False)
+    if args.mode == 3:
+        name = f"log_native.txt"
+        filtered_gamma = np.loadtxt(name)
+        figureName = f"native_phi_log"
+        title = figureName
+        show_together(filtered_gamma, figureName, title=title, inferBound=1, invert_sign=False)
+
+        name = f"log_decoy.txt"
+        filtered_gamma = np.loadtxt(name)
+        figureName = f"decoy_phi_log"
+        title = figureName
+        show_together(filtered_gamma, figureName, title=title, inferBound=1, invert_sign=False)
+
+if args.day == "jan30":
+    if args.mode == 1:
+        # Cornichon
+        # start from native
+        rotation_all = np.arange(0, 180, 30)
+        run = "run5_constant_temp_300"
+        x_shift_all = [50]
+        subModeList = [4]
+        for i in range(2):
+            for subMode in subModeList:
+                for x_shift in x_shift_all:
+                    for degree in rotation_all:
+                        cmd = f"python mm_run.py my_ABCDE_with_ligand/separate_4TH_centered_{x_shift}_{degree} -f forces_setup.py --subMode {subMode} --to {run}/separate_4TH_{x_shift}_{degree}_{subMode}_{i} -s 8e6 --reportFrequency 4000 --tempStart 300 --tempEnd 300 --platform CUDA --fasta my_ABCDE_with_ligand.fasta"
+                        out = slurmRun(f"slurms/gpu_jan27_{run}_{x_shift}_{degree}_{subMode}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                        print(out)
+    if args.mode == 2:
+        # Cornichon
+        # start from native
+        rotation_all = np.arange(0, 180, 30)
+        run = "run5_constant_temp_400"
+        x_shift_all = [50]
+        subModeList = [4]
+        for i in range(2):
+            for subMode in subModeList:
+                for x_shift in x_shift_all:
+                    for degree in rotation_all:
+                        cmd = f"python mm_run.py my_ABCDE_with_ligand/separate_4TH_centered_{x_shift}_{degree} -f forces_setup.py --subMode {subMode} --to {run}/separate_4TH_{x_shift}_{degree}_{subMode}_{i} -s 2e7 --reportFrequency 4000 --tempStart 400 --tempEnd 400 --platform CUDA --fasta my_ABCDE_with_ligand.fasta"
+                        out = slurmRun(f"slurms/gpu_jan27_{run}_{x_shift}_{degree}_{subMode}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                        print(out)
+    if args.mode == 3:
+        # Cornichon
+        # start from native
+        rotation_all = np.arange(0, 180, 30)
+        run = "run5_constant_temp_350"
+        x_shift_all = [50]
+        subModeList = [4]
+        for i in range(2):
+            for subMode in subModeList:
+                for x_shift in x_shift_all:
+                    for degree in rotation_all:
+                        cmd = f"python mm_run.py my_ABCDE_with_ligand/separate_4TH_centered_{x_shift}_{degree} -f forces_setup.py --subMode {subMode} --to {run}/separate_4TH_{x_shift}_{degree}_{subMode}_{i} -s 2e7 --reportFrequency 4000 --tempStart 350 --tempEnd 350 --platform CUDA --fasta my_ABCDE_with_ligand.fasta"
+                        out = slurmRun(f"slurms/gpu_jan27_{run}_{x_shift}_{degree}_{subMode}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                        print(out)
+
+if args.day == "jan27":
+    if args.mode == 1:
+        cmd = "python mm_run.py my_ABCDE_with_ligand/my_ABCDE_with_ligand --to run3/0 -s 8e6 --reportFrequency 4000 -f forces_setup.py --subMode 1 --fasta my_ABCDE_with_ligand.fasta --platform CUDA"
+        out = slurmRun(f"slurms/gpu_jan27.slurm", cmd, template=gpu_commons_slurm)
+    if args.mode == 2:
+        # Cornichon
+        # start from native
+        rotation_all = np.arange(0, 180, 30)
+        run = "run4"
+        x_shift_all = [50]
+        subModeList = [3, 4]
+        subModeList = [4]
+        for i in range(2):
+            for subMode in subModeList:
+                for x_shift in x_shift_all:
+                    for degree in rotation_all:
+                        cmd = f"python mm_run.py my_ABCDE_with_ligand/separate_4TH_centered_{x_shift}_{degree} -f forces_setup.py --subMode {subMode} --to {run}/separate_4TH_{x_shift}_{degree}_{subMode}_{i} -s 8e6 --reportFrequency 4000 --tempStart 600 --tempEnd 300 --platform CUDA --fasta my_ABCDE_with_ligand.fasta"
+                        out = slurmRun(f"slurms/gpu_jan27_{run}_{x_shift}_{degree}_{subMode}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                        print(out)
+if args.day == "jan22":
+    # Single Seq shuffle
+    # data = pd.read_csv("data_info_3.csv", index_col=0).query("Problematic != 4")
+
+    # data = pd.read_csv("pfam_selected.csv", index_col=0)
+    # pdb_list = data["FullName"].to_list()
+
+    data = pd.read_csv("has_structures_small_dataset_cleaned.csv")
+    pdb_list = data["Protein"].to_list()
+
+    if args.mode == 1:
+        do("cp /home/wl45/opt/optimization/phi_list_contact.txt phi_list.txt")
+        do("mkdir proteins_name_list")
+        do("mkdir slurms")
+        do('mkdir -p outs')
+        # do("mkdir -p decoys/multiShuffle")
+        do("mkdir -p decoys")
+        do("mkdir -p gammas")
+        do("mkdir -p ../phis")
+        with open("protein_list", "w") as out:
+            for pdb in pdb_list:
+                out.write(f"{pdb}\n")
+    if args.mode ==222:
+        n = split_proteins_name_list(pdb_per_txt=5)
+    if args.mode == 2:
+        # split proteins_name_list
+        n = split_proteins_name_list(pdb_per_txt=5)
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d jan22 -m 22 -l {proteins}", template=base_slurm, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+    if args.mode == 22:
+        from pyCodeLib import *
+        proteins = args.label
+        n_decoys = 1000
+        generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+        do(f"python3 ~/opt/compute_phis.py -m 0 {proteins}")
+    if args.mode == 3:
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d jan22 -m 33"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 33:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        n_decoys = 1000
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+                                        withBiased=False, num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+    if args.mode == 5:
+        # i = 1
+        # i = 2
+        # i = 3
+        i = 0
+        do(f"optimization_analyze.py iter{i}")
+    if args.mode == 6:
+        # i = 1
+        # i = 2
+        # i = 3
+        i = 0
+        do(f"optimization_analyze.py iter{i} -c -87")
+
+if args.day == "jan20":
+    # generate MSA
+    pdb_list = dataset["optimization_v2"]
+    pdb_location = "cleaned_pdbs/first_test_set"
+    if args.mode == 1:
+        def pdbToFasta(pdb, pdbLocation, fastaFile, chains="A"):
+            import textwrap
+            from Bio.PDB.PDBParser import PDBParser
+            from Bio.PDB.Polypeptide import three_to_one
+            # pdb = "1r69"
+            # pdbLocation = "/Users/weilu/Research/server/may_2019/family_fold/1r69.pdb"
+            # chains = "A"
+            # fastaFile = "/Users/weilu/Research/server/may_2019/family_fold/1r69.fasta"
+            s = PDBParser(QUIET=True).get_structure("X", pdbLocation)
+            # m = s[0]  # model 0
+            seq = ""
+            with open(fastaFile, "w") as out:
+                chain = "A"
+                out.write(f">{pdb.upper()}:{chain.upper()}|PDBID|CHAIN|SEQUENCE\n")
+                seq = ""
+                for res in s.get_residues():
+                    resName = three_to_one(res.resname)
+                    seq += resName
+                out.write("\n".join(textwrap.wrap(seq, width=80))+"\n")
+            return seq
+
+        # a = glob.glob("cleaned_pdbs/*.pdb")
+        jobIdList = []
+        # a = glob.glob("../membrane_only_contact_optimization/database/dompdb/*.pdb")
+        do("mkdir -p fasta")
+        for pdb in pdb_list:
+            print(pdb)
+            # pdb = line.split("/")[-1].split(".")[0]
+            pdbToFasta(pdb, f"{pdb_location}/{pdb}.pdb", f"fasta/{pdb}.fasta")
+            cmd = f"/projects/pw8/wl45/hh-suite/build/bin/hhblits -i fasta/{pdb}.fasta -d ../../uniclust30_2018_08/uniclust30_2018_08 -o {pdb} -oa3m {pdb}.a3m -n 2"
+            # do(cmd)
+            jobId = slurmRun(f"slurms/{pdb}.slurm", cmd, memory=10)
+            jobIdList.append(jobId)
+    if args.mode == 2:
+        do("mkdir MSA")
+        for pdb in pdb_list:
+            do(f"mv {pdb} MSA/")
+            do(f"mv {pdb}.a3m MSA/")
+    if args.mode == 3:
+        do("mkdir -p alignments")
+        for pdb in pdb_list:
+            a = pdb
+            print(a)
+            data = get_MSA_data(f"MSA/{a}.a3m")
+            with open(f"alignments/{a}_filtered_0.05.seqs", "w") as out:
+                for line in data:
+                    out.write(line+"\n")
+
+
+if args.day == "jan19":
+    pdb_list = dataset["optimization_v2"]
+    # folder = "iter2_real_gpu"
+    # folder = "iter3_gpu"
+    # folder_list = [folder]
+    folder_list = ["frag_mem_with_single_iter0_original", "frag_mem_with_single_multi_pfam_iter0_original"]
+    run_n = 5
+    base_path = "/scratch/wl45/jan_2020"
+    simulationType = "iterative_optimization"
+    if args.mode == 1:
+        for folder in folder_list:
+            cd(folder)
+            for pdb in pdb_list:
+                for i in range(run_n):
+                    cd(f"{pdb}/{i}")
+                    do("python /projects/pw8/wl45/openawsem/helperFunctions/convertOpenmmTrajectoryToStandardMovie.py movie.pdb")
+                    cd("../..")
+            cd("..")
+    if args.mode == 11:
+        do("mkdir -p database/dompdb")
+        do("mkdir -p database/S20_seq")
+        for pdb in pdb_list:
+            do(f"cp ../../optimization_database/setups/{pdb}/cleaned_pdbs/{pdb}.pdb database/dompdb/")
+    if args.mode == 12:
+        def getSeq(fileLocation):
+            p = PDBParser()
+            s = p.get_structure("test", fileLocation)
+            seq = ""
+            residues = list(s.get_residues())
+            for residue in residues:
+                res_id = residue.get_id()[0]
+                if res_id==' ':
+                    residue_name = residue.get_resname()
+                    seq += three_to_one(residue_name)
+            return seq
+        for pdb in pdb_list:
+            fileLocation = f"database/dompdb/{pdb}.pdb"
+            seq = getSeq(fileLocation)
+            opt_pdbName = pdb
+            fileLocation = f"database/S20_seq/{opt_pdbName}.seq"
+            with open(fileLocation, "w") as out:
+                out.write(seq+"\n")
+    if args.mode == 13:
+
+        outFile = read_simulation_info(folder_list, pdb_list, simulationType, base_path, run_n)
+        today = datetime.today().strftime('%m-%d')
+        outFile = f"{simulationType}.csv"
+    if args.mode == 2:
+        # change directory to optimization.
+        # dataFile = "iterative_optimization_single_mem_iter7_01-13.csv"
+        # dataFile = "iterative_optimization_frag_mem_iter1_01-14.csv"
+        # dataFile = "iterative_optimization_frag_mem_iter2_01-15.csv"
+        dataFile = f"{simulationType}.csv"
+        simulation_folder = "iterative_optimization"
+        data = pd.read_csv(dataFile, index_col=0)
+        parser = PDBParser()
+        # folder = "first"
+        # for folder in ["first", "first_cpu2"]:
+        for folder in folder_list:
+            pre = f"{base_path}/{simulation_folder}/{folder}"
+            to_folder = "."
+            os.system(f"mkdir -p {to_folder}/decoys/openMM")
+            # pdb_list = ['1j5u']
+            for pdb in pdb_list:
+                complete_models = []
+                print(pdb)
+                for i in range(run_n):
+                    movieFile = f"{pre}/{pdb}/{i}/movie.pdb"
+                    lastN_frame = 50
+                    allFrames, n, size = getAllFrames(movieFile)
+                    num_of_frames = int(n/size)
+                    first_chosen_frame = num_of_frames - lastN_frame
+                    # last_chosen_frame = num_of_frames
+                    oneFrame = allFrames[size*first_chosen_frame:size*(num_of_frames)]
+
+                    p = PDBParser()
+                    f = io.StringIO("".join(oneFrame))
+                    s = p.get_structure("test", f)
+                    complete_models += list(s.get_models())
+                t = data.query(f"Protein == '{pdb}' and Folder == '{folder}' and Steps > 1").reset_index(drop=True)
+                t = t.groupby("Run").tail(50).reset_index(drop=True)
+                t["structure"] = complete_models
+                t = t.rename(columns={"Q":"Qw"})
+                # last50 = t.groupby("Run").tail(50).reset_index(drop=True)
+                last50 = t
+                # print(last50.head())
+                # print(last50.tail())
+                # print(last50.shape)
+                # print(len(complete_models))
+                to_folder = "."
+                last50.to_pickle(f"{to_folder}/decoys/openMM/{pdb}_{folder}.pkl")
+    if args.mode == 3:
+        do("mkdir -p proteins_name_list")
+        do("mkdir -p slurms")
+        do("mkdir -p gammas")
+        do('mkdir -p outs')
+        do("mkdir -p ../phis")
+        # folder = "first"
+        # folder_list = ["first", "first_cpu2"]
+        # folder_list = [folder]
+        with open("protein_list", "w") as out:
+            for folder in folder_list:
+                for pdb in pdb_list:
+                    out.write(f"{pdb}_{folder}\n")
+        do("cp /home/wl45/opt/optimization/phi_list_contact.txt phi_list.txt")
+    if args.mode == 4:
+        do("gg_server.py -d jan12 -m 44")
+    if args.mode == 44:
+        # time.sleep(36000)
+        with open("protein_list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(1):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i)
+        n = i
+        i = 0
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d jan12 -m 444 -l {proteins}", template=base_slurm, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+    if args.mode == 444:
+        protein = args.label
+        do(f"python3 ~/opt/compute_phis.py -m 7 {protein}")
+        # do("python3 ~/opt/compute_phis.py -m 0 test_protein")
+
+    if args.mode == 55:
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d jan12 -m 555"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 555:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        n_decoys = 500
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        # simulation_location_list=["first", "first_cpu2"]
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                        withBiased=True ,num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+    if args.mode == 5:
+        folder_list = ["iter0_gpu", "iter0_4e6_gpu", "iter0_8e6_gpu", "single_mem_iter7"]
+        folder_list += ["frag_mem_iter1", "frag_mem_iter2"]
+        # folder_list += ["iter3_gpu"]
+        with open("protein_list", "w") as out:
+            for folder in folder_list:
+                for pdb in pdb_list:
+                    out.write(f"{pdb}_{folder}\n")
+        do("gg_server.py -d dec14 -m 333")
+    if args.mode == 6:
+        # i = 1
+        # i = 2
+        i = 3
+        do(f"optimization_analyze.py iter{i}")
+    if args.mode == 7:
+        # go to iteration folder
+        # iteration = 3
+        # iteration = 1
+        # iteration = 2
+        iteration = 3
+        for pdb in pdb_list:
+            do(f"cp ../optimization/optimization_iter{iteration}/Oct26_saved_gammas/iter{iteration}_cutoff500_impose_Aprime_constraint/gamma.dat setups/{pdb}/iter{iteration}_gamma.dat")
+            do(f"cp ../optimization/optimization_iter{iteration}/Oct26_saved_gammas/iter{iteration}_cutoff500_impose_Aprime_constraint/burial_gamma.dat setups/{pdb}/iter{iteration}_burial_gamma.dat")
+    if args.mode == 8:
+        # modify force_steup.py
+        force_setup = "forces_setup.py"
+        # iteration = "frag_mem_iter1"
+        # subMode = 3
+        # iteration = "frag_mem_iter2"
+        # subMode = 4
+        iteration = "frag_mem_iter3"
+        subMode = 5
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 4e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 9:
+        # modify force_steup.py
+        iteration = "native"
+        force_setup = "forces_setup.py"
+        subMode = 0
+        for pdb in pdb_list:
+            for i in range(1):
+                cmd = f"python mm_run.py setups/{pdb}/{pdb} --to {iteration}/{pdb} -s 4e6 --tempStart 300 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+if args.day == "jan18":
+    pdb_list = dataset["optimization_v2"]
+    if args.mode == 1:
+        # modify force_steup.py
+        force_setup = "forces_setup_single_and_frag.py"
+        # iteration = "frag_mem_iter1"
+        # subMode = 3
+        # iteration = "frag_mem_iter2"
+        # subMode = 4
+        iteration = "frag_mem_with_single_iter0_original"
+        subMode = 0
+        for pdb in pdb_list:
+            for i in range(5):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 2:
+        # go to iteration folder
+
+        iteration = 0
+        cutoff = 600
+        for pdb in pdb_list:
+            do(f"cp ../multi_seq_Pfam/optimization_iter{iteration}/Oct26_saved_gammas/iter{iteration}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat setups/{pdb}/multi_pfam_iter{iteration}_gamma.dat")
+            do(f"cp ../multi_seq_Pfam/optimization_iter{iteration}/Oct26_saved_gammas/iter{iteration}_cutoff{cutoff}_impose_Aprime_constraint/burial_gamma.dat setups/{pdb}/multi_pfam_iter{iteration}_burial_gamma.dat")
+    if args.mode == 3:
+        # modify force_steup.py
+        force_setup = "forces_setup_single_and_frag.py"
+        # iteration = "frag_mem_iter1"
+        # subMode = 3
+        # iteration = "frag_mem_iter2"
+        # subMode = 4
+        iteration = "frag_mem_with_single_multi_pfam_iter0_original"
+        subMode = 1
+        for pdb in pdb_list:
+            for i in range(5):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+if args.day == "jan16":
+    # multi Seq shuffle
+    # data = pd.read_csv("data_info_3.csv", index_col=0).query("Problematic != 4")
+    data = pd.read_csv("pfam_selected.csv", index_col=0)
+    pdb_list = data["FullName"].to_list()
+    if args.mode == 1:
+        do("cp /home/wl45/opt/optimization/phi_list_contact.txt phi_list.txt")
+        do("mkdir proteins_name_list")
+        do("mkdir slurms")
+        do('mkdir -p outs')
+        do("mkdir -p decoys/multiShuffle")
+        do("mkdir -p gammas")
+        do("mkdir -p ../phis")
+        with open("protein_list", "w") as out:
+            for pdb in pdb_list:
+                out.write(f"{pdb}\n")
+    if args.mode == 2:
+        pdb = pdb_list[0]
+        generate_multiShuffle(pdb, location="./", alignmentLocation="../", num_decoys=1000, nameMode=0)
+    if args.mode == 3:
+        # split proteins_name_list
+        n = split_proteins_name_list(pdb_per_txt=5)
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d jan16 -m 33 -l {proteins}", template=base_slurm, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+    if args.mode == 33:
+        from pyCodeLib import *
+        protein = args.label
+        pdb_list = read_column_from_file(protein, 1)
+        for pdb in pdb_list:
+            generate_multiShuffle(pdb, location="./", alignmentLocation="../", num_decoys=1000, nameMode=0)
+        do(f"python3 ~/opt/compute_phis.py -m 4 {protein}")
+    if args.mode == 4:
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d jan16 -m 44"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 44:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        n_decoys = 500
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='multiShuffle',
+                                        withBiased=False, num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=True, )
+        # next: optimization_analysze.py iter{i}
+    if args.mode == 5:
+        # i = 1
+        # i = 2
+        # i = 3
+        i = 0
+        do(f"optimization_analyze.py iter{i}")
+
+if args.day == "jan14":
+    if args.mode == 1:
+        # Cornichon
+        # start from native
+        pdb = "my_ABCDF"
+        rotation_all = np.arange(0, 180, 30)
+        x_shift_all = [30]
+        subModeList = [8]
+        for i in range(2):
+            for subMode in subModeList:
+                for x_shift in x_shift_all:
+                    for degree in rotation_all:
+                        cmd = f"python mm_run.py setups/{pdb}/separate_4TH_{x_shift}_{degree} -f forces_setup_cut_out_LBD.py --subMode {subMode} --to run3/6ud8_my_ABCDF_separate_4TH_{x_shift}_{degree}_{subMode}_{i} -s 4e6 --reportFrequency 4000 --tempStart 600 --tempEnd 300 --platform CUDA --fasta crystal_structure.fasta"
+                        out = slurmRun(f"slurms/gpu_separate_4TH_{x_shift}_{degree}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+                        print(out)
+    if args.mode == 2:
+        # Cornichon
+        # 0.5 constraint, frag memeory, centered_
+        pdb = "my_ABCDF"
+        rotation_all = np.arange(0, 180, 30)
+        x_shift_all = [50]
+        subModeList = [8]
+        for i in range(2):
+            for subMode in subModeList:
+                for x_shift in x_shift_all:
+                    for degree in rotation_all:
+                        cmd = f"python mm_run.py setups/{pdb}/separate_4TH_centered_{x_shift}_{degree} -f forces_setup_cut_out_LBD.py --subMode {subMode} --to run3/6ud8_my_ABCDF_separate_4TH_centered_{x_shift}_{degree}_{subMode}_{i} -s 4e6 --reportFrequency 4000 --tempStart 600 --tempEnd 300 --platform CUDA --fasta crystal_structure.fasta"
+                        out = slurmRun(f"slurms/gpu_separate_4TH_centered_{x_shift}_{degree}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+                        print(out)
+
+if args.day == "jan12":
+    pdb_list = dataset["optimization_v2"]
+    # folder = "iter2_real_gpu"
+    # folder = "iter3_gpu"
+    # folder_list = [folder]
+    folder_list = ["iter0_gpu", "iter0_4e6_gpu", "iter0_8e6_gpu", "single_mem_iter7"]
+    folder_list = ["frag_mem_iter1"]
+    folder_list = ["frag_mem_iter2"]
+    run_n = 10
+    if args.mode == 1:
+        for folder in folder_list:
+            cd(folder)
+            for pdb in pdb_list:
+                for i in range(run_n):
+                    cd(f"{pdb}/{i}")
+                    do("python /projects/pw8/wl45/openawsem/helperFunctions/convertOpenmmTrajectoryToStandardMovie.py movie.pdb")
+                    cd("../..")
+            cd("..")
+    if args.mode == 11:
+        do("mkdir -p database/dompdb")
+        do("mkdir -p database/S20_seq")
+        for pdb in pdb_list:
+            do(f"cp ../../optimization_database/setups/{pdb}/cleaned_pdbs/{pdb}.pdb database/dompdb/")
+    if args.mode == 12:
+        def getSeq(fileLocation):
+            p = PDBParser()
+            s = p.get_structure("test", fileLocation)
+            seq = ""
+            residues = list(s.get_residues())
+            for residue in residues:
+                res_id = residue.get_id()[0]
+                if res_id==' ':
+                    residue_name = residue.get_resname()
+                    seq += three_to_one(residue_name)
+            return seq
+        for pdb in pdb_list:
+            fileLocation = f"database/dompdb/{pdb}.pdb"
+            seq = getSeq(fileLocation)
+            opt_pdbName = pdb
+            fileLocation = f"database/S20_seq/{opt_pdbName}.seq"
+            with open(fileLocation, "w") as out:
+                out.write(seq+"\n")
+    if args.mode == 2:
+        # change directory to optimization.
+        # dataFile = "iterative_optimization_single_mem_iter7_01-13.csv"
+        # dataFile = "iterative_optimization_frag_mem_iter1_01-14.csv"
+        dataFile = "iterative_optimization_frag_mem_iter2_01-15.csv"
+        simulation_folder = "iterative_optimization"
+        data = pd.read_csv(dataFile, index_col=0)
+        parser = PDBParser()
+        # folder = "first"
+        # for folder in ["first", "first_cpu2"]:
+        for folder in folder_list:
+            pre = f"/scratch/wl45/jan_2020/{simulation_folder}/{folder}"
+            to_folder = "."
+            os.system(f"mkdir -p {to_folder}/decoys/openMM")
+            # pdb_list = ['1j5u']
+            for pdb in pdb_list:
+                complete_models = []
+                print(pdb)
+                for i in range(run_n):
+                    movieFile = f"{pre}/{pdb}/{i}/movie.pdb"
+                    lastN_frame = 50
+                    allFrames, n, size = getAllFrames(movieFile)
+                    num_of_frames = int(n/size)
+                    first_chosen_frame = num_of_frames - lastN_frame
+                    # last_chosen_frame = num_of_frames
+                    oneFrame = allFrames[size*first_chosen_frame:size*(num_of_frames)]
+
+                    p = PDBParser()
+                    f = io.StringIO("".join(oneFrame))
+                    s = p.get_structure("test", f)
+                    complete_models += list(s.get_models())
+                t = data.query(f"Protein == '{pdb}' and Folder == '{folder}' and Steps > 1").reset_index(drop=True)
+                t = t.groupby("Run").tail(50).reset_index(drop=True)
+                t["structure"] = complete_models
+                t = t.rename(columns={"Q":"Qw"})
+                # last50 = t.groupby("Run").tail(50).reset_index(drop=True)
+                last50 = t
+                # print(last50.head())
+                # print(last50.tail())
+                # print(last50.shape)
+                # print(len(complete_models))
+                to_folder = "."
+                last50.to_pickle(f"{to_folder}/decoys/openMM/{pdb}_{folder}.pkl")
+    if args.mode == 3:
+        do("mkdir -p proteins_name_list")
+        do("mkdir -p slurms")
+        do("mkdir -p gammas")
+        do('mkdir -p outs')
+        do("mkdir -p ../phis")
+        # folder = "first"
+        # folder_list = ["first", "first_cpu2"]
+        # folder_list = [folder]
+        with open("protein_list", "w") as out:
+            for folder in folder_list:
+                for pdb in pdb_list:
+                    out.write(f"{pdb}_{folder}\n")
+        do("cp /home/wl45/opt/optimization/phi_list_contact.txt phi_list.txt")
+    if args.mode == 4:
+        do("gg_server.py -d jan12 -m 44")
+    if args.mode == 44:
+        # time.sleep(36000)
+        with open("protein_list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(1):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i)
+        n = i
+        i = 0
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d jan12 -m 444 -l {proteins}", template=base_slurm, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+    if args.mode == 444:
+        protein = args.label
+        do(f"python3 ~/opt/compute_phis.py -m 7 {protein}")
+        # do("python3 ~/opt/compute_phis.py -m 0 test_protein")
+
+    if args.mode == 55:
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d jan12 -m 555"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 555:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        n_decoys = 500
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        # simulation_location_list=["first", "first_cpu2"]
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                        withBiased=True ,num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+    if args.mode == 5:
+        folder_list = ["iter0_gpu", "iter0_4e6_gpu", "iter0_8e6_gpu", "single_mem_iter7"]
+        folder_list += ["frag_mem_iter1", "frag_mem_iter2"]
+        # folder_list += ["iter3_gpu"]
+        with open("protein_list", "w") as out:
+            for folder in folder_list:
+                for pdb in pdb_list:
+                    out.write(f"{pdb}_{folder}\n")
+        do("gg_server.py -d dec14 -m 333")
+    if args.mode == 6:
+        # i = 1
+        # i = 2
+        i = 3
+        do(f"optimization_analyze.py iter{i}")
+    if args.mode == 7:
+        # go to iteration folder
+        # iteration = 3
+        # iteration = 1
+        # iteration = 2
+        iteration = 3
+        for pdb in pdb_list:
+            do(f"cp ../optimization/optimization_iter{iteration}/Oct26_saved_gammas/iter{iteration}_cutoff500_impose_Aprime_constraint/gamma.dat setups/{pdb}/iter{iteration}_gamma.dat")
+            do(f"cp ../optimization/optimization_iter{iteration}/Oct26_saved_gammas/iter{iteration}_cutoff500_impose_Aprime_constraint/burial_gamma.dat setups/{pdb}/iter{iteration}_burial_gamma.dat")
+    if args.mode == 8:
+        # modify force_steup.py
+        force_setup = "forces_setup.py"
+        # iteration = "frag_mem_iter1"
+        # subMode = 3
+        # iteration = "frag_mem_iter2"
+        # subMode = 4
+        iteration = "frag_mem_iter3"
+        subMode = 5
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 4e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 9:
+        # modify force_steup.py
+        iteration = "native"
+        force_setup = "forces_setup.py"
+        subMode = 0
+        for pdb in pdb_list:
+            for i in range(1):
+                cmd = f"python mm_run.py setups/{pdb}/{pdb} --to {iteration}/{pdb} -s 4e6 --tempStart 300 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+if args.day == "jan10":
+    pdb_list = dataset["optimization_v2"]
+    if args.mode == 1:
+        # modify force_steup.py
+        iteration = 0
+        force_setup = "forces_setup.py"
+        iteration = f"iter{iteration}_4e6_gpu"
+        subMode = 0
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 4e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 2:
+        # modify force_steup.py
+        iteration = 0
+        force_setup = "forces_setup.py"
+        iteration = f"iter{iteration}_8e6_gpu"
+        subMode = 0
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 3:
+        # modify force_steup.py
+        cmd = f"python mm_run.py 5a63 --to server_cpu1_step1e3 --platform CPU --thread 1 -s 1e3 --reportFrequency 10 --tempStart 300"
+        # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+        out = slurmRun(f"slurms/cpu_1.slurm", cmd, template=scavenge_slurm, memory=15)
+        print(out)
+    if args.mode == 4:
+        thread = 2
+        subMode = 3
+        i = 0
+        cmd = f"python mm_run.py 5a63 --to server_cpu{thread}_{i}_step1e3 --subMode {subMode} --platform CPU --thread {thread} -s 1e3 --reportFrequency 10 --tempStart 300"
+        # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+        out = slurmRun(f"slurms/cpu_{thread}_{subMode}_{i}.slurm", cmd, template=scavenge_slurm, memory=15, thread=thread)
+        print(out)
+    if args.mode == 5:
+        subMode_list = [-1, 0, 1, 2, 3]
+        thread_list = [1, 2, 4, 8]
+        for i in range(3):
+            for subMode in subMode_list:
+                for thread in thread_list:
+                    # modify force_steup.py
+                    cmd = f"python mm_run.py 5a63 --to new_server_cpu{thread}_{subMode}_{i}_step1e3 --subMode {subMode} --platform CPU --thread {thread} -s 1e3 --reportFrequency 10 --tempStart 300"
+                    # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                    out = slurmRun(f"slurms/cpu_{thread}_{subMode}_{i}.slurm", cmd, template=scavenge_slurm, memory=15, thread=thread)
+                    print(out)
+    if args.mode == 6:
+        subMode_list = [-1, 0, 1, 2, 3]
+        for i in range(3):
+            for subMode in subMode_list:
+                cmd = f"python mm_run.py 5a63 --to server_gpu_{subMode}_{i}_step1e4 --subMode {subMode} --platform CUDA -s 1e4 --reportFrequency 100 --tempStart 300"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/GPU_{subMode}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 66:
+        subMode_list = [4, 5, 6, 7, 8, 3]
+        for i in range(2):
+            for subMode in subMode_list:
+                cmd = f"python mm_run.py 5a63 --to server_gpu_{subMode}_{i}_step1e5 --subMode {subMode} --platform CUDA -s 1e5 --reportFrequency 100 --tempStart 300"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/GPU_{subMode}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 7:
+        # go to iteration folder
+        for pdb in pdb_list:
+            do(f"cp saved_gammas/iter7_gamma.dat setups/{pdb}/single_mem_iter7_gamma.dat")
+            do(f"cp saved_gammas/iter7_burial_gamma.dat setups/{pdb}/single_mem_iter7_burial_gamma.dat")
+    if args.mode == 8:
+        # modify force_steup.py
+        iteration = "single_mem_iter7"
+        force_setup = "forces_setup.py"
+        subMode = 1
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 4e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+if args.day == "jan05":
+    pdb_list = dataset["optimization_v2"]
+    if args.mode == 1:
+        # modify force_steup.py
+        iteration = 0
+        force_setup = "forces_setup.py"
+        iteration = f"iter{iteration}_gpu"
+        subMode = 0
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 2e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+if args.day == "jan01":
+    do("find . -maxdepth 1 -mindepth 1 -type d -exec tar cvf {}.tar {}  \;")
+if args.day == "dec31":
+    if args.mode == 1:
+        # Cornichon
+        # start from native
+        pdb = "my_ABCDF"
+        rotation_all = np.arange(0, 180, 30)
+        x_shift_all = [30]
+        subModeList = [7]
+        for i in range(2):
+            for subMode in subModeList:
+                for x_shift in x_shift_all:
+                    for degree in rotation_all:
+                        cmd = f"python mm_run.py setups/{pdb}/separate_4TH_{x_shift}_{degree} -f forces_setup_cut_out_LBD.py --subMode {subMode} --to run3/6ud8_my_ABCDF_separate_4TH_{x_shift}_{degree}_{subMode}_{i} -s 4e6 --reportFrequency 4000 --tempStart 600 --tempEnd 300 --platform CUDA --fasta crystal_structure.fasta"
+                        out = slurmRun(f"slurms/gpu_separate_4TH_{x_shift}_{degree}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+                        print(out)
+
+
+if args.day == "dec29":
+    pdb_list = dataset["optimization_cath"]
+    # folder = "iter2_real_gpu"
+    # folder = "iter3_gpu"
+    # folder_list = [folder]
+    folder_list = ["iter0_gpu"]
+    run_n = 5
+    if args.mode == 1:
+
+        for folder in folder_list:
+            cd(folder)
+            for pdb in pdb_list:
+                for i in range(run_n):
+                    cd(f"{pdb}/{i}")
+                    do("python /projects/pw8/wl45/openawsem/helperFunctions/convertOpenmmTrajectoryToStandardMovie.py movie.pdb")
+                    cd("../..")
+            cd("..")
+    if args.mode == 11:
+        do("mkdir -p database/dompdb")
+        do("mkdir -p database/S20_seq")
+        for pdb in pdb_list:
+            do(f"cp ../../optimization_database/setups/{pdb}/cleaned_pdbs/{pdb}.pdb database/dompdb/")
+    if args.mode == 12:
+        def getSeq(fileLocation):
+            p = PDBParser()
+            s = p.get_structure("test", fileLocation)
+            seq = ""
+            residues = list(s.get_residues())
+            for residue in residues:
+                res_id = residue.get_id()[0]
+                if res_id==' ':
+                    residue_name = residue.get_resname()
+                    seq += three_to_one(residue_name)
+            return seq
+        for pdb in pdb_list:
+            fileLocation = f"database/dompdb/{pdb}.pdb"
+            seq = getSeq(fileLocation)
+            opt_pdbName = pdb
+            fileLocation = f"database/S20_seq/{opt_pdbName}.seq"
+            with open(fileLocation, "w") as out:
+                out.write(seq+"\n")
+    if args.mode == 2:
+        # change directory to optimization.
+        dataFile = "optimization_database_iter0_gpu_12-29.csv"
+        simulation_folder = "optimization_database"
+        data = pd.read_csv(dataFile, index_col=0)
+        parser = PDBParser()
+        # folder = "first"
+        # for folder in ["first", "first_cpu2"]:
+        for folder in folder_list:
+            pre = f"/scratch/wl45/dec_2019/{simulation_folder}/{folder}"
+            to_folder = "."
+            os.system(f"mkdir -p {to_folder}/decoys/openMM")
+            for pdb in pdb_list:
+                complete_models = []
+                print(pdb)
+                for i in range(run_n):
+                    movie = f"{pre}/{pdb}/{i}/movie.pdb"
+                    s = parser.get_structure("X", movie)
+                    complete_models += list(s.get_models())
+                t = data.query(f"Protein == '{pdb}' and Folder == '{folder}' and Steps > 1").reset_index(drop=True)
+                t["structure"] = complete_models
+                t = t.rename(columns={"Q":"Qw"})
+                last50 = t.groupby("Run").tail(50).reset_index(drop=True)
+                to_folder = "."
+                last50.to_pickle(f"{to_folder}/decoys/openMM/{pdb}_{folder}.pkl")
+    if args.mode == 3:
+        do("mkdir -p proteins_name_list")
+        do("mkdir -p slurms")
+        do("mkdir -p gammas")
+        do('mkdir -p outs')
+        do("mkdir -p ../phis")
+        # folder = "first"
+        # folder_list = ["first", "first_cpu2"]
+        # folder_list = [folder]
+        with open("protein_list", "w") as out:
+            for folder in folder_list:
+                for pdb in pdb_list:
+                    out.write(f"{pdb}_{folder}\n")
+        do("cp /home/wl45/opt/optimization/phi_list_contact.txt phi_list.txt")
+    if args.mode == 4:
+        do("gg_server.py -d dec29 -m 44")
+    if args.mode == 44:
+        # time.sleep(36000)
+        with open("protein_list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(1):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i)
+        n = i
+        i = 0
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d dec29 -m 444 -l {proteins}", template=base_slurm, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+    if args.mode == 444:
+        protein = args.label
+        do(f"python3 ~/opt/compute_phis.py -m 7 {protein}")
+        # do("python3 ~/opt/compute_phis.py -m 0 test_protein")
+
+    if args.mode == 55:
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d dec29 -m 555"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 555:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        n_decoys = 500
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        # simulation_location_list=["first", "first_cpu2"]
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                        withBiased=True ,num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+    if args.mode == 5:
+        folder_list = ["first_iter1_cpu4", "iter2_gpu", "first_gpu", "iter2_real_gpu"]
+        folder_list += ["iter3_gpu"]
+        with open("protein_list", "w") as out:
+            for folder in folder_list:
+                for pdb in pdb_list:
+                    out.write(f"{pdb}_{folder}\n")
+        do("gg_server.py -d dec14 -m 333")
+    if args.mode == 6:
+        i = 4
+        do(f"optimization_analyze.py iter{i}")
+    if args.mode == 7:
+        # go to iteration folder
+        # iteration = 3
+        iteration = 4
+        for pdb in pdb_list:
+            do(f"cp ../multiDensityOptimization/optimization_iteration1/optimization_iter{iteration}/Oct26_saved_gammas/iter{iteration}_cutoff500_impose_Aprime_constraint/gamma.dat setups/{pdb}/iter{iteration}_gamma.dat")
+            do(f"cp ../multiDensityOptimization/optimization_iteration1/optimization_iter{iteration}/Oct26_saved_gammas/iter{iteration}_cutoff500_impose_Aprime_constraint/burial_gamma.dat setups/{pdb}/iter{iteration}_burial_gamma.dat")
+
+
+if args.day == "dec28":
+    pdb_list = dataset["optimization_cath"]
+    if args.mode == 1:
+        # modify force_steup.py
+        iteration = 0
+        force_setup = "forces_setup.py"
+        iteration = f"iter{iteration}_gpu"
+        subMode = 0
+        for pdb in pdb_list:
+            for i in range(5):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 2e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 2:
+        # modify force_steup.py
+        iteration = 0
+        force_setup = "forces_setup.py"
+        iteration = f"iter{iteration}_gpu_8millions_steps"
+        subMode = 0
+        for pdb in pdb_list:
+            for i in range(5):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}_8millions.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+if args.day == "dec27":
+    pdb_list = dataset["optimization_cath"]
+    if args.mode == 1:
+        def pdbToFasta(pdb, pdbLocation, fastaFile, chains="A"):
+            import textwrap
+            from Bio.PDB.PDBParser import PDBParser
+            from Bio.PDB.Polypeptide import three_to_one
+            # pdb = "1r69"
+            # pdbLocation = "/Users/weilu/Research/server/may_2019/family_fold/1r69.pdb"
+            # chains = "A"
+            # fastaFile = "/Users/weilu/Research/server/may_2019/family_fold/1r69.fasta"
+            s = PDBParser(QUIET=True).get_structure("X", pdbLocation)
+            # m = s[0]  # model 0
+            seq = ""
+            with open(fastaFile, "w") as out:
+                chain = "A"
+                out.write(f">{pdb.upper()}:{chain.upper()}|PDBID|CHAIN|SEQUENCE\n")
+                seq = ""
+                for res in s.get_residues():
+                    resName = three_to_one(res.resname)
+                    seq += resName
+                out.write("\n".join(textwrap.wrap(seq, width=80))+"\n")
+            return seq
+
+        # a = glob.glob("cleaned_pdbs/*.pdb")
+        jobIdList = []
+        # a = glob.glob("../membrane_only_contact_optimization/database/dompdb/*.pdb")
+        do("mkdir -p fasta")
+        for pdb in pdb_list:
+            print(pdb)
+            # pdb = line.split("/")[-1].split(".")[0]
+            pdbToFasta(pdb, f"original_pdbs/{pdb}.pdb", f"fasta/{pdb}.fasta")
+            cmd = f"/projects/pw8/wl45/hh-suite/build/bin/hhblits -i fasta/{pdb}.fasta -d ../../uniclust30_2018_08/uniclust30_2018_08 -o {pdb} -oa3m {pdb}.a3m -n 2"
+            # do(cmd)
+            jobId = slurmRun(f"slurms/{pdb}.slurm", cmd, memory=10)
+            jobIdList.append(jobId)
+    if args.mode == 2:
+        for pdb in pdb_list:
+            a = pdb
+            print(a)
+            data = get_MSA_data(f"MSA/{a}.a3m")
+            with open(f"alignments/{a}_filtered_0.05.seqs", "w") as out:
+                for line in data:
+                    out.write(line+"\n")
+
+    if args.mode == 3:
+        # modify force_steup.py
+        iteration = 0
+        force_setup = "forces_setup.py"
+        # iteration = f"iter{iteration}_gpu"
+        iteration = "native"
+        subMode = 0
+        for pdb in pdb_list:
+            for i in range(1):
+                cmd = f"python mm_run.py setups/{pdb}/{pdb} --to {iteration}/{pdb}/{i} -s 2e6 --tempStart 300 --tempEnd 300 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+    if args.mode == 4:
+        # cornichon
+        # start from native
+        pdb = "my_ABCDF"
+        i = 0
+        # subModeList = [3, 1, 2]
+        subModeList = [4, 5]
+        for i in range(2):
+            for subMode in subModeList:
+                cmd = f"python mm_run.py setups/{pdb}/{pdb} -f forces_setup_cut_out_LBD.py --subMode {subMode} --to native/6ud8_my_ABCDF_{subMode}_{i}_no_beta_with_contact -s 2e6 --reportFrequency 4000 --tempStart 300 --tempEnd 300 --platform CUDA"
+                out = slurmRun(f"slurms/gpu_native_my_ABCDF_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+
+if args.day == "dec24":
+    pdb_list = dataset["optimization"]
+    # folder = "iter2_real_gpu"
+    # folder = "iter3_gpu"
+    # folder_list = [folder]
+    # folder_list = ["iter0_gpu_less_beta", "iter4_gpu"]
+    # folder_list = ["iter5_withBiased_gpu"]
+    # folder_list = ["iter6_gpu"]
+    folder_list = ["iter7_gpu"]
+    if args.mode == 1:
+
+        for folder in folder_list:
+            cd(folder)
+            for pdb in pdb_list:
+                for i in range(10):
+                    cd(f"{pdb}/{i}")
+                    do("python /projects/pw8/wl45/openawsem/helperFunctions/convertOpenmmTrajectoryToStandardMovie.py movie.pdb")
+                    cd("../..")
+            cd("..")
+    if args.mode == 2:
+        # change directory to optimization.
+        # dataFile = "iterative_optimization_first_cpu2_12-15.csv"
+        # dataFile = "iterative_optimization_iter2_gpu_12-19.csv"
+        # dataFile = "iterative_optimization_iter2_real_gpu_12-24.csv"
+        # dataFile = "iterative_optimization_iter3_gpu_12-25.csv"
+        # dataFile = "iterative_optimization_iter3_gpu_12-27.csv"
+        # dataFile = "iterative_optimization_iter3_gpu_12-30.csv"
+        # dataFile = "iterative_optimization_iter3_gpu_12-31.csv"
+        dataFile = "iterative_optimization_iter3_gpu_01-02.csv"
+
+        data = pd.read_csv(dataFile, index_col=0)
+        parser = PDBParser()
+        # folder = "first"
+        # for folder in ["first", "first_cpu2"]:
+        for folder in folder_list:
+            pre = f"/scratch/wl45/dec_2019/iterative_optimization/{folder}"
+            to_folder = "."
+            os.system(f"mkdir -p {to_folder}/decoys/openMM")
+            for pdb in pdb_list:
+                complete_models = []
+                print(pdb)
+                for i in range(10):
+                    movie = f"{pre}/{pdb}/{i}/movie.pdb"
+                    s = parser.get_structure("X", movie)
+                    complete_models += list(s.get_models())
+                t = data.query(f"Protein == '{pdb}' and Folder == '{folder}' and Steps > 1").reset_index(drop=True)
+                t["structure"] = complete_models
+                t = t.rename(columns={"Q":"Qw"})
+                last50 = t.groupby("Run").tail(50).reset_index(drop=True)
+                to_folder = "."
+                last50.to_pickle(f"{to_folder}/decoys/openMM/{pdb}_{folder}.pkl")
+    if args.mode == 3:
+        do("mkdir -p proteins_name_list")
+        do("mkdir -p slurms")
+        do("mkdir -p gammas")
+        do('mkdir -p outs')
+        do("mkdir -p ../phis")
+        # folder = "first"
+        # folder_list = ["first", "first_cpu2"]
+        # folder_list = [folder]
+        with open("protein_list", "w") as out:
+            for folder in folder_list:
+                for pdb in pdb_list:
+                    out.write(f"{pdb}_{folder}\n")
+        do("cp /home/wl45/opt/optimization/phi_list_contact.txt phi_list.txt")
+    if args.mode == 4:
+        do("gg_server.py -d dec14 -m 222")
+    if args.mode == 55:
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d dec24 -m 555"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 555:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        n_decoys = 500
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        # simulation_location_list=["first", "first_cpu2"]
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                        withBiased=True ,num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+    if args.mode == 5:
+        folder_list = ["first_iter1_cpu4", "iter2_gpu", "first_gpu", "iter2_real_gpu"]
+        folder_list += ["iter3_gpu"]
+        folder_list += ["iter0_gpu_less_beta", "iter4_gpu"]
+        folder_list += ["iter5_withBiased_gpu"]
+        folder_list += ["iter6_gpu"]
+        with open("protein_list", "w") as out:
+            for folder in folder_list:
+                for pdb in pdb_list:
+                    out.write(f"{pdb}_{folder}\n")
+        do("gg_server.py -d dec24 -m 55")
+    if args.mode == 6:
+        i = 7
+        do(f"optimization_analyze.py iter{i}")
+    if args.mode == 7:
+        # go to iteration folder
+        # iteration = 3
+        iteration = 7
+        for pdb in pdb_list:
+            do(f"cp ../multiDensityOptimization/optimization_iteration1/optimization_iter{iteration}/Oct26_saved_gammas/iter{iteration}_cutoff500_impose_Aprime_constraint/gamma.dat setups/{pdb}/iter{iteration}_gamma.dat")
+            do(f"cp ../multiDensityOptimization/optimization_iteration1/optimization_iter{iteration}/Oct26_saved_gammas/iter{iteration}_cutoff500_impose_Aprime_constraint/burial_gamma.dat setups/{pdb}/iter{iteration}_burial_gamma.dat")
+
+        # iteration = "5"
+        # name = "5_withBiased"
+        # for pdb in pdb_list:
+        #     do(f"cp ../multiDensityOptimization/optimization_iteration1/optimization_iter{name}/Oct26_saved_gammas/iter{iteration}_cutoff500_impose_Aprime_constraint/gamma.dat setups/{pdb}/iter{name}_gamma.dat")
+        #     do(f"cp ../multiDensityOptimization/optimization_iteration1/optimization_iter{name}/Oct26_saved_gammas/iter{iteration}_cutoff500_impose_Aprime_constraint/burial_gamma.dat setups/{pdb}/iter{name}_burial_gamma.dat")
+    if args.mode == 8:
+        # modify force_steup.py
+        iteration = 7
+        force_setup = "forces_setup.py"
+        iteration = f"iter{iteration}_gpu"
+        subMode = 9
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 2e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 888:
+        # modify force_steup.py
+        iteration = 7
+        force_setup = "forces_setup.py"
+        iteration = f"iter{iteration}_gpu_long"
+        subMode = 9
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 88:
+        # modify force_steup.py
+        iteration = "5_withBiased"
+        force_setup = "forces_setup.py"
+        iteration = f"iter{iteration}_gpu"
+        subMode = 7
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 2e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 9:
+        # modify force_steup.py
+        iteration = 0
+        force_setup = "forces_setup.py"
+        iteration = f"iter{iteration}_gpu_less_beta"
+        subMode = 0
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 2e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+if args.day == "dec23":
+    pdb_list = dataset["optimization"]
+    # folder_list = ["first_iter1_cpu4", "iter2_gpu", "first_gpu"]
+    if args.mode == 1:
+        for pdb in pdb_list:
+            do(f"cp ../multiDensityOptimization/optimization_iteration1/optimization_iter2/Oct26_saved_gammas/iter2_cutoff500_impose_Aprime_constraint/gamma.dat setups/{pdb}/iter2_gamma.dat")
+            do(f"cp ../multiDensityOptimization/optimization_iteration1/optimization_iter2/Oct26_saved_gammas/iter2_cutoff500_impose_Aprime_constraint/burial_gamma.dat setups/{pdb}/iter2_burial_gamma.dat")
+    if args.mode == 2:
+        pdb_list = dataset["optimization"]
+        force_setup = "forces_setup.py"
+        iteration = "iter2_real_gpu"
+        subMode = 3
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 2e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 3:
+        # start from native
+        pdb = "cut_out_LBD"
+        i = 0
+        subModeList = [1, 2]
+        for i in range(2):
+            for subMode in subModeList:
+                cmd = f"python mm_run.py setups/{pdb}/{pdb} -f forces_setup_cut_out_LBD.py --subMode {subMode} --to native/6ud8_cut_out_LBD_{subMode}_{i}_no_beta -s 2e6 --reportFrequency 4000 --tempStart 300 --tempEnd 300 --platform CUDA"
+                out = slurmRun(f"slurms/gpu_native_LBD_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+if args.day == "dec22":
+    if args.mode == 1:
+        # start from native
+        pdb = "6ud8_ABCD_embeded"
+        i = 0
+        for subMode in [1, 2]:
+            cmd = f"python mm_run.py setups/{pdb}/{pdb} -f forces_setup_ABCD.py --subMode {subMode} --to native/6ud8_ABCD_{subMode}_{i} -s 2e6 --reportFrequency 4000 --tempStart 300 --tempEnd 300 --platform CUDA"
+            out = slurmRun(f"slurms/gpu_native_ABCD_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+            print(out)
+    if args.mode == 2:
+        run = "run3"
+        # subModeList = [5, 6]
+        # subModeList = [7, 8, 9]
+        subModeList = [5, 6, 10, 11]
+        pdb = "6ud8_F_complete"
+        for subMode in subModeList:
+            for i in range(2):
+                # i = 0
+                # subMode = 2
+                cmd = f"python mm_run_with_pulling_start.py setups/{pdb}/extended -f with_topology/forces_setup_6ud8_F_complete_3TH.py --subMode {subMode} --to {run}/3TH_{i}_subMode_{subMode} -s 5e6 --reportFrequency 4000 --tempStart 800 --tempEnd 300 --platform CUDA"
+                out = slurmRun(f"slurms/gpu_3TH_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+                cmd = f"python mm_run_with_pulling_start.py setups/{pdb}/extended -f with_topology/forces_setup_6ud8_F_complete_4TH_hand_modify.py --subMode {subMode} --to {run}/4TH_{i}_subMode_{subMode} -s 5e6 --reportFrequency 4000  --tempStart 800 --tempEnd 300 --platform CUDA"
+                out = slurmRun(f"slurms/gpu_4TH_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+            for i in range(2):
+                # subMode = 2
+                cmd = f"python mm_run.py setups/{pdb}/{pdb} -f with_topology/forces_setup_6ud8_F_complete_3TH.py --subMode {subMode} --to {run}/native_3TH_{i}_subMode_{subMode} -s 5e6 --reportFrequency 4000 --tempStart 300 --tempEnd 300 --platform CUDA"
+                out = slurmRun(f"slurms/gpu_native_3TH_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+                cmd = f"python mm_run.py setups/{pdb}/{pdb} -f with_topology/forces_setup_6ud8_F_complete_4TH_hand_modify.py --subMode {subMode} --to {run}/native_4TH_{i}_subMode_{subMode} -s 5e6 --reportFrequency 4000 --tempStart 300 --tempEnd 300 --platform CUDA"
+                out = slurmRun(f"slurms/gpu_native_4TH_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+if args.day == "dec18":
+    if args.mode == 1:
+        # start from native
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+        # i = 0
+        # subMode = 3
+        # subMode = 4
+        subMode = 5
+        pdb = "6ud8_F_complete"
+        for i in range(3):
+            # subMode = 2
+            cmd = f"python mm_run.py setups/{pdb}/{pdb} -f with_topology/forces_setup_6ud8_F_complete_3TH.py --subMode {subMode} --to native/3TH_{i}_subMode_{subMode} -s 5e6 --reportFrequency 4000 --tempStart 300 --tempEnd 300 --platform CUDA"
+            out = slurmRun(f"slurms/gpu_native_3TH_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+            print(out)
+            cmd = f"python mm_run.py setups/{pdb}/{pdb} -f with_topology/forces_setup_6ud8_F_complete_4TH.py --subMode {subMode} --to native/4TH_{i}_subMode_{subMode} -s 5e6 --reportFrequency 4000 --tempStart 300 --tempEnd 300 --platform CUDA"
+            out = slurmRun(f"slurms/gpu_native_4TH_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+            print(out)
+    if args.mode == 2:
+        # subMode = 4
+        subMode = 6
+        # subMode = 5
+        run = "run1"
+        subModeList = [5, 6]
+        for subMode in subModeList:
+            for i in range(2):
+                # i = 0
+                # subMode = 2
+                pdb = "6ud8_F_complete"
+                cmd = f"python mm_run_with_pulling_start.py setups/{pdb}/extended -f with_topology/forces_setup_6ud8_F_complete_3TH.py --subMode {subMode} --to {run}/3TH_{i}_subMode_{subMode} -s 5e6 --reportFrequency 4000 --tempStart 800 --tempEnd 300 --platform CUDA"
+                out = slurmRun(f"slurms/gpu_3TH_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+                cmd = f"python mm_run_with_pulling_start.py setups/{pdb}/extended -f with_topology/forces_setup_6ud8_F_complete_4TH.py --subMode {subMode} --to {run}/4TH_{i}_subMode_{subMode} -s 5e6 --reportFrequency 4000  --tempStart 800 --tempEnd 300 --platform CUDA"
+                out = slurmRun(f"slurms/gpu_4TH_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+if args.day == "dec17":
+    if args.mode == 1:
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+        subMode = 4
+        for i in range(3):
+            cmd = f"python mm_run_with_pulling_start.py setups/6ud8_F/extended -f set_topology/forces_setup_6ud8_F_with_helical.py --subMode {subMode} --to run2/3TH_{subMode}_{i} -s 2e6 --platform CUDA"
+            out = slurmRun(f"slurms/gpu_3TH_{subMode}_{i}.slurm", cmd, template=gpu_commons_slurm)
+            print(out)
+            cmd = f"python mm_run_with_pulling_start.py setups/6ud8_F/extended -f set_topology/forces_setup_6ud8_F_with_helical_4TH_topo.py --subMode {subMode} --to run2/4TH_{subMode}_{i} -s 2e6 --platform CUDA"
+            out = slurmRun(f"slurms/gpu_4TH_{subMode}_{i}.slurm", cmd, template=gpu_commons_slurm)
+            print(out)
+    if args.mode == 2:
+        subMode = 4
+        for i in range(3):
+            # i = 0
+            cmd = f"python mm_run.py setups/6ud8_F/6ud8_F -f set_topology/forces_setup_6ud8_F_with_helical.py --subMode {subMode} --to native/3TH_{i}_subMode_{subMode} -s 5e6 --reportFrequency 4000 --tempStart 300 --tempEnd 300 --platform CUDA"
+            out = slurmRun(f"slurms/gpu_native_3TH_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+            print(out)
+            cmd = f"python mm_run.py setups/6ud8_F/6ud8_F -f set_topology/forces_setup_6ud8_F_with_helical_4TH_topo.py --subMode {subMode} --to native/4TH_{i}_subMode_{subMode} -s 5e6 --reportFrequency 4000  --tempStart 300 --tempEnd 300 --platform CUDA"
+            out = slurmRun(f"slurms/gpu_native_4TH_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+            print(out)
+if args.day == "dec16":
+    if args.mode == 1:
+        pdb = "6ud8_F"
+        pdb = "6ud8_F_complete"
+        do("mkdir -p TM_pred")
+        cd("TM_pred")
+        do(f"/projects/pw8/wl45/topology_prediction/PureseqTM_Package/PureseqTM_proteome.sh -i ../setups/{pdb}/{pdb}.fasta")
+        cd("..")
+    if args.mode == 2:
+        pdb_list = dataset["optimization"]
+        force_setup = "forces_setup.py"
+        iteration = "first_gpu"
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 2e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 3:
+        pdb_list = dataset["optimization"]
+        force_setup = "forces_setup.py"
+        iteration = "iter2_gpu"
+        subMode = 2
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 2e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+
+if args.day == "dec15":
+    # pdb_list = ['1e0m', '1w4e', '1e0g', '2wqg', '1jo8', '1fex', '2l6r', '1c8c', '1g6p', '1mjc', '2jmc', '1hdn', '1st7', '1n88', '1d6o', '1hcd', '2ga5', '1j5u', '3o4d', '1k0s']
+    pdb_list = dataset["optimization"]
+    folder_list = ["first_iter1_cpu4", "iter2_gpu", "first_gpu"]
+    if args.mode == 1:
+        for pdb in pdb_list:
+            do(f"cp ../saved_gammas/Dec15_500/burial_gamma.dat setups/{pdb}/iter1_burial_gamma.dat")
+            do(f"cp ../saved_gammas/Dec15_500/gamma.dat setups/{pdb}/iter1_gamma.dat")
+    if args.mode == 2:
+        force_setup = "forces_setup_iter1.py"
+        iteration = "first_iter1_cpu4"
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 2e6 --tempStart 800 --tempEnd 200 --platform CPU --thread 4 --reportFrequency 4000 -f {force_setup}"
+                out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                # out = slurmRun(f"slurms/{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 3:
+        iteration = "first_iter1_cpu4"
+        force_setup = "forces_setup_iter1.py"
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"mm_analysis.py setups/{pdb}/extended -t /scratch/wl45/dec_2019/iterative_optimization/{iteration}/{pdb}/{i}/movie.dcd --subMode -1 -f {force_setup}"
+                out = slurmRun(f"slurms/analysis_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                # out = slurmRun(f"slurms/{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                print(out)
+    if args.mode == 4:
+        for folder in folder_list:
+            cd(folder)
+            for pdb in pdb_list:
+                for i in range(10):
+                    cd(f"{pdb}/{i}")
+                    do("python /projects/pw8/wl45/openawsem/helperFunctions/convertOpenmmTrajectoryToStandardMovie.py movie.pdb")
+                    cd("../..")
+            cd("..")
+if args.day == "dec14":
+    # pdb_list = ['1e0m', '1w4e', '1e0g', '2wqg', '1jo8', '1fex', '2l6r', '1c8c', '1g6p', '1mjc', '2jmc', '1hdn', '1st7', '1n88', '1d6o', '1hcd', '2ga5', '1j5u', '3o4d', '1k0s']
+    pdb_list = dataset["optimization"]
+    folder_list = ["first_iter1_cpu4", "iter2_gpu", "first_gpu"]
+    if args.mode == 1:
+        # dataFile = "iterative_optimization_first_cpu2_12-15.csv"
+        dataFile = "iterative_optimization_iter2_gpu_12-19.csv"
+        data = pd.read_csv(dataFile, index_col=0)
+        parser = PDBParser()
+        # folder = "first"
+        # for folder in ["first", "first_cpu2"]:
+        for folder in folder_list:
+            pre = f"/scratch/wl45/dec_2019/iterative_optimization/{folder}"
+            to_folder = "."
+            os.system(f"mkdir -p {to_folder}/decoys/openMM")
+            for pdb in pdb_list:
+                complete_models = []
+                print(pdb)
+                for i in range(10):
+                    movie = f"{pre}/{pdb}/{i}/movie.pdb"
+                    s = parser.get_structure("X", movie)
+                    complete_models += list(s.get_models())
+                t = data.query(f"Protein == '{pdb}' and Folder == '{folder}' and Steps > 1").reset_index(drop=True)
+                t["structure"] = complete_models
+                t = t.rename(columns={"Q":"Qw"})
+                last50 = t.groupby("Run").tail(50).reset_index(drop=True)
+                to_folder = "."
+                last50.to_pickle(f"{to_folder}/decoys/openMM/{pdb}_{folder}.pkl")
+    # if args.mode == 2:
+    #     # folder = "first"
+    #     for folder in folder_list:
+    #         for pdb in pdb_list:
+    #             # do(f"mv {folder}_{pdb} {folder}_{pdb}.pkl")
+    #             do(f"mv {folder}_{pdb}.pkl {pdb}_{folder}.pkl")
+    if args.mode == 3:
+        # n = 10
+        n = 500
+        do("mkdir -p proteins_name_list")
+        do("mkdir -p slurms")
+        do("mkdir -p gammas")
+        do('mkdir -p outs')
+        do("mkdir -p ../phis")
+        # folder = "first"
+        # folder_list = ["first", "first_cpu2"]
+        with open("protein_list", "w") as out:
+            for folder in folder_list:
+                for pdb in pdb_list:
+                    out.write(f"{pdb}_{folder}\n")
+    if args.mode == 4:
+        do("mkdir -p database/dompdb")
+        do("mkdir -p database/S20_seq")
+        for pdb in pdb_list:
+            do(f"cp ../../iterative_optimization/cleaned_pdbs/first_test_set/{pdb}.pdb database/dompdb/")
+    if args.mode == 5:
+        def getSeq(fileLocation):
+            p = PDBParser()
+            s = p.get_structure("test", fileLocation)
+            seq = ""
+            residues = list(s.get_residues())
+            for residue in residues:
+                res_id = residue.get_id()[0]
+                if res_id==' ':
+                    residue_name = residue.get_resname()
+                    seq += three_to_one(residue_name)
+            return seq
+        for pdb in pdb_list:
+            fileLocation = f"database/dompdb/{pdb}.pdb"
+            seq = getSeq(fileLocation)
+            opt_pdbName = pdb
+            fileLocation = f"database/S20_seq/{opt_pdbName}.seq"
+            with open(fileLocation, "w") as out:
+                out.write(seq+"\n")
+    if args.mode == 22:
+        protein = args.label
+        do(f"python3 ~/opt/compute_phis.py -m 7 {protein}")
+        # do("python3 ~/opt/compute_phis.py -m 0 test_protein")
+    if args.mode == 222:
+        # time.sleep(36000)
+        with open("protein_list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(1):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i)
+        n = i
+        i = 0
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d dec14 -m 22 -l {proteins}", template=base_slurm, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        exit()
+        waitForJobs(jobIdList, sleepInterval=300)
+
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d dec14 -m 33"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 333:
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d dec14 -m 33"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 33:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        n_decoys = 500
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        # simulation_location_list=["first", "first_cpu2"]
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                        num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+if args.day == "dec12":
+    pdb_list = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91"]
+    pdb_list += ["4nv6", "4p79", "5dsg", "6g7o", "6a93", "2jo1", "1py6", "1pv6", "1u19"]
+    if args.mode == 1:
+        iteration = "third"
+        # mode = 3  # hybrid
+        # mode = 1  # water
+        # mode =2   # membrane
+        # for mode in [1, 2, 3]:
+        # redo mode 1
+        for mode in [1]:
+            for i in range(0, 10):
+                # batch prediction
+                for pdb in pdb_list:
+                    cmd = f"python mm_run_with_pulling_start.py setup/{pdb}/extended --to {iteration}_{mode}/{pdb}/{i} -s 8e6 --tempStart 1000 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f set_topology_force/forces_setup_{pdb}.py --subMode {mode}"
+                    out = slurmRun(f"slurms/{iteration}_{mode}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                    print(out)
+    if args.mode == 2:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        iteration = "first_gpu"
+        d = pd.read_csv("original_pdbs/first_test_set.csv", index_col=0)
+        pdb_list = d.PDB.str.lower().to_list()
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 2e6 --tempStart 800 --tempEnd 200 --reportFrequency 4000 -f forces_setup.py"
+                # out = slurmRun(f"slurms/{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 3:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        iteration = "first_gpu"
+        d = pd.read_csv("original_pdbs/first_test_set.csv", index_col=0)
+        pdb_list = d.PDB.str.lower().to_list()
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"mm_analysis.py setups/{pdb}/extended -t /scratch/wl45/dec_2019/iterative_optimization/first/{pdb}/{i}/movie.dcd --subMode -1 -f forces_setup.py"
+                out = slurmRun(f"slurms/analysis_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                # out = slurmRun(f"slurms/{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                print(out)
+    if args.mode == 4:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        iteration = "first_cpu2"
+        d = pd.read_csv("original_pdbs/first_test_set.csv", index_col=0)
+        pdb_list = d.PDB.str.lower().to_list()
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 2e6 --tempStart 800 --tempEnd 200 --platform CPU --thread 2 --reportFrequency 4000 -f forces_setup.py"
+                out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                # out = slurmRun(f"slurms/{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 5:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        iteration = "first_cpu2"
+        d = pd.read_csv("original_pdbs/first_test_set.csv", index_col=0)
+        pdb_list = d.PDB.str.lower().to_list()
+        for pdb in pdb_list:
+            for i in range(10):
+                cmd = f"mm_analysis.py setups/{pdb}/extended -t /scratch/wl45/dec_2019/iterative_optimization/{iteration}/{pdb}/{i}/movie.dcd --subMode -1 -f forces_setup.py"
+                out = slurmRun(f"slurms/analysis_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                # out = slurmRun(f"slurms/{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                print(out)
+if args.day == "dec10":
+    if args.mode == 1:
+        # get unfinished job.
+        # pre = "/Users/weilu/Research/server/oct_2019/membrane_optimization"
+        aa = glob.glob("outs/slurm-*.out")
+        # print(aa)
+        skip_pdbs = []
+        for a in aa:
+            cmd = f"grep 'CANCELLED' {a}"
+            has_cancelled = getFromTerminal(cmd)
+            if has_cancelled == "":
+                pass
+            else:
+                print(has_cancelled)
+                cmd = f"grep -A1 'phi_pairwise_contact_well' {a}"
+                c = getFromTerminal(cmd)
+                pdb = eval(c.split("\n")[1].strip())[0]
+                skip_pdbs.append(pdb)
+                print(pdb)
+    if args.mode == 2:
+        skip_pdbs = ['2FVMD_53-502', '5K1EA_21-567', '2W55H_135-705', '4EK7B_18-513', '6CTSA_44-423', '4S3RA_148-667', '5D51L_53-603', '1ULVA_281-956', '3VKHB_4007-4725', '2X51A_59-760', '5EEOA_157-822', '3RILD_78-427']
+        with open("head500_protein_list") as f:
+            a = f.readlines()
+        a = [i.strip() for i in a]
+        with open("filtered_protein_list", "w") as out:
+            for pdb in a:
+                if pdb in skip_pdbs:
+                    pass
+                else:
+                    out.write(pdb+"\n")
+        # print(aa)
+        # skip_pdbs = []
+        # for a in aa:
+        #     cmd = f"grep -A1 'phi_pairwise_contact_well' {a}"
+        #     c = getFromTerminal(cmd)
+        #     if c == '':
+        #         continue
+        #     pdb = eval(c.split("\n")[1].strip())[0]
+        #     skip_pdbs.append(pdb)
+        #     # print(pdb)
+        print(len(skip_pdbs))
+        print(skip_pdbs)
+
+
+if args.day == "dec09":
+    # multi chain iter 0 globular.
+    # based on jun10
+    from pyCodeLib import *
+    import warnings
+    warnings.filterwarnings('ignore')
+    n_decoys = 2000
+
+    if args.mode == 44:
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d dec09 -m 4"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 11:
+        # n = 10
+        n = 1000
+        do("mkdir -p proteins_name_list")
+        do("mkdir -p slurms")
+        do("mkdir -p decoys/multiShuffle")
+        do("mkdir -p gammas")
+        do('mkdir -p outs')
+        do("mkdir -p ../phis")
+        with open("protein_list") as f:
+            content = f.readlines()
+        for line in content:
+            name = line.strip()
+            generate_multiShuffle(name, num_decoys=n, nameMode=0)
+    if args.mode == 111:
+        # filter out protein with small MSAs.
+        with open("protein_list") as f:
+            content = f.readlines()
+        with open("protein_list_filtered", "w") as out:
+            for line in content:
+                name = line.strip()
+                with open(f"alignments/{name}_filtered_0.05.seqs") as f:
+                    a = f.readlines()
+                if len(a) < 1000:
+                    pass
+                else:
+                    out.write(line)
+    if args.mode == 1111:
+        # n = 10
+        n = 1000
+        do("mkdir -p proteins_name_list")
+        do("mkdir -p slurms")
+        do("mkdir -p decoys/multiShuffle")
+        do("mkdir -p gammas")
+        do('mkdir -p outs')
+        do("mkdir -p ../phis")
+        with open("protein_list") as f:
+            content = f.readlines()
+        for line in content:
+            name = line.strip()
+            generate_multiShuffle(name, num_decoys=n, nameMode=0)
+    if args.mode == 1:
+        # do("cp ../phi_list.txt .")
+        # do("cp ~/opt/optimization/phi_list_contact.txt phi_list.txt")
+
+        with open("protein_list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        # n = 100  # for testing
+        while pos < n:
+            with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+                for ii in range(1):
+                    if pos < n:
+                        out.write(content[pos])
+                    pos += 1
+                i += 1
+        print(i)
+        n = i
+        i = 0
+        jobIdList = []
+        # exit()
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d dec09 -m 2 -l {proteins}")
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        waitForJobs(jobIdList, sleepInterval=300)
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d dec09 -m 4"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+
+    if args.mode == 2:
+        proteins = args.label
+        # sampleK=2
+        sampleK=1000
+        evaluate_phis_over_training_set_for_native_structures_Wei(proteins, "phi_list.txt", decoy_method='multiShuffle', max_decoys=1e+10, tm_only=False, num_processors=1, multi_seq=True, sampleK=sampleK)
+
+    if args.mode == 22:
+        with open("protein_list") as f:
+            content = f.readlines()
+        pos = 0
+        i = 0
+        n = len(content)
+        jobIdList = []
+        for i in range(n):
+            sub_list_file = f"proteins_name_list/proteins_name_list_{i}.txt"
+            jobId = slurmRun(f"slurms/run_AB_{i}.slurm", f"python3 ~/opt/gg_server.py -d jun10 -m 3 -l {sub_list_file}", memory=5)
+            jobIdList.append(jobId)
+        # for testing toymodel
+    if args.mode == 3:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # n = len(simulation_location_list)
+        # n = 2
+        # n = len(new_simulation_list)
+
+        # import time
+        # time.sleep(4000)
+        # with open(f"proteins_name_list.txt", "w") as out:
+        #     for data in ["new", "old"]:
+        #         pdb_list, steps = dataset[data]
+        #         for p in pdb_list:
+        #             name = p.lower()[:4]
+        #             out.write(f"{name}\n")
+        # complete_proteins = "proteins_name_list/proteins_name_list_tiny.txt"
+        # complete_proteins = "proteins_name_list.txt"
+        # complete_proteins = "tiny_list.txt"
+        complete_proteins = args.label
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='multiShuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=True)
+
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        out = calculate_A_B_and_gamma_wl45_parallel(complete_proteins, "phi_list.txt", decoy_method='multiShuffle',
+                                        num_decoys=1000, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=True)
+        print("Success", out)
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_xl23(complete_proteins, "phi_list.txt", decoy_method='lammps',
+        #                                 num_decoys=n*6000, noise_filtering=True, jackhmmer=False, read=False)
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='lammps',
+        #                                 num_decoys=n*6000, noise_filtering=True, jackhmmer=False, read=False, mode=1, simulation_location_list=simulation_location_list)
+    # if args.mode == 4:
+    #     with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+    #         out.write(scavenge_slurm.format(f"python3 ~/opt/gg_server.py -d apr13 -m 3"))
+    #     replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+    #     do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 4:
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='multiShuffle',
+                                        num_decoys=1000, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=True)
+
+if args.day == "dec07":
+    pdb_list = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91"]
+    pdb_list += ["4nv6", "4p79", "5dsg", "6g7o", "6a93", "2jo1", "1py6", "1pv6", "1u19"]
+    mode_dic = {"first_normalized":3, "second":1, "third":2}
+    if args.mode == 1:
+        iteration = "native_normalized"
+        mode = 3  # hybrid
+        # mode = 1  # water
+        for mode in [1, 2, 3]:
+            for i in range(1):
+                # batch prediction
+                for pdb in pdb_list:
+                    cmd = f"python mm_run.py setup/{pdb}/{pdb} --to {iteration}_{mode}/{pdb}/{i} --platform CUDA -f set_topology_force/forces_setup_{pdb}.py --subMode {mode}  --reportFrequency 4000 -s 1e6 --tempStart 300 --tempEnd 300"
+                    out = slurmRun(f"slurms/{iteration}_{mode}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                    print(out)
+    if args.mode == 2:
+        iteration = "second"
+        # mode = 3  # hybrid
+        # mode = 1  # water
+        # mode =2   # membrane
+        for mode in [1, 2, 3]:
+            for i in range(0, 5):
+                # batch prediction
+                for pdb in pdb_list:
+                    cmd = f"python mm_run_with_pulling_start.py setup/{pdb}/extended --to {iteration}_{mode}/{pdb}/{i} -s 8e6 --tempStart 1000 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f set_topology_force/forces_setup_{pdb}.py --subMode {mode}"
+                    out = slurmRun(f"slurms/{iteration}_{mode}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                    print(out)
+    if args.mode == 3:
+        iteration = "third"
+        # mode = 3  # hybrid
+        # mode = 1  # water
+        # mode =2   # membrane
+        for mode in [1, 2, 3]:
+            for i in range(0, 10):
+                # batch prediction
+                for pdb in pdb_list:
+                    cmd = f"python mm_run_with_pulling_start.py setup/{pdb}/extended --to {iteration}_{mode}/{pdb}/{i} -s 8e6 --tempStart 1000 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f set_topology_force/forces_setup_{pdb}.py --subMode {mode}"
+                    out = slurmRun(f"slurms/{iteration}_{mode}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                    print(out)
+
+if args.day == "dec04":
+    pdb_list = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91"]
+    pdb_list += ["4nv6", "4p79", "5dsg", "6g7o", "6a93", "2jo1", "1py6", "1pv6", "1u19"]
+
+    if args.mode == 1:
+        iteration = "first"
+        mode = 3  # hybrid
+        # mode = 1  # water
+        # mode = 2  # membrane
+        for i in range(1, 10):
+            # batch prediction
+            for pdb in pdb_list:
+                cmd = f"python mm_run_with_pulling_start.py setup/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 1000 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f set_topology_force/forces_setup_{pdb}.py --subMode {mode}"
+                out = slurmRun(f"slurms/{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 2:
+        iteration = "first_beta_strength"
+        mode = 3  # hybrid
+        mode_dic = {"first_normalized":3, "second":1, "third":2}
+        # mode = 1  # water
+        for i in range(5, 20):
+            # batch prediction
+            for pdb in pdb_list:
+                cmd = f"python mm_run_with_pulling_start.py setup/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 1000 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f set_topology_force/forces_setup_{pdb}.py --subMode {mode}"
+                out = slurmRun(f"slurms/{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 3:
+        iteration = "native"
+        mode = 3  # hybrid
+        # mode = 1  # water
+        for i in range(1):
+            # batch prediction
+            for pdb in pdb_list:
+                cmd = f"python mm_run.py setup/{pdb}/{pdb} --to {iteration}/{pdb}/{i} --platform CUDA -f set_topology_force/forces_setup_{pdb}.py --subMode {mode}  --reportFrequency 4000 -s 1e6 --tempStart 300 --tempEnd 300"
+                out = slurmRun(f"slurms/{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+if args.day == "dec03":
+    do("mkdir -p slurms")
+    do("mkdir -p outs")
+    jobIdList = []
+    for i in range(10):
+        for step in [1, 10, 100, 1000]:
+            s = int(2e3*step)
+            cmd = f"python mm_run.py setups/1r69/1r69 --to run1/step{step}/{i} --tempStart 300 --tempEnd 300 -s {s}  --reportFrequency {step} --platform CPU"
+            # jobId = slurmRun(f"slurms/run_{step}_{i}.slurm", cmd, template=gpu_base_slurm)
+            jobId = slurmRun(f"slurms/run_{step}_{i}.slurm", cmd, template=scavenge_slurm)
+
+            # jobId = slurmRun(f"slurms/{simulation}_{pdb}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+if args.day == "dec01":
+    if args.mode == 1:
+        # pdb_list = ["1fs3"]
+        # pdb_list = ["1hn4"]
+        pdb_list = ["1lmm", "1tcg", "1hn4", "1fs3", "1bpi"]
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        simulation = "run_without_er_gamma_yesCysCys"
+        start_from ="extended"
+
+        # force_file = "forces_setup_gamma_noCysCys.py"
+        force_file = "forces_setup.py"
+        subMode_list = []
+        # subMode_list += [0, 1, 2, 3, 4, 5]
+        # subMode_list += [10, 11, 12, 13, 14, 15]
+        # subMode_list += [20, 21, 22, 23, 24, 25]
+        # subMode_list += [30, 31, 32, 33, 34, 35]
+        # subMode_list = [26]
+        # subMode_list += [100, 101, 102, 103, 104, 105, 106]
+        # subMode_list += [110, 111, 112, 113, 114, 115, 116]
+        # subMode_list += [120, 121, 122, 123, 124, 125, 126]
+        # subMode_list += [130, 131, 132, 133, 134, 135]
+        # subMode_list += [0, 1, 2, 3]
+        subMode_list += [30, 31, 32, 33]
+        for i in range(20):
+            for pdb in pdb_list:
+                for subMode in subMode_list:
+                    print(pdb)
+                    cmd = f"python mm_run.py setups/{pdb}/{start_from} --to {simulation}/{pdb}/{subMode}_{i} -f {force_file} --subMode {subMode} --platform CUDA --reportFrequency 4000 -s 1e7 --tempStart 800 --tempEnd 200"
+                    # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                    jobId = slurmRun(f"slurms/{simulation}_{pdb}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+
+                    # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                    jobIdList.append(jobId)
+
+if args.day == "nov26":
+    if args.mode == 1:
+        # pdb_list = ["1fs3"]
+        # pdb_list = ["1hn4"]
+        pdb_list = ["1lmm", "1tcg"]
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        simulation = "run_without_er_gamma_noCysCys_2"
+        start_from ="extended"
+
+        force_file = "forces_setup_gamma_noCysCys.py"
+        subMode_list = []
+        subMode_list += [0, 1, 2, 3, 4, 5]
+        # subMode_list += [10, 11, 12, 13, 14, 15]
+        # subMode_list += [20, 21, 22, 23, 24, 25]
+        subMode_list += [30, 31, 32, 33, 34, 35]
+        # subMode_list = [26]
+        # subMode_list += [100, 101, 102, 103, 104, 105, 106]
+        # subMode_list += [110, 111, 112, 113, 114, 115, 116]
+        # subMode_list += [120, 121, 122, 123, 124, 125, 126]
+        # subMode_list += [130, 131, 132, 133, 134, 135]
+        for i in range(20):
+            for pdb in pdb_list:
+                for subMode in subMode_list:
+                    print(pdb)
+                    cmd = f"python mm_run.py setups/{pdb}/{start_from} --to {simulation}/{pdb}/{subMode}_{i} -f {force_file} --subMode {subMode} --platform CUDA --reportFrequency 4000 -s 1e7 --tempStart 800 --tempEnd 200"
+                    # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                    jobId = slurmRun(f"slurms/{simulation}_{pdb}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+
+                    # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                    jobIdList.append(jobId)
+    if args.mode == 2:
+        pdb_list = ["1bpi"]
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        simulation = "run_without_er_gamma_noCysCys_2"
+        start_from ="extended"
+
+        force_file = "forces_setup_gamma_noCysCys.py"
+        subMode_list = []
+        subMode_list += [0, 1, 2, 3, 4, 5]
+        # subMode_list += [10, 11, 12, 13, 14, 15]
+        # subMode_list += [20, 21, 22, 23, 24, 25]
+        subMode_list += [30, 31, 32, 33, 34, 35]
+        # subMode_list = [26]
+        # subMode_list += [100, 101, 102, 103, 104, 105, 106]
+        # subMode_list += [110, 111, 112, 113, 114, 115, 116]
+        # subMode_list += [120, 121, 122, 123, 124, 125, 126]
+        # subMode_list += [130, 131, 132, 133, 134, 135]
+        for i in range(20):
+            for pdb in pdb_list:
+                for subMode in subMode_list:
+                    print(pdb)
+                    cmd = f"python mm_run.py setups/{pdb}/{start_from} --to {simulation}/{pdb}/{subMode}_{i} -f {force_file} --subMode {subMode} --platform CUDA --reportFrequency 4000 -s 1e7 --tempStart 800 --tempEnd 200"
+                    # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                    jobId = slurmRun(f"slurms/{simulation}_{pdb}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+
+                    # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                    jobIdList.append(jobId)
+
+if args.day == "nov25":
+    # native cys, 1fs3
+    pdb_list = ["1fs3"]
+    if args.mode == 1:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        # simulation = "run2_k10"
+        # simulation = "run3"
+
+        simulation = "run_with_ho_with_and_without_er"
+        start_from ="extended"
+
+        force_file = "forces_setup.py"
+        subMode_list = []
+        # subMode_list += [0, 1, 2, 3, 4, 5]
+        # subMode_list += [10, 11, 12, 13, 14, 15]
+        # subMode_list += [20, 21, 22, 23, 24, 25]
+        subMode_list += [30, 31, 32, 33, 34, 35]
+        # subMode_list = [26]
+        # subMode_list += [100, 101, 102, 103, 104, 105, 106]
+        # subMode_list += [110, 111, 112, 113, 114, 115, 116]
+        # subMode_list += [120, 121, 122, 123, 124, 125, 126]
+        subMode_list += [130, 131, 132, 133, 134, 135]
+        for i in range(10):
+            for pdb in pdb_list:
+                for subMode in subMode_list:
+                    print(pdb)
+                    cmd = f"python mm_run.py setups/{pdb}/{start_from} --to {simulation}/{pdb}/{subMode}_{i} -f {force_file} --subMode {subMode} --platform CUDA --reportFrequency 4000 -s 1e7 --tempStart 800 --tempEnd 200"
+                    # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                    jobId = slurmRun(f"slurms/{simulation}_{pdb}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+
+                    # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                    jobIdList.append(jobId)
+    if args.mode == 2:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        # simulation = "run2_k10"
+        # simulation = "run3"
+
+        simulation = "run_without_er_gamma_noCysCys"
+        start_from ="extended"
+
+        force_file = "forces_setup_gamma_noCysCys.py"
+        subMode_list = []
+        # subMode_list += [0, 1, 2, 3, 4, 5]
+        # subMode_list += [10, 11, 12, 13, 14, 15]
+        # subMode_list += [20, 21, 22, 23, 24, 25]
+        subMode_list += [30, 31, 32, 33, 34, 35]
+        # subMode_list = [26]
+        # subMode_list += [100, 101, 102, 103, 104, 105, 106]
+        # subMode_list += [110, 111, 112, 113, 114, 115, 116]
+        # subMode_list += [120, 121, 122, 123, 124, 125, 126]
+        # subMode_list += [130, 131, 132, 133, 134, 135]
+        for i in range(10):
+            for pdb in pdb_list:
+                for subMode in subMode_list:
+                    print(pdb)
+                    cmd = f"python mm_run.py setups/{pdb}/{start_from} --to {simulation}/{pdb}/{subMode}_{i} -f {force_file} --subMode {subMode} --platform CUDA --reportFrequency 4000 -s 1e7 --tempStart 800 --tempEnd 200"
+                    # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                    jobId = slurmRun(f"slurms/{simulation}_{pdb}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+
+                    # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                    jobIdList.append(jobId)
+if args.day == "nov23":
+    # native cys, 1fs3
+    pdb_list = ["1fs3"]
+    if args.mode == 1:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        # simulation = "run2_k10"
+        # simulation = "run3"
+        # simulation = "native_energy"
+        simulation = "constant_temp"
+        # start_from ="extended"
+        start_from = "1fs3"
+        subMode_list = []
+        # subMode_list += [0, 1, 2, 3, 4, 5]
+        # subMode_list += [10, 11, 12, 13, 14, 15]
+        subMode_list += [26]
+        subMode_list += [20, 21, 22, 23, 24, 25]
+        # subMode_list += [100, 101, 102, 103, 104, 105, 106]
+        # subMode_list += [110, 111, 112, 113, 114, 115, 116]
+        # subMode_list += [120, 121, 122, 123, 124, 125, 126]
+        for i in range(5):
+            for pdb in pdb_list:
+                for subMode in subMode_list:
+                    print(pdb)
+                    cmd = f"python mm_run.py setups/{pdb}/{start_from} --to {simulation}/{pdb}/{subMode}_{i} -f forces_setup.py --subMode {subMode} --platform CUDA --reportFrequency 4000 -s 1e7 --tempStart 400 --tempEnd 200"
+                    # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                    jobId = slurmRun(f"slurms/{simulation}_{pdb}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+
+                    # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                    jobIdList.append(jobId)
+
+if args.day == "aug11":
+    if args.mode == 1:
+        # pdb = "1pv6"
+        do("mkdir -p forces_recompute")
+        for pdb in dataset["hybrid"]:
+            forceLocation = "forces_recompute"
+            do(f"cp forces/forces_setup_{pdb}.py {forceLocation}/forces_setup_{pdb}.py")
+            with fileinput.FileInput(f"{forceLocation}/forces_setup_{pdb}.py", inplace=True) as file:
+                for line in file:
+                    fromLine = 'MembranePart ='
+                    toLine = 'MembranePart =[1,2]\nMembranePart ='
+                    tmp = line.replace(fromLine, toLine)
+                    print(tmp, end='')
+
+if args.day == "nov20":
+    # native cys, 1fs3
+    pdb_list = ["1fs3"]
+    if args.mode == 1:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        # simulation = "run2_k10"
+        # simulation = "run3"
+
+        # simulation = "run_with_er"
+        # start_from ="extended"
+
+        # subMode_list = []
+        # subMode_list += [0, 1, 2, 3, 4, 5]
+        # subMode_list += [10, 11, 12, 13, 14, 15]
+        # subMode_list += [20, 21, 22, 23, 24, 25]
+        # subMode_list = [26]
+        # subMode_list += [100, 101, 102, 103, 104, 105, 106]
+        # subMode_list += [110, 111, 112, 113, 114, 115, 116]
+        # subMode_list += [120, 121, 122, 123, 124, 125, 126]
+
+        simulation = "native_energy"
+        start_from = "native"
+        subMode_list = [27]
+
+        for i in range(5):
+            for pdb in pdb_list:
+                for subMode in subMode_list:
+                    print(pdb)
+                    cmd = f"python mm_run.py setups/{pdb}/{start_from} --to {simulation}/{pdb}/{subMode}_{i} -f forces_setup.py --subMode {subMode} --platform CUDA --reportFrequency 4000 -s 1e7 --tempStart 800 --tempEnd 200"
+                    # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                    jobId = slurmRun(f"slurms/{simulation}_{pdb}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+
+                    # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                    jobIdList.append(jobId)
+    if args.mode == 2:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        # simulation = "run2_k10"
+        # simulation = "run3"
+
+        simulation = "run_with_er_and_gamma_noCysCys"
+        start_from ="extended"
+
+        force_file = "forces_setup_gamma_noCysCys.py"
+        subMode_list = []
+        # subMode_list += [0, 1, 2, 3, 4, 5]
+        # subMode_list += [10, 11, 12, 13, 14, 15]
+        # subMode_list += [20, 21, 22, 23, 24, 25]
+        # subMode_list = [26]
+        subMode_list += [100, 101, 102, 103, 104, 105, 106]
+        subMode_list += [110, 111, 112, 113, 114, 115, 116]
+        subMode_list += [120, 121, 122, 123, 124, 125, 126]
+
+        for i in range(5):
+            for pdb in pdb_list:
+                for subMode in subMode_list:
+                    print(pdb)
+                    cmd = f"python mm_run.py setups/{pdb}/{start_from} --to {simulation}/{pdb}/{subMode}_{i} -f {force_file} --subMode {subMode} --platform CUDA --reportFrequency 4000 -s 1e7 --tempStart 800 --tempEnd 200"
+                    # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                    jobId = slurmRun(f"slurms/{simulation}_{pdb}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+
+                    # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                    jobIdList.append(jobId)
+
+if args.day == "nov15":
+    pdb_list = ["1igd", "2sni", "1snb", "3il8", "1ubi", "1pht", "1poh", "1tig", "2acy", "1frd", "1opc", "1rds", "3chy", "5nul"]
+    if args.mode == 1:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        # simulation = "run2_k10"
+        # simulation = "new_beta_pap"
+        # subMode = 0
+        # simulation = "old_beta_pap"
+        # subMode = 1
+        simulation = "no_beta_pap"
+        subMode = -1
+        for i in range(5):
+            for pdb in pdb_list:
+                print(pdb)
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {simulation}/{pdb}/{i} -f forces_setup.py --subMode {subMode} --platform CUDA --reportFrequency 4000 -s 1e7 --tempStart 1000 --tempEnd 200"
+                # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                jobId = slurmRun(f"slurms/{simulation}_{pdb}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+
+                # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                jobIdList.append(jobId)
+
+if args.day == "nov14":
+    if args.mode ==1:
+        pdb_list = ["1igd", "2sni", "1snb", "3il8", "1ubi", "1pht", "1poh", "1tig", "2acy", "1frd", "1opc", "1rds", "3chy", "5nul"]
+        # pdb_list = ["6btc", "6g57", "6q64", "pex22", "sos", "unk2"]
+        # pdb_list = ["fmt", "6n7n", "2is1"]
+        # pdb_list = ["6jdq", "5uak"]
+        for pdb in pdb_list:
+            print(pdb)
+            do(f"python mm_evaluate_native.py setups/{pdb}/{pdb} --to native/{pdb}_complete --platform CPU")
+            pass
+
+if args.day == "nov11":
+    pdb_list = ["1fs3"]
+    if args.mode == 1:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        # simulation = "run2_k10"
+        # simulation = "run3"
+        simulation = "run_weaker_beta_pap"
+        # subMode_list = [0, 1, 2, 3, 4, 5]
+        # subMode_list += [10, 11, 12, 13, 14, 15]
+        subMode_list = [20, 21, 22, 23, 24, 25]
+        for i in range(5):
+            for pdb in pdb_list:
+                for subMode in subMode_list:
+                    print(pdb)
+                    cmd = f"python mm_run.py setups/{pdb}/extended --to {simulation}/{pdb}/{subMode}_{i} -f forces_setup.py --subMode {subMode} --platform CUDA --reportFrequency 4000 -s 1e7 --tempStart 1000 --tempEnd 200"
+                    # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                    jobId = slurmRun(f"slurms/{simulation}_{pdb}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+
+                    # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                    jobIdList.append(jobId)
+
+if args.day == "nov10":
+    pdb_list = ["1fs3"]
+    if args.mode == 1:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        # simulation = "run2_k10"
+        simulation = "run2"
+        for i in range(5):
+            for pdb in pdb_list:
+                print(pdb)
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {simulation}/{pdb}/{i} -f forces_setup.py --platform CUDA --reportFrequency 4000 -s 1e7 --tempStart 1000 --tempEnd 200"
+                # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                jobId = slurmRun(f"slurms/{simulation}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+
+                # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                jobIdList.append(jobId)
+    if args.mode == 2:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for i in range(5):
+            for pdb in pdb_list:
+                print(pdb)
+                cmd = f"python mm_analysis.py setups/1fs3/1fs3 -t run1/1fs3/{i}/movie.dcd -f forces_setup.py --platform CUDA"
+                # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                jobId = slurmRun(f"slurms/run1_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+
+                # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                jobIdList.append(jobId)
+    if args.mode == 3:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        simulation = "run2_k10"
+        # simulation = "run2"
+        for i in range(5):
+            for pdb in pdb_list:
+                print(pdb)
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {simulation}/{pdb}/{i} -f forces_setup_k10.py --platform CUDA --reportFrequency 4000 -s 1e7 --tempStart 1000 --tempEnd 200"
+                # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                jobId = slurmRun(f"slurms/{simulation}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+
+                # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                jobIdList.append(jobId)
+if args.day == "nov08":
+    # pdb_list = ["1tt8", "6btc", "6g57", "6q64", "pex22", "sos", "unk2"]
+    # pdb_list += ["fmt", "6n7n", "2is1"]
+    pdb_list = ["6jdq", "5uak"]
+    if args.mode == 1:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for i in range(5):
+            for pdb in pdb_list:
+                print(pdb)
+                if pdb in ["fmt", "6n7n", "2is1", "6jdq", "5uak"]:
+                    subMode = 2
+                elif pdb == "unk2":
+                    subMode = 0
+                else:
+                    subMode = 1
+                cmd = f"python mm_run.py setups/{pdb}/{pdb} --to run2/{pdb}/{i} --platform CUDA --subMode {subMode} --reportFrequency 4000 -s 1e6 --tempStart 800 --tempEnd 200"
+                # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                jobId = slurmRun(f"slurms/run2_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+
+                # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                jobIdList.append(jobId)
+
+if args.day == "nov06":
+    pdb_list = ["fmt", "6n7n", "2is1"]
+    if args.mode == 1:
+        for pdb in pdb_list:
+            do(f"cp ../frag_er_template/{pdb}_frag.mem setups/{pdb}/frag_HE.mem")
+
+if args.day == "nov03":
+    pdb_list = ["1tt8", "6btc", "6g57", "6q64", "pex22", "sos", "unk2"]
+    pdb_list = ["fmt", "6n7n", "2is1"]
+    if args.mode == 1:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for i in range(3):
+            for pdb in pdb_list:
+                print(pdb)
+                if pdb in ["fmt", "6n7n", "2is1"]:
+                    subMode = 2
+                elif pdb == "unk2":
+                    subMode = 0
+                else:
+                    subMode = 1
+                cmd = f"python mm_run.py setups/{pdb}/{pdb} --to run1/{pdb}/{i} --platform CUDA --subMode {subMode} --reportFrequency 4000 -s 1e7 --tempStart 1000 --tempEnd 200"
+                # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+                jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+
+                # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+                jobIdList.append(jobId)
+        # waitForJobs(jobIdList, sleepInterval=300)
 if args.day == "oct31":
     pdb_list = ["1tt8", "6btc", "6g57", "6q64", "pex22", "sos", "unk2"]
     if args.mode == 1:
@@ -692,14 +3218,19 @@ if args.day == "oct31":
         pass
     if args.mode ==2:
         # pdb_list = ["6btc", "6g57", "6q64", "pex22", "sos", "unk2"]
+        # pdb_list = ["fmt", "6n7n", "2is1"]
+        pdb_list = ["6jdq", "5uak"]
         for pdb in pdb_list:
             print(pdb)
-            if pdb != "unk2":
-                subMode = 1
-            else:
+            if pdb in ["fmt", "6n7n", "2is1", "6jdq", "5uak"]:
+                subMode = 2
+            elif pdb == "unk2":
                 subMode = 0
+            else:
+                subMode = 1
             do(f"python mm_evaluate_native.py setups/{pdb}/{pdb} --to native/{pdb}_complete --platform CPU --subMode {subMode}")
             pass
+
 if args.day == "oct30":
     # from jun20
     # also compute rotation.
@@ -733,7 +3264,7 @@ if args.day == "oct30":
         for i in range(n):
             proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
             # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
-            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d oct30 -m 2 -l {proteins}")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d oct30 -m 2 -l {proteins}", template=base_slurm)
             # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
             jobIdList.append(jobId)
             do(f"cat {proteins} >> iter0_complete.txt")
@@ -766,8 +3297,9 @@ if args.day == "oct30":
             q_list = []
             # rotation_all = [30] * 12
             # z_shift_all = [-20] + [2]*20
-            rotation_all = np.arange(0, 180, 30)
-            z_shift_all = np.arange(-20, 20, 4)
+            rotation_all = np.arange(0, 180, 15)
+            # z_shift_all = np.arange(-20, 20, 4)
+            z_shift_all = np.arange(-40, 40, 4)
             rotation_axis=Vector(1,0,0)
             for z_shift in z_shift_all:
                 for degree in rotation_all:
@@ -812,6 +3344,39 @@ if args.day == "oct30":
             np.savetxt(f"../phis/phi_relative_k_with_membrane_well_{name}_decoysQ_rotation", q_list, fmt='%1.4f')
         print("done", args.label)
         print(datetime.datetime.now())
+    if args.mode == 4:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        with open("protein_list") as f:
+            a = f.readlines()
+        random.shuffle(a)
+        with open("random_100", "w") as out:
+            for line in a[:100]:
+                out.write(line)
+        complete_proteins = "top_500"
+        complete_proteins = "last_500"
+        complete_proteins = "tiny"
+        complete_proteins = "random_100"
+        print(datetime.datetime.now())
+        # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+        #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shifted',
+                                        num_decoys=240, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, withBiased=True)
+    if args.mode == 5:
+        a = "rotation"
+        b = "shifted_rotation"
+        c = glob.glob("../back_phis/*")
+        for line in c:
+            if "native" in line:
+                toLine = line.replace("back_phis", "phis")
+            else:
+                toLine = line.replace("back_phis", "phis").replace(a, b)
+            # print(toLine)
+            do(f"cp {line} {toLine}")
+            # break
     # if args.mode == 2:
     #     from pyCodeLib import *
     #     proteinlist = readList(args.label)
@@ -969,7 +3534,7 @@ if args.day == "oct22":
         # A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_parallel(complete_proteins, "phi_list.txt", decoy_method='shuffle',
         #                                 num_decoys=1000, noise_filtering=True, jackhmmer=False, subset=None, read=2)
         A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shifted',
-                                        num_decoys=50, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False)
+                                        num_decoys=240, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False)
 
 
 if args.day == "oct20":
@@ -1173,10 +3738,10 @@ if args.day == "oct16":
             out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d oct16 -m 4"))
         replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
         do(f"sbatch slurms/run_on_scavenge.slurm")
-    if args.mode == 22:
-        protein = args.label
-        do(f"python3 ~/opt/compute_phis.py -m 0 {protein}")
-        # do("python3 ~/opt/compute_phis.py -m 0 test_protein")
+    # if args.mode == 22:
+    #     protein = args.label
+    #     do(f"python3 ~/opt/compute_phis.py -m 0 {protein}")
+    #     # do("python3 ~/opt/compute_phis.py -m 0 test_protein")
     if args.mode == 222:
         proteins = args.label
         generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
@@ -2037,6 +4602,10 @@ if args.day == "jun06":
             cd(f"{folder}/{p}/simulation/native")
             do(f"rerun.py {p} -t -m 1")
             cd("../../../../")
+
+
+############################    -2019-    ############################
+'''
 if args.day == "may30":
     if args.mode == 1:
         # iteratively generate gammas
@@ -5256,9 +7825,8 @@ if args.day == "feb25_2":
 
 
 if args.day == "feb25":
-    '''
-    get the native phi by starting from the crystal structure.
-    '''
+
+    # get the native phi by starting from the crystal structure.
     print(args.day)
     pdb_list = "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", ")
     # pdb_list = "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", ")
@@ -6064,7 +8632,7 @@ if args.day == "jan06":
         cd("..")
 
 '''
-
+'''
 #####----------------------------2018--------------------------------------------
 if args.day == "dec30":
     pdb_list = "1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", ")
@@ -14999,6 +17567,7 @@ if args.day == "sep06":
                         repeat=3,
                         temperature_list=temperature_list,
                         commons=0)
+
 # if args.mode == 20:
 #     rg_list = [0]
 #     temperature_list = [200]
