@@ -98,7 +98,7 @@ def getSeq(fileLocation):
             seq += three_to_one(residue_name)
     return seq
 
-# get chains nad seq
+# get chains and seq
 def getChainsAndSeq(fileLocation):
     # fileLocation = "/Users/weilu/Research/examples/optimization/optimization/Structure_Ensemble/1.pdb"
     p = PDBParser()

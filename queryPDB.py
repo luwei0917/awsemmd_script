@@ -30,18 +30,18 @@ import urllib
 # """
 queryText = """
 <orgPdbCompositeQuery version="1.0">
-    <resultCount>36116</resultCount>
-    <queryId>B12E5C49</queryId>
+    <resultCount>38331</resultCount>
+    <queryId>C27C26FA</queryId>
  <queryRefinement>
   <queryRefinementLevel>0</queryRefinementLevel>
   <orgPdbQuery>
     <version>head</version>
     <queryType>org.pdb.query.simple.NoLigandQuery</queryType>
     <description>Ligand Search : Has free ligands=no</description>
-    <queryId>D1BA680C</queryId>
-    <resultCount>36116</resultCount>
-    <runtimeStart>2019-01-16T17:38:27Z</runtimeStart>
-    <runtimeMilliseconds>427</runtimeMilliseconds>
+    <queryId>D1A3852D</queryId>
+    <resultCount>38331</resultCount>
+    <runtimeStart>2019-12-11T22:00:50Z</runtimeStart>
+    <runtimeMilliseconds>482</runtimeMilliseconds>
     <haveLigands>no</haveLigands>
   </orgPdbQuery>
  </queryRefinement>
@@ -50,13 +50,14 @@ queryText = """
   <conjunctionType>and</conjunctionType>
   <orgPdbQuery>
     <version>head</version>
-    <queryType>org.pdb.query.simple.LargeStructureQuery</queryType>
-    <description>Search for Large Structures : search option = omit large structures</description>
-    <queryId>7A9CBD68</queryId>
-    <resultCount>147263</resultCount>
-    <runtimeStart>2019-01-16T17:42:56Z</runtimeStart>
-    <runtimeMilliseconds>1593</runtimeMilliseconds>
-    <searchForLargeStructures>omit large structures</searchForLargeStructures>
+    <queryType>org.pdb.query.simple.SequenceLengthQuery</queryType>
+    <description>Sequence Length is between 1 and 1000 </description>
+    <queryId>3A5EBF40</queryId>
+    <resultCount>273457</resultCount>
+    <runtimeStart>2019-12-11T22:00:51Z</runtimeStart>
+    <runtimeMilliseconds>69351</runtimeMilliseconds>
+    <v_sequence.chainLength.min>1</v_sequence.chainLength.min>
+    <v_sequence.chainLength.max>1000</v_sequence.chainLength.max>
   </orgPdbQuery>
  </queryRefinement>
  <queryRefinement>
@@ -64,16 +65,14 @@ queryText = """
   <conjunctionType>and</conjunctionType>
   <orgPdbQuery>
     <version>head</version>
-    <queryType>org.pdb.query.simple.ChainTypeQuery</queryType>
-    <description>Chain Type: there is a Protein chain but not any DNA or RNA or Hybrid</description>
-    <queryId>A263C144</queryId>
-    <resultCount>137331</resultCount>
-    <runtimeStart>2019-01-16T17:42:58Z</runtimeStart>
-    <runtimeMilliseconds>1492</runtimeMilliseconds>
-    <containsProtein>Y</containsProtein>
-    <containsDna>N</containsDna>
-    <containsRna>N</containsRna>
-    <containsHybrid>N</containsHybrid>
+    <queryType>org.pdb.query.simple.NumberOfChainsQuery</queryType>
+    <description>Number of Chains Search : Min Number of Chains=1 Max Number of Chains=1</description>
+    <queryId>37AC0F22</queryId>
+    <resultCount>61275</resultCount>
+    <runtimeStart>2019-12-11T22:02:01Z</runtimeStart>
+    <runtimeMilliseconds>39182</runtimeMilliseconds>
+    <struct_asym.numChains.min>1</struct_asym.numChains.min>
+    <struct_asym.numChains.max>1</struct_asym.numChains.max>
   </orgPdbQuery>
  </queryRefinement>
  <queryRefinement>
@@ -81,14 +80,14 @@ queryText = """
   <conjunctionType>and</conjunctionType>
   <orgPdbQuery>
     <version>head</version>
-    <queryType>org.pdb.query.simple.NumberOfChainsQuery</queryType>
-    <description>Number of Chains Search : Min Number of Chains=0 Max Number of Chains=1</description>
-    <queryId>432D9715</queryId>
-    <resultCount>57858</resultCount>
-    <runtimeStart>2019-01-16T17:43:00Z</runtimeStart>
-    <runtimeMilliseconds>34785</runtimeMilliseconds>
-    <struct_asym.numChains.min>0</struct_asym.numChains.min>
-    <struct_asym.numChains.max>1</struct_asym.numChains.max>
+    <queryType>org.pdb.query.simple.BiolUnitQuery</queryType>
+    <description>Oligomeric state Search : Min Number of oligomeric state=1 Max Number of oligomeric state=1</description>
+    <queryId>B51D8509</queryId>
+    <resultCount>64113</resultCount>
+    <runtimeStart>2019-12-11T22:02:40Z</runtimeStart>
+    <runtimeMilliseconds>841</runtimeMilliseconds>
+    <oligomeric_statemin>1</oligomeric_statemin>
+    <oligomeric_statemax>1</oligomeric_statemax>
   </orgPdbQuery>
  </queryRefinement>
  <queryRefinement>
@@ -96,47 +95,140 @@ queryText = """
   <conjunctionType>and</conjunctionType>
   <orgPdbQuery>
     <version>head</version>
-    <queryType>org.pdb.query.simple.BiolUnitQuery</queryType>
-    <description>Oligomeric state Search : Min Number of oligomeric state=0 Max Number of oligomeric state=1</description>
-    <queryId>111AF9C9</queryId>
-    <resultCount>60014</resultCount>
-    <runtimeStart>2019-01-16T17:43:35Z</runtimeStart>
-    <runtimeMilliseconds>893</runtimeMilliseconds>
-    <oligomeric_statemin>0</oligomeric_statemin>
-    <oligomeric_statemax>1</oligomeric_statemax>
-  </orgPdbQuery>
- </queryRefinement>
-  <queryRefinement>
-  <queryRefinementLevel>5</queryRefinementLevel>
-  <conjunctionType>and</conjunctionType>
-  <orgPdbQuery>
-    <version>head</version>
-    <queryType>org.pdb.query.simple.TreeQuery</queryType>
-    <description>ScopTree Search for Alpha and beta proteins (a/b)</description>
-    <queryId>E3E70695</queryId>
-    <resultCount>11843</resultCount>
-    <runtimeStart>2019-01-16T17:42:10Z</runtimeStart>
-    <runtimeMilliseconds>46</runtimeMilliseconds>
-    <t>11</t>
-    <n>51349</n>
-    <nodeDesc>Alpha and beta proteins (a/b)</nodeDesc>
+    <queryType>org.pdb.query.simple.ChainTypeQuery</queryType>
+    <description>Chain Type: there is a Protein chain but not any DNA or RNA or Hybrid</description>
+    <queryId>9C9F6224</queryId>
+    <resultCount>146986</resultCount>
+    <runtimeStart>2019-12-11T22:02:41Z</runtimeStart>
+    <runtimeMilliseconds>1688</runtimeMilliseconds>
+    <containsProtein>Y</containsProtein>
+    <containsDna>N</containsDna>
+    <containsRna>N</containsRna>
+    <containsHybrid>N</containsHybrid>
   </orgPdbQuery>
  </queryRefinement>
 </orgPdbCompositeQuery>
 """
-
+# queryText = """
+# <orgPdbCompositeQuery version="1.0">
+#     <resultCount>36116</resultCount>
+#     <queryId>B12E5C49</queryId>
+#  <queryRefinement>
+#   <queryRefinementLevel>0</queryRefinementLevel>
+#   <orgPdbQuery>
+#     <version>head</version>
+#     <queryType>org.pdb.query.simple.NoLigandQuery</queryType>
+#     <description>Ligand Search : Has free ligands=no</description>
+#     <queryId>D1BA680C</queryId>
+#     <resultCount>36116</resultCount>
+#     <runtimeStart>2019-01-16T17:38:27Z</runtimeStart>
+#     <runtimeMilliseconds>427</runtimeMilliseconds>
+#     <haveLigands>no</haveLigands>
+#   </orgPdbQuery>
+#  </queryRefinement>
+#  <queryRefinement>
+#   <queryRefinementLevel>1</queryRefinementLevel>
+#   <conjunctionType>and</conjunctionType>
+#   <orgPdbQuery>
+#     <version>head</version>
+#     <queryType>org.pdb.query.simple.LargeStructureQuery</queryType>
+#     <description>Search for Large Structures : search option = omit large structures</description>
+#     <queryId>7A9CBD68</queryId>
+#     <resultCount>147263</resultCount>
+#     <runtimeStart>2019-01-16T17:42:56Z</runtimeStart>
+#     <runtimeMilliseconds>1593</runtimeMilliseconds>
+#     <searchForLargeStructures>omit large structures</searchForLargeStructures>
+#   </orgPdbQuery>
+#  </queryRefinement>
+#  <queryRefinement>
+#   <queryRefinementLevel>2</queryRefinementLevel>
+#   <conjunctionType>and</conjunctionType>
+#   <orgPdbQuery>
+#     <version>head</version>
+#     <queryType>org.pdb.query.simple.ChainTypeQuery</queryType>
+#     <description>Chain Type: there is a Protein chain but not any DNA or RNA or Hybrid</description>
+#     <queryId>A263C144</queryId>
+#     <resultCount>137331</resultCount>
+#     <runtimeStart>2019-01-16T17:42:58Z</runtimeStart>
+#     <runtimeMilliseconds>1492</runtimeMilliseconds>
+#     <containsProtein>Y</containsProtein>
+#     <containsDna>N</containsDna>
+#     <containsRna>N</containsRna>
+#     <containsHybrid>N</containsHybrid>
+#   </orgPdbQuery>
+#  </queryRefinement>
+#  <queryRefinement>
+#   <queryRefinementLevel>3</queryRefinementLevel>
+#   <conjunctionType>and</conjunctionType>
+#   <orgPdbQuery>
+#     <version>head</version>
+#     <queryType>org.pdb.query.simple.NumberOfChainsQuery</queryType>
+#     <description>Number of Chains Search : Min Number of Chains=0 Max Number of Chains=1</description>
+#     <queryId>432D9715</queryId>
+#     <resultCount>57858</resultCount>
+#     <runtimeStart>2019-01-16T17:43:00Z</runtimeStart>
+#     <runtimeMilliseconds>34785</runtimeMilliseconds>
+#     <struct_asym.numChains.min>0</struct_asym.numChains.min>
+#     <struct_asym.numChains.max>1</struct_asym.numChains.max>
+#   </orgPdbQuery>
+#  </queryRefinement>
+#  <queryRefinement>
+#   <queryRefinementLevel>4</queryRefinementLevel>
+#   <conjunctionType>and</conjunctionType>
+#   <orgPdbQuery>
+#     <version>head</version>
+#     <queryType>org.pdb.query.simple.BiolUnitQuery</queryType>
+#     <description>Oligomeric state Search : Min Number of oligomeric state=0 Max Number of oligomeric state=1</description>
+#     <queryId>111AF9C9</queryId>
+#     <resultCount>60014</resultCount>
+#     <runtimeStart>2019-01-16T17:43:35Z</runtimeStart>
+#     <runtimeMilliseconds>893</runtimeMilliseconds>
+#     <oligomeric_statemin>0</oligomeric_statemin>
+#     <oligomeric_statemax>1</oligomeric_statemax>
+#   </orgPdbQuery>
+#  </queryRefinement>
+#   <queryRefinement>
+#   <queryRefinementLevel>5</queryRefinementLevel>
+#   <conjunctionType>and</conjunctionType>
+#   <orgPdbQuery>
+#     <version>head</version>
+#     <queryType>org.pdb.query.simple.TreeQuery</queryType>
+#     <description>ScopTree Search for Alpha and beta proteins (a/b)</description>
+#     <queryId>E3E70695</queryId>
+#     <resultCount>11843</resultCount>
+#     <runtimeStart>2019-01-16T17:42:10Z</runtimeStart>
+#     <runtimeMilliseconds>46</runtimeMilliseconds>
+#     <t>11</t>
+#     <n>51349</n>
+#     <nodeDesc>Alpha and beta proteins (a/b)</nodeDesc>
+#   </orgPdbQuery>
+#  </queryRefinement>
+# </orgPdbCompositeQuery>
+# """
+queryText = '''\
+  <orgPdbQuery>
+    <version>head</version>
+    <queryType>org.pdb.query.simple.NoLigandQuery</queryType>
+    <description>Ligand Search : Has free ligands=no</description>
+    <queryId>8C2DFE4E</queryId>
+    <resultCount>38331</resultCount>
+    <runtimeStart>2019-12-11T22:46:56Z</runtimeStart>
+    <runtimeMilliseconds>531</runtimeMilliseconds>
+    <haveLigands>no</haveLigands>
+  </orgPdbQuery>
+'''
 
 """
 
 Query	Structures Found	Conjunction	Structures Displayed	Search time (seconds)
-Ligand Search : Has free ligands=no	36116	
+Ligand Search : Has free ligands=no	36116
 36116	0.427
 Search for Large Structures : search option = omit large structures	147263	and	35933	1.593
 Chain Type: there is a Protein chain but not any DNA or RNA or Hybrid	137331	and	32469	1.492
 Number of Chains Search : Min Number of Chains=0 Max Number of Chains=1	57858	and	15149	34.785
 Oligomeric state Search : Min Number of oligomeric state=0 Max Number of oligomeric state=1	60014	and	8977	0.893
 
-ScopTree Search for Alpha and beta proteins (a/b)	11843	
+ScopTree Search for Alpha and beta proteins (a/b)	11843
 11843	0.046
 """
 

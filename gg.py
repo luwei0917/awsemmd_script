@@ -84,7 +84,8 @@ dataset["combined"] = dataset["old"] + dataset["new"]
 dataset["may13"] = ['1r69', '3icb', '256b', '4cpv', '2mhr', '1mba', '2fha', '1fc2', '1enh', '2gb1', '2cro', '1ctf', '4icb']
 dataset["membrane"] = ["2bg9", "1j4n", "1py6_SD", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19"]
 dataset["hybrid"] = ["2xov_complete", "6e67A", "5xpd", "3kp9", "4a2n", "5d91", "4nv6", "4p79", "5dsg", "6g7o", "6a93", "2jo1", "1py6", "1pv6", "1u19"]
-
+dataset["optimization_cath"] = ['1a75A00', '1bekA01', '1bqbA02', '1cpcB00', '1cscA02', '1cy5A00', '1dv5A00', '1e8yA05', '1evyA02', '1in4A03', '1l1fA03', '1vq8P01', '1xmkA00', '1zcaA02', '2grhA00', '2ii2A04', '2q6fB03', '2wh6A00', '3g0vA00', '3geuA00', '3h99A03', '3hrdD02', '3ju5A01', '3p1wA03', '4cxfA01', '4i2aA01', '4i4tB03', '4i6uB00', '5kn9A02']
+dataset["optimization_v2"] = ['1e0m', '1w4e', '1e0g', '2wqg', '1jo8', '1fex', '2l6r', '1c8c', '1g6p', '1mjc', '2jmc', '1hdn', '1st7', '1n88', '1d6o', '2ga5', '1j5u', '3o4d']
 
 def create_project_for_pdb_list(pdb_list, frag=False):
     do("mkdir -p setup")
@@ -147,6 +148,372 @@ def get_aligned_info(p1, p2):
     # print(aligned_length, rmsd, tmscore, seqid)
     return aligned_length, rmsd, tmscore, seqid
 
+if args.day == "feb03":
+    fileName = "/Users/weilu/Research/optimization/chang_database/training_set.txt"
+    pdb_list = []
+    with open(fileName) as f:
+        for line in f:
+            pdbs = line.split()
+            pdb_list += pdbs
+    if args.mode == 1:
+        for pdb in pdb_list:
+            do(f"download.py {pdb}")
+    if args.mode == 2:
+        cleanPdb(pdb_list, source="training_set/", toFolder="cleaned_pdbs/", chain="A", formatName=False, removeTwoEndsMissingResidues=True)
+    if args.mode == 3:
+        data = pd.read_csv("/Users/weilu/Research/optimization/chang_database/training_set.csv")
+        specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
+        pdb_list = specific_decoys["Protein"].to_list()
+        for pdb in pdb_list:
+            do(f"mkdir -p setups/{pdb}")
+            cd(f"setups/{pdb}")
+            do(f"mm_create_project.py ../../cleaned_pdbs/{pdb}.pdb --extended")
+            cd("../..")
+
+if args.day == "jan20":
+    if args.mode == 1:
+        parser = PDBParser(QUIET=True)
+        fileName = "/Users/weilu/Research/server/jan_2020/include_small_molecular/cleaned_pdbs/chain_ABCD.pdb"
+        s = parser.get_structure("X", fileName)
+
+
+        class ResSelect(Select):
+            def accept_residue(self, residue):
+                try:
+                    if residue["CA"].get_coord()[2] < 32:
+                        return 1
+                    else:
+                        return 0
+                except:
+                    if residue.id[0] == "H_ZK1":
+                        return 0
+                    else:
+                        return 1
+
+        io = PDBIO()
+        io.set_structure(s)
+        io.save('/Users/weilu/Research/server/jan_2020/include_small_molecular/cleaned_pdbs/ABCD_cutout_LBD.pdb', ResSelect())
+    if args.mode == 2:
+        do("pdb_selchain -E 20200120_171355_2866_6ud8.pdb > chainE.pdb")
+        do("pdb_selchain -A,B,C,D 20200120_171355_2866_6ud8.pdb > chain_ABCD.pdb")
+    if args.mode == 3:
+        # pdb_list = ["chainE"]
+        pdb_list = ["20200120_171355_2866_6ud8"]
+        cleanPdb(pdb_list, source="./", addMissingResidues=True, toFolder="complete_chainE/", chain="E", formatName=False, removeTwoEndsMissingResidues=False, verbose=True)
+    if args.mode == 4:
+        # pdb_list = ["chainE"]
+        pdb_list = ["combine_chain_ABCD_and_complete_chainE"]
+        cleanPdb(pdb_list, source="./", removeHeterogens=False, addMissingResidues=False, toFolder="cleaned/", chain="ABCDE", formatName=False, removeTwoEndsMissingResidues=False, verbose=True)
+        # then manual combine those two
+if args.day == "jan18":
+    pdb_list = dataset["optimization_v2"]
+    if args.mode == 1:
+        for pdb in pdb_list:
+            do(f"python mm_run.py setups/{pdb}/{pdb} --to test/{pdb} -s 1e3 -f forces_setup_single_and_frag.py --reportFrequency 200 --subMode 0")
+if args.day == "jan03":
+    pdb_list = dataset["optimization_v2"]
+    # cleanPdb(pdb_list, source="original_pdbs/first_test_set", toFolder="cleaned_pdbs/first_test_set", chain="A", formatName=False)
+    if args.mode == 1:
+        for pdb in pdb_list:
+            do(f"mkdir -p setups/{pdb}")
+            cd(f"setups/{pdb}")
+            do(f"mm_create_project.py ../../cleaned_pdbs/first_test_set/{pdb}.pdb --extended --frag")
+            cd("../..")
+    if args.mode == 2:
+        for pdb in pdb_list:
+            do(f"python mm_run.py setups/{pdb}/{pdb} --to native/{pdb} -s 1e4 --reportFrequency 1000")
+if args.day == "dec27":
+    if args.mode == 1:
+        pdb_list = ["6ud8_ABCD_noFill"]
+        cleanPdb(pdb_list, source="original_pdbs/", addMissingResidues=False, toFolder="cleaned_pdbs/", chain="ABCD", formatName=False, removeTwoEndsMissingResidues=True)
+    if args.mode == 2:
+        pdb_list = ["6ud8_F_complete_not_embeded"]
+        cleanPdb(pdb_list, source="original_pdbs/", addMissingResidues=True, toFolder="cleaned_pdbs/", chain="F", formatName=False, removeTwoEndsMissingResidues=False)
+        do("pdb_rplchain -A:F 6ud8_F_complete_not_embeded.pdb > 6ud8_F_complete_not_embeded_asF.pdb")
+    if args.mode == 3:
+        pdb_list = ["my_ABCDF"]
+        cleanPdb(pdb_list, source="original_pdbs/", addMissingResidues=False, toFolder="cleaned_pdbs/", chain="ABCDF", formatName=False, removeTwoEndsMissingResidues=True)
+if args.day == "dec26":
+    if args.mode == 1:
+        # data = pd.read_csv("/Users/weilu/Research/server/dec_2019/optimization_database/for_optimization_dataset.csv", index_col=0)
+        # pdb_list = data["Protein"].to_list()
+        pdb_list = dataset["optimization_cath"]
+        for pdb in pdb_list:
+            do(f"mkdir -p {pdb}")
+            cd(pdb)
+            do(f"mm_create_project.py /Volumes/Wei_backup/cath_dataset/dompdb/{pdb}.pdb --extended")
+            cd("..")
+    if args.mode == 2:
+        data = pd.read_csv("/Users/weilu/Research/server/dec_2019/optimization_database/for_optimization_dataset.csv", index_col=0)
+        pdb_list = data["Protein"].to_list()
+        for pdb in pdb_list:
+            do(f"cp /Volumes/Wei_backup/cath_dataset/dompdb/{pdb}.pdb  .")
+if args.day == "dec23":
+    pdb_list = ["cut_out_LBD"]
+    if args.mode == 1:
+        cleanPdb(pdb_list, source="original_pdbs/", toFolder="cleaned_pdbs/", chain="ABCD", formatName=False, removeTwoEndsMissingResidues=True)
+
+if args.day == "dec16":
+    # pdb_list = ["6ud8_F_complete"]
+    pdb_list = ["6ud8_ABCD"]
+    if args.mode == 1:
+        pdb_list = ["6ud8_ABCD"]
+        cleanPdb(pdb_list, source="original_pdbs/", toFolder="cleaned_pdbs/", chain="ABCD", formatName=False, removeTwoEndsMissingResidues=True)
+        # cleanPdb(pdb_list, source="original_pdbs/", toFolder="cleaned_pdbs/", chain="F", formatName=False, removeTwoEndsMissingResidues=False)
+    if args.mode == 2:
+        print("convert predictedZim")
+        # name = "6ud8_F"
+        name = "6ud8_F_complete"
+        topo_name = f"TM_pred/{name}_topo"
+        get_PredictedZim(topo_name, f"setups/{name}/PredictedZim")
+        get_PredictedZimSide(topo_name, f"setups/{name}/PredictedZimSide")
+    if args.mode == 5:
+        name = "6ud8_F"
+        name = "6ud8_F_complete"
+        topo_name = f"TM_pred/crystal_topo_side"
+        get_PredictedZim(topo_name, f"setups/{name}/PredictedZim_4TH")
+        get_PredictedZimSide_v2(topo_name, f"setups/{name}/PredictedZimSide_4TH")
+    if args.mode == 3:
+        # pdb = "6ud8_F"
+        pdb = "6ud8_F_complete"
+        folder = "with_topology"
+        do(f"mkdir -p {folder}")
+        toFile = f"{folder}/forces_setup_{pdb}.py"
+        fromFile = "forces_setup.py"
+        do(f"cp {fromFile} {toFile}")
+        pre = "."
+        loc = f"{pre}/TM_pred/{pdb}_topo"
+        with open(loc) as f:
+            a = f.readlines()
+        assert len(a) % 3 == 0
+        chain_count = len(a) // 3
+        seq = ""
+        for i in range(chain_count):
+            seq_i = (a[i*3+2]).strip()
+            seq += seq_i
+        assert np.alltrue([i in ["0", "1"] for i in seq])
+
+        res_list = []
+        first = None
+        count = 1
+        previousEnd = 0
+        # print("g_all = [")
+        out = "[\n"
+        for i, res in enumerate(seq):
+            if res == "0":
+                if len(res_list) > 0:
+                    # print(f"g{count} =", res_list)
+                    print(res_list, ", ")
+                    out += f"    {res_list},\n"
+                    count += 1
+                    last = res_list[-1]
+                    first = res_list[0] if first is None else first
+                    span = res_list[0] - previousEnd
+                    previousEnd = last
+                res_list = []
+            if res == "1":
+                res_list.append(i)
+        out += "]\n"
+        with fileinput.FileInput(toFile, inplace=True) as file:
+            for line in file:
+                tmp = line.replace("GALL", out).replace("FIRST", str(first)).replace("LAST", str(last))
+                print(tmp, end='')
+if args.day == "dec12":
+    d = pd.read_csv("/Users/weilu/Research/server/dec_2019/iterative_optimization/original_pdbs/first_test_set.csv", index_col=0)
+    pdb_list = d.PDB.str.lower().to_list()
+    if args.mode == 1:
+        cleanPdb(pdb_list, source="original_pdbs/first_test_set", toFolder="cleaned_pdbs/first_test_set", chain="A", formatName=False)
+    if args.mode == 2:
+        for pdb in pdb_list:
+            do(f"mkdir -p setups/{pdb}")
+            cd(f"setups/{pdb}")
+            do(f"mm_create_project.py ../../cleaned_pdbs/first_test_set/{pdb}.pdb --extended")
+            cd("../..")
+    if args.mode == 3:
+        for pdb in pdb_list:
+            do(f"python mm_run.py setups/{pdb}/{pdb} --to native/{pdb} -s 1e4 --reportFrequency 1000")
+if args.day == "dec11":
+    if args.mode == 1:
+        for pdb in dataset["may13"]:
+            do(f"download.py {pdb}")
+    if args.mode == 2:
+        d = pd.read_csv("/Users/weilu/Research/server/dec_2019/iterative_optimization/original_pdbs/first_test_set.csv", index_col=0)
+        for pdb in d.PDB:
+            do(f"download.py {pdb}")
+    if args.mode == 3:
+        pdb_list = dataset["may13"]
+        cleanPdb(pdb_list, source="original_pdbs/previous_paper_pdbs", toFolder="cleaned_pdbs/previous_paper_pdbs", chain="first", formatName=False)
+    if args.mode == 4:
+        pdb_list = dataset["may13"]
+        for pdb in pdb_list:
+            pdbToFasta(pdb, f"cleaned_pdbs/previous_paper_pdbs/{pdb}.pdb", f"cleaned_pdbs/previous_paper_pdbs/fasta/{pdb}.fasta", chains="A")
+
+if args.day == "dec10":
+    if args.mode == 1:
+        # get unfinished job.
+        # pre = "/Users/weilu/Research/server/oct_2019/membrane_optimization"
+        cmd = f"grep 'CANCELLED' outs/slurm-*"
+        has_cancelled = getFromTerminal(cmd)
+        aa = list(set([b.split(":")[0] for b in has_cancelled.split("\n")]))
+        print(aa)
+        skip_pdbs = []
+        for a in aa:
+            cmd = f"grep -A1 'phi_pairwise_contact_well' {a}"
+            c = getFromTerminal(cmd)
+            if c == '':
+                continue
+            pdb = eval(c.split("\n")[1].strip())[0]
+            skip_pdbs.append(pdb)
+            # print(pdb)
+        print(len(skip_pdbs))
+
+if args.day == "dec02":
+    if args.mode == 1:
+        d = pd.read_csv("seq_info.csv", index_col=0)
+        pdb_list = d.query("length < 150 and index % 2 == 0")["protein"].tolist()
+        print(pdb_list)
+        do("mkdir -p all_simulations")
+        # downloadPdb(pdb_list)
+        # cleanPdb(pdb_list, chain=None, formatName=False)
+        cd("all_simulations")
+        for p in pdb_list:
+            # name = p.lower()[:4]
+            name = p
+            do(f"mkdir -p {name}/{name}")
+            cd(f"{name}/{name}")
+            do("pwd")
+            do(f"cp ../../../cleaned_pdbs/{name}.pdb crystal_structure.pdb")
+            # do("cp ~/opt/crystal_structures/membrane_proteins/for_simulation/{}.pdb crystal_structure.pdb ".format(name))
+            do(f"python2 ~/opt/script/Pdb2Gro.py crystal_structure.pdb {name}.gro")
+            do(f"create_project.py {name} --globular --frag")
+            # check_and_correct_fragment_memory("frags.mem")
+            relocate(fileLocation="frags.mem", toLocation="../fraglib")
+            replace(f"frags.mem", "/Users/weilu/openmmawsem//Gros/", "../../fraglib/")
+            protein_length = getFromTerminal("wc ssweight").split()[0]
+            print(f"protein: {name}, length: {protein_length}")
+
+            with open("single_frags.mem", "w") as out:
+                out.write("[Target]\nquery\n\n[Memories]\n")
+                out.write(f"{name}.gro 1 1 {protein_length} 20\n")
+            cd("../..")
+if args.day == "nov29":
+    pdb = "1hn4"
+    pdb = "1lmm"
+    pdb = "1tcg"
+    pdb = args.label
+    if args.mode == 4:
+        for pdb in ["1tcg", "1lmm"]:
+            do(f"gg.py -d nov29 -m 1 -l {pdb}")
+            do(f"gg.py -d nov29 -m 2 -l {pdb}")
+            do(f"gg.py -d nov29 -m 3 -l {pdb}")
+    if args.mode == 1:
+        folder = f"setups/{pdb}"
+        do(f"mkdir -p {folder}")
+        cd(folder)
+        do(f"mm_create_project.py ../../original_pdbs/{pdb}.pdb --extended")
+        cd("../..")
+        do(f"cp gamma_noCysCys.dat {folder}/")
+    if args.mode == 2:
+        # ho frag memeory
+        frag_folder = f"frag_memory/{pdb}"
+        do(f"mkdir -p {frag_folder}")
+        cd(frag_folder)
+        do(f"cp ../../setups/{pdb}/{pdb}.fasta .")
+        do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/openmmawsem/database/cullpdb_pc80_res3.0_R1.0_d160504_chains29712 {pdb}.fasta 20 2 9 > logfile")
+
+        sys.path.insert(0, "/Users/weilu/openmmawsem")
+        # name = "1iwg"
+        import openmmawsem
+        import helperFunctions.myFunctions
+        helperFunctions.myFunctions.check_and_correct_fragment_memory("frags.mem")
+
+        do(f"cp frags.mem ../../setups/{pdb}/ho.mem")
+        cd("../..")
+    if args.mode == 3:
+        do(f"python mm_run.py setups/{pdb}/{pdb} --to native/{pdb}_single -f forces_setup_gamma_noCysCys.py --subMode 1 --reportFrequency 10 -s 20")
+        do(f"python mm_run.py setups/{pdb}/{pdb} --to native/{pdb}_ho -f forces_setup_gamma_noCysCys.py --subMode 31 --reportFrequency 10 -s 20")
+    # if args.mode == 2:
+    #     do(f"cp frags.mem ../../setups/{pdb}/ho.mem")
+    # if args.mode == 3:
+    #     sys.path.insert(0, "/Users/weilu/openmmawsem")
+    #     # name = "1iwg"
+    #     import openmmawsem
+    #     import helperFunctions.myFunctions
+    #     helperFunctions.myFunctions.check_and_correct_fragment_memory("frags.mem")
+
+if args.day == "nov26":
+    if args.mode == 1:
+        # ho frag memeory
+        pdb = "1bpi"
+        do("python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/openmmawsem/database/cullpdb_pc80_res3.0_R1.0_d160504_chains29712 {pdb}.fasta 20 2 9 > logfile")
+    if args.mode == 2:
+        do("cp frags.mem ../../setups/1bpi/ho.mem")
+if args.day == "nov25":
+    if args.mode == 1:
+        sys.path.insert(0, "/Users/weilu/openmmawsem")
+        # name = "1iwg"
+        import openmmawsem
+        import helperFunctions.myFunctions
+        helperFunctions.myFunctions.check_and_correct_fragment_memory("frags.mem")
+
+if args.day == "nov20":
+    if args.mode == 1:
+        # test new contact potential
+        name = "6j14"
+        # a3mFile = f"/Users/weilu/Research/server/may_2019/family_fold/{name}.a3m"
+        pre = f"ff_contact_2/"
+        os.system(f"mkdir -p {pre}")
+        # data = get_MSA_data(a3mFile)
+        data = ['QLQQSGAELVRPGASVKLSCKALGDTFTDYEIHWVKQTPVHGLEWIGVIHPGSGGTVYNQKFKGKATLTADKYSSTAYMELSSLTSEDSAVYYCTREGMNTDWYFDVWGAGTTVTVSDILMTQDELSLPVSLGDQASISCRSSQTIVHTNGNTYLEWYLQKPGQSPKLLIYKVSNRFSGVPDRFSGSGSGTYFTLKISRLEAEDLGVYYCFQGSHVPYTFGGGTKLEMKNPPTFSPALLVVTEGDNATFTCSFSNTSESFVLNWYRMSPSNQTDKLAAFPEDRSQPGQDCRFRVTQLPNGRDFHMSVVRARRNDSGTYLCGAISLAPKAQIKESLRAELRVTER']
+        print(name, len(data))
+        f_direct_2, f_water_2, f_protein_2, f_burial_2 = get_index_based_gamma(data, location=pre, gammaLocation="/Users/weilu/openmmawsem/parameters/", hasPhosphorylation=True)
+
+if args.day == "nov13":
+    pdb_list = ["1igd", "2sni", "1snb", "3il8", "1ubi", "1pht", "1poh", "1tig", "2acy", "1frd", "1opc", "1rds", "3chy", "5nul"]
+    if args.mode == 1:
+        for pdb in pdb_list:
+            do(f"download.py {pdb}")
+    if args.mode == 2:
+        for pdb in pdb_list:
+            folder = f"setups/{pdb}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"mm_create_project.py ../../original_pdbs/{pdb}.pdb --extended --frag")
+            cd("../..")
+
+if args.day == "nov10":
+    if args.mode == 1:
+        # do("download.py 1fs3")
+        pdb = "1fs3"
+        folder = f"setups/{pdb}"
+        do(f"mkdir -p {folder}")
+        cd(folder)
+        do(f"mm_create_project.py ../../{pdb}.pdb --extended --frag")
+        # do(f"mm_create_project.py ../../original/{pdb}.fasta")
+        cd("../..")
+if args.day == "nov09":
+    # benchmark_list = ["6jdq", "6d3r"]
+    # benchmark_list = ["6jdq", "5uak"]
+    benchmark_list = ["5uak"]
+    if args.mode == 1:
+        for pdb in benchmark_list:
+            folder = f"setups/{pdb}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"mm_create_project.py ../../original/{pdb}.pdb --verbose")
+            # do(f"mm_create_project.py ../../original/{pdb}.fasta")
+            cd("../..")
+
+if args.day == "nov04":
+    benchmark_list = ["fmt", "6n7n", "2is1"]
+    if args.mode == 1:
+        for pdb in benchmark_list:
+            folder = f"setups/{pdb}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"mm_create_project.py ../../original/{pdb}.pdb")
+            # do(f"mm_create_project.py ../../original/{pdb}.fasta")
+            cd("../..")
 if args.day == "oct30":
     fromPdb = "1a91.pdb"
     toPdb = "1a91_rotation_3.pdb"
@@ -578,7 +945,8 @@ if args.day == "aug19":
             toFile = f"{folder}/forces_setup_{pdb}.py"
             fromFile = "forces_setup.py"
             do(f"cp {fromFile} {toFile}")
-            pre = "/Users/weilu/Research/server/aug_2019/second_hybrid_protein_simulation/"
+            # pre = "/Users/weilu/Research/server/aug_2019/second_hybrid_protein_simulation/"
+            pre = "."
             loc = f"{pre}/TM_pred/{pdb}_topo"
             with open(loc) as f:
                 a = f.readlines()
@@ -1284,6 +1652,9 @@ if args.day == "jun04":
             for j in range(i,4):
                 do(f"show_gamma.py correct_ni_{i}_nj_{j} -o i{i}j{j}")
 
+
+'''
+########################################2019################################################
 if args.day == "may25":
     # pdb_list = dataset["may13"]
     pdb_list = dataset["membrane"]
@@ -2205,7 +2576,7 @@ if args.day == "jan03":
     if args.mode == 1:
         convert_openMM_to_standard_pdb(fileName="movie.pdb")
 
-
+'''
 
 '''
 ########----------------------2018-------------------------#######

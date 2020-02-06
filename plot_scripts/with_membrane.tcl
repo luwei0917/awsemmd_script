@@ -33,7 +33,6 @@ animate goto 0
 display resetview
 
 
-
 translate by 0.0 1.0 0.0
 scale by 0.833000
 scale by 0.9
