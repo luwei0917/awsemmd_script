@@ -1564,7 +1564,109 @@ def get_ff_dat(data, location=None, gammaLocation=None):
         np.savetxt(location+"/burial.dat", f_burial)
     return f_direct, f_water, f_protein, f_burial
 
+def phosphorylation(res1globalindex, res2globalindex, res1type, res2type, m, phosphorylated_residue_index, phosphorylated_residue_seq):
+    # // Four letter classes
+    # // 1) SHL: Small Hydrophilic (ALA, GLY, PRO, SER THR) or (A, G, P, S, T) or {0, 7, 14, 15, 16}
+    # // 2) AHL: Acidic Hydrophilic (ASN, ASP, GLN, GLU) or (N, D, Q, E) or {2, 3, 5, 6}
+    # // 3) BAS: Basic (ARG HIS LYS) or (R, H, K) or {1, 8, 11}
+    # // 4) HPB: Hydrophobic (CYS, ILE, LEU, MET, PHE, TRP, TYR, VAL) or (C, I, L, M, F, W, Y, V)  or {4, 9, 10, 12, 13, 17, 18, 19}
+    bb_four_letter_map = [1, 3, 2, 2, 4, 2, 2, 1, 3, 4, 4, 3, 4, 4, 1, 1, 1, 4, 4, 4]
+    res_type_map = {'A': 0, 'C': 4,'D': 3,'E': 6,'F': 13,'G': 7,'H': 8,'I': 9,'K': 11,'L': 10,'M': 12, 'N': 2,'P': 14,'Q': 5,'R': 1,'S': 15,'T': 16,'V': 19,'W': 17,'Y': 18}
+    k_hypercharge = 1
+    if (res1globalindex+1) in phosphorylated_residue_index:
+        # print(res1globalindex, res2globalindex, k_hypercharge)
+        idx = phosphorylated_residue_index.index(res1globalindex+1)
 
+        if bb_four_letter_map[res2type] == 1:
+            k_hypercharge = m
+        elif bb_four_letter_map[res2type] == 2 or bb_four_letter_map[res2type] == 3:
+            k_hypercharge = m*m
+        else:
+            k_hypercharge = 1
+        res1type = res_type_map[phosphorylated_residue_seq[idx]]
+    if (res2globalindex+1) in phosphorylated_residue_index:
+        # print(res1globalindex, res2globalindex, k_hypercharge)
+        idx = phosphorylated_residue_index.index(res2globalindex+1)
+        if bb_four_letter_map[res1type] == 1:
+            k_hypercharge = m
+        elif bb_four_letter_map[res1type] == 2 or bb_four_letter_map[res1type] == 3:
+            k_hypercharge = m*m
+        else:
+            k_hypercharge = 1
+        res2type = res_type_map[phosphorylated_residue_seq[idx]]
+
+    return k_hypercharge, res1type, res2type
+
+def get_index_based_gamma(data, location=None, gammaLocation=None, hasPhosphorylation=False):
+    res_type_map = {'A': 0, 'C': 4,'D': 3,'E': 6,'F': 13,'G': 7,'H': 8,'I': 9,'K': 11,'L': 10,'M': 12, 'N': 2,'P': 14,'Q': 5,'R': 1,'S': 15,'T': 16,'V': 19,'W': 17,'Y': 18}
+    if hasPhosphorylation:
+        import configparser
+        config = configparser.ConfigParser()
+        config.read("phosphorylation.dat")
+        m = eval(config['phosphorylation']['m'])
+        phosphorylated_residue_index = eval(config['phosphorylation']['phosphorylated_residue_index'])
+        phosphorylated_residue_seq = eval(config['phosphorylation']['phosphorylated_residue_seq'])
+
+    gamma_ijm, water_gamma_ijm, protein_gamma_ijm = get_gammas(f"{gammaLocation}/gamma.dat", memGammaFile=None)
+    burial_gamma = np.loadtxt(f"{gammaLocation}/burial_gamma.dat")
+    n = len(data[0])
+    f_direct = np.zeros((n,n))
+    f_water = np.zeros((n,n))
+    f_protein = np.zeros((n,n))
+    f_burial = np.zeros((n,3))
+    for i in range(n):
+        for j in range(i+1, n):
+            direct = []
+            water = []
+            protein = []
+            for seq in data:
+                # seq = data[0]
+                if seq[i] == "-" or seq[j] == "-":
+                    continue
+                if seq[i] == "X" or seq[j] == "X":
+                    continue
+                if seq[i] == "B" or seq[j] == "B":
+                    continue
+                if seq[i] == "Z" or seq[j] == "Z":
+                    continue
+                res1type = res_type_map[seq[i]]
+                res2type = res_type_map[seq[j]]
+                if hasPhosphorylation:
+                    k_hypercharge, res1type, res2type = phosphorylation(i, j, res1type, res2type, m, phosphorylated_residue_index, phosphorylated_residue_seq)
+                    direct.append(gamma_ijm[0][res1type][res2type]*k_hypercharge)
+                    water.append(water_gamma_ijm[0][res1type][res2type]*k_hypercharge)
+                    protein.append(protein_gamma_ijm[0][res1type][res2type]*k_hypercharge)
+                else:
+                    k_hypercharge = 1
+                    direct.append(gamma_ijm[0][res1type][res2type])
+                    water.append(water_gamma_ijm[0][res1type][res2type])
+                    protein.append(protein_gamma_ijm[0][res1type][res2type])
+            f_direct[i][j] += np.average(direct)
+            f_water[i][j] += np.average(water)
+            f_protein[i][j] += np.average(protein)
+
+            f_direct[j][i] += np.average(direct)
+            f_water[j][i] += np.average(water)
+            f_protein[j][i] += np.average(protein)
+
+    for i in range(n):
+        for j in range(3):
+            burial = []
+            for seq in data:
+                if seq[i] == "-" or seq[i] == "X" or seq[i] == "B" or seq[i] == "Z":
+                    continue
+                res1type = res_type_map[seq[i]]
+                if hasPhosphorylation and (i+1) in phosphorylated_residue_index:
+                    idx = phosphorylated_residue_index.index(i+1)
+                    res1type = res_type_map[phosphorylated_residue_seq[idx]]
+                burial.append(burial_gamma[res1type][j])
+            f_burial[i][j] += np.average(burial)
+    if location:
+        np.savetxt(location+"/direct.dat", f_direct)
+        np.savetxt(location+"/water.dat", f_water)
+        np.savetxt(location+"/protein.dat", f_protein)
+        np.savetxt(location+"/burial.dat", f_burial)
+    return f_direct, f_water, f_protein, f_burial
 
 def my_reorder(a, first):
     # move first to the top. and keep the rest
@@ -1798,11 +1900,11 @@ def get_PredictedZim(topo, zimFile):
     for i in range(chain_count):
         seq_i = (a[i*3+2]).strip()
         seq += seq_i
-    assert np.alltrue([i in ["0", "1"] for i in seq])
+    assert np.alltrue([i in ["0", "1", "2"] for i in seq])
 
     with open(zimFile, "w") as out:
         for i in seq:
-            if i == "0":
+            if i == "0" or i == "2":
                 out.write(f"1\n")
             elif i == "1":
                 out.write("2\n")
@@ -1863,6 +1965,27 @@ def get_PredictedZimSide(topo, zimFile):
                     inMiddle = True
             else:
                 raise
+
+def get_PredictedZimSide_v2(topo, zimFile):
+    loc = topo
+    with open(loc) as f:
+        a = f.readlines()
+    assert len(a) % 3 == 0
+    chain_count = len(a) // 3
+    seq = ""
+    for i in range(chain_count):
+        seq_i = (a[i*3+2]).strip()
+        seq += seq_i
+    assert np.alltrue([i in ["0", "1", "2"] for i in seq])
+
+    with open(zimFile, "w") as out:
+        for i in seq:
+            if i == "0":
+                out.write(f"down\n")
+            elif i == "1":
+                out.write("middle\n")
+            elif i == "2":
+                out.write(f"up\n")
 
 def rotation_and_translation(fromPdb, toPdb, rotation_axis=(1,0,0), degree=90, translation=(0,0,0)):
     from Bio.PDB import Vector
@@ -1970,7 +2093,7 @@ def show_together_v2(filtered_gamma, figureName, title="test", inferBound=1, inv
     plt.rcParams.update({'font.size': 16})
     fig = plt.figure()
     ax_all = []
-    
+
     for i in range(n):
         ax_i = plt.subplot(1, n, i+1)
         ax_i.set_aspect('equal')
@@ -2027,6 +2150,96 @@ def split_proteins_name_list(pdb_per_txt=1):
     print(i)
     n = i
     return n
+
+
+def dis(a, b):
+    return ((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2)**0.5
+
+def get_side_chain_center_of_mass(res):
+    atoms = res.get_atoms()
+    total = np.array([0., 0., 0.])
+    total_mass = 0
+    for atom in atoms:
+        if atom.get_name() in ["N", "CA", "C", "O", "OXT"]:
+            continue
+        if atom.element == "H":
+            continue
+        total += atom.mass * atom.get_coord()
+        total_mass += atom.mass
+        # print(atom.get_name(), atom.get_coord())
+    if total_mass == 0:
+        x_com = res["CA"].get_coord()
+    else:
+        x_com = total / total_mass
+    return x_com
+
+
+
+def convert_all_atom_pdb_to_cbd_representation(all_atom_pdb_file, cbd_representation_file):
+    # from a all atom pdb.
+    # preserve N, CA, C, O, and place the CB at the center of mass of the side chain
+    parser = PDBParser()
+    # all_atom_pdb_file = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/side_chain_run1/256b/4_0/crystal_structure.pdb"
+    structure = parser.get_structure("x", all_atom_pdb_file)
+
+    x_com_dic = {}
+    for res in structure.get_residues():
+        chain = res.get_full_id()[2]
+        resID = res.get_full_id()[3][1]
+        x_com = get_side_chain_center_of_mass(res)
+        x_com_dic[f"{chain}{resID}"] = x_com
+
+
+    for res in structure.get_residues():
+        chain = res.get_full_id()[2]
+        resID = res.get_full_id()[3][1]
+        x_com = x_com_dic[f"{chain}{resID}"]
+        if res.resname == "GLY":
+            continue
+        res["CB"].set_coord(x_com)
+    io = PDBIO()
+    io.set_structure(structure)
+
+    class CBDRepresentationSelect(Select):
+        def accept_atom(self, atom):
+            if atom.id in ["N", "CA", "C", "O", "CB", "H"]:
+                return True
+            else:
+                return False
+    # cbd_representation_file = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/side_chain_run1/256b/4_0/cbd_representation.pdb"
+    io.save(cbd_representation_file, CBDRepresentationSelect())
+    return True
+
+
+def replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file):
+    # replace CB coord with the new CB positions.
+    # original_openAWSEM_input = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/setups/256b/256b-openmmawsem.pdb"
+    # new_openAWSEM_input = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/setups/256b/cbd-openmmawsem.pdb"
+    # all_atom_pdb_file = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/setups/256b/crystal_structure-cleaned.pdb"
+    parser = PDBParser()
+    # all_atom_pdb_file = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/side_chain_run1/256b/4_0/crystal_structure.pdb"
+    structure = parser.get_structure("x", all_atom_pdb_file)
+
+    x_com_dic = {}
+    for res in structure.get_residues():
+        chain = res.get_full_id()[2]
+        resID = res.get_full_id()[3][1]
+        x_com = get_side_chain_center_of_mass(res)
+        x_com_dic[f"{chain}{resID}"] = x_com
+
+    structure = parser.get_structure("x", original_openAWSEM_input)
+    for res in structure.get_residues():
+        chain = res.get_full_id()[2]
+        resID = res.get_full_id()[3][1]
+        x_com = x_com_dic[f"{chain}{resID}"]
+        if res.resname == "IGL":
+            continue
+        res["CB"].set_coord(x_com)
+    io = PDBIO()
+    io.set_structure(structure)
+
+    io.save(new_openAWSEM_input)
+    return True
 # def get_inside_or_not_table(pdb_file):
 #     parser = PDBParser(PERMISSIVE=1)
 #     structure = parser.get_structure('X', pdb_file)

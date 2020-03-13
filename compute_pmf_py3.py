@@ -17,7 +17,7 @@ from pymbar import timeseries # used to subsample data so that the samples are u
 os.system("echo 'Time' > time.info")
 # Flags
 debug_flag = False
-check_for_pickle_files = True
+check_for_pickle_files = False
 
 # Command line arguments
 if len(sys.argv) == 1:

@@ -170,6 +170,17 @@ def parse_pdb(pdb_id):
     parser = PDBParser()
     return parser.get_structure(pdb_id, "%s.pdb" % pdb_id)
 
+def read_fasta(fastaFile):
+    seq = ""
+    with open(fastaFile, "r") as f:
+        for line in f:
+            if line[0] == ">":
+                pass
+            else:
+                # print(line)
+                seq += line.strip()
+    return seq
+
 
 def interaction_well(r, r_min, r_max, kappa):
     return 0.5 * (np.tanh(kappa * (r - r_min)) * np.tanh(kappa * (r_max - r))) + 0.5
@@ -4033,7 +4044,7 @@ def evaluate_hamiltonian(protein, hamiltonian, training_set_file, training_decoy
     return z_score, e_native, e_mg, e_mg_std
 
 
-def evaluate_hamiltonian_wei(protein, hamiltonian, training_set_file, gamma_file_name, test_decoy_method, num_decoys, use_filtered_gammas=True, outputDecoy=False, **kwargs):
+def evaluate_hamiltonian_wei(protein, hamiltonian, training_set_file, gamma_file_name, test_decoy_method, num_decoys, use_filtered_gammas=True, outputDecoy=False, withBiased=False, **kwargs):
     phi_list = read_phi_list(hamiltonian)
     training_set = read_column_from_file(training_set_file, 1)
     # read in Hamiltonian
@@ -4071,6 +4082,29 @@ def evaluate_hamiltonian_wei(protein, hamiltonian, training_set_file, gamma_file
         e_decoy[i_decoy] = np.dot(gamma, phi_i_decoy[i_decoy])
     e_mg = np.average(e_decoy)
     e_mg_std = np.std(e_decoy)
+
+
+    if withBiased:
+        phi_i_decoyQ = read_decoyQ_phis(
+            protein, phi_list, total_phis, num_phis, num_decoys, test_decoy_method, **kwargs)
+        # phi_i_decoyQ[:] = 0
+        phi_i_decoy_weighted = phi_i_decoy * (1 - phi_i_decoyQ)
+        normalization = np.sum(1 - phi_i_decoyQ)
+        e_mg_weighted = np.zeros(num_decoys)
+        for i_decoy in range(num_decoys):
+            e_mg_weighted[i_decoy] = np.dot(gamma, phi_i_decoy_weighted[i_decoy])
+        e_mg_weighted = np.sum(e_mg_weighted)/normalization
+        w = (1 - phi_i_decoyQ).flatten()
+        # print("w shape", w.shape)
+        # print("e_decoy", e_decoy.shape)
+        # print("phi_i_decoy", phi_i_decoy.shape)
+        std_upper = np.sum(w * ((e_decoy - e_mg)**2))
+        M = np.sum(w != 0)
+        e_mg_std_weighted = np.sqrt(std_upper/((M-1)/M*normalization))
+        # e_mg_std_weighted = np.sqrt(std_upper/normalization)
+        e_mg = e_mg_weighted
+        e_mg_std = e_mg_std_weighted
+
     # calculate z-score
     z_score = (e_mg - e_native) / e_mg_std
     # print(protein, z_score, e_native, e_mg, e_mg_std)
@@ -4182,3 +4216,51 @@ def conversion_from_featureScaling_to_scalebyStd(parameter, coefficient, std, da
     data_x_converted = 1 / std * (data_x / coefficient + parameter)
 
     return data_x_converted
+
+def get_filtered_gamma(pre, cutoff, pp):
+    # pp = "cath-dataset-nonredundant-S20Clean_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0"
+    # pp = "proteins_name_list_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0phi_burial_well4.0"
+
+    A_name = pp + "_A"
+    B_name = pp + "_B"
+    B_filtered_name = pp + "_B_filtered"
+    P_name = pp + "_P"
+    Gamma_name = pp + "_gamma"
+    Gamma_filtered_name = pp + "_gamma_filtered"
+    Lamb_name = pp + "_lamb"
+    Lamb_filtered_name = pp + "_lamb_filtered"
+
+    A = np.loadtxt(pre+A_name)
+    B = np.loadtxt(pre+B_name)
+    B_filtered = np.loadtxt(pre+B_filtered_name, dtype=complex, converters={
+                               0: lambda s: complex(s.decode().replace('+-', '-'))})
+    Gamma = np.loadtxt(pre+Gamma_name)
+    Gamma_filtered = np.loadtxt(pre+Gamma_filtered_name, dtype=complex, converters={
+                               0: lambda s: complex(s.decode().replace('+-', '-'))})
+    Lamb = np.loadtxt(pre+Lamb_name, dtype=complex, converters={
+                               0: lambda s: complex(s.decode().replace('+-', '-'))})
+    Lamb_filtered = np.loadtxt(pre+Lamb_filtered_name, dtype=complex, converters={
+                               0: lambda s: complex(s.decode().replace('+-', '-'))})
+
+    half_B_name = pp + "_half_B"
+    half_B = np.loadtxt(pre+half_B_name)
+    other_half_B_name = pp + "_other_half_B"
+    other_half_B = np.loadtxt(pre+other_half_B_name)
+    std_half_B_name = pp + "_std_half_B"
+    std_half_B = np.loadtxt(pre+std_half_B_name)
+
+
+    # pre = "/Users/weilu/Research/server/april_2019/"
+    location = pre + f"../../phis/{pp}_phi_decoy_summary.txt"
+    A_prime = np.loadtxt(location)
+
+    lamb, P = np.linalg.eig(B)
+    lamb, P = sort_eigenvalues_and_eigenvectors(lamb, P)
+    filtered_lamb = np.copy(lamb)
+    cutoff_mode = cutoff
+    filtered_B_inv, filtered_lamb, P = get_filtered_B_inv_lambda_and_P(filtered_lamb,
+                                                                       cutoff_mode, P)
+    filtered_gamma = np.dot(filtered_B_inv, A)
+    filtered_B = np.linalg.inv(filtered_B_inv)
+
+    return A, A_prime, filtered_gamma, filtered_B_inv

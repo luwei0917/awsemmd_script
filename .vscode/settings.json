@@ -11,6 +11,8 @@
     ],
     "editor.trimAutoWhitespace": true,
     "files.trimTrailingWhitespace": true,
+
     "python.linting.enabled": false,
     "python.pythonPath": "/Users/weilu/anaconda/bin/python"
+
 }

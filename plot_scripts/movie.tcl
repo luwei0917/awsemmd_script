@@ -12,6 +12,8 @@ mol color ColorID 1
 mol selection all
 mol addrep top
 
+#CYS
+
 axes location off
 display projection orthographic
 display cuedensity 0
@@ -34,7 +36,7 @@ translate by 0.0 1.0 0.0
 scale by 0.833000
 scale by 0.9
 animate speed 1.0
-mol smoothrep 0 0 10
+mol smoothrep 0 0 5
 
 animate goto 99
 display resetview

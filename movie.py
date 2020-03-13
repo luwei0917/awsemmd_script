@@ -22,6 +22,11 @@ parser.add_argument("-s", "--submode",
 parser.add_argument("-c", "--membraneCenter",
                     type=int, default=0)
 parser.add_argument("--fix", help="convert pdb period box, number of chain", type=int, default=-1)
+parser.add_argument("--mem", help="show membrane",
+                    action="store_true")
+parser.add_argument("--cys", help="show Cys",
+                    action="store_true")
+parser.add_argument("-v", "--visual", default="movie.tcl")
 args = parser.parse_args()
 # render Tachyon frame450.dat '/Applications/VMD 1.9.2.app/Contents/vmd/tachyon_MACOSXX86' -aasamples 12 %s -format TARGA -o frame450.tga -res 2000 2000
 
@@ -40,7 +45,7 @@ def replace_v2(TARGET, FROM, TO):
 if args.fix >= 0:
     do(f"python ~/opt/small_script/PBC_fixer.py -n {args.fix}")
 
-if args.mode == 4 or args.mode == 5:
+if args.mode == 4 or args.mode == 5 or args.mode == 6:
     # add the native as initial frames.
     if args.submode == 1:
         for i in range(5):
@@ -54,18 +59,27 @@ if args.mode == 4 or args.mode == 5:
 
     replace("with_membrane.tcl", "MEMUP", str(args.membraneCenter+15))
     replace("with_membrane.tcl", "MEMDOWN", str(args.membraneCenter-15))
-
-    showCYS = '''\
+    if args.mem:
+        plot_script = "with_membrane.tcl"
+    else:
+        plot_script = "movie.tcl"
+    if args.cys:
+        showCYS = '''\
 mol selection resname CYS and type CB
 mol color ColorID 0
 mol addrep top
 mol modstyle 1 0 VDW 1 12
 mol smoothrep 0 1 5
 '''
-    replace_v2("with_membrane.tcl", "#CYS", showCYS)
+        replace_v2(plot_script, "#CYS", showCYS)
     if args.mode == 5:
         exit()
-    do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e with_membrane.tcl")
+    if args.mode == 6:
+        do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e ../../visual_with_ligands.vmd")
+        exit()
+    if args.visual != "movie.tcl":
+        plot_script = args.visual
+    do(f"/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e {plot_script}")
 
 protein_name = args.protein.split('.')[0]
 
