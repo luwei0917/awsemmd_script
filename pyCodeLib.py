@@ -170,6 +170,17 @@ def parse_pdb(pdb_id):
     parser = PDBParser()
     return parser.get_structure(pdb_id, "%s.pdb" % pdb_id)
 
+def read_fasta(fastaFile):
+    seq = ""
+    with open(fastaFile, "r") as f:
+        for line in f:
+            if line[0] == ">":
+                pass
+            else:
+                # print(line)
+                seq += line.strip()
+    return seq
+
 
 def interaction_well(r, r_min, r_max, kappa):
     return 0.5 * (np.tanh(kappa * (r - r_min)) * np.tanh(kappa * (r_max - r))) + 0.5

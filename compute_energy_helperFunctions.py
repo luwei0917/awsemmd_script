@@ -235,7 +235,7 @@ def compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, kappa=5.0, h
     return v_mediated
 
 input_pdb_filename = "/Users/weilu/Research/server_backup/jan_2019/compute_energy/12asA00"
-def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False):
+def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False, r_min=2.5):
     if hasPhosphorylation:
         import configparser
         config = configparser.ConfigParser()
@@ -248,7 +248,7 @@ def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False):
     res_list = get_res_list(structure)
     neighbor_list = get_neighbor_list(structure)
     sequence = get_sequence_from_structure(structure)
-    r_min = 4.5
+    # r_min = 4.5
     r_max = 6.5
     # kappa = 5
     min_seq_sep = 10
@@ -359,6 +359,36 @@ def compute_membrane(structure, kappa=4.0):
         v_membrane += k_membrane*(0.5*tanh(k_m*((z-membrane_center)+z_m))+0.5*tanh(k_m*(z_m-(z-membrane_center))))*hydrophobicityScale_list[res1globalindex]
     return v_membrane
 
+def compute_positive_inside_rule(structure, kappa=4.0):
+    k_membrane = 1
+    membrane_center = 0
+    k_m = 2
+    z_m = 15
+    tanh = np.tanh
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    # sequence = get_sequence_from_structure(structure)
+    seq = [three_to_one(res.get_resname()) for res in res_list]
+    sequence = "".join(seq)
+    v_membrane = 0
+    positive_inside_residue_table = {"G":0, "A":0, "V":0, "C":0, "P":0, "L":0, "I":0, "M":0, "W":0, "F":0,
+                                        "S":0, "T":0, "Y":0, "N":0, "Q":0,
+                                        "K":-1, "R":-1, "H":0,
+                                        "D":0, "E":0}
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        res1type = get_res_type(res_list, res1)
+        try:
+            z = res1['CB'].get_coord()[-1]
+        except:
+            z = res1['CA'].get_coord()[-1]
+        # print res1globalindex, res1index, res1chain, res1type, res1density
+        thickness = 15
+        z_m = thickness * positive_inside_residue_table[three_to_one(res1.get_resname())]
+        v_membrane += k_membrane*(z-membrane_center-z_m)**2
+    v_membrane /= 100
+    return v_membrane
 
 input_pdb_filename = "/Users/weilu/Research/server_backup/jan_2019/compute_energy/12asA00.pdb"
 def compute_direct_2(input_pdb_filename, gamma_ijm):
@@ -792,3 +822,147 @@ def compute_pap2(structure):
     # print(a_)
     return e_p
 
+def dis(a, b):
+    return ((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2)**0.5
+
+def compute_side_chain_energy_for_x(x, means, precisions_chol, log_det, weights):
+    n_features = 3
+    n_components, _ = means.shape
+
+    mean_dot_precisions_chol = np.zeros((3,3))
+    log_prob = np.zeros(3)
+    for i in range(n_components):
+        mean_dot_precisions_chol[i] = np.dot(means[i], precisions_chol[i])
+        y = np.dot(x, precisions_chol[i]) - mean_dot_precisions_chol[i]
+        log_prob[i] = np.sum(np.square(y))
+
+    log_gaussian_prob = -.5 * (n_features * np.log(2 * np.pi) + log_prob) + log_det
+    c = np.max(log_gaussian_prob + np.log(weights))
+    score = np.log(np.sum(np.exp(log_gaussian_prob + np.log(weights) - c))) + c
+    kt = 1
+    E_side_chain = -score*kt
+    # print(E_side_chain)
+    return E_side_chain
+
+def read_fasta(fastaFile):
+    seq = ""
+    with open(fastaFile, "r") as f:
+        for line in f:
+            if line[0] == ">":
+                pass
+            else:
+                # print(line)
+                seq += line.strip()
+    return seq
+
+def compute_side_chain_energy(structure, seq):
+    E_side_chain_energy = 0
+    # parser = PDBParser()
+    # pdbFile = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/native/256_cbd_submode_7_debug/crystal_structure.pdb"
+    # fastaFile = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/native/256_cbd_submode_7_debug/crystal_structure.fasta"
+    # structure = parser.get_structure("x", pdbFile)
+    print(seq)
+
+    means_dic = {}
+    precisions_chol_dic = {}
+    log_det_dic = {}
+    weights_dic = {}
+    res_type_list = ['GLY', 'ALA', 'VAL', 'CYS', 'PRO', 'LEU', 'ILE', 'MET', 'TRP', 'PHE', 'SER', 'THR', 'TYR', 'GLN', 'ASN', 'LYS', 'ARG', 'HIS', 'ASP', 'GLU']
+    for res_type in res_type_list:
+        if res_type == "GLY":
+            continue
+
+        means = np.loadtxt(f"/Users/weilu/opt/parameters/side_chain/{res_type}_means.txt")
+        precisions_chol = np.loadtxt(f"/Users/weilu/opt/parameters/side_chain/{res_type}_precisions_chol.txt").reshape(3,3,3)
+        log_det = np.loadtxt(f"/Users/weilu/opt/parameters/side_chain/{res_type}_log_det.txt")
+        weights = np.loadtxt(f"/Users/weilu/opt/parameters/side_chain/{res_type}_weights.txt")
+        means_dic[res_type] = means
+
+        precisions_chol_dic[res_type] = precisions_chol
+        log_det_dic[res_type] = log_det
+        weights_dic[res_type] = weights
+
+    for res in structure.get_residues():
+        if res.get_full_id()[1] != 0:
+            continue
+        # x_com = get_side_chain_center_of_mass(res)
+        # resname = res.resname
+        resname = one_to_three(seq[res.id[1]-1])
+        if resname == "GLY":
+            continue
+        try:
+            n = res["N"].get_coord()
+            ca = res["CA"].get_coord()
+            c = res["C"].get_coord()
+        except:
+            continue
+        x_com = res["CB"].get_coord()
+        x = np.array([dis(x_com, n), dis(x_com, ca), dis(x_com, c)])
+        r_ca_com = dis(x_com, ca)
+    #     resname = "TYR"
+        if resname == "GLY":
+            side_chain_energy = 0
+        else:
+            side_chain_energy = compute_side_chain_energy_for_x(x, means_dic[resname],
+                                                                precisions_chol_dic[resname],
+                                                                log_det_dic[resname],
+                                                                weights_dic[resname])
+        if abs(side_chain_energy) > 10:
+            print(res.id[1], resname, x_com, x, round(side_chain_energy,3), round(r_ca_com,3))
+        # print(res.id[1], resname, x_com, round(side_chain_energy,3), round(r_ca_com,3))
+        E_side_chain_energy += side_chain_energy
+    return E_side_chain_energy
+
+def get_side_chain_center_of_mass(atoms):
+    # ensure complete first
+    total = np.array([0., 0., 0.])
+    total_mass = 0
+    for atom in atoms:
+        if atom.get_name() in ["N", "CA", "C", "O", "OXT"]:
+            continue
+        if atom.element == "H":
+            continue
+        total += atom.mass * atom.get_coord()
+        total_mass += atom.mass
+        # print(atom.get_name(), atom.get_coord())
+    x_com = total / total_mass
+    return x_com
+
+def compute_side_chain_exclude_volume_energy(structure, fileLocation='/Users/weilu/Research/server/mar_2020/cmd_cmd_exclude_volume/cbd_cbd_real_contact_symmetric.csv'):
+    gamma_se_map_1_letter = {   'A': 0,  'R': 1,  'N': 2,  'D': 3,  'C': 4,
+                                'Q': 5,  'E': 6,  'G': 7,  'H': 8,  'I': 9,
+                                'L': 10, 'K': 11, 'M': 12, 'F': 13, 'P': 14,
+                                'S': 15, 'T': 16, 'W': 17, 'Y': 18, 'V': 19}
+
+    r_min_table = np.zeros((20,20))
+    r_max_table = np.zeros((20,20))
+    # fileLocation = '/Users/weilu/Research/server/mar_2020/cmd_cmd_exclude_volume/cbd_cbd_real_contact_symmetric.csv'
+    df = pd.read_csv(fileLocation)
+    for i, line in df.iterrows():
+        res1 = line["ResName1"]
+        res2 = line["ResName2"]
+        r_min_table[gamma_se_map_1_letter[three_to_one(res1)]][gamma_se_map_1_letter[three_to_one(res2)]] = line["r_min"]
+        r_min_table[gamma_se_map_1_letter[three_to_one(res2)]][gamma_se_map_1_letter[three_to_one(res1)]] = line["r_min"]
+        r_max_table[gamma_se_map_1_letter[three_to_one(res1)]][gamma_se_map_1_letter[three_to_one(res2)]] = line["r_max"]
+        r_max_table[gamma_se_map_1_letter[three_to_one(res2)]][gamma_se_map_1_letter[three_to_one(res1)]] = line["r_max"]
+
+    all_res = get_res_list(structure)
+    n = len(all_res)
+    e = 0
+    for i in range(n):
+        for j in range(i+1, n):
+            res1 = all_res[i]
+            res2 = all_res[j]
+            resname1 = res1.resname
+            resname2 = res2.resname
+            if resname1 == "GLY" or resname2 == "GLY":
+                continue
+            cbd_1 = get_side_chain_center_of_mass(res1.get_atoms())
+            cbd_2 = get_side_chain_center_of_mass(res2.get_atoms())
+            r = dis(cbd_1, cbd_2)
+            r_max = r_max_table[gamma_se_map_1_letter[three_to_one(resname1)]][gamma_se_map_1_letter[three_to_one(resname2)]]
+            r_min = r_min_table[gamma_se_map_1_letter[three_to_one(resname1)]][gamma_se_map_1_letter[three_to_one(resname2)]]
+            if r_max - r_min < 0.1:
+                print(res1, res2, r_max, r_min)
+            e += np.heaviside(r_max-r, 0)*((r-r_max)/(r_max-r_min))**2
+    return e

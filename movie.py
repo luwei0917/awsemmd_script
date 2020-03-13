@@ -26,6 +26,7 @@ parser.add_argument("--mem", help="show membrane",
                     action="store_true")
 parser.add_argument("--cys", help="show Cys",
                     action="store_true")
+parser.add_argument("-v", "--visual", default="movie.tcl")
 args = parser.parse_args()
 # render Tachyon frame450.dat '/Applications/VMD 1.9.2.app/Contents/vmd/tachyon_MACOSXX86' -aasamples 12 %s -format TARGA -o frame450.tga -res 2000 2000
 
@@ -76,6 +77,8 @@ mol smoothrep 0 1 5
     if args.mode == 6:
         do("/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e ../../visual_with_ligands.vmd")
         exit()
+    if args.visual != "movie.tcl":
+        plot_script = args.visual
     do(f"/Applications/VMD\ 1.9.3.app/Contents/MacOS/startup.command -e {plot_script}")
 
 protein_name = args.protein.split('.')[0]

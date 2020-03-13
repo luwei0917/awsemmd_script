@@ -38,6 +38,8 @@ parser.add_argument("protein", help="The name of the protein")
 parser.add_argument("-l", "--label", type=str, default="/Users/weilu/opt/ff_contact/1r69/")
 parser.add_argument("-f", "--familyFold", action="store_true", default=False)
 parser.add_argument("-m", "--membrane", action="store_true", default=False)
+parser.add_argument("-g", "--gamma", type=str, default=None)
+parser.add_argument("-b", "--burialGamma", type=str, default=None)
 args = parser.parse_args()
 
 
@@ -50,14 +52,23 @@ elif(platform.system() == 'Linux'):
 else:
     print("system unkown")
 
-
 # pre = "/Users/weilu/Research/server/sep_2019/saved_gammas/no_mix"
 # pre = "/Users/weilu/Research/server/sep_2019/saved_gammas/Sep28_trial_5_cutoff500_impose_Aprime_constraint"
 if args.membrane:
-    gamma_direct, gamma_mediated = read_gamma(f"{pre}/membrane_gamma.dat")
+    gammaFile = f"{pre}/membrane_gamma.dat"
+
 else:
-    gamma_direct, gamma_mediated = read_gamma(f"{pre}/gamma.dat")
-burial_gamma = np.loadtxt(f"{pre}/burial_gamma.dat").T
+    gammaFile = f"{pre}/gamma.dat"
+
+burialGammaFile = f"{pre}/burial_gamma.dat"
+
+if args.gamma is not None:
+    gammaFile = args.gamma
+if args.burialGamma is not None:
+    burialGammaFile = args.burialGamma
+
+gamma_direct, gamma_mediated = read_gamma(gammaFile)
+burial_gamma = np.loadtxt(burialGammaFile).T
 
 gamma_ijm, water_gamma_ijm, protein_gamma_ijm = change_gamma_format(gamma_direct, gamma_mediated)
 
@@ -85,6 +96,20 @@ if False:
     e_direct = compute_direct(structure, hasPhosphorylation=True)
     e_burial = compute_burial(structure, hasPhosphorylation=True)
 
+if False:
+    # fastaFile = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/native/256_cbd_submode_7_debug/crystal_structure.fasta"
+    fastaFile = "crystal_structure.fasta"
+    seq = read_fasta(fastaFile)
+    e_side_chain = compute_side_chain_energy(structure, seq)
+
+    print("e_side_chain", e_side_chain)
+
+if True:
+    e_side_chain = compute_side_chain_exclude_volume_energy(structure)
+    print("e_side_chain_exclude_volume", e_side_chain)
+if False:
+    e_positive_inside_rule = compute_positive_inside_rule(structure)
+    print("e_positive_inside_rule", e_positive_inside_rule)
 if True:
     e_mediated = compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, hasPhosphorylation=False)
     e_direct = compute_direct(structure, gamma_ijm, hasPhosphorylation=False)

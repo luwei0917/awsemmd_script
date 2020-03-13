@@ -148,6 +148,110 @@ def get_aligned_info(p1, p2):
     # print(aligned_length, rmsd, tmscore, seqid)
     return aligned_length, rmsd, tmscore, seqid
 
+if args.day == "mar06":
+    data = pd.read_csv("training_set.csv")
+    specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
+    pdb_list = specific_decoys["Protein"].to_list()
+    pdb_list = [a.lower() for a in pdb_list]
+    for pdb in pdb_list:
+        pre = f"/Users/weilu/Research/server/mar_2020/mass_iterative_run/setups/{pdb}"
+        fromFile = f"{pre}/crystal_structure.pdb"
+        toFile = f"{pre}/cbd_{pdb}.pdb"
+        convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+        cmd = f"python ~/openmmawsem/helperFunctions/Pdb2Gro.py {pre}/cbd_{pdb}.pdb {pre}/cbd_{pdb}.gro"
+        do(cmd)
+        do(f"cp {pre}/single_frags.mem {pre}/cbd_single_frags.mem")
+        replace(f"{pre}/cbd_single_frags.mem", pdb, f"cbd_{pdb}")
+
+if args.day == "feb25":
+    if args.mode == 1:
+        # pre = "/Users/weilu/Research/server/feb_2020/casp13_targets/setups/T0953s2-D1"
+        pre = "."
+        pdb = "1r69"
+        original_openAWSEM_input = f"{pre}/{pdb}-openmmawsem.pdb"
+        new_openAWSEM_input = f"{pre}/cbd-openmmawsem.pdb"
+        all_atom_pdb_file = f"{pre}/crystal_structure-cleaned.pdb"
+        replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file)
+if args.day == "feb20":
+    if args.mode == 1:
+        convert_all_atom_pdb_to_cbd_representation("crystal_structure.pdb", "cbd.pdb")
+    if args.mode == 2:
+        cmd = "python ~/opt/compute_energy.py lastFrame.pdb -g ../../../setups/1r69/iter0_gamma.dat -b ../../../setups/1r69/iter0_burial_gamma.dat"
+        do(cmd)
+    if args.mode == 3:
+        pre = "/Users/weilu/Research/server/feb_2020/casp13_targets/setups/T0953s2-D1"
+        pdb = "T0953s2-D1"
+        original_openAWSEM_input = f"{pre}/{pdb}-openmmawsem.pdb"
+        new_openAWSEM_input = f"{pre}/cbd-openmmawsem.pdb"
+        all_atom_pdb_file = f"{pre}/crystal_structure-cleaned.pdb"
+        replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file)
+    if args.mode == 4:
+        cmd = "python mm_run.py setups/256b/cbd-openmmawsem.pdb --to native/256_cbd_submode_7 -s 1e3 --reportFrequency 100 -f forces_setup.py --fromOpenMMPDB --fasta crystal_structure.fasta --subMode 7"
+        do("cmd")
+if args.day == "feb17":
+    pdb_list = ["T0951-D1", "T0953s2-D1", "T0955-D1", "T0957s1-D1", "T0957s1-D2", "T0958-D1", "T0960-D5", "T0963-D3", "T0968s1-D1", "T1008-D1"]
+    if args.mode == 1:
+        cleanPdb(pdb_list, chain="first")
+    if args.mode == 2:
+        for pdb in pdb_list:
+            folder = f"setups/{pdb}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"mm_create_project.py ../../cleaned_pdbs/{pdb}.pdb --extended --frag")
+            cd("../..")
+
+if args.day == "feb16":
+    pdb_list = dataset["may13"]
+    if args.mode == 1:
+        for pdb in pdb_list:
+            folder = f"setups/{pdb}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"mm_create_project.py ../../cleaned_pdbs/previous_paper_pdbs/{pdb}.pdb --extended --frag")
+            cd("../..")
+    # pdb_list = "1R69, 1UZC, 1UTG, 3ICB, 1BG8, 1N2X, 256B, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", ")
+    # pdb_list = ['1r69', '3icb', '256b', '4cpv', '2mhr', '1mba', '2fha', '1fc2', '1enh', '2gb1', '2cro', '1ctf', '4icb']
+    pdb_list = []
+    pdb_list += ["1uzc", "1ccr", "1jwe"]
+    # pdb_list += ["T0172_2"]
+    if args.mode == 2:
+        # pdb_list, steps = dataset["old"]
+        downloadPdb(pdb_list)
+        cleanPdb(pdb_list, chain=None)
+    pdb_list = ["T0172_2"]
+    if args.mode == 3:
+        cleanPdb(pdb_list, chain="first")
+    pdb_list = ["1uzc", "1ccr", "1jwe", "T0172_2"]
+    if args.mode == 4:
+        for pdb in pdb_list:
+            folder = f"setups/{pdb}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"mm_create_project.py ../../cleaned_pdbs/{pdb}.pdb --extended --frag")
+            cd("../..")
+if args.day == "feb12":
+    if args.mode == 1:
+        pdb_list = ['1l0oC00']
+        cleanPdb(pdb_list, source="my_CATH_database", toFolder="cleaned_pdbs", chain=-1, formatName=False)
+
+if args.day == "feb06":
+    pdb_list = ["6f45"]
+    if args.mode == 1:
+        for pdb in pdb_list:
+            do(f"download.py {pdb}")
+            do(f"mv {pdb} original_pdbs")
+    if args.mode == 2:
+        cleanPdb(pdb_list, source="original_pdbs", toFolder="cleaned_pdbs", chain="ABC", formatName=False)
+    if args.mode == 3:
+        for pdb in pdb_list:
+            do(f"mkdir -p setups/{pdb}")
+            cd(f"setups/{pdb}")
+            do(f"mm_create_project.py ../../cleaned_pdbs/{pdb}.pdb --extended --frag")
+            cd("../..")
+    if args.mode == 4:
+        for pdb in pdb_list:
+            do(f"python mm_run.py setups/{pdb}/{pdb} --to native/{pdb} -s 2e5 --reportFrequency 2000 -f forces_setup.py --tempStart 300 --tempEnd 300")
+
 if args.day == "feb03":
     fileName = "/Users/weilu/Research/optimization/chang_database/training_set.txt"
     pdb_list = []
@@ -155,7 +259,13 @@ if args.day == "feb03":
         for line in f:
             pdbs = line.split()
             pdb_list += pdbs
+    data = pd.read_csv("/Users/weilu/Research/optimization/chang_database/training_set.csv")
+    specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
+    pdb_list = specific_decoys["Protein"].to_list()
+    pdb_list = [a.lower() for a in pdb_list]
     if args.mode == 1:
+        do("mkdir -p training_set")
+        cd("training_set")
         for pdb in pdb_list:
             do(f"download.py {pdb}")
     if args.mode == 2:
@@ -164,6 +274,7 @@ if args.day == "feb03":
         data = pd.read_csv("/Users/weilu/Research/optimization/chang_database/training_set.csv")
         specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
         pdb_list = specific_decoys["Protein"].to_list()
+        pdb_list = [a.lower() for a in pdb_list]
         for pdb in pdb_list:
             do(f"mkdir -p setups/{pdb}")
             cd(f"setups/{pdb}")

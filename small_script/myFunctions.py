@@ -2093,7 +2093,7 @@ def show_together_v2(filtered_gamma, figureName, title="test", inferBound=1, inv
     plt.rcParams.update({'font.size': 16})
     fig = plt.figure()
     ax_all = []
-    
+
     for i in range(n):
         ax_i = plt.subplot(1, n, i+1)
         ax_i.set_aspect('equal')
@@ -2150,6 +2150,96 @@ def split_proteins_name_list(pdb_per_txt=1):
     print(i)
     n = i
     return n
+
+
+def dis(a, b):
+    return ((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2)**0.5
+
+def get_side_chain_center_of_mass(res):
+    atoms = res.get_atoms()
+    total = np.array([0., 0., 0.])
+    total_mass = 0
+    for atom in atoms:
+        if atom.get_name() in ["N", "CA", "C", "O", "OXT"]:
+            continue
+        if atom.element == "H":
+            continue
+        total += atom.mass * atom.get_coord()
+        total_mass += atom.mass
+        # print(atom.get_name(), atom.get_coord())
+    if total_mass == 0:
+        x_com = res["CA"].get_coord()
+    else:
+        x_com = total / total_mass
+    return x_com
+
+
+
+def convert_all_atom_pdb_to_cbd_representation(all_atom_pdb_file, cbd_representation_file):
+    # from a all atom pdb.
+    # preserve N, CA, C, O, and place the CB at the center of mass of the side chain
+    parser = PDBParser()
+    # all_atom_pdb_file = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/side_chain_run1/256b/4_0/crystal_structure.pdb"
+    structure = parser.get_structure("x", all_atom_pdb_file)
+
+    x_com_dic = {}
+    for res in structure.get_residues():
+        chain = res.get_full_id()[2]
+        resID = res.get_full_id()[3][1]
+        x_com = get_side_chain_center_of_mass(res)
+        x_com_dic[f"{chain}{resID}"] = x_com
+
+
+    for res in structure.get_residues():
+        chain = res.get_full_id()[2]
+        resID = res.get_full_id()[3][1]
+        x_com = x_com_dic[f"{chain}{resID}"]
+        if res.resname == "GLY":
+            continue
+        res["CB"].set_coord(x_com)
+    io = PDBIO()
+    io.set_structure(structure)
+
+    class CBDRepresentationSelect(Select):
+        def accept_atom(self, atom):
+            if atom.id in ["N", "CA", "C", "O", "CB", "H"]:
+                return True
+            else:
+                return False
+    # cbd_representation_file = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/side_chain_run1/256b/4_0/cbd_representation.pdb"
+    io.save(cbd_representation_file, CBDRepresentationSelect())
+    return True
+
+
+def replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file):
+    # replace CB coord with the new CB positions.
+    # original_openAWSEM_input = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/setups/256b/256b-openmmawsem.pdb"
+    # new_openAWSEM_input = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/setups/256b/cbd-openmmawsem.pdb"
+    # all_atom_pdb_file = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/setups/256b/crystal_structure-cleaned.pdb"
+    parser = PDBParser()
+    # all_atom_pdb_file = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/side_chain_run1/256b/4_0/crystal_structure.pdb"
+    structure = parser.get_structure("x", all_atom_pdb_file)
+
+    x_com_dic = {}
+    for res in structure.get_residues():
+        chain = res.get_full_id()[2]
+        resID = res.get_full_id()[3][1]
+        x_com = get_side_chain_center_of_mass(res)
+        x_com_dic[f"{chain}{resID}"] = x_com
+
+    structure = parser.get_structure("x", original_openAWSEM_input)
+    for res in structure.get_residues():
+        chain = res.get_full_id()[2]
+        resID = res.get_full_id()[3][1]
+        x_com = x_com_dic[f"{chain}{resID}"]
+        if res.resname == "IGL":
+            continue
+        res["CB"].set_coord(x_com)
+    io = PDBIO()
+    io.set_structure(structure)
+
+    io.save(new_openAWSEM_input)
+    return True
 # def get_inside_or_not_table(pdb_file):
 #     parser = PDBParser(PERMISSIVE=1)
 #     structure = parser.get_structure('X', pdb_file)
