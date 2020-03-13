@@ -7,7 +7,6 @@ from random import seed, randint
 import argparse
 import platform
 from datetime import datetime
-import imp
 import glob
 from time import sleep
 import fileinput
@@ -22,6 +21,7 @@ from collections import defaultdict
 
 
 parser = argparse.ArgumentParser(description="This is my playground for current project")
+# mix_gamma.py ~/opt/parameters/original_gamma saved_gammas/iter0_cutoff100_impose_Aprime_constraint -i 0
 parser.add_argument("preGamma", help="preGamma")
 parser.add_argument("gamma", help="Gamma")
 # parser.add_argument("-d", "--debug", action="store_true", default=False)
@@ -63,5 +63,5 @@ preGamma = np.loadtxt(args.preGamma)
 #     mix_gammas_3(pre, Gamma, preGamma, alpha=alpha, scale=args.scale, iterGammaName=f"iter_{i}_{int(alpha*100)}", iteration=f"iter_{i}")
 
 mix_gammas_3(pre, Gamma, preGamma, alpha=alpha, scale=args.scale, iterGammaName=f"iter_{i}_{int(alpha*100)}", iteration=f"iter_{i}")
-
+os.system("mkdir -p for_simulation")
 os.system(f"mv iteration_iter_{i}_* for_simulation/")

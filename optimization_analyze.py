@@ -22,6 +22,9 @@ parser = argparse.ArgumentParser(description="Compute gammas under the optimizat
 # parser.add_argument("OptimizationFolder", help="your optimization folder")
 parser.add_argument("name", help="name of gamma")
 parser.add_argument("-c", "--constant", type=float, default=0)
+parser.add_argument("--proteinList", type=str, default="protein_list")
+parser.add_argument("--gammaFile", type=str, default="/home/wl45/opt/parameters/original_gamma")
+
 # parser.add_argument("-l", "--label", type=str, default="label")
 args = parser.parse_args()
 
@@ -84,7 +87,8 @@ trial_name = args.name
 pre = "gammas/"
 # pp = f"protein_list_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0phi_burial_well4.0"
 # pp = f"protein_list_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0phi_burial_well4.0phi_debye_huckel_well0"
-complete_proteins = "protein_list"
+# complete_proteins = "protein_list"
+complete_proteins = args.proteinList
 phi_list = read_phi_list("phi_list.txt")
 training_set = read_column_from_file(complete_proteins, 1)
 total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
@@ -92,7 +96,8 @@ total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_stri
 # print(full_parameters_string)
 pp = complete_proteins + "_" + full_parameters_string
 # original gamma is used for compute c, make sure decoy energy is the same for new gamma and original gamma.
-gamma_file_name = "/home/wl45/opt/parameters/original_gamma"
+# gamma_file_name = "/home/wl45/opt/parameters/original_gamma"
+gamma_file_name = args.gammaFile
 original_gamma = np.loadtxt(gamma_file_name)
 a = list(original_gamma)
 # print(total_phis, num_phis)
@@ -177,7 +182,8 @@ def get_filtered_gamma(pre, cutoff, pp):
 # we want to impose additional contraint so that A' * gamma = constnat.(-562.23)
 # cutoff_list = [100, 200, 300, 400, 500, 600]
 # cutoff_list += [10, 20, 30, 40, 50, 80]
-cutoff_list = np.arange(100, total_phis, 100)
+cutoff_list = list(np.arange(100, total_phis, 100))
+cutoff_list += [630, 650, 670, 690]
 print("cutoff_list: ", cutoff_list)
 do("mkdir -p saved_gammas")
 for cutoff_i in cutoff_list:

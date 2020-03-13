@@ -226,6 +226,49 @@ def get_interaction_atom(residue):
             raise
 
 
+
+def dis(a, b):
+    return ((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2)**0.5
+
+def get_side_chain_center_of_mass(res):
+    atoms = res.get_atoms()
+    total = np.array([0., 0., 0.])
+    total_mass = 0
+    for atom in atoms:
+        if atom.get_name() in ["N", "CA", "C", "O"]:
+            continue
+        if atom.element == "H":
+            continue
+        total += atom.mass * atom.get_coord()
+        total_mass += atom.mass
+        # print(atom.get_name(), atom.get_coord())
+    if total_mass == 0:
+        x_com = res["CA"].get_coord()
+    else:
+        x_com = total / total_mass
+    return x_com
+
+def get_all_non_H_atoms(res):
+    atoms = res.get_atoms()
+    name_list = []
+    for atom in atoms:
+        name = atom.get_name()
+        if atom.element == "H":
+            continue
+        name_list.append(name)
+    return set(name_list)
+
+def get_interaction_distance_com(res1, res2):
+    if res1.resname == "GLY":
+        x1 = res1["CA"].get_coord()
+    else:
+        x1 = get_side_chain_center_of_mass(res1)
+    if res2.resname == "GLY":
+        x2 = res1["CA"].get_coord()
+    else:
+        x2 = get_side_chain_center_of_mass(res2)
+    return dis(x1, x2)
+
 def get_interaction_distance(res1, res2):
     return get_interaction_atom(res1) - get_interaction_atom(res2)
 
@@ -775,7 +818,7 @@ def phi_pairwise_contact_well(res_list, neighbor_list, parameter_list):
     return phis_to_return
 
 
-def calculate_cb_density(res_list, neighbor_list, min_seq_sep=2):
+def calculate_cb_density(res_list, neighbor_list, min_seq_sep=2, rmin=2.5):
     num_residues = len(res_list)
     density = np.zeros(num_residues)
     for res1globalindex, res1 in enumerate(res_list):
@@ -787,8 +830,9 @@ def calculate_cb_density(res_list, neighbor_list, min_seq_sep=2):
             res2globalindex = get_global_index(res_list, res2)
             if abs(res2index - res1index) >= min_seq_sep or (res1chain != res2chain):
                 rij = get_interaction_distance(res1, res2)
-                density[res1globalindex] += interaction_well(rij, 4.5, 6.5, 5)
+                density[res1globalindex] += interaction_well(rij, rmin, 6.5, 5)
     return density
+
 
 def calculate_cb_weight_density(res_list, neighbor_list, min_seq_sep=2):
     weight_info = pd.read_csv("~/opt/parameters/amino_acid_side_chain_weight", comment="#", sep="\s+")
@@ -814,6 +858,117 @@ def calculate_cb_weight_density(res_list, neighbor_list, min_seq_sep=2):
                 density[res1globalindex] += weight*interaction_well(rij, 4.5, 6.5, 5)
     return density
 
+def phi_pairwise_contact_com_well(res_list, neighbor_list, parameter_list):
+    r_min, r_max, kappa, min_seq_sep = parameter_list
+    r_min = float(r_min)
+    r_max = float(r_max)
+    kappa = float(kappa)
+    min_seq_sep = int(min_seq_sep)
+    phi_pairwise_contact_well = np.zeros((20,20))
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance_com(res1, res2)
+                phi_pairwise_contact_well[res1type][res2type] += interaction_well(rij, r_min, r_max, kappa)
+                if not res1type == res2type:
+                    phi_pairwise_contact_well[res2type][res1type] += interaction_well(rij, r_min, r_max, kappa)
+
+    phis_to_return = []
+    for i in range(20):
+        for j in range(i, 20):
+            phis_to_return.append(phi_pairwise_contact_well[i][j])
+    return phis_to_return
+
+
+def calculate_com_density(res_list, neighbor_list, min_seq_sep=2, rmin=3.5):
+    num_residues = len(res_list)
+    density = np.zeros(num_residues)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, 9.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            if abs(res2index - res1index) >= min_seq_sep or (res1chain != res2chain):
+                rij = get_interaction_distance_com(res1, res2)
+                density[res1globalindex] += interaction_well(rij, rmin, 6.5, 5)
+    return density
+
+def phi_burial_com_well(res_list, neighbor_list, parameter_list):
+    kappa = parameter_list[0]
+    kappa = float(kappa)
+
+    cb_density = calculate_com_density(res_list, neighbor_list)
+
+    phi_burial = np.zeros((3, 20))
+    rho_table = [[0.0, 3.0], [3.0, 6.0], [6.0, 9.0]]
+    for i in range(3):
+        for res1globalindex, res1 in enumerate(res_list):
+            res1index = get_local_index(res1)
+            res1chain = get_chain(res1)
+            res1type = get_res_type(res_list, res1)
+            res1density = cb_density[res1globalindex]
+            # print res1globalindex, res1index, res1chain, res1type, res1density
+            burial_i = interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
+            phi_burial[i][res1type] += burial_i
+
+    phis_to_return = []
+    for i in range(3):
+        for j in range(20):
+            phis_to_return.append(phi_burial[i][j])
+    return phis_to_return
+
+
+def phi_density_mediated_contact_com_well(res_list, neighbor_list, parameter_list):
+    r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
+    cb_density = calculate_com_density(res_list, neighbor_list)
+    r_min = float(r_min)
+    r_max = float(r_max)
+    kappa = float(kappa)
+    min_seq_sep = int(min_seq_sep)
+    density_threshold = float(density_threshold)
+    density_kappa = float(density_kappa)
+    phi_mediated_contact_well = np.zeros((2, 20,20))
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            rho_j = cb_density[res2globalindex]
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance_com(res1, res2)
+                _pij_protein = prot_water_switchFunc_sigmaProt(
+                    rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
+                _pij_water = prot_water_switchFunc_sigmaWater(
+                    rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
+                phi_mediated_contact_well[0][res1type][res2type] += _pij_protein
+                phi_mediated_contact_well[1][res1type][res2type] += _pij_water
+                if not res1type == res2type:
+                    phi_mediated_contact_well[0][res2type][res1type] += _pij_protein
+                    phi_mediated_contact_well[1][res2type][res1type] += _pij_water
+
+    phis_to_return = []
+    for i in range(2):
+        for j in range(20):
+            for k in range(j, 20):
+                phis_to_return.append(phi_mediated_contact_well[i][j][k])
+    return phis_to_return
+
 def phi_burial_well(res_list, neighbor_list, parameter_list):
     kappa = parameter_list[0]
     kappa = float(kappa)
@@ -837,6 +992,7 @@ def phi_burial_well(res_list, neighbor_list, parameter_list):
         for j in range(20):
             phis_to_return.append(phi_burial[i][j])
     return phis_to_return
+
 
 def phi_debye_huckel_well(res_list, neighbor_list, parameter_list):
     k_dh = 4.15
@@ -2764,7 +2920,7 @@ def read_decoy_phis(protein, phi_list, total_phis, num_phis, num_decoys, decoy_m
         all_phis.append(phi_i_decoy)
     return np.concatenate(all_phis)
 
-def read_decoyQ_phis(protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=False, mode=0, simulation_location_list=None, simulation_location_list_dic=None, **kwargs):
+def read_decoyQ_phis(protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, decoyBiasName='decoysQ', jackhmmer=False, mode=0, simulation_location_list=None, simulation_location_list_dic=None, **kwargs):
     if mode == 0:
         protein_list = [protein]
     elif mode == 1:
@@ -2785,8 +2941,8 @@ def read_decoyQ_phis(protein, phi_list, total_phis, num_phis, num_decoys, decoy_
             i_phi = phi_list.index(phi_and_parameters)
             parameters_string = get_parameters_string(parameters)
             # try:
-            input_file = open(os.path.join(phis_directory, "%s_%s_decoysQ_%s_%s" % (
-                phi, protein, decoy_method, parameters_string)), 'r')
+            input_file = open(os.path.join(phis_directory, "%s_%s_%s_%s_%s" % (
+                phi, protein, decoyBiasName, decoy_method, parameters_string)), 'r')
             # except:
             #     input_file = open(os.path.join(phis_directory, "%s_%s_decoysQ_%s_%s" % (
             #         "phi_normalize_relative_k", protein, "lammps", "1")), 'r')
@@ -3341,7 +3497,7 @@ def calculate_A_B_and_gamma_wl45_parallel(training_set_file, phi_list_file_name,
 
 
 def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_method, num_decoys,
-                                    noise_filtering=True, jackhmmer=False, read=True, withBiased=False, **kwargs):
+                                    noise_filtering=True, jackhmmer=False, read=True, withBiased=False, oneMinus=True, decoyBiasName='decoysQ', **kwargs):
     phi_list = read_phi_list(phi_list_file_name)
     training_set = read_column_from_file(training_set_file, 1)
     print("Size of training set", len(training_set))
@@ -3395,19 +3551,28 @@ def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_me
                 (len(training_set), num_decoys, 1))
             for i_protein, protein in enumerate(training_set):
                 phi_i_protein_i_decoyQ[i_protein] = read_decoyQ_phis(
-                    protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=jackhmmer, **kwargs)
-            phi_i_protein_i_decoy *= 1 - phi_i_protein_i_decoyQ
-            normalization = np.sum(1 - phi_i_protein_i_decoyQ)
+                    protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, decoyBiasName=decoyBiasName, jackhmmer=jackhmmer, **kwargs)
+            if oneMinus:
+                phi_i_protein_i_decoy *= 1 - phi_i_protein_i_decoyQ
+                normalization = np.sum(1 - phi_i_protein_i_decoyQ)
+            else:
+                phi_i_protein_i_decoy *= phi_i_protein_i_decoyQ
+                normalization = np.sum(phi_i_protein_i_decoyQ)
         else:
             normalization = len(training_set) * num_decoys
         # The phi_i decoy is constructed as the union of all decoys of all proteins in the training set;
+        phi_i_protein_i_decoy *= (len(training_set) * num_decoys / normalization)
         phi_i_decoy_reshaped = np.reshape(phi_i_protein_i_decoy,
-                                            (len(training_set) * num_decoys, total_phis))
+                                    (len(training_set) * num_decoys, total_phis))
         # average_phi_decoy = np.average(phi_i_decoy_reshaped, axis=0)
         # print("normalization", normalization)
         # print("phi_i_decoy_reshaped", phi_i_decoy_reshaped)
+        # # old
+        # average_phi_decoy = np.sum(phi_i_decoy_reshaped, axis=0) / normalization
+        # # old
 
-        average_phi_decoy = np.sum(phi_i_decoy_reshaped, axis=0) / normalization
+
+        average_phi_decoy = np.average(phi_i_decoy_reshaped, axis=0)
         # print("average_phi_decoy", average_phi_decoy)
         # Output to a file;
         file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
