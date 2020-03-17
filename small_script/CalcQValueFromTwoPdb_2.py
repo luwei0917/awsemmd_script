@@ -91,10 +91,10 @@ class Atom:
         f.write('\n')
 
 if len(sys.argv)!=4 and len(sys.argv)!=3:
-    print "\nCalcQValue.py PDB_Id pdb2  [sigma_exp] [-i]\n"
-    print
-    print "\t\t-i\tcalculate individual q values for each chain"
-    print
+    print("\nCalcQValue.py PDB_Id pdb2  [sigma_exp] [-i]\n")
+    # print
+    print("\t\t-i\tcalculate individual q values for each chain")
+    # print
     exit()
 
 splitq = False
@@ -143,12 +143,12 @@ p = PDBParser(PERMISSIVE=1, QUIET=True)
 
 def computeQ():
     if len(ca_atoms_pdb_2)!=len(ca_atoms_pdb):
-        print "Notice. Length mismatch!"
-        print "Pdb: ", len(ca_atoms_pdb), "trj: ", len(ca_atoms_pdb_2)
+        print("Notice. Length mismatch!")
+        print("Pdb: ", len(ca_atoms_pdb), "trj: ", len(ca_atoms_pdb_2))
         # exit()
     # print("hi")
     max_length = max(len(ca_atoms_pdb_2), len(ca_atoms_pdb))
-    print(max_length)
+    # print(max_length)
     # ca_atoms = ca_atoms[:max_length]
     # ca_atoms_pdb = ca_atoms_pdb[:max_length]
     # print ca_atoms_pdb
@@ -204,13 +204,13 @@ for chain in chains:
             # ca_atoms.append(res['CA'].get_coord())
             residue_id_2 = res.id[1]
             if residue_id_2 in pdb_residue_id:
-                print residue_id_2
+                # print(residue_id_2)
                 ca_atoms_pdb_2[residue_id_2] = res['CA'].get_coord()
                 pdb_chain_id_2.append(ichain)
                 pdb_residue_id_2[res.id[1]] = 1
             else:
-                print "no: " + str(residue_id_2)
-print "------"
+                print("no: " + str(residue_id_2))
+# print("------")
 n = max(len(ca_atoms_pdb_2), len(ca_atoms_pdb))
 for i in range(0, n+1):
     sigma.append( (1+i)**sigma_exp )

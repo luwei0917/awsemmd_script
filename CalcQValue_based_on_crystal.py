@@ -10,11 +10,16 @@ atom_desc = {'1': 'C-Alpha', '2': 'N', '3': 'O',
 PDB_type = {'1': 'CA', '2': 'N', '3': 'O', '4': 'CB', '5': 'HB', '6': 'C'}
 
 
+# if len(sys.argv) != 6 and len(sys.argv) != 5:
+#     print "\nCalcQValue.py PDB_Id Input_file Output_file qonuchic_flag(1 for q_o, 0 for q_w) [-i]\n"
+#     print
+#     print "\t\t-i\tcalculate individual q values for each chain"
+#     print
+#     sys.exit()
 if len(sys.argv) != 6 and len(sys.argv) != 5:
-    print "\nCalcQValue.py PDB_Id Input_file Output_file qonuchic_flag(1 for q_o, 0 for q_w) [-i]\n"
-    print
-    print "\t\t-i\tcalculate individual q values for each chain"
-    print
+    print("\nCalcQValue.py PDB_Id Input_file Output_file qonuchic_flag(1 for q_o, 0 for q_w) [-i]\n")
+    print("\t\t-i\tcalculate individual q values for each chain")
+
     sys.exit()
 cutoff = 9.5
 splitq = False
