@@ -183,7 +183,8 @@ def get_filtered_gamma(pre, cutoff, pp):
 # cutoff_list = [100, 200, 300, 400, 500, 600]
 # cutoff_list += [10, 20, 30, 40, 50, 80]
 cutoff_list = list(np.arange(100, total_phis, 100))
-cutoff_list += [630, 650, 670, 690]
+if total_phis == 690:
+    cutoff_list += [630, 650, 670, 690]
 print("cutoff_list: ", cutoff_list)
 do("mkdir -p saved_gammas")
 for cutoff_i in cutoff_list:
