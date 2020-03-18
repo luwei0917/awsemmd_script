@@ -845,6 +845,36 @@ def calculate_cb_density(res_list, neighbor_list, min_seq_sep=2, rmin=2.5):
     return density
 
 
+def calculate_cb_density_wellCenter(res_list, neighbor_list, wellCenterInfo, min_seq_sep=2):
+    num_residues = len(res_list)
+    density = np.zeros(num_residues)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, 9.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            if abs(res2index - res1index) >= min_seq_sep or (res1chain != res2chain):
+                res1_name = res1.get_resname()
+                res2_name = res2.get_resname()
+                if res1_name == "GLY" or res2_name == "GLY":
+                    r_min_res1_res2 = 2.5
+                    r_max_res1_res2 = 6.5
+                else:
+                    b = wellCenterInfo.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
+                    if len(b) == 0:
+                        b = wellCenterInfo.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
+                    try:
+                        r_min_res1_res2 = float(b["r_min"]) - 0.5
+                        r_max_res1_res2 = float(b["r_max"]) + 1.5
+                    except:
+                        print(b)
+                rij = get_interaction_distance(res1, res2)
+                density[res1globalindex] += interaction_well(rij, r_min_res1_res2, r_max_res1_res2, 5)
+    return density
+
+
 def calculate_cb_weight_density(res_list, neighbor_list, min_seq_sep=2):
     weight_info = pd.read_csv("~/opt/parameters/amino_acid_side_chain_weight", comment="#", sep="\s+")
     weight_info["normalized_weight"] = weight_info["weight"] /(weight_info["weight"].min())
