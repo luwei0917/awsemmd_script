@@ -106,5 +106,9 @@ if args.mode == 6:
     evaluate_phis_over_training_set_for_decoy_structures_Wei(args.proteins, "phi_list.txt", decoy_method='shifted', max_decoys=1e+5, tm_only=False, num_processors=1, withBiased=True, pickle=False)
 if args.mode == 7:
     evaluate_phis_over_training_set_for_decoy_structures_Wei(args.proteins, "phi_list.txt", decoy_method='openMM', max_decoys=1e+5, tm_only=False, num_processors=1, withBiased=True, pickle=True, mode=1)
+if args.mode == 8:
+    evaluate_phis_over_training_set_for_decoy_structures_Wei(args.proteins, "phi_list.txt", decoy_method='3DRobot', max_decoys=1e+5, tm_only=False, num_processors=1, withBiased=True, pickle=True, mode=1)
+
+
 
 
