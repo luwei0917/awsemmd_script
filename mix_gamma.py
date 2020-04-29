@@ -57,6 +57,10 @@ if args.onlyToSimulation:
 
 preGamma = np.loadtxt(args.preGamma)
 
+if len(preGamma) > len(Gamma):
+    print(f"Not same length, preGamma: {len(preGamma)}, Gamma: {len(Gamma)}")
+    print(f"Use the top {len(Gamma)} for preGamma")
+    preGamma = preGamma[:len(Gamma)]
 # if alpha == 0.3:
 #     mix_gammas_3(pre, Gamma, preGamma, alpha=alpha, scale=args.scale iterGammaName=f"iter_{i}", iteration=f"iter_{i}")
 # else:

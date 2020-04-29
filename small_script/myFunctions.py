@@ -1192,7 +1192,11 @@ def mix_gammas_3(pre, Gamma, preGamma, alpha=None, scale=True, iterGammaName=Non
     # pre = "/Users/weilu/Research/server/march_2019/optimization_weighted_by_q_iter1/"
     gamma_for_simulation = pre + f"iteration_{iteration}_gamma_{percent}.dat"
     burial_gamma_for_simulation = pre + f"iteration_{iteration}_burial_gamma_{percent}.dat"
-    gamma_format_convertion_iteration_to_simulation(iter_gamma, gamma_for_simulation, burial_gamma_for_simulation=burial_gamma_for_simulation)
+    if len(Gamma) != 690:
+        print("not having burial term?")
+        gamma_format_convertion_iteration_to_simulation(iter_gamma, gamma_for_simulation)
+    else:
+        gamma_format_convertion_iteration_to_simulation(iter_gamma, gamma_for_simulation, burial_gamma_for_simulation=burial_gamma_for_simulation)
     if iterGammaName is not None:
         np.savetxt(pre+iterGammaName, iter_gamma)
 

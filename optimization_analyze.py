@@ -91,6 +91,7 @@ pre = "gammas/"
 complete_proteins = args.proteinList
 phi_list = read_phi_list("phi_list.txt")
 training_set = read_column_from_file(complete_proteins, 1)
+# print("training set: ", training_set)
 total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
     phi_list, training_set)
 # print(full_parameters_string)
