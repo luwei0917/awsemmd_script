@@ -37,9 +37,10 @@ parser = argparse.ArgumentParser(
 parser.add_argument("protein", help="The name of the protein")
 parser.add_argument("-l", "--label", type=str, default="/Users/weilu/opt/ff_contact/1r69/")
 parser.add_argument("-f", "--familyFold", action="store_true", default=False)
-parser.add_argument("-m", "--membrane", action="store_true", default=False)
+parser.add_argument("--membrane", action="store_true", default=False)
 parser.add_argument("-g", "--gamma", type=str, default=None)
 parser.add_argument("-b", "--burialGamma", type=str, default=None)
+parser.add_argument("-m", "--mode", type=int, default=0)
 args = parser.parse_args()
 
 
@@ -100,7 +101,7 @@ if False:
     # fastaFile = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/native/256_cbd_submode_7_debug/crystal_structure.fasta"
     fastaFile = "crystal_structure.fasta"
     seq = read_fasta(fastaFile)
-    e_side_chain = compute_side_chain_energy(structure, seq)
+    e_side_chain = compute_side_chain_energy(structure[0], seq)
 
     print("e_side_chain", e_side_chain)
 
@@ -111,10 +112,12 @@ if False:
     e_positive_inside_rule = compute_positive_inside_rule(structure)
     print("e_positive_inside_rule", e_positive_inside_rule)
 if True:
-    # e_mediated = compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, hasPhosphorylation=False)
-    # e_direct = compute_direct(structure, gamma_ijm, hasPhosphorylation=False)
-    e_mediated = compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, hasPhosphorylation=False, fixWellCenter=False)
-    e_direct = compute_direct(structure, gamma_ijm, hasPhosphorylation=False, fixWellCenter=False)
+    if args.mode == 0:
+        e_mediated = compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, hasPhosphorylation=False)
+        e_direct = compute_direct(structure, gamma_ijm, hasPhosphorylation=False)
+    if args.mode == 1:
+        e_mediated = compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, hasPhosphorylation=False, fixWellCenter=False)
+        e_direct = compute_direct(structure, gamma_ijm, hasPhosphorylation=False, fixWellCenter=False)
     e_burial = compute_burial(structure, burial_gamma, hasPhosphorylation=False)
 # print("Mediated, Direct, Mediated+Direct, Burial, Mediated+Direct+Burial")
 name_list = "Protein, Mediated, Direct, Mediated+Direct, Burial, Mediated+Direct+Burial".split(",")
