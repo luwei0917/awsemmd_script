@@ -148,6 +148,74 @@ def get_aligned_info(p1, p2):
     # print(aligned_length, rmsd, tmscore, seqid)
     return aligned_length, rmsd, tmscore, seqid
 
+if args.day == "apr24":
+    if args.mode == 1:
+        relocate(fileLocation="frags.mem", toLocation="../fraglib")
+        replace(f"frags.mem", "/Users/weilu/openmmawsem//Gros/", "../../fraglib/")
+        protein_length = getFromTerminal("wc ssweight").split()[0]
+        # print(f"protein: {name}, length: {protein_length}")
+    if args.mode == 2:
+        sys.path.insert(0, "/Users/weilu/openmmawsem")
+        # name = "1iwg"
+        import openmmawsem
+        import helperFunctions.myFunctions
+        for i in range(7):
+            print(i)
+            pdb = f"movie_frame_{i}.pdb"
+            input_pdb_filename, cleaned_pdb_filename = openmmawsem.prepare_pdb(pdb, "T", keepIds=False)
+            openmmawsem.ensure_atom_order(input_pdb_filename)
+    if args.mode == 3:
+        # do("echo 'ENDMODEL\nMODEL  {i+1}\n' >> openAWSEM_formatted_movie.pdb")
+        do("rm openAWSEM_formatted_movie.pdb")
+        for i in range(7):
+            pdb = f"movie_frame_{i}-openmmawsem.pdb "
+            do(f"cat {pdb} >> openAWSEM_formatted_movie.pdb")
+            # do(f"sed '$d' {pdb} >> openAWSEM_formatted_movie.pdb")
+            # do("echo 'ENDMODEL\nMODEL  {i+1}\n' >> openAWSEM_formatted_movie.pdb")
+if args.day == "apr16":
+    if args.mode == 1:
+        # pdb = "6e67A"
+        for pdb in dataset["hybrid"]:
+            part = "globular"
+            # part = "membrane"
+            with open(f"plot_script/show_{pdb}_{part}.pml", "w") as out:
+                # out.write(f"load native_{part}.pdb\n")
+                a = f"{pdb}_best_{part}"
+                out.write(f"load ../best_Q_structures/{a}.pdb\n")
+                b = f"{pdb}_native_{part}"
+                out.write(f"load ../native_structures/{b}.pdb\n")
+                out.write(f'cealign {a}, {b}\ncmd.spectrum("count",selection="({a})&*/CA")\ncmd.spectrum("count",selection="({b})&*/CA")\n')
+                out.write("orient\n")
+                out.write("set ray_opaque_background, on\n")
+                # out.write("ray 1000, 1000\n")
+                # out.write(f"save {pdb}_{part}.png\n")
+                # out.write("exit\n")
+    if args.mode == 2:
+        part = "globular"
+        for pdb in dataset["hybrid"]:
+            do(f"pymol show_{pdb}_{part}.pml")
+    if args.mode == 3:
+        # pdb = "6e67A"
+        for pdb in dataset["hybrid"]:
+            part = "membrane"
+            # part = "membrane"
+            with open(f"plot_script/show_{pdb}_{part}.pml", "w") as out:
+                # out.write(f"load native_{part}.pdb\n")
+                a = f"{pdb}_best_{part}"
+                out.write(f"load ../best_Q_membrane_structures/{a}.pdb\n")
+                b = f"{pdb}_native_{part}"
+                out.write(f"load ../native_structures/{b}.pdb\n")
+                out.write(f'cealign {a}, {b}\ncmd.spectrum("count",selection="({a})&*/CA")\ncmd.spectrum("count",selection="({b})&*/CA")\n')
+                out.write("orient\n")
+                out.write("set ray_opaque_background, on\n")
+                # out.write("ray 1000, 1000\n")
+                # out.write(f"save {pdb}_{part}.png\n")
+                # out.write("exit\n")
+    if args.mode == 4:
+        part = "membrane"
+        for pdb in dataset["hybrid"]:
+            do(f"pymol show_{pdb}_{part}.pml")
+
 if args.day == "mar06":
     data = pd.read_csv("training_set.csv")
     specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
