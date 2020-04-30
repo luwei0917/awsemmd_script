@@ -5,3 +5,5 @@ util.color_deep("gray90", 'all')
 util.color_deep("red", 'a')
 cmd.hide("lines"     ,"all")
 cmd.disable('a')
+select native, chain B
+select chosenframe, chain A

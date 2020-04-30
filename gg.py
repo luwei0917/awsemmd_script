@@ -148,6 +148,16 @@ def get_aligned_info(p1, p2):
     # print(aligned_length, rmsd, tmscore, seqid)
     return aligned_length, rmsd, tmscore, seqid
 
+if args.day == "apr29":
+    if args.mode == 1:
+        # pre = "/Users/weilu/Research/server/feb_2020/casp13_targets/setups/T0953s2-D1"
+        pre = "./chain_E"
+        pdb = "chainE"
+        original_openAWSEM_input = f"{pre}/{pdb}-openmmawsem.pdb"
+        new_openAWSEM_input = f"{pre}/cbd-openmmawsem.pdb"
+        all_atom_pdb_file = f"{pre}/crystal_structure-cleaned.pdb"
+        replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file)
+
 if args.day == "mar06":
     data = pd.read_csv("training_set.csv")
     specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
