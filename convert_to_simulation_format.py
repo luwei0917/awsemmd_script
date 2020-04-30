@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser(description="convert to simulation format")
 
 parser.add_argument("source", help="The file you want to convert")
 parser.add_argument("folder", help="The name of folder where you want to save the formated gamma.")
+parser.add_argument("-m", "--mode", type=int, default=0)
 # parser.add_argument("-l", "--label", type=str, default="label")
 # parser.add_argument("-t", "--test", action="store_true", default=False)
 args = parser.parse_args()
@@ -23,7 +24,22 @@ with open('cmd_gg_server.txt', 'a') as f:
 
 
 do = os.system
-def gamma_format_convertion_iteration_to_simulation(iteration_gamma, gamma_for_simulation, burial_gamma_for_simulation=None, debye=None):
+def convert_simulation_to_iteration_gamma(fromFile, toFile):
+    a = np.loadtxt(fromFile)
+    a = -a
+
+    with open(toFile, "w") as out:
+        for i in range(210):
+            g = a[i][0]
+            out.write(f"{g}\n")
+        for i in range(210):
+            g = a[i+210][0]
+            out.write(f"{g}\n")
+        for i in range(210):
+            g = a[i+210][1]
+            out.write(f"{g}\n")
+
+def gamma_format_convertion_iteration_to_simulation(iteration_gamma, gamma_for_simulation, burial_gamma_for_simulation=None, debye=None, mode=0):
     from Bio.PDB.Polypeptide import one_to_three, three_to_one
     res_type_map = {
         'A': 0,
@@ -61,18 +77,33 @@ def gamma_format_convertion_iteration_to_simulation(iteration_gamma, gamma_for_s
     gamma = iteration_gamma
     gamma = -gamma  # caused by tradition.
     # convert gamma to gamma used by simulation
-    with open(gamma_for_simulation, "w") as out:
-        c = 0
-        for i in range(20):
-            for j in range(i, 20):
-                out.write(f"{gamma[c]:<.5f} {gamma[c]:10.5f}\n")
-                c += 1
-        out.write("\n")
-        for i in range(20):
-            for j in range(i, 20):
-                # protein, water
-                out.write(f"{gamma[c]:<.5f} {gamma[c+210]:10.5f}\n")
-                c += 1
+    if mode == 0:
+        with open(gamma_for_simulation, "w") as out:
+            c = 0
+            for i in range(20):
+                for j in range(i, 20):
+                    out.write(f"{gamma[c]:<.5f} {gamma[c]:10.5f}\n")
+                    c += 1
+            out.write("\n")
+            for i in range(20):
+                for j in range(i, 20):
+                    # protein, water
+                    out.write(f"{gamma[c]:<.5f} {gamma[c+210]:10.5f}\n")
+                    c += 1
+    elif mode == 1:
+        with open(gamma_for_simulation, "w") as out:
+            c = 0
+            for i in range(20):
+                for j in range(i, 20):
+                    out.write(f"{gamma[c]:<.5f} {gamma[c+210]:10.5f}\n")
+                    c += 1
+            out.write("\n")
+            c += 210
+            for i in range(20):
+                for j in range(i, 20):
+                    # protein, water
+                    out.write(f"{gamma[c]:<.5f} {gamma[c+210]:10.5f}\n")
+                    c += 1
     if burial_gamma_for_simulation and len(gamma)==690:
         rhoGamma = pd.DataFrame(gamma[630:690].reshape(3,20).T, columns=["rho1", "rho2", "rho3"]).reset_index()
         rhoGamma["oneLetter"] = rhoGamma["index"].apply(lambda x: inverse_res_type_map[x])
@@ -98,5 +129,5 @@ gamma_for_simulation = pre + f"gamma.dat"
 burial_gamma_for_simulation = pre + f"burial_gamma.dat"
 debye = pre + f"k_debye.dat"
 # gamma_format_convertion_iteration_to_simulation(iter_gamma, gamma_for_simulation, burial_gamma_for_simulation=burial_gamma_for_simulation)
-gamma_format_convertion_iteration_to_simulation(iter_gamma, gamma_for_simulation, burial_gamma_for_simulation=burial_gamma_for_simulation, debye=debye)
+gamma_format_convertion_iteration_to_simulation(iter_gamma, gamma_for_simulation, burial_gamma_for_simulation=burial_gamma_for_simulation, debye=debye, mode=args.mode)
 # do("mv original_*.dat for_simulation/")

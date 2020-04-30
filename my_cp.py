@@ -11,7 +11,6 @@ import sys
 import argparse
 import platform
 from datetime import datetime
-import imp
 from myPersonalFunctions import *
 import glob
 import numpy as np

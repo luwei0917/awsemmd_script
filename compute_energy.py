@@ -110,13 +110,19 @@ if True:
 if False:
     e_positive_inside_rule = compute_positive_inside_rule(structure)
     print("e_positive_inside_rule", e_positive_inside_rule)
-if True:
+if False:
+    # shift center, not fix well center
     # e_mediated = compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, hasPhosphorylation=False)
     # e_direct = compute_direct(structure, gamma_ijm, hasPhosphorylation=False)
     e_mediated = compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, hasPhosphorylation=False, fixWellCenter=False)
     e_direct = compute_direct(structure, gamma_ijm, hasPhosphorylation=False, fixWellCenter=False)
     e_burial = compute_burial(structure, burial_gamma, hasPhosphorylation=False)
 # print("Mediated, Direct, Mediated+Direct, Burial, Mediated+Direct+Burial")
+if True:
+    # environment
+    e_mediated = compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, hasPhosphorylation=False, fixWellCenter=False)
+    e_direct = compute_direct(structure, gamma_ijm, hasPhosphorylation=False, fixWellCenter=False, environment=True)
+    e_burial = compute_burial(structure, burial_gamma, hasPhosphorylation=False)
 name_list = "Protein, Mediated, Direct, Mediated+Direct, Burial, Mediated+Direct+Burial".split(",")
 out_line = " ".join([f"{i:<20}" for i in name_list])
 
