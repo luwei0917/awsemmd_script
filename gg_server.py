@@ -100,6 +100,22 @@ echo "My job ran on:"
 echo $SLURM_NODELIST
 srun {}\n'''
 
+base_casp14_slurm = '''\
+#!/bin/bash
+#SBATCH --reservation=casp14
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --cpus-per-task=1
+##SBATCH --gres=gpu:1
+##SBATCH --gres=gpu:1
+#SBATCH --time=1:00:00
+##SBATCH --mem-per-cpu=10G
+#SBATCH --export=ALL
+#SBATCH -o outs/slurm-%j.out
+#SBATCH --mail-user=luwei0917@gmail.com
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun {}\n'''
 
 scavenge_slurm = '''\
 #!/bin/bash
@@ -593,19 +609,20 @@ def generate_multiShuffle(fullName, alignmentLocation="./", location="./", num_d
             out.write(shuffled_seq+"\n")
         # print(shuffled_seq)
 
-def waitForJobs(jobIdList, sleepInterval=30):
+def waitForJobs(jobIdList, sleepInterval=30, userName="wl45"):
     from datetime import datetime as dt
     if len(jobIdList) == 0:
         return
     previousJobNotFinished = True
     while previousJobNotFinished:
         print(f"Waiting for previous jobs {jobIdList}", dt.now())
-        time.sleep(sleepInterval)
         previousJobNotFinished = False
-        a = getFromTerminal("squeue -u wl45")
+        a = getFromTerminal(f"squeue -u {userName}")
         for jobId in jobIdList:
             if jobId in a:
                 previousJobNotFinished = True
+        if previousJobNotFinished:
+            time.sleep(sleepInterval)
     print("Continue Next Script")
 
 # dataset = {"old":("1R69, 1UTG, 3ICB, 256BA, 4CPV, 1CCR, 2MHR, 1MBA, 2FHA".split(", "), 40),
@@ -630,6 +647,19 @@ dataset["optimization_cath"] = ['1a75A00', '1bekA01', '1bqbA02', '1cpcB00', '1cs
 # '1hcd', '1k0s' have problem in beta sheets. (the crystal structure is more round while prediction is more like a straight sheet)
 dataset["optimization_v2"] = ['1e0m', '1w4e', '1e0g', '2wqg', '1jo8', '1fex', '2l6r', '1c8c', '1g6p', '1mjc', '2jmc', '1hdn', '1st7', '1n88', '1d6o', '2ga5', '1j5u', '3o4d']
 dataset["optimization_cbd"] = ['1hoe', '1hyp', '1tif', '1vcc', '1by9', '1bdo', '451c', '1cc5', '1bb9', '1pht', '1opd', '1a32', '1ptf', '1cyo', '1tig', '1ctj', '1fna', '1rzl', '1who', '2cbp', '2acy', '1plc', '1bm8', '1opc', '3vub', '1tul', '1kte', '1erv', '1btn', '1a1x', '3cyr', '1bkf', '1ycc', '1sfp', '1kpf', '2mcm', '2pii', '1a6f', '1by2', '1bea', '1rmd', '1poa', '1tmy', '2a0b', '1mai', '1neu', '1dun', '1b6e', '2sak', '1dhn', '1cxc', '1bgf', '7rsa', '1bqk', '3pyp', '1bfg', '1opy', '1rlw', '1rie', '3chy', '1rcb', '1cpq', '1pdo', '3lzt', '1hmt', '1htp', '1c52', '1kuh', '1crb', '1poc', '1aqt', '2end', '5nul', '1pne', '1lcl', '2sns', '1flp', '1tfe', '1ax8', '1pkp', '1rss', '1jon', '1vls', '1lba', '1aly', '1mba', '2hbg', '1akr', '1osa', '1div']
+# data = pd.read_csv("~/Research/database/training_set_apr11_2020.csv")
+# specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
+# pdb_list = specific_decoys["Protein"].to_list()
+# pdb_list = [a.lower() for a in pdb_list]
+# skip_pdb_list = ["1puc", "1skz"]
+# skip_pdb_list += ["1msc", "1fmb", "1gvp", "2tgi", "1whi", "1baj", "1rmd", "1div"]  #dimer.
+# skip_pdb_list += ["1aqe"]  # lots of ligand
+# skip_pdb_list += ['1by2', '1rcb', '1hyp', '3lzt', '3cyr', '7rsa', '1rzl', '1b6e', '1poc', '1bea', '1poa']   # has at least 6 CYS.
+# filtered_pdb_list = [x for x in pdb_list if x not in skip_pdb_list]
+dataset["apr11_2020"] = ['1hoe', '1tif', '1vcc', '1by9', '1bdo', '451c', '1cc5', '1bb9', '1pht', '1opd', '1a32', '1ptf', '1cyo', '1tig', '1ctj', '1fna', '1who', '2cbp', '2acy', '1plc', '1bm8', '1opc', '3vub', '1tul', '1kte', '1erv', '1btn', '1a1x', '1bkf', '1ycc', '1sfp', '1kpf', '2mcm', '2pii', '1a6f', '1tmy', '2a0b', '1mai', '1neu', '1dun', '2sak', '1dhn', '1cxc', '1bgf', '1bqk', '3pyp', '1bfg', '1opy', '1rlw', '1rie', '3chy', '1cpq', '1pdo', '1hmt', '1htp', '1c52', '1kuh', '1crb', '1aqt', '2end', '5nul', '1pne', '1lcl', '2sns', '1flp', '1tfe', '1ax8', '1pkp', '1rss', '1jon', '1vls', '1lba', '1aly', '1mba', '2hbg', '1akr', '1osa']
+
+
+
 # def returnSteps(p):
 #     if p in "1FC2C, 1ENH, 2GB1, 2CRO, 1CTF, 4ICB".split(", "):
 #         steps = 80
@@ -661,8 +691,11 @@ def readList(fileName):
     theList = [b.strip() for b in a]
     return theList
 
-def slurmRun(slurmFileName, cmd, template=scavenge_slurm, memory=1, thread=1):
+def slurmRun(slurmFileName, cmd, template=scavenge_slurm, memory=1, thread=1, runOnServer=True):
     os.system("mkdir -p outs")
+    if not runOnServer:
+        do(cmd)
+        return "runOnLocalMachine"
     with open(slurmFileName, "w") as out:
         out.write(template.format(cmd))
         # out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py -m 1 proteins_name_list/proteins_name_list_{name}.txt"))
@@ -738,10 +771,21 @@ if args.day == "plot":
     for cutoff_i in cutoff_list:
         # cutoff_i = 400
         name = f"{save_gamma_pre}/{trial_name}_cutoff{cutoff_i}_impose_Aprime_constraint"
-        filtered_gamma = np.loadtxt(name)
+        filtered_gamma_ = np.loadtxt(name)
+        if len(filtered_gamma_) == 840:
+            filtered_gamma = filtered_gamma_
+            n = 4
+            ax_title_list=["Direct_H", "Direct_P", "High density(protein)", "Low density(water)"]
+        else:
+            n = 3
+            filtered_gamma = np.zeros(630)
+            for i in range(min(len(filtered_gamma_), 630)):
+                filtered_gamma[i] = filtered_gamma_[i]
+            ax_title_list=["Direct", "High density(protein)", "Low density(water)"]
         figureName = f"{save_gamma_pre}/figures/{trial_name}_cutoff{cutoff_i}_equal_legend"
         title = f"{trial_name}_cutoff{cutoff_i}"
-        show_together_v2(filtered_gamma, figureName, title=title, inferBound=2)
+        print(cutoff_i, name, figureName)
+        show_together_v2(filtered_gamma, figureName, title=title, inferBound=2, n=n, ax_title_list=ax_title_list)
 
 def read_simulation_info(folder_list, pdb_list, simulationType, base_path, run_n):
     all_data = []
@@ -765,7 +809,1677 @@ def read_simulation_info(folder_list, pdb_list, simulationType, base_path, run_n
     print(outFile)
     return outFile
 
+def compute_phi_and_gammas_on_server(folder_list, pdb_list, computeGammaCMD="python3 ~/opt/gg_server.py -d mar31 -m 11"):
+    print("Start compute phis")
+    n = split_proteins_name_list(pdb_per_txt=2)
+    jobIdList = []
+    for i in range(n):
+        proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+        # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+        jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 7 {proteins}", template=base_slurm, memory=10)
+        # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+        jobIdList.append(jobId)
+        do(f"cat {proteins} >> iter0_complete.txt")
+    waitForJobs(jobIdList, sleepInterval=60)
+    print("Start computing Gamma")
+    with open("protein_list_complete", "w") as out:
+        for folder in folder_list:
+            for pdb in pdb_list:
+                out.write(f"{pdb}_{folder}\n")
+    with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+        out.write(base_slurm.format(computeGammaCMD))
+    replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+    do(f"sbatch slurms/run_on_scavenge.slurm")
 
+
+def get_z_scores(trial_name):
+    from pyCodeLib import validate_hamiltonian_wei
+    import warnings
+    warnings.filterwarnings('ignore')
+    # print("mar08")
+    cutoff = 400
+    # cutoff = 600
+    pre = "."
+    gamma_pre = f"{pre}/saved_gammas"
+    # trial_name = args.label
+    do(f"cp -r gammas back_gammas_{trial_name}")
+    gamma_file_name = f"{gamma_pre}/{trial_name}_cutoff{cutoff}_impose_Aprime_constraint"
+    # gamma_file_name = f"{pre}/iter_2_30"
+    data = validate_hamiltonian_wei("phi_list.txt", "protein_list_complete", gamma_file_name, "openMM", 100, mode=0)
+    dataFile = f"optimization_2020.csv"
+    data.to_csv(dataFile)
+
+def get_weighted_Q(preDecoyBiasName, decoyBiasName):
+    from pyCodeLib import read_phi_list, read_column_from_file, get_parameters_string
+    phi_list_file_name = "phi_list.txt"
+    training_set_file = "protein_list_complete"
+    decoy_method = "openMM"
+    dataFile = f"optimization_2020.csv"
+    data = pd.read_csv(dataFile, index_col=0)
+    data["normalized_Z_weight"] = (10/(data["Z_scores"] - data["Z_scores"].min() + 10))
+    data["normalized_Z_weight_sq"] = (10/(data["Z_scores"] - data["Z_scores"].min() + 10))**2
+    data["normalized_Z_weight_half"] = (10/(data["Z_scores"] - data["Z_scores"].min() + 10))**0.5
+    phi_list = read_phi_list(phi_list_file_name)
+    training_set = read_column_from_file(training_set_file, 1)
+    protein = training_set[0]
+    for i, line in data.iterrows():
+        protein = line["Protein"]
+        normalized_Z_weight = line["normalized_Z_weight"]
+        normalized_Z_weight_sq = line["normalized_Z_weight_sq"]
+        normalized_Z_weight_half = line["normalized_Z_weight_half"]
+        for i_phi_function, phi_and_parameters in enumerate(phi_list):
+            # print(protein, i_phi_function, phi_and_parameters)
+            phi = phi_and_parameters[0]
+            parameters = phi_and_parameters[1]
+            i_phi = phi_list.index(phi_and_parameters)
+            parameters_string = get_parameters_string(parameters)
+            # try:
+            fromFile = f"../phis/{phi}_{protein}_{preDecoyBiasName}_{decoy_method}_{parameters_string}"
+            a = np.loadtxt(fromFile)
+            # print(a)
+            # b = (1-a) * normalized_Z_weight
+            # toFile = f"../phis/{phi}_{protein}_{decoyBiasName}_{decoy_method}_{parameters_string}"
+            # np.savetxt(toFile, b, fmt='%.4f')
+            if preDecoyBiasName == "decoysQ":
+                b = (1-a) * normalized_Z_weight
+            elif preDecoyBiasName == "deocyQZBias":
+                b = a * normalized_Z_weight
+            else:
+                b = a * normalized_Z_weight
+            # b = (1-a) * normalized_Z_weight_sq
+            # b = (1-a) * normalized_Z_weight_half
+            toFile = f"../phis/{phi}_{protein}_{decoyBiasName}_{decoy_method}_{parameters_string}"
+            np.savetxt(toFile, b, fmt='%.4f')
+
+def getSeqFromPDB(fileLocation):
+    p = PDBParser()
+    s = p.get_structure("test", fileLocation)
+    seq = ""
+    residues = list(s.get_residues())
+    for residue in residues:
+        res_id = residue.get_id()[0]
+        if res_id==' ':
+            residue_name = residue.get_resname()
+            seq += three_to_one(residue_name)
+    return seq
+
+def optimization_setupDatabase(pdb_list, fromFolder, toFolder):
+    do(f"mkdir -p {toFolder}/database/dompdb")
+    do(f"mkdir -p {toFolder}/database/S20_seq")
+    for pdb in pdb_list:
+        do(f"cp {fromFolder}/{pdb}.pdb {toFolder}/database/dompdb/")
+
+    for pdb in pdb_list:
+        fileLocation = f"{toFolder}/database/dompdb/{pdb}.pdb"
+        seq = getSeqFromPDB(fileLocation)
+        opt_pdbName = pdb
+        fileLocation = f"{toFolder}/database/S20_seq/{opt_pdbName}.seq"
+        with open(fileLocation, "w") as out:
+            out.write(seq+"\n")
+
+def optimization_setupFolder(phi_list, pdb_list):
+    do(f"cp {phi_list} phi_list.txt")
+    do("mkdir proteins_name_list")
+    do("mkdir slurms")
+    do('mkdir -p outs')
+    # do("mkdir -p decoys/multiShuffle")
+    do("mkdir -p decoys")
+    do("mkdir -p gammas")
+    do("mkdir -p ../phis")
+    with open("protein_list", "w") as out:
+        for pdb in pdb_list:
+            out.write(f"{pdb}\n")
+
+def optimization_setupDecoys_shuffle(n_decoys, pdb_per_txt=2, runOnServer=True, template=base_slurm):
+    n = split_proteins_name_list(pdb_per_txt=pdb_per_txt)
+    jobIdList = []
+    for i in range(n):
+        proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+        # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+        # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 -d genDecoy -m 1 {proteins}", template=base_slurm, memory=10)
+        jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/generate_decoys.py -n {n_decoys} -m 1 {proteins}", template=template, memory=10, runOnServer=runOnServer)
+        # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 {proteins}", template=base_slurm, memory=10, runOnServer=runOnServer)
+        # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+        jobIdList.append(jobId)
+        do(f"cat {proteins} >> iter0_complete.txt")
+    waitForJobs(jobIdList, sleepInterval=60)
+
+
+def optimization_convertPDB(base_path, simulationType, folder_list, pdb_list, run_n):
+    cd(f"{base_path}/{simulationType}")
+    jobIdList = []
+    for folder in folder_list:
+        cd(folder)
+        for pdb in pdb_list:
+            for i in range(run_n):
+                cd(f"{pdb}/{i}")
+                # do()
+                cmd = "python /projects/pw8/wl45/openawsem/helperFunctions/convertOpenmmTrajectoryToStandardMovie.py movie.pdb"
+                jobId = slurmRun(f"convert.slurm", cmd, template=scavenge_slurm)
+                jobIdList.append(jobId)
+                cd("../..")
+        cd("..")
+    waitForJobs(jobIdList, sleepInterval=30)
+
+def optimization_setupDecoys(optimizationBasePath, optimizationFolder, folder_list, pdb_list, simulationType, base_path, run_n, lastN_frame,
+                    phi_list="../phi_list_environment_complete.txt"):
+    do(f"mkdir -p {optimizationBasePath}/{optimizationFolder}")
+    cd(f"{optimizationBasePath}/{optimizationFolder}")
+    do(f"cp {phi_list} phi_list.txt")
+    do("mkdir proteins_name_list")
+    do("mkdir slurms")
+    do('mkdir -p outs')
+    # do("mkdir -p decoys/multiShuffle")
+    do("mkdir -p decoys")
+    do("mkdir -p gammas")
+    do("mkdir -p ../phis")
+    # with open("protein_list", "w") as out:
+    #     for pdb in pdb_list:
+    #         out.write(f"{pdb}\n")
+    with open("protein_list", "w") as out:
+        for folder in folder_list:
+            for pdb in pdb_list:
+                out.write(f"{pdb}_{folder}\n")
+# if args.mode == 3:
+    outFile = read_simulation_info(folder_list, pdb_list, simulationType, base_path, run_n)
+    # today = datetime.today().strftime('%m-%d')
+    outFile = f"{simulationType}.csv"
+# if args.mode == 13:
+    # time.sleep(3600)
+    dataFile = f"{simulationType}.csv"
+    simulation_folder = simulationType
+    data = pd.read_csv(dataFile, index_col=0)
+    parser = PDBParser()
+    # folder = "first"
+    # for folder in ["first", "first_cpu2"]:
+    for folder in folder_list:
+        pre = f"{base_path}/{simulation_folder}/{folder}"
+        to_folder = "."
+        os.system(f"mkdir -p {to_folder}/decoys/openMM")
+        # pdb_list = ['1j5u']
+        for pdb in pdb_list:
+            complete_models = []
+            print(pdb)
+            for i in range(run_n):
+                movieFile = f"{pre}/{pdb}/{i}/movie.pdb"
+                allFrames, n, size = getAllFrames(movieFile)
+                num_of_frames = int(n/size)
+                first_chosen_frame = num_of_frames - lastN_frame
+                # last_chosen_frame = num_of_frames
+                oneFrame = allFrames[size*first_chosen_frame:size*(num_of_frames)]
+
+                p = PDBParser()
+                f = io.StringIO("".join(oneFrame))
+                s = p.get_structure("test", f)
+                complete_models += list(s.get_models())
+            t = data.query(f"Protein == '{pdb}' and Folder == '{folder}' and Steps > 1").reset_index(drop=True)
+            t = t.groupby("Run").tail(50).reset_index(drop=True)
+            t["structure"] = complete_models
+            t = t.rename(columns={"Q":"Qw"})
+            # last50 = t.groupby("Run").tail(50).reset_index(drop=True)
+            last50 = t
+            # print(last50.head())
+            # print(last50.tail())
+            # print(last50.shape)
+            # print(len(complete_models))
+            to_folder = "."
+            last50.to_pickle(f"{to_folder}/decoys/openMM/{pdb}_{folder}.pkl")
+
+def optimization_compute_phi_and_gamma(complete_folder_list, pdb_list, runOnServer=True, phi_cmd="python3 ~/opt/compute_phis.py -m 7 {}", gamma_cmd="python3 ~/opt/gg_server.py -d apr11 -m 44", template=base_slurm):
+    n = split_proteins_name_list(pdb_per_txt=2)
+    jobIdList = []
+    for i in range(n):
+        proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+        # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+        jobId = slurmRun(f"slurms/run_{i}.slurm", phi_cmd.format(proteins), template=template, memory=10, runOnServer=runOnServer)
+        # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+        jobIdList.append(jobId)
+        do(f"cat {proteins} >> iter0_complete.txt")
+    waitForJobs(jobIdList, sleepInterval=60)
+
+    with open("protein_list_complete", "w") as out:
+        for folder in complete_folder_list:
+            for pdb in pdb_list:
+                out.write(f"{pdb}_{folder}\n")
+    jobIdList = []
+    jobId = slurmRun(f"slurms/run_on_scavenge.slurm", f"{gamma_cmd}", template=template, memory=60, runOnServer=runOnServer)
+    jobIdList.append(jobId)
+    waitForJobs(jobIdList, sleepInterval=60)
+
+
+def optimization_z_bias(iteration, c=-50):
+    # mode = 1 for this environment.
+    do(f"optimization_analyze.py {iteration} --proteinList protein_list_complete -c {c} -m 1")
+    trial_name = iteration
+    get_z_scores(trial_name)
+    get_weighted_Q("decoysQ", "deocyQZBias")
+# if args.mode == 7:
+    decoyBiasName = "deocyQZBias"
+    jobIdList = []
+    jobId = slurmRun(f"slurms/get_gamma_{decoyBiasName}.slurm", f"python3 ~/opt/gg_server.py -d apr11 -m 77 -l {decoyBiasName}", template=base_slurm, memory=60)
+    # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+    jobIdList.append(jobId)
+    waitForJobs(jobIdList, sleepInterval=60)
+# if args.mode == 8:
+    # i = "iter4_shift_center_z_weighted"
+    trial_name = f"{iteration}_zBias_1"
+    # i = args.label
+    do(f"optimization_analyze.py {trial_name} --proteinList protein_list_complete -c {c} -m 1")
+
+    get_z_scores(trial_name)
+    get_weighted_Q("deocyQZBias", "decoyQZBias_2")
+
+    decoyBiasName = "decoyQZBias_2"
+    jobIdList = []
+    jobId = slurmRun(f"slurms/get_gamma_{decoyBiasName}.slurm", f"python3 ~/opt/gg_server.py -d apr11 -m 77 -l {decoyBiasName}", template=base_slurm, memory=60)
+    # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+    jobIdList.append(jobId)
+    waitForJobs(jobIdList, sleepInterval=60)
+
+    trial_name = f"{iteration}_zBias_2"
+    print(trial_name)
+    # i = args.label
+    do(f"optimization_analyze.py {trial_name} --proteinList protein_list_complete -c {c} -m 1")
+
+
+def gamma_to_plot(name, figureName, title):
+    filtered_gamma_ = np.loadtxt(name)
+    if len(filtered_gamma_) == 840:
+        filtered_gamma = filtered_gamma_
+        n = 4
+        ax_title_list=["Direct_H", "Direct_P", "High density(protein)", "Low density(water)"]
+    else:
+        n = 3
+        filtered_gamma = np.zeros(630)
+        for i in range(min(len(filtered_gamma_), 630)):
+            filtered_gamma[i] = filtered_gamma_[i]
+        ax_title_list=["Direct", "High density(protein)", "Low density(water)"]
+    # print(cutoff_i, name, figureName)
+    show_together_v2(filtered_gamma, figureName, title=title, inferBound=2, n=n, ax_title_list=ax_title_list)
+
+
+# workday
+
+if args.day == "genDecoy":
+    print("Please use generate_decoys.py instead")
+    if args.mode == 1:
+        from pyCodeLib import *
+        proteins = args.label
+        n_decoys = 1000
+        generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+
+if args.day == "generateGamma":
+    print("Please use generate_gamma.py instead")
+    if args.mode == 1:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        n_decoys = 1000
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+                                        withBiased=False, num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+    if args.mode == 2:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list_complete"
+        n_decoys = 50 * run_n
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                        withBiased=True, oneMinus=True, decoyBiasName='decoysQ', num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+
+if args.day == "apr31":
+
+    phi_list = "/home/wl45/opt/optimization/phi_list_contact.txt"
+    # phi_list = "phi_list.txt"
+    # pdb_list = dataset["apr11_2020"]
+    # data = pd.read_csv("/home/wl45/dataset/has_structures_small_dataset_cleaned.csv")
+    # pdb_list = data["Protein"].to_list()
+    pdb_list = ['3s5rA00', '1ba5A00', '4fdyA01', '1b43A02', '1zzhA02']
+
+    base_path = "/scratch/wl45/may_week1_2020"
+    # simulationType = "mass_iterative_run_traditional"
+    optimizationBasePath = f"{base_path}/example_optimization"
+
+    if args.mode == 1:
+        optimizationFolder = "iter0"
+        runOnServer = False
+        # lastN_frame = 50
+        # run_n = 2
+        n_decoys = 100
+        trial_name = optimizationFolder
+        phi_cmd="python3 ~/opt/compute_phis.py -m 0 {}"
+        # phi_cmd="python3 ~/opt/compute_phis.py -m 7 {proteins}"
+        gamma_cmd=f"python3 ~/opt/generate_gamma.py -m 1 -n {n_decoys}"
+        complete_folder_list = "protein_list"
+
+        # start from the pdbs in source folder, move them to database folder.
+        fromFolder = f"{optimizationBasePath}/source"
+        optimization_setupDatabase(pdb_list, fromFolder, optimizationBasePath)
+        # setup the optimization folder.
+        do(f"mkdir -p {optimizationBasePath}/{optimizationFolder}")
+        cd(f"{optimizationBasePath}/{optimizationFolder}")
+        optimization_setupFolder(phi_list, pdb_list)
+        optimization_setupDecoys_shuffle(n_decoys, runOnServer=runOnServer)
+        optimization_compute_phi_and_gamma(complete_folder_list, pdb_list,
+                runOnServer=runOnServer, phi_cmd=phi_cmd, gamma_cmd=gamma_cmd)
+        do(f"optimization_analyze.py {trial_name}")
+        do(f"gg_server.py -d plot -l {trial_name}")
+
+    if args.mode == 3:
+        optimizationFolder = "iter0_test_server"
+        runOnServer = True
+        # lastN_frame = 50
+        # run_n = 2
+        n_decoys = 100
+        trial_name = optimizationFolder
+        phi_cmd="python3 ~/opt/compute_phis.py -m 0 {}"
+        # phi_cmd="python3 ~/opt/compute_phis.py -m 7 {proteins}"
+        gamma_cmd=f"python3 ~/opt/generate_gamma.py -m 1 -n {n_decoys}"
+        complete_folder_list = "protein_list"
+
+        # start from the pdbs in source folder, move them to database folder.
+        fromFolder = f"{optimizationBasePath}/source"
+        optimization_setupDatabase(pdb_list, fromFolder, optimizationBasePath)
+        # setup the optimization folder.
+        do(f"mkdir -p {optimizationBasePath}/{optimizationFolder}")
+        cd(f"{optimizationBasePath}/{optimizationFolder}")
+        optimization_setupFolder(phi_list, pdb_list)
+        optimization_setupDecoys_shuffle(n_decoys, runOnServer=runOnServer, template=base_casp14_slurm)
+        optimization_compute_phi_and_gamma(complete_folder_list, pdb_list,
+                runOnServer=runOnServer, phi_cmd=phi_cmd, gamma_cmd=gamma_cmd, template=base_casp14_slurm)
+        do(f"optimization_analyze.py {trial_name}")
+        do(f"gg_server.py -d plot -l {trial_name}")
+    # if args.mode == 1:
+    #     random.seed(5)
+    #     selected = random.sample(pdb_list, 5)
+    #     print(selected)
+    #     for pdb in selected:
+    #         do(f"cp ../cath_dataset_shuffle_optimization/database/dompdb/{pdb}.pdb source/")
+
+
+if args.day == "apr30":
+    # This works with optimization
+    # phi_list = "/home/wl45/opt/optimization/phi_list_contact.txt"
+    phi_list = "phi_list.txt"
+    # pdb_list = dataset["apr11_2020"]
+    data = pd.read_csv("/home/wl45/dataset/has_structures_small_dataset_cleaned.csv")
+    pdb_list = data["Protein"].to_list()
+
+    base_path = "/scratch/wl45/apr_2020"
+    simulationType = "mass_iterative_run_traditional"
+    optimizationBasePath = "/scratch/wl45/apr_2020/cath_dataset_shuffle_optimization"
+    optimizationFolder = "optimization_iter0_environment_burial_only"
+    # lastN_frame = 50
+    run_n = 2
+    trial_name = "iter0"
+    if args.mode == 1:
+        # do(f"mkdir -p {optimizationBasePath}/{optimizationFolder}")
+        # cd(f"{optimizationBasePath}/{optimizationFolder}")
+        # optimization_setupFolder(phi_list, pdb_list)
+
+        # split proteins_name_list
+        n = split_proteins_name_list(pdb_per_txt=2)
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 -d genDecoy -m 1 {proteins}", template=base_slurm, memory=10)
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 {proteins}", template=base_slurm, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        waitForJobs(jobIdList, sleepInterval=60)
+
+        jobIdList = []
+        jobId = slurmRun(f"slurms/run_on_scavenge.slurm", f"python3 ~/opt/gg_server.py -d apr30 -m 33", template=base_slurm, memory=60)
+        jobIdList.append(jobId)
+        # do(f"optimization_analyze.py {trial_name}")
+        # do(f"gg_server.py -d plot -l {trial_name}")
+
+    if args.mode == 33:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        n_decoys = 1000
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list_environment_with_burial.txt", decoy_method='shuffle',
+                                        withBiased=False, num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+
+
+if args.day == "apr29":
+    # This works with optimization
+    phi_list = "/home/wl45/opt/optimization/phi_list_contact.txt"
+    # pdb_list = dataset["apr11_2020"]
+    data = pd.read_csv("/home/wl45/dataset/has_structures_small_dataset_cleaned.csv")
+    pdb_list = data["Protein"].to_list()
+
+    base_path = "/scratch/wl45/apr_2020"
+    simulationType = "mass_iterative_run_traditional"
+    optimizationBasePath = "/scratch/wl45/apr_2020/cath_optimization"
+    optimizationFolder = "iter0"
+    # lastN_frame = 50
+    run_n = 2
+    trial_name = "iter0"
+    if args.mode == 1:
+        do(f"mkdir -p {optimizationBasePath}/{optimizationFolder}")
+        cd(optimizationBasePath)
+        cd(optimizationFolder)
+        optimization_setupFolder(phi_list, pdb_list)
+
+        # split proteins_name_list
+        n = split_proteins_name_list(pdb_per_txt=5)
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d apr29 -m 22 -l {proteins}", template=base_slurm, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        waitForJobs(jobIdList, sleepInterval=60)
+
+        jobIdList = []
+        jobId = slurmRun(f"slurms/run_on_scavenge.slurm", f"python3 ~/opt/gg_server.py -d apr29 -m 33", template=base_slurm, memory=60)
+        jobIdList.append(jobId)
+        do(f"optimization_analyze.py {trial_name}")
+        do(f"gg_server.py -d plot -l {trial_name}")
+    if args.mode == 22:
+        from pyCodeLib import *
+        proteins = args.label
+        n_decoys = 1000
+        generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+        do(f"python3 ~/opt/compute_phis.py -m 0 {proteins}")
+    if args.mode == 33:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list"
+        n_decoys = 1000
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+                                        withBiased=False, num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+
+
+if args.day == "apr28":
+    # This works with simulation
+    phi_list = "/home/wl45/opt/optimization/phi_list_contact.txt"
+    pdb_list = dataset["apr11_2020"]
+
+    base_path = "/scratch/wl45/apr_2020"
+    simulationType = "mass_iterative_run_traditional"
+    # optimizationBasePath = "/scratch/wl45/apr_2020/cath_optimization"
+    # optimizationFolder = "iter0"
+    # lastN_frame = 50
+    run_n = 2
+
+    if args.mode == 1:
+        gamma = "/projects/pw8/wl45/openawsem/parameters/gamma.dat"
+        BurialGamma = "/projects/pw8/wl45/openawsem/parameters/burial_gamma.dat"
+        for pdb in pdb_list:
+            toGamma = f"{base_path}/{simulationType}/setups/{pdb}/iter0_gamma.dat"
+            toBurialGamma = f"{base_path}/{simulationType}/setups/{pdb}/iter0_burial_gamma.dat"
+            do(f"cp {gamma} {toGamma}")
+            do(f"cp {BurialGamma} {toBurialGamma}")
+
+    if args.mode == 2:
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+        iteration = f"iteration_0"
+        subMode = 1
+        force_setup = "forces_setup.py"
+        for pdb in pdb_list:
+            for i in range(run_n):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+
+if args.day == "apr23":
+    pdb_list = dataset["apr11_2020"]
+    print(pdb_list)
+
+    # folder_list = ["iter1_environment"]
+    # optimizationFolder = "iter2_environment"
+    # iteration = "iter2_environment"
+    # complete_folder_list = ["iter1_environment", "iter0_environment", "iteration_0_stronger_exclude_volume", "iteration_1_stronger_exclude_withoutBurial_bugfix", "iteration_2_bug_fixed", "iter3_shift_well", "iter4_shift_well"]
+
+    # folder_list = ["iter2_environment"]
+    # optimizationFolder = "iter3_environment"
+    # iteration = "iter3_environment"
+    # complete_folder_list = ["iter2_environment", "iter1_environment", "iter0_environment"]
+
+    # folder_list = ["iter0_environment_new", "iter0_environment"]
+    # optimizationFolder = "new_iter1_environment"
+    # iteration = "new_iter1_environment"
+    # complete_folder_list = ["iter0_environment_new", "iter0_environment"]
+
+    # folder_list = ["new_iter1_environment_new"]
+    # optimizationFolder = "new_iter2_environment"
+    # iteration = "new_iter2_environment"
+    # complete_folder_list = ["iter0_environment_new", "iter0_environment", "new_iter1_environment_new"]
+
+    # folder_list = ["new_iter2_environment_new"]
+    # optimizationFolder = "new_iter3_environment"
+    # iteration = "new_iter3_environment"
+    # complete_folder_list = ["iter0_environment_new", "iter0_environment", "new_iter1_environment_new", "new_iter2_environment_new"]
+
+    # folder_list = ["new_iter3_environment_new"]
+    # optimizationFolder = "new_iter4_environment"
+    # iteration = "new_iter4_environment"
+    # complete_folder_list = ["iter0_environment_new", "iter0_environment", "new_iter1_environment_new", "new_iter2_environment_new", "new_iter3_environment_new"]
+
+    folder_list = ["new_iter4_environment_new"]
+    optimizationFolder = "new_iter5_environment"
+    iteration = "new_iter5_environment"
+    complete_folder_list = ["iter0_environment_new", "iter0_environment", "new_iter1_environment_new", "new_iter2_environment_new", "new_iter3_environment_new", "new_iter4_environment_new"]
+
+
+    lastN_frame = 50
+    run_n = 2
+    # base_path = "/scratch/wl45/mar_2020"
+    base_path = "/scratch/wl45/apr_2020"
+    simulationType = "mass_iterative_run"
+    optimizationBasePath = "/scratch/wl45/apr_2020/mass_iterative_optimization"
+    phi_list="~/opt/optimization/phi_list_environment_d_HP_5.txt"
+    if args.mode == 1:
+        # apr23
+        optimization_convertPDB(base_path, simulationType, folder_list, pdb_list, run_n)
+        optimization_setupDecoys(optimizationBasePath, optimizationFolder, folder_list, pdb_list, simulationType, base_path, run_n, lastN_frame, phi_list=phi_list)
+        optimization_compute_phi_and_gamma(complete_folder_list, pdb_list)
+        optimization_z_bias(iteration, c=-60)
+        do(f"gg_server.py -d plot -l {iteration}")
+        do(f"gg_server.py -d plot -l {iteration}_zBias_1")
+    if args.mode == 2:
+        trial_name = f"{iteration}_zBias_1"
+        # trial_name = f"{iteration}_zBias_2"
+        cutoff = 400
+        for pdb in pdb_list:
+            do(f"cp Oct26_saved_gammas/{trial_name}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat {base_path}/{simulationType}/setups/{pdb}/{trial_name}_withoutBurial_gamma.dat")
+            # do(f"cp Oct26_saved_gammas/{i}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat {base_path}/{simulationType}/setups/{pdb}/{i}_gamma.dat")
+
+if args.day == "apr21":
+    if args.mode == 1:
+        import matplotlib.pyplot as plt
+        # trial_name = "iter1"
+        name = "iteration_gamma.dat"
+        filtered_gamma_ = np.loadtxt(name)
+        # os.system(f"mkdir -p {save_gamma_pre}/figures")
+        n = 3
+        filtered_gamma = np.zeros(630)
+        for i in range(min(len(filtered_gamma_), 630)):
+            filtered_gamma[i] = filtered_gamma_[i]
+        ax_title_list=["Direct", "High density(protein)", "Low density(water)"]
+        figureName = f"iteration_gamma_equal_legend.png"
+        # title = f"{trial_name}_cutoff{cutoff_i}"
+        title = "globular gammas"
+        # print(cutoff_i, name, figureName)
+        show_together_v2(filtered_gamma, figureName, title=title, inferBound=2, n=n, ax_title_list=ax_title_list)
+    if args.mode == 2:
+        import matplotlib.pyplot as plt
+        # trial_name = "iter1"
+        name = "iteration_membrane_gamma.dat"
+        filtered_gamma_ = np.loadtxt(name)
+        # os.system(f"mkdir -p {save_gamma_pre}/figures")
+        n = 3
+        filtered_gamma = np.zeros(630)
+        for i in range(min(len(filtered_gamma_), 630)):
+            filtered_gamma[i] = filtered_gamma_[i]
+        ax_title_list=["Direct", "High density(protein)", "Low density(lipid)"]
+        figureName = f"iteration_membrane_gamma_equal_legend.png"
+        # title = f"{trial_name}_cutoff{cutoff_i}"
+        title = "membrane gammas"
+        # print(cutoff_i, name, figureName)
+        show_together_v2(filtered_gamma, figureName, title=title, inferBound=2, n=n, ax_title_list=ax_title_list)
+    if args.mode == 3:
+        name = f"filtered_protein_list_phi_pairwise_contact_environment_com_shift_center_well2.5_6.5_5.0_10_5.0_phi_density_mediated_contact_com_shift_center_well6.5_9.5_5.0_10_2.6_7.0_phi_decoy_summary.txt"
+        figureName = f"phi_decoy_summary"
+        title = f"phi_decoy_summary"
+        gamma_to_plot(name, figureName, title)
+    if args.mode == 4:
+        name = f"filtered_protein_list_phi_pairwise_contact_environment_com_shift_center_well2.5_6.5_5.0_10_5.0_phi_density_mediated_contact_com_shift_center_well6.5_9.5_5.0_10_2.6_7.0_phi_native_summary.txt"
+        figureName = f"phi_native_summary"
+        title = f"phi_native_summary"
+        gamma_to_plot(name, figureName, title)
+    if args.mode == 5:
+        pdb_list = dataset["apr11_2020"]
+        trial_name = f"iter0_environment"
+        base_path = "/scratch/wl45/apr_2020"
+        simulationType = "mass_iterative_run"
+        # trial_name = f"{iteration}_zBias_2"
+        cutoff = 400
+        for pdb in pdb_list:
+            do(f"cp Oct26_saved_gammas/{trial_name}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat {base_path}/{simulationType}/setups/{pdb}/{trial_name}_gamma.dat")
+            # do(f"cp Oct26_saved_gammas/{i}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat {base_path}/{simulationType}/setups/{pdb}/{i}_gamma.dat")
+
+
+if args.day == "apr20":
+    # Single Seq shuffle
+    # data = pd.read_csv("data_info_3.csv", index_col=0).query("Problematic != 4")
+
+    # data = pd.read_csv("pfam_selected.csv", index_col=0)
+    # pdb_list = data["FullName"].to_list()
+
+    data = pd.read_csv("has_structures_small_dataset_cleaned.csv")
+    pdb_list = data["Protein"].to_list()
+    # pdb_list = [a.lower() for a in pdb_list]
+    # skip_pdb_list = ["1puc", "1skz"]
+    # skip_pdb_list += ["1msc", "1fmb", "1gvp", "2tgi", "1whi", "1baj", "1rmd", "1div"]  #dimer.
+    # skip_pdb_list += ["1aqe"]  # lots of ligand
+    # filtered_pdb_list = [x for x in pdb_list if x not in skip_pdb_list]
+    # pdb_list = filtered_pdb_list
+
+    if args.mode == 1:
+        # do("cp /home/wl45/opt/optimization/phi_list_contact.txt phi_list.txt")
+        do("cp /home/wl45/opt/optimization/phi_com_shift_center_withoutBurial.txt phi_list.txt")
+        do("mkdir proteins_name_list")
+        do("mkdir slurms")
+        do('mkdir -p outs')
+        # do("mkdir -p decoys/multiShuffle")
+        do("mkdir -p decoys")
+        do("mkdir -p gammas")
+        do("mkdir -p ../phis")
+        with open("protein_list", "w") as out:
+            for pdb in pdb_list:
+                out.write(f"{pdb}\n")
+    if args.mode ==222:
+        n = split_proteins_name_list(pdb_per_txt=5)
+    if args.mode == 2:
+        # split proteins_name_list
+        n = split_proteins_name_list(pdb_per_txt=2)
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d apr20 -m 22 -l {proteins}", template=base_slurm, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+    if args.mode == 23:
+        # split proteins_name_list
+        n = split_proteins_name_list(pdb_per_txt=2)
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d apr20 -m 22 -l {proteins}", template=base_slurm, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        waitForJobs(jobIdList, sleepInterval=720)
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d apr20 -m 33"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 22:
+        # cbd_info = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
+        from pyCodeLib import *
+        proteins = args.label
+        print(os.getcwd())
+        n_decoys = 1000
+        generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+        do(f"python3 ~/opt/compute_phis.py -m 0 {proteins}")
+    if args.mode == 3:
+        # time.sleep(3600)
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d apr20 -m 33"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 33:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        # complete_proteins = "protein_list"
+        complete_proteins = "protein_list"
+        n_decoys = 1000
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+                                        withBiased=False, num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+    if args.mode == 5:
+        # mar19
+        # i = 1
+        # i = 2
+        # i = 3
+        i = 0
+        # do(f"optimization_analyze.py iter{i}")
+        fromFile = "/scratch/wl45/mar_2020/cath_dataset_shuffle_optimization/optimization_iter0_com_density_rmin_2p5/saved_gammas/iter0_cutoff600_impose_Aprime_constraint"
+        do(f"optimization_analyze.py {i} --proteinList protein_list --gammaFile {fromFile}")
+
+    if args.mode == 6:
+        # i = 1
+        # i = 2
+        # i = 3
+        # i = "shift_center_iter0"
+        i = "iter0_environment"
+        do(f"optimization_analyze.py {i} -c -60 -m 1")
+
+
+if args.day == "apr19":
+    if args.mode == 1:
+        import re
+
+        remove_list = []
+        a = ['615289', '615289', '615293', '615293', '615296', '615296', '615297', '615297', '615305', '615305', '615306', '615306', '615314', '615314', '615323', '615323', '615332', '615332', '615335', '615335', '615337', '615337', '615346', '615346', '615352', '615352', '615354', '615354', '615359', '615359', '615372', '615372', '615374', '615374', '615395', '615395', '615396', '615396', '615397', '615397', '615406', '615406', '615417', '615417', '615446', '615446', '615447', '615447', '615448', '615448', '615449', '615449', '615450', '615450']
+        # a = ['614147', '614186', '614068', '614197', '614199', '614134', '614183', '614212', '614236', '614201', '614137', '614139', '614218', '614208', '614196', '614219', '614235', '614133', '614145', '614129', '614204', '614209', '614237', '614148', '614100', '614146', '614163', '614162', '614246', '614200', '614069', '614214', '614177', '614172', '614202', '614194', '614257', '614175', '614192']
+        for a0 in a:
+            out = do(f'grep "compute_phis.py" slurm-{a0}.out',get=True, show=False)
+            # print(out)
+            result = re.search('proteins_name_list_(.*)\.txt', out)
+            # print(result.group(0))
+            p_list = result.group(0)
+            b = do(f'cat ../proteins_name_list/{p_list}',get=True, show=False)
+            remove_list += b.split()
+        print(remove_list)
+        data = pd.read_csv("../has_structures_small_dataset_cleaned.csv")
+        pdb_list = data["Protein"].to_list()
+        filtered_pdb_list = []
+        for pdb in pdb_list:
+            if pdb in remove_list:
+                pass
+            else:
+                filtered_pdb_list.append(pdb)
+        with open("filtered_protein_list", "w") as out:
+            for pdb in filtered_pdb_list:
+                out.write(f"{pdb}\n")
+    if args.mode == 3:
+        # time.sleep(3600)
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d apr19 -m 33"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 33:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        # complete_proteins = "protein_list"
+        complete_proteins = "filtered_protein_list"
+        n_decoys = 1000
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='shuffle',
+                                        withBiased=False, num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+if args.day == "apr16":
+    if args.mode == 1:
+        pdb_list = dataset["hybrid"]
+        run_n = 10
+        jobIdList = []
+        for pdb in pdb_list:
+            for i in range(run_n):
+                cd(f"{pdb}/{i}")
+                # do()
+                cmd = "python /projects/pw8/wl45/openawsem/helperFunctions/convertOpenmmTrajectoryToStandardMovie.py movie.pdb"
+                jobId = slurmRun(f"convert.slurm", cmd, template=scavenge_slurm)
+                jobIdList.append(jobId)
+                cd("../..")
+
+        waitForJobs(jobIdList, sleepInterval=30)
+
+if args.day == "apr14":
+    pdb_list = dataset["apr11_2020"]
+    print(pdb_list)
+
+    # folder_list = ["iter1_environment"]
+    # optimizationFolder = "iter2_environment"
+    # iteration = "iter2_environment"
+    # complete_folder_list = ["iter1_environment", "iter0_environment", "iteration_0_stronger_exclude_volume", "iteration_1_stronger_exclude_withoutBurial_bugfix", "iteration_2_bug_fixed", "iter3_shift_well", "iter4_shift_well"]
+
+    # folder_list = ["iter2_environment"]
+    # optimizationFolder = "iter3_environment"
+    # iteration = "iter3_environment"
+    # complete_folder_list = ["iter2_environment", "iter1_environment", "iter0_environment"]
+
+    folder_list = ["iter3_environment"]
+    optimizationFolder = "iter4_environment"
+    iteration = "iter4_environment"
+    complete_folder_list = ["iter3_environment", "iter2_environment", "iter1_environment", "iter0_environment"]
+
+
+    lastN_frame = 50
+    run_n = 2
+    # base_path = "/scratch/wl45/mar_2020"
+    base_path = "/scratch/wl45/apr_2020"
+    simulationType = "mass_iterative_run"
+    optimizationBasePath = "/scratch/wl45/apr_2020/mass_iterative_optimization"
+    if args.mode == 1:
+        optimization_convertPDB(base_path, simulationType, folder_list, pdb_list, run_n)
+        optimization_setupDecoys(optimizationBasePath, optimizationFolder, folder_list, pdb_list, simulationType, base_path, run_n, lastN_frame)
+        optimization_compute_phi_and_gamma(complete_folder_list, pdb_list)
+        optimization_z_bias(iteration, c=-100)
+        do(f"gg_server.py -d plot -l {iteration}")
+        do(f"gg_server.py -d plot -l {iteration}_zBias_1")
+    if args.mode == 2:
+        trial_name = f"{iteration}_zBias_1"
+        # trial_name = f"{iteration}_zBias_2"
+        cutoff = 400
+        for pdb in pdb_list:
+            do(f"cp Oct26_saved_gammas/{trial_name}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat {base_path}/{simulationType}/setups/{pdb}/{trial_name}_withoutBurial_gamma.dat")
+            # do(f"cp Oct26_saved_gammas/{i}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat {base_path}/{simulationType}/setups/{pdb}/{i}_gamma.dat")
+if args.day == "apr11":
+
+    pdb_list = dataset["apr11_2020"]
+    print(pdb_list)
+    # folder_list = ["iter0_environment"]
+    # optimizationFolder = "iter1_environment"
+    # iteration = "iter1_environment"
+    # complete_folder_list = ["iter0_environment", "iteration_0_stronger_exclude_volume", "iteration_1_stronger_exclude_withoutBurial_bugfix", "iteration_2_bug_fixed", "iter3_shift_well", "iter4_shift_well"]
+
+    folder_list = ["iter1_environment"]
+    optimizationFolder = "iter2_environment"
+    iteration = "iter2_environment"
+    complete_folder_list = ["iter1_environment", "iter0_environment", "iteration_0_stronger_exclude_volume", "iteration_1_stronger_exclude_withoutBurial_bugfix", "iteration_2_bug_fixed", "iter3_shift_well", "iter4_shift_well"]
+
+
+    run_n = 2
+    # base_path = "/scratch/wl45/mar_2020"
+    base_path = "/scratch/wl45/apr_2020"
+    simulationType = "mass_iterative_run"
+    optimizationBasePath = "/scratch/wl45/apr_2020/mass_iterative_optimization"
+
+
+    lastN_frame = 50
+    print(folder_list)
+    if args.mode == 1:
+        # convert the movie.pdb
+        cd(f"{base_path}/{simulationType}")
+        jobIdList = []
+        for folder in folder_list:
+            cd(folder)
+            for pdb in pdb_list:
+                for i in range(run_n):
+                    cd(f"{pdb}/{i}")
+                    # do()
+                    cmd = "python /projects/pw8/wl45/openawsem/helperFunctions/convertOpenmmTrajectoryToStandardMovie.py movie.pdb"
+                    jobId = slurmRun(f"convert.slurm", cmd, template=scavenge_slurm)
+                    jobIdList.append(jobId)
+                    cd("../..")
+            cd("..")
+        waitForJobs(jobIdList, sleepInterval=30)
+    # if args.mode == 2:
+        # do("cp /home/wl45/opt/optimization/phi_list_contact.txt phi_list.txt")
+        # do("cp ../phi_com.txt phi_list.txt")
+        # do("cp ../phi_com_withoutBurial.txt phi_list.txt")
+        # do("cp ~/opt/optimization/phi_com_shift_center_withoutBurial.txt phi_list.txt")
+        do(f"mkdir -p {optimizationBasePath}/{optimizationFolder}")
+        cd(f"{optimizationBasePath}/{optimizationFolder}")
+        do("cp ../phi_list_environment_complete.txt phi_list.txt")
+        do("mkdir proteins_name_list")
+        do("mkdir slurms")
+        do('mkdir -p outs')
+        # do("mkdir -p decoys/multiShuffle")
+        do("mkdir -p decoys")
+        do("mkdir -p gammas")
+        do("mkdir -p ../phis")
+        # with open("protein_list", "w") as out:
+        #     for pdb in pdb_list:
+        #         out.write(f"{pdb}\n")
+        with open("protein_list", "w") as out:
+            for folder in folder_list:
+                for pdb in pdb_list:
+                    out.write(f"{pdb}_{folder}\n")
+    # if args.mode == 3:
+        outFile = read_simulation_info(folder_list, pdb_list, simulationType, base_path, run_n)
+        # today = datetime.today().strftime('%m-%d')
+        outFile = f"{simulationType}.csv"
+    # if args.mode == 13:
+        # time.sleep(3600)
+        dataFile = f"{simulationType}.csv"
+        simulation_folder = simulationType
+        data = pd.read_csv(dataFile, index_col=0)
+        parser = PDBParser()
+        # folder = "first"
+        # for folder in ["first", "first_cpu2"]:
+        for folder in folder_list:
+            pre = f"{base_path}/{simulation_folder}/{folder}"
+            to_folder = "."
+            os.system(f"mkdir -p {to_folder}/decoys/openMM")
+            # pdb_list = ['1j5u']
+            for pdb in pdb_list:
+                complete_models = []
+                print(pdb)
+                for i in range(run_n):
+                    movieFile = f"{pre}/{pdb}/{i}/movie.pdb"
+                    allFrames, n, size = getAllFrames(movieFile)
+                    num_of_frames = int(n/size)
+                    first_chosen_frame = num_of_frames - lastN_frame
+                    # last_chosen_frame = num_of_frames
+                    oneFrame = allFrames[size*first_chosen_frame:size*(num_of_frames)]
+
+                    p = PDBParser()
+                    f = io.StringIO("".join(oneFrame))
+                    s = p.get_structure("test", f)
+                    complete_models += list(s.get_models())
+                t = data.query(f"Protein == '{pdb}' and Folder == '{folder}' and Steps > 1").reset_index(drop=True)
+                t = t.groupby("Run").tail(50).reset_index(drop=True)
+                t["structure"] = complete_models
+                t = t.rename(columns={"Q":"Qw"})
+                # last50 = t.groupby("Run").tail(50).reset_index(drop=True)
+                last50 = t
+                # print(last50.head())
+                # print(last50.tail())
+                # print(last50.shape)
+                # print(len(complete_models))
+                to_folder = "."
+                last50.to_pickle(f"{to_folder}/decoys/openMM/{pdb}_{folder}.pkl")
+    # if args.mode == 4:
+        # split proteins_name_list
+        n = split_proteins_name_list(pdb_per_txt=2)
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 7 {proteins}", template=base_slurm, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        waitForJobs(jobIdList, sleepInterval=60)
+
+        with open("protein_list_complete", "w") as out:
+            for folder in complete_folder_list:
+                for pdb in pdb_list:
+                    out.write(f"{pdb}_{folder}\n")
+        jobIdList = []
+        jobId = slurmRun(f"slurms/run_on_scavenge.slurm", f"python3 ~/opt/gg_server.py -d apr11 -m 44", template=base_slurm, memory=60)
+        jobIdList.append(jobId)
+        waitForJobs(jobIdList, sleepInterval=60)
+    # if args.mode == 5:
+        # mode = 1 for this environment.
+        do(f"optimization_analyze.py {iteration} --proteinList protein_list_complete -c -50 -m 1")
+
+    # if args.mode == 6:
+        # trial_name = "iter4_shift_center"
+        trial_name = iteration
+        get_z_scores(trial_name)
+        get_weighted_Q("decoysQ", "deocyQZBias")
+    # if args.mode == 7:
+        decoyBiasName = "deocyQZBias"
+        jobIdList = []
+        jobId = slurmRun(f"slurms/get_gamma_{decoyBiasName}.slurm", f"python3 ~/opt/gg_server.py -d apr11 -m 77 -l {decoyBiasName}", template=base_slurm, memory=60)
+        # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+        jobIdList.append(jobId)
+        waitForJobs(jobIdList, sleepInterval=60)
+    # if args.mode == 8:
+        # i = "iter4_shift_center_z_weighted"
+        trial_name = f"{iteration}_zBias_1"
+        # i = args.label
+        do(f"optimization_analyze.py {trial_name} --proteinList protein_list_complete -c -50 -m 1")
+
+        get_z_scores(trial_name)
+        get_weighted_Q("deocyQZBias", "decoyQZBias_2")
+
+        decoyBiasName = "decoyQZBias_2"
+        jobIdList = []
+        jobId = slurmRun(f"slurms/get_gamma_{decoyBiasName}.slurm", f"python3 ~/opt/gg_server.py -d apr11 -m 77 -l {decoyBiasName}", template=base_slurm, memory=60)
+        # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+        jobIdList.append(jobId)
+        waitForJobs(jobIdList, sleepInterval=60)
+
+        trial_name = f"{iteration}_zBias_2"
+        print(trial_name)
+        # i = args.label
+        do(f"optimization_analyze.py {trial_name} --proteinList protein_list_complete -c -50 -m 1")
+
+    if args.mode == 9:
+        trial_name = f"{iteration}_zBias_1"
+        # trial_name = f"{iteration}_zBias_2"
+        cutoff = 400
+        for pdb in pdb_list:
+            do(f"cp Oct26_saved_gammas/{trial_name}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat {base_path}/{simulationType}/setups/{pdb}/{trial_name}_withoutBurial_gamma.dat")
+            # do(f"cp Oct26_saved_gammas/{i}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat {base_path}/{simulationType}/setups/{pdb}/{i}_gamma.dat")
+            # do(f"cp Oct26_saved_gammas/{i}_cutoff{cutoff}_impose_Aprime_constraint/burial_gamma.dat  {base_path}/{simulationType}/setups/{pdb}/{i}_burial_gamma.dat")
+    if args.mode == 44:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list_complete"
+        n_decoys = 50 * run_n
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                        withBiased=True, oneMinus=True, decoyBiasName='decoysQ', num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+
+    if args.mode == 77:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        # decoyBiasName = decoyQZBias_2
+        decoyBiasName = args.label
+        run_n = 2
+        complete_proteins = "protein_list_complete"
+        n_decoys = 50 * run_n
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                        withBiased=True, oneMinus=False, decoyBiasName=decoyBiasName, num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+        # next: optimization_analysze.py iter{i}
+    # if args.mode == 11:
+    #     do("mkdir -p database/dompdb")
+    #     do("mkdir -p database/S20_seq")
+    #     for pdb in pdb_list:
+    #         do(f"cp ../mass_iterative_run/setups/{pdb}/{pdb}.pdb database/dompdb/")
+    #     def getSeq(fileLocation):
+    #         p = PDBParser()
+    #         s = p.get_structure("test", fileLocation)
+    #         seq = ""
+    #         residues = list(s.get_residues())
+    #         for residue in residues:
+    #             res_id = residue.get_id()[0]
+    #             if res_id==' ':
+    #                 residue_name = residue.get_resname()
+    #                 seq += three_to_one(residue_name)
+    #         return seq
+    #     for pdb in pdb_list:
+    #         fileLocation = f"database/dompdb/{pdb}.pdb"
+    #         seq = getSeq(fileLocation)
+    #         opt_pdbName = pdb
+    #         fileLocation = f"database/S20_seq/{opt_pdbName}.seq"
+    #         with open(fileLocation, "w") as out:
+    #             out.write(seq+"\n")
+if args.day == "apr05":
+    if args.mode == 1:
+        print(datetime.now())
+        from pyCodeLib import *
+        # proteinlist = readList(args.label)
+        # print(proteinlist)
+        name = "1hmt"
+        print(name)
+        # input_pdb_filename = f"../database/dompdb/{name}"
+        input_pdb_filename = f"/scratch/wl45/apr_2020/compute_energy/1hmt"
+        structure = parse_pdb(input_pdb_filename)
+        res_list = get_res_list(structure)
+        neighbor_list = get_neighbor_list(structure)
+        parameter_list = [2.5, 6.5, 5.0, 10]
+        phi = phi_pairwise_contact_environment_com_shift_center_well(res_list, neighbor_list, parameter_list)
+        print(phi)
+
+if args.day == "apr03":
+    if args.mode == 1:
+        save_gamma_pre = "gammas"
+        name = f"{save_gamma_pre}/protein_list_complete_phi_pairwise_contact_com_shift_center_well2.5_6.5_5.0_10_gamma_filtered"
+        filtered_gamma_ = np.loadtxt(name)
+        filtered_gamma = np.zeros(630)
+        for i in range(len(filtered_gamma_)):
+            filtered_gamma[i] = filtered_gamma_[i]
+        figureName = f"raw_gamma_filtered"
+        title = figureName
+        # print(cutoff_i, name, figureName)
+        show_together_v2(filtered_gamma, figureName, title=title, inferBound=2)
+
+        name = f"{save_gamma_pre}/protein_list_complete_phi_pairwise_contact_com_shift_center_well2.5_6.5_5.0_10_gamma"
+        filtered_gamma_ = np.loadtxt(name)
+        filtered_gamma = np.zeros(630)
+        for i in range(len(filtered_gamma_)):
+            filtered_gamma[i] = filtered_gamma_[i]
+        figureName = f"raw_gamma"
+        title = figureName
+        # print(cutoff_i, name, figureName)
+        show_together_v2(filtered_gamma, figureName, title=title, inferBound=2)
+    if args.mode ==2:
+        save_gamma_pre = "saved_gammas"
+        cutoff = 100
+        name = f"{save_gamma_pre}/iter0_cutoff{cutoff}_impose_Aprime_constraint"
+        filtered_gamma_ = np.loadtxt(name)
+        filtered_gamma = np.zeros(630)
+        for i in range(len(filtered_gamma_)):
+            filtered_gamma[i] = filtered_gamma_[i]
+        figureName = f"cutoff{cutoff}"
+        title = figureName
+        # print(cutoff_i, name, figureName)
+        show_together_v2(filtered_gamma, figureName, title=title, inferBound=2)
+
+        cutoff = 200
+        name = f"{save_gamma_pre}/iter0_cutoff{cutoff}_impose_Aprime_constraint"
+        filtered_gamma_ = np.loadtxt(name)
+        filtered_gamma = np.zeros(630)
+        for i in range(len(filtered_gamma_)):
+            filtered_gamma[i] = filtered_gamma_[i]
+        figureName = f"cutoff{cutoff}"
+        title = figureName
+        # print(cutoff_i, name, figureName)
+        show_together_v2(filtered_gamma, figureName, title=title, inferBound=2)
+
+
+
+if args.day == "mar31":
+    data = pd.read_csv("training_set.csv")
+    specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
+    pdb_list = specific_decoys["Protein"].to_list()
+    pdb_list = [a.lower() for a in pdb_list]
+    skip_pdb_list = ["1puc", "1skz"]
+    skip_pdb_list += ["1msc", "1fmb", "1gvp", "2tgi", "1whi", "1baj", "1rmd", "1div"]  #dimer.
+    skip_pdb_list += ["1aqe"]  # lots of ligand
+    skip_pdb_list += ['1by2', '1rcb', '1hyp', '3lzt', '3cyr', '7rsa', '1rzl', '1b6e', '1poc', '1bea', '1poa']   # has at least 6 CYS.
+    filtered_pdb_list = [x for x in pdb_list if x not in skip_pdb_list]
+    pdb_list = filtered_pdb_list
+
+    run_n = 2
+    base_path = "/scratch/wl45/apr_2020"
+    simulationType = "mass_iterative_run"
+    if args.mode == 1:
+        # split proteins_name_list
+        folder_list = ["iteration_0_stronger_exclude_volume"]
+        folder_list += ["iteration_1_stronger_exclude_withoutBurial_bugfix", "iteration_2_bug_fixed"]
+        # folder_list += ["iteration_3"]
+        folder_list += ["iter3_shift_well"]
+        computeGammaCMD="python3 ~/opt/gg_server.py -d mar31 -m 11"
+        compute_phi_and_gammas_on_server(folder_list, pdb_list, computeGammaCMD=computeGammaCMD)
+    if args.mode == 11:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list_complete"
+        n_decoys = 50 * run_n
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                        withBiased=True, oneMinus=True, decoyBiasName='decoysQ', num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+    if args.mode == 2:
+        i = "iter5_shift_center"
+        # i = args.label
+        fromFile = "/scratch/wl45/mar_2020/cath_dataset_shuffle_optimization/optimization_iter0_com_density_rmin_2p5/saved_gammas/iter0_cutoff600_impose_Aprime_constraint"
+        do(f"optimization_analyze.py {i} --proteinList protein_list_complete --gammaFile {fromFile}")
+    if args.mode == 3:
+        # trial_name = "iter4_shift_center"
+        trial_name = "iter5_shift_center"
+        get_z_scores(trial_name)
+        get_weighted_Q("decoysQ", "deocyQZBias")
+    if args.mode == 4:
+        decoyBiasName = "deocyQZBias"
+        jobIdList = []
+        jobId = slurmRun(f"slurms/get_gamma_{decoyBiasName}.slurm", f"python3 ~/opt/gg_server.py -d mar31 -m 44 -l {decoyBiasName}", template=base_slurm, memory=60)
+        # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+        jobIdList.append(jobId)
+        waitForJobs(jobIdList, sleepInterval=60)
+    if args.mode == 5:
+        # i = "iter4_shift_center_z_weighted"
+        i = 5
+        trial_name = f"iter{i}_shift_center_z_weighted"
+        # i = args.label
+        fromFile = "/scratch/wl45/mar_2020/cath_dataset_shuffle_optimization/optimization_iter0_com_density_rmin_2p5/saved_gammas/iter0_cutoff600_impose_Aprime_constraint"
+        do(f"optimization_analyze.py {i} --proteinList protein_list_complete --gammaFile {fromFile}")
+    if args.mode == 6:
+        i = 5
+        trial_name = f"iter{i}_shift_center_z_weighted"
+        get_z_scores(trial_name)
+        get_weighted_Q("deocyQZBias", "decoyQZBias_2")
+
+        decoyBiasName = "decoyQZBias_2"
+        jobIdList = []
+        jobId = slurmRun(f"slurms/get_gamma_{decoyBiasName}.slurm", f"python3 ~/opt/gg_server.py -d mar31 -m 44 -l {decoyBiasName}", template=base_slurm, memory=60)
+        # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+        jobIdList.append(jobId)
+        waitForJobs(jobIdList, sleepInterval=60)
+
+        trial_name = f"iter{i}_shift_center_z_weighted_2"
+        print(trial_name)
+        # i = args.label
+        fromFile = "/scratch/wl45/mar_2020/cath_dataset_shuffle_optimization/optimization_iter0_com_density_rmin_2p5/saved_gammas/iter0_cutoff600_impose_Aprime_constraint"
+        do(f"optimization_analyze.py {trial_name} --proteinList protein_list_complete --gammaFile {fromFile}")
+    if args.mode == 7:
+        i = 5
+        trial_name = f"iter{i}_shift_center_z_weighted_2"
+        cutoff = 400
+        for pdb in pdb_list:
+            do(f"cp Oct26_saved_gammas/{trial_name}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat {base_path}/{simulationType}/setups/{pdb}/{trial_name}_withoutBurial_gamma.dat")
+            # do(f"cp Oct26_saved_gammas/{i}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat {base_path}/{simulationType}/setups/{pdb}/{i}_gamma.dat")
+            # do(f"cp Oct26_saved_gammas/{i}_cutoff{cutoff}_impose_Aprime_constraint/burial_gamma.dat  {base_path}/{simulationType}/setups/{pdb}/{i}_burial_gamma.dat")
+
+    if args.mode == 44:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        # decoyBiasName = decoyQZBias_2
+        decoyBiasName = args.label
+        run_n = 2
+        complete_proteins = "protein_list_complete"
+        n_decoys = 50 * run_n
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                        withBiased=True, oneMinus=False, decoyBiasName=decoyBiasName, num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+if args.day == "mar29":
+    from pyCodeLib import *
+    import warnings
+    warnings.filterwarnings('ignore')
+    # data = pd.read_csv("training_set.csv")
+    # specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
+    # pdb_list = specific_decoys["Protein"].to_list()
+    # pdb_list = [a.lower() for a in pdb_list]
+    # skip_pdb_list = ["1puc", "1skz"]
+    # skip_pdb_list += ["1msc", "1fmb", "1gvp", "2tgi", "1whi", "1baj", "1rmd", "1div"]  #dimer.
+    # skip_pdb_list += ["1aqe"]  # lots of ligand
+    # skip_pdb_list += ['1by2', '1rcb', '1hyp', '3lzt', '3cyr', '7rsa', '1rzl', '1b6e', '1poc', '1bea', '1poa']   # has at least 6 CYS.
+    # filtered_pdb_list = [x for x in pdb_list if x not in skip_pdb_list]
+    # pdb_list = filtered_pdb_list
+    data = pd.read_csv("has_structures_small_dataset_cleaned.csv")
+    pdb_list = data["Protein"].to_list()
+    if args.mode == 1:
+        with open("protein_list", "w") as out:
+            for pdb in pdb_list:
+                out.write(f"{pdb}\n")
+        do("mkdir -p proteins_name_list")
+        n = split_proteins_name_list(pdb_per_txt=3)
+
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for i in range(n):
+            cmd = f"python3 ~/opt/gg_server.py -d mar29 -m 11 -l  proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{pdb}.slurm", cmd, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+    if args.mode == 11:
+        pdb_list = read_column_from_file(args.label, 1)
+        print(pdb_list)
+        for pdb in pdb_list:
+            # do(f"gg_server.py -d mar29 -m 2 -l {pdb}")
+            # do(f"gg_server.py -d mar29 -m 22 -l {pdb}")
+            do(f"gg_server.py -d mar29 -m 82 -l {pdb}")
+    if args.mode == 111:
+        data = pd.read_csv("training_set.csv")
+        specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
+        pdb_list = specific_decoys["Protein"].to_list()
+        pdb_list = [a.lower() for a in pdb_list]
+        skip_pdb_list = ["1puc", "1skz"]
+        skip_pdb_list += ["1msc", "1fmb", "1gvp", "2tgi", "1whi", "1baj", "1rmd", "1div"]  #dimer.
+        skip_pdb_list += ["1aqe"]  # lots of ligand
+        skip_pdb_list += ['1by2', '1rcb', '1hyp', '3lzt', '3cyr', '7rsa', '1rzl', '1b6e', '1poc', '1bea', '1poa']   # has at least 6 CYS.
+        filtered_pdb_list = [x for x in pdb_list if x not in skip_pdb_list]
+        pdb_list = filtered_pdb_list
+        with open("protein_list", "w") as out:
+            for pdb in pdb_list:
+                out.write(f"{pdb}\n")
+        do("mkdir -p proteins_name_list")
+        n = split_proteins_name_list(pdb_per_txt=1)
+
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for i in range(n):
+            cmd = f"python3 ~/opt/gg_server.py -d mar29 -m 5 -l  proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{pdb}.slurm", cmd, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+    if args.mode == 5:
+        pdb_list = read_column_from_file(args.label, 1)
+        print(pdb_list)
+        for pdb in pdb_list:
+            # do(f"gg_server.py -d mar29 -m 2 -l {pdb}")
+            # do(f"gg_server.py -d mar29 -m 222 -l {pdb}")
+            do(f"gg_server.py -d mar29 -m 2222 -l {pdb}")
+    if args.mode == 82:
+        pdb = args.label
+        cbd_info = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
+        pdbFile = f"./cath/cbd_{pdb}.pdb"
+        parser = PDBParser()
+        structure = parser.get_structure("X", pdbFile)
+        environment_info = get_environment_with_cbd_info_complete(structure, cbd_info)
+        environment_info.to_csv(f"cbd_info/{pdb}_complete_environment.csv")
+    if args.mode == 2:
+        pdb = args.label
+        pdbFile = f"./cath/cbd_{pdb}.pdb"
+        parser = PDBParser()
+        structure = parser.get_structure("X", pdbFile)
+        data = get_interaction_data(structure)
+        data.to_csv(f"{pdb}.csv")
+        environment_info = get_environment(structure)
+        environment_info.to_csv(f"{pdb}_environment.csv")
+    if args.mode == 22:
+        pdb = args.label
+        cbd_info = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
+        pdbFile = f"./cath/cbd_{pdb}.pdb"
+        parser = PDBParser()
+        structure = parser.get_structure("X", pdbFile)
+        data = get_interaction_data_with_cbd_info(structure, cbd_info)
+        data.to_csv(f"cbd_info/{pdb}.csv")
+        environment_info = get_environment_with_cbd_info(structure, cbd_info)
+        environment_info.to_csv(f"cbd_info/{pdb}_environment.csv")
+    if args.mode == 222:
+        pdb = args.label
+        cbd_info = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
+        for i in range(2):
+            pdbFile = f"../mass_iterative_run/iteration_3/{pdb}/{i}/lastFrame.pdb"
+            parser = PDBParser()
+            structure = parser.get_structure("X", pdbFile)
+            data = get_interaction_data_with_cbd_info(structure, cbd_info)
+            data.to_csv(f"iterative/{pdb}_{i}.csv")
+            environment_info = get_environment_with_cbd_info(structure, cbd_info)
+            environment_info.to_csv(f"iterative/{pdb}_{i}_environment.csv")
+    if args.mode == 2222:
+        pdb = args.label
+        cbd_info = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
+        pdbFile = f"../mass_iterative_run/setups/{pdb}/cbd_{pdb}.pdb"
+        parser = PDBParser()
+        structure = parser.get_structure("X", pdbFile)
+        data = get_interaction_data_with_cbd_info(structure, cbd_info)
+        data.to_csv(f"iterative_native/{pdb}.csv")
+        environment_info = get_environment_with_cbd_info(structure, cbd_info)
+        environment_info.to_csv(f"iterative_native/{pdb}_environment.csv")
+    if args.mode == 333:
+        data = pd.read_csv("training_set.csv")
+        specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
+        pdb_list = specific_decoys["Protein"].to_list()
+        pdb_list = [a.lower() for a in pdb_list]
+        skip_pdb_list = ["1puc", "1skz"]
+        skip_pdb_list += ["1msc", "1fmb", "1gvp", "2tgi", "1whi", "1baj", "1rmd", "1div"]  #dimer.
+        skip_pdb_list += ["1aqe"]  # lots of ligand
+        skip_pdb_list += ['1by2', '1rcb', '1hyp', '3lzt', '3cyr', '7rsa', '1rzl', '1b6e', '1poc', '1bea', '1poa']   # has at least 6 CYS.
+        filtered_pdb_list = [x for x in pdb_list if x not in skip_pdb_list]
+        pdb_list = filtered_pdb_list
+        data_list = []
+        print("mar29")
+        for ii in range(2):
+            for i, pdb in enumerate(pdb_list):
+                if i % 10 == 0:
+                    print(i)
+                data = pd.read_csv(f"iterative/{pdb}_{ii}.csv", index_col=0)
+                data_envr = pd.read_csv(f"iterative/{pdb}_{ii}_environment.csv", index_col=0)
+
+                # data_envr["Density_H"] = data_envr["Density_H"].round()
+                # data_envr["Density_P"] = data_envr["Density_P"].round()
+
+                data_with_info = data.merge(data_envr, how='left', left_on="Index1", right_on="index").merge(data_envr, how='left', left_on="Index2", right_on="index")
+                data_ = data_with_info.query("Theta > 5e-2 and Type == 'Direct'").reset_index(drop=True)
+                # data_ = data_with_info
+                data_list.append(data_.assign(Protein=pdb, Run=ii))
+        data = pd.concat(data_list).reset_index(drop=True)
+        # data.to_csv("all_data.csv")
+        data.to_csv("all_data_no_round_iterative_with_cbd_info.csv")
+    if args.mode == 3333:
+        data = pd.read_csv("training_set.csv")
+        specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
+        pdb_list = specific_decoys["Protein"].to_list()
+        pdb_list = [a.lower() for a in pdb_list]
+        skip_pdb_list = ["1puc", "1skz"]
+        skip_pdb_list += ["1msc", "1fmb", "1gvp", "2tgi", "1whi", "1baj", "1rmd", "1div"]  #dimer.
+        skip_pdb_list += ["1aqe"]  # lots of ligand
+        skip_pdb_list += ['1by2', '1rcb', '1hyp', '3lzt', '3cyr', '7rsa', '1rzl', '1b6e', '1poc', '1bea', '1poa']   # has at least 6 CYS.
+        filtered_pdb_list = [x for x in pdb_list if x not in skip_pdb_list]
+        pdb_list = filtered_pdb_list
+        data_list = []
+        for i, pdb in enumerate(pdb_list):
+            if i % 10 == 0:
+                print(i)
+            data = pd.read_csv(f"iterative_native/{pdb}.csv", index_col=0)
+            data_envr = pd.read_csv(f"iterative_native/{pdb}_environment.csv", index_col=0)
+
+            # data_envr["Density_H"] = data_envr["Density_H"].round()
+            # data_envr["Density_P"] = data_envr["Density_P"].round()
+
+            data_with_info = data.merge(data_envr, how='left', left_on="Index1", right_on="index").merge(data_envr, how='left', left_on="Index2", right_on="index")
+            data_ = data_with_info.query("Theta > 5e-2 and Type == 'Direct'").reset_index(drop=True)
+            # data_ = data_with_info
+            data_list.append(data_.assign(Protein=pdb))
+        data = pd.concat(data_list).reset_index(drop=True)
+        # data.to_csv("all_data.csv")
+        data.to_csv("all_data_no_round_iterative_native_with_cbd_info.csv")
+    if args.mode == 3:
+        data_list = []
+        for i, pdb in enumerate(pdb_list):
+            if i % 100 == 0:
+                print(i)
+            data = pd.read_csv(f"{pdb}.csv", index_col=0)
+            data_envr = pd.read_csv(f"{pdb}_environment.csv", index_col=0)
+
+            # data_envr["Density_H"] = data_envr["Density_H"].round()
+            # data_envr["Density_P"] = data_envr["Density_P"].round()
+
+            data_with_info = data.merge(data_envr, left_on="Index1", right_on="index").merge(data_envr, left_on="Index2", right_on="index")
+            data_ = data_with_info.query("Theta > 5e-2 and Type == 'Direct'").reset_index(drop=True)
+            # data_ = data_with_info
+            data_list.append(data_.assign(Protein=pdb))
+        data = pd.concat(data_list).reset_index(drop=True)
+        # data.to_csv("all_data.csv")
+        data.to_csv("all_data_no_round_cath.csv")
+    if args.mode == 33:
+        data_list = []
+        for i, pdb in enumerate(pdb_list):
+            if i % 100 == 0:
+                print(i)
+            data = pd.read_csv(f"cbd_info/{pdb}.csv", index_col=0)
+            # data_envr = pd.read_csv(f"cbd_info/{pdb}_environment.csv", index_col=0)
+            data_envr = pd.read_csv(f"cbd_info/{pdb}_complete_environment.csv", index_col=0)
+            # data_envr["Density_H"] = data_envr["Density_H"].round()
+            # data_envr["Density_P"] = data_envr["Density_P"].round()
+
+            data_with_info = data.merge(data_envr, how='left', left_on="Index1", right_on="index").merge(data_envr, how='left', left_on="Index2", right_on="index")
+            data_ = data_with_info.query("Theta > 5e-2 and Type == 'Direct'").reset_index(drop=True)
+            # data_ = data_with_info
+            data_list.append(data_.assign(Protein=pdb))
+        data = pd.concat(data_list).reset_index(drop=True)
+        # data.to_csv("all_data.csv")
+        data.to_csv("all_data_no_round_cath_with_cbd_info_complete.csv")
+    if args.mode == 4:
+        data = pd.read_csv("has_structures_small_dataset_cleaned.csv")
+        pdb_list = data["Protein"].to_list()
+        pre = "/scratch/wl45/mar_2020/cath_dataset_shuffle_optimization/database/dompdb"
+        toPre = "./cath/"
+        print(len(pdb_list))
+        for i, pdb in enumerate(pdb_list):
+            if i % 100 == 0:
+                print(i)
+            fromFile = f"{pre}/{pdb}.pdb"
+            toFile = f"{toPre}/cbd_{pdb}.pdb"
+            convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+    # if args.mode == 1:
+    #     do("mkdir -p slurms")
+    #     do("mkdir -p outs")
+    #     jobIdList = []
+    #     for pdb in pdb_list[:2]:
+    #         cmd = f"python3 ~/opt/gg_server.py -d mar29 -m 2 -l {pdb}"
+    #         # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+    #         jobId = slurmRun(f"slurms/run_{pdb}.slurm", cmd, memory=10)
+    #         # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+    #         jobIdList.append(jobId)
+    #         # do(f"cat {proteins} >> iter0_complete.txt")
+if args.day == "mar28":
+    if args.mode == 1:
+        trial_name = "iter4_z_weighted_2"
+        do(f"gg_server.py -d mar27 -m 22 -l {trial_name}")
+    if args.mode == 2:
+        trial_name = "deocyQZBias_2"
+        do(f"gg_server.py -d mar27 -m 33 -l 2")
+    if args.mode == 3:
+        ip1 = 3
+        decoyBiasName = f"decoyQZBias_{ip1}"
+        jobIdList = []
+        jobId = slurmRun(f"slurms/get_gamma_{decoyBiasName}.slurm", f"python3 ~/opt/gg_server.py -d mar27 -m 44 -l {decoyBiasName}", template=base_slurm, memory=60)
+        jobIdList.append(jobId)
+        waitForJobs(jobIdList, sleepInterval=60)
+    if args.mode == 4:
+        ip1 = 3
+        trial_name = f"iter4_z_weighted_{ip1}"
+        do(f"gg_server.py -d mar27 -m 11 -l {trial_name}")
+    if args.mode == 7:
+        data = pd.read_csv("training_set.csv")
+        specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
+        pdb_list = specific_decoys["Protein"].to_list()
+        pdb_list = [a.lower() for a in pdb_list]
+        skip_pdb_list = ["1puc", "1skz"]
+        skip_pdb_list += ["1msc", "1fmb", "1gvp", "2tgi", "1whi", "1baj", "1rmd", "1div"]  #dimer.
+        skip_pdb_list += ["1aqe"]  # lots of ligand
+        skip_pdb_list += ['1by2', '1rcb', '1hyp', '3lzt', '3cyr', '7rsa', '1rzl', '1b6e', '1poc', '1bea', '1poa']   # has at least 6 CYS.
+        filtered_pdb_list = [x for x in pdb_list if x not in skip_pdb_list]
+        pdb_list = filtered_pdb_list
+        base_path = "/scratch/wl45/mar_2020"
+        simulationType = "mass_iterative_run"
+        i = "iter4_z_weighted_2"
+        cutoff = 400
+        for pdb in pdb_list:
+            do(f"cp Oct26_saved_gammas/{i}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat {base_path}/{simulationType}/setups/{pdb}/{i}_withoutBurial_gamma.dat")
+if args.day == "mar27":
+    if args.mode == 2:
+        trial_name = "iter4_z_weighted"
+        do(f"gg_server.py -d mar27 -m 22 -l {trial_name}")
+    if args.mode == 3:
+        preDecoyBiasName = "deocyQZBias"
+        do(f"gg_server.py -d mar27 -m 33 -l {preDecoyBiasName}")
+
+    if args.mode == 4:
+        decoyBiasName = "decoyQZBias_2"
+        # with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+        #     out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d mar27 -m 44 -l {decoyBiasName}"))
+        # replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        # do(f"sbatch slurms/run_on_scavenge.slurm")
+        jobIdList = []
+        jobId = slurmRun(f"slurms/get_gamma_{decoyBiasName}.slurm", f"python3 ~/opt/gg_server.py -d mar27 -m 44 -l {decoyBiasName}", template=base_slurm, memory=60)
+        # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+        jobIdList.append(jobId)
+        # do(f"cat {proteins} >> iter0_complete.txt")
+        waitForJobs(jobIdList, sleepInterval=60)
+    if args.mode == 5:
+        trial_name = "iter4_z_weighted_2"
+        do(f"gg_server.py -d mar27 -m 11 -l {trial_name}")
+    if args.mode == 11:
+        # i = "iter4_z_weighted"
+        i = args.label
+        fromFile = "/scratch/wl45/mar_2020/cath_dataset_shuffle_optimization/optimization_iter0_com_density_rmin_2p5/saved_gammas/iter0_cutoff600_impose_Aprime_constraint"
+        do(f"optimization_analyze.py {i} --proteinList protein_list_complete --gammaFile {fromFile}")
+    if args.mode == 22:
+        print("mar08")
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        cutoff = 400
+        # cutoff = 600
+        pre = "."
+        gamma_pre = f"{pre}/saved_gammas"
+        trial_name = args.label
+        do(f"cp -r gammas back_gammas_{trial_name}")
+        gamma_file_name = f"{gamma_pre}/{trial_name}_cutoff{cutoff}_impose_Aprime_constraint"
+        # gamma_file_name = f"{pre}/iter_2_30"
+        data = validate_hamiltonian_wei("phi_list.txt", "protein_list_complete", gamma_file_name, "openMM", 100, mode=0)
+        dataFile = f"optimization_2020.csv"
+    if args.mode == 33:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        preDecoyBiasName = args.label
+        if preDecoyBiasName == "decoysQ":
+            decoyBiasName = "deocyQZBias"
+        elif preDecoyBiasName == "deocyQZBias":
+            decoyBiasName = "decoyQZBias_2"
+        else:
+            i = int(args.label)
+            preDecoyBiasName = f"decoyQZBias_{i}"
+            ip1 = int(args.label) + 1
+            decoyBiasName = f"decoyQZBias_{ip1}"
+
+            # preDecoyBiasName= "deocyQZBias"
+
+        phi_list_file_name = "phi_list.txt"
+        training_set_file = "protein_list_complete"
+
+        decoy_method = "openMM"
+        dataFile = f"optimization_2020.csv"
+        data = pd.read_csv(dataFile, index_col=0)
+        data["normalized_Z_weight"] = (10/(data["Z_scores"] - data["Z_scores"].min() + 10))
+        data["normalized_Z_weight_sq"] = (10/(data["Z_scores"] - data["Z_scores"].min() + 10))**2
+        data["normalized_Z_weight_half"] = (10/(data["Z_scores"] - data["Z_scores"].min() + 10))**0.5
+        phi_list = read_phi_list(phi_list_file_name)
+        training_set = read_column_from_file(training_set_file, 1)
+
+        protein = training_set[0]
+        for i, line in data.iterrows():
+            protein = line["Protein"]
+            normalized_Z_weight = line["normalized_Z_weight"]
+            normalized_Z_weight_sq = line["normalized_Z_weight_sq"]
+            normalized_Z_weight_half = line["normalized_Z_weight_half"]
+            for i_phi_function, phi_and_parameters in enumerate(phi_list):
+                # print(protein, i_phi_function, phi_and_parameters)
+                phi = phi_and_parameters[0]
+                parameters = phi_and_parameters[1]
+                i_phi = phi_list.index(phi_and_parameters)
+                parameters_string = get_parameters_string(parameters)
+                # try:
+                fromFile = f"../phis/{phi}_{protein}_{preDecoyBiasName}_{decoy_method}_{parameters_string}"
+                a = np.loadtxt(fromFile)
+                # print(a)
+                # b = (1-a) * normalized_Z_weight
+                # toFile = f"../phis/{phi}_{protein}_{decoyBiasName}_{decoy_method}_{parameters_string}"
+                # np.savetxt(toFile, b, fmt='%.4f')
+                if preDecoyBiasName == "decoysQ":
+                    b = (1-a) * normalized_Z_weight
+                elif preDecoyBiasName == "deocyQZBias":
+                    b = a * normalized_Z_weight
+                else:
+                    b = a * normalized_Z_weight
+                # b = (1-a) * normalized_Z_weight_sq
+                # b = (1-a) * normalized_Z_weight_half
+                toFile = f"../phis/{phi}_{protein}_{decoyBiasName}_{decoy_method}_{parameters_string}"
+                np.savetxt(toFile, b, fmt='%.4f')
+
+    if args.mode == 44:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        # decoyBiasName = decoyQZBias_2
+        decoyBiasName = args.label
+        run_n = 2
+        complete_proteins = "protein_list_complete"
+        n_decoys = 50 * run_n
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                        withBiased=True, oneMinus=False, decoyBiasName=decoyBiasName, num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+if args.day == "mar26":
+    # mass specific decoys iteration.
+    # should remove 1puc, 1skz
+    data = pd.read_csv("training_set.csv")
+    specific_decoys = data.query("Length < 150 and Length > 70").reset_index(drop=True)
+    pdb_list = specific_decoys["Protein"].to_list()
+    pdb_list = [a.lower() for a in pdb_list]
+    skip_pdb_list = ["1puc", "1skz"]
+    skip_pdb_list += ["1msc", "1fmb", "1gvp", "2tgi", "1whi", "1baj", "1rmd", "1div"]  #dimer.
+    skip_pdb_list += ["1aqe"]  # lots of ligand
+    skip_pdb_list += ['1by2', '1rcb', '1hyp', '3lzt', '3cyr', '7rsa', '1rzl', '1b6e', '1poc', '1bea', '1poa']   # has at least 6 CYS.
+    filtered_pdb_list = [x for x in pdb_list if x not in skip_pdb_list]
+    pdb_list = filtered_pdb_list
+    print(f"number of pdb: {len(pdb_list)}")
+    if args.mode == 1:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iteration_0"
+        subMode = 1
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 2:
+        for pdb in pdb_list:
+            do(f"cp setups/1a1x/gamma.dat setups/{pdb}/")
+            do(f"cp setups/1a1x/burial_gamma.dat setups/{pdb}/")
+    if args.mode == 3:
+        for pdb in pdb_list:
+            cd(f"setups/{pdb}")
+            do(f"python /projects/pw8/wl45/openawsem/helperFunctions/Pdb2Gro.py crystal_structure.pdb {pdb}.gro")
+            cd("../..")
+    if args.mode == 4:
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"native"
+        subMode = 1
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(1):
+                cmd = f"python mm_run.py setups/{pdb}/{pdb} --to {iteration}/{pdb}/{i} -s 1e4 --tempStart 300 --tempEnd 300 --platform CPU --reportFrequency 1000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/native_{iteration}_{pdb}_{i}.slurm", cmd)
+                print(out)
 
 if args.day == "mar23":
     from pyCodeLib import *
@@ -782,6 +2496,18 @@ if args.day == "mar23":
     filtered_pdb_list = [x for x in pdb_list if x not in skip_pdb_list]
     pdb_list = filtered_pdb_list
     if args.mode == 1:
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for pdb in pdb_list:
+            cmd = f"python3 ~/opt/gg_server.py -d mar23 -m 2 -l {pdb}"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{pdb}.slurm", cmd, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            # do(f"cat {proteins} >> iter0_complete.txt")
+    if args.mode == 2:
+        pdb = args.label
         import pickle
         gmm_dic = {}
         res_type_list = ['GLY', 'ALA', 'VAL', 'CYS', 'PRO', 'LEU', 'ILE', 'MET', 'TRP', 'PHE', 'SER', 'THR', 'TYR', 'GLN', 'ASN', 'LYS', 'ARG', 'HIS', 'ASP', 'GLU']
@@ -790,25 +2516,26 @@ if args.day == "mar23":
         # pdb = "1a32"
         folder = "iteration_0_stronger_exclude_volume"
         parser = PDBParser()
-        for pdb in pdb_list:
-            pre = f"/scratch/wl45/mar_2020/mass_iterative_run/{folder}/{pdb}/0"
-            pdbFile = f"{pre}/movie.pdb"
-            structure = parser.get_structure("X", pdbFile)
-            seq = read_fasta(f"{pre}/crystal_structure.fasta")
-            # data_lastFrame = get_predicted_side_chain_state(structure, seq)
-            all_models = list(structure.get_models())
-            data_ = []
-            for i, model in enumerate(all_models):
-                # print(model)
-                data_oneFrame = get_predicted_side_chain_state(model, seq, gmm_dic, verbose=False)
-                data_.append(data_oneFrame.assign(Frame=i))
-            pdbFile = f"{pre}/native.pdb"
-            structure = parser.get_structure("X", pdbFile)
-            seq = read_fasta(f"{pre}/crystal_structure.fasta")
-            data_openMM_native = get_predicted_side_chain_state(structure[0], seq, gmm_dic)
-            data_.append(data_openMM_native.assign(Frame="native"))
-            data = pd.concat(data_)
-            data.to_csv(f"{pdb}_{folder}.csv")
+        print(pdb)
+        pre = f"/scratch/wl45/mar_2020/mass_iterative_run/{folder}/{pdb}/0"
+        pdbFile = f"{pre}/movie.pdb"
+        structure = parser.get_structure("X", pdbFile)
+        seq = read_fasta(f"{pre}/crystal_structure.fasta")
+        # data_lastFrame = get_predicted_side_chain_state(structure, seq)
+        all_models = list(structure.get_models())
+        data_ = []
+        for i, model in enumerate(all_models):
+            # print(model)
+            data_oneFrame = get_predicted_side_chain_state(model, seq, gmm_dic, verbose=False)
+            data_.append(data_oneFrame.assign(Frame=i))
+        pre = f"/scratch/wl45/mar_2020/mass_iterative_run/setups/{pdb}/"
+        pdbFile = f"{pre}/cbd-openmmawsem.pdb"
+        structure = parser.get_structure("X", pdbFile)
+        seq = read_fasta(f"{pre}/crystal_structure.fasta")
+        data_openMM_native = get_predicted_side_chain_state(structure[0], seq, gmm_dic)
+        data_.append(data_openMM_native.assign(Frame="-1"))
+        data = pd.concat(data_)
+        data.to_csv(f"{pdb}_{folder}.csv")
 if args.day == "mar22":
     if args.mode == 1:
         for i in range(44):
@@ -855,7 +2582,7 @@ if args.day == "mar19":
         n = split_proteins_name_list(pdb_per_txt=5)
     if args.mode == 2:
         # split proteins_name_list
-        n = split_proteins_name_list(pdb_per_txt=3)
+        n = split_proteins_name_list(pdb_per_txt=2)
         jobIdList = []
         for i in range(n):
             proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
@@ -864,6 +2591,22 @@ if args.day == "mar19":
             # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
             jobIdList.append(jobId)
             do(f"cat {proteins} >> iter0_complete.txt")
+    if args.mode == 23:
+        # split proteins_name_list
+        n = split_proteins_name_list(pdb_per_txt=2)
+        jobIdList = []
+        for i in range(n):
+            proteins = f"proteins_name_list/proteins_name_list_{i}.txt"
+            # generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
+            jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/gg_server.py -d mar19 -m 22 -l {proteins}", template=base_slurm, memory=10)
+            # jobId = slurmRun(f"slurms/run_{i}.slurm", f"python3 ~/opt/compute_phis.py -m 0 proteins_name_list/proteins_name_list_{i}.txt")
+            jobIdList.append(jobId)
+            do(f"cat {proteins} >> iter0_complete.txt")
+        waitForJobs(jobIdList, sleepInterval=720)
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d mar19 -m 33"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
     if args.mode == 22:
         from pyCodeLib import *
         proteins = args.label
@@ -872,6 +2615,7 @@ if args.day == "mar19":
         generate_decoy_sequences(proteins, methods=['shuffle'], num_decoys=[n_decoys], databaseLocation="../../../")
         do(f"python3 ~/opt/compute_phis.py -m 0 {proteins}")
     if args.mode == 3:
+        # time.sleep(3600)
         with open(f"slurms/run_on_scavenge.slurm", "w") as out:
             out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d mar19 -m 33"))
         replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
@@ -893,9 +2637,9 @@ if args.day == "mar19":
         # i = 2
         # i = 3
         i = 0
-        do(f"optimization_analyze.py iter{i}")
-        # fromFile = "/scratch/wl45/mar_2020/cath_dataset_shuffle_optimization/optimization_iter0_com_density_rmin_2p5/saved_gammas/iter0_cutoff600_impose_Aprime_constraint"
-        # do(f"optimization_analyze.py {i} --proteinList protein_list --gammaFile {fromFile}")
+        # do(f"optimization_analyze.py iter{i}")
+        fromFile = "/scratch/wl45/mar_2020/cath_dataset_shuffle_optimization/optimization_iter0_com_density_rmin_2p5/saved_gammas/iter0_cutoff600_impose_Aprime_constraint"
+        do(f"optimization_analyze.py {i} --proteinList protein_list --gammaFile {fromFile}")
 
     if args.mode == 6:
         # i = 1
@@ -1109,6 +2853,7 @@ if args.day == "mar16":
         i = "3dRobot"
         fromFile = "/scratch/wl45/mar_2020/cath_dataset_shuffle_optimization/optimization_iter0_com_density_rmin_2p5/saved_gammas/iter0_cutoff600_impose_Aprime_constraint"
         # do(f"optimization_analyze.py {i} --proteinList protein_list_complete --gammaFile {fromFile} -c -50")
+        do(f"optimization_analyze.py {i} --proteinList protein_list_complete --gammaFile {fromFile}")
         do(f"optimization_analyze.py {i} --proteinList protein_list_complete --gammaFile {fromFile} -c -50")
 
     if args.mode == 666:
@@ -1232,6 +2977,29 @@ if args.day == "mar15":
                 for line in data:
                     out.write(line+"\n")
 
+if args.day == "mar14":
+    if args.mode == 1:
+        # Cornichon
+        # start from specific topology, 3TH
+        # run = "simulation_chainE_positive_inside_submode_4"
+
+        subModeList = [4]
+        # force_setup = "forces_setup_chainE_3TH.py"
+        # for i in range(5):
+        #     for subMode in subModeList:
+        #         cmd = f"python mm_run_with_pulling_start.py chain_E/extended -f {force_setup} --subMode {subMode} --to {run}/3TH_{subMode}_{i} -s 8e6 --reportFrequency 4000 --tempStart 800 --tempEnd 300 --platform CUDA"
+        #         out = slurmRun(f"slurms/gpu_feb05_{run}_{subMode}_{i}.slurm", cmd, template=gpu_commons_slurm)
+        #         print(out)
+
+        # Cornichon
+        # start from specific topology, 4TH
+        run = "simulation_chainE_positive_inside_submode_4"
+        force_setup = "forces_setup_chainE_4TH_hand_modify.py"
+        for i in range(5):
+            for subMode in subModeList:
+                cmd = f"python mm_run_with_pulling_start.py chain_E/extended -f {force_setup} --subMode {subMode} --to {run}/4TH_{subMode}_{i} -s 8e6 --reportFrequency 4000 --tempStart 800 --tempEnd 300 --platform CUDA"
+                out = slurmRun(f"slurms/gpu_feb05_4th_{run}_{subMode}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
 
 
 
@@ -1572,6 +3340,326 @@ if args.day == "mar09":
                 # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
                 out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
                 print(out)
+    if args.mode == 18:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iteration_0_stronger_exclude_volume_shift_well"
+        subMode = 18
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 19:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iteration_0_stronger_exclude_volume_stronger_side_chain"
+        subMode = 19
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 20:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iteration_0_stronger_exclude_volume_stronger_side_chain_k4"
+        subMode = 20
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 21:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iteration_2_bug_fixed"
+        subMode = 21
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 22:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iteration_3"
+        subMode = 22
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 23:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iteration_4"
+        subMode = 23
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 24:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iteration_4_z_weighted_2"
+        subMode = 24
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 25:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iter3_shift_well"
+        subMode = 25
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 26:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iter4_shift_well"
+        subMode = 26
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 27:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iter5_shift_well"
+        subMode = 27
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 28:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iter0_environment"
+        subMode = 28
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 29:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iter1_environment"
+        subMode = 29
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 30:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iter2_environment"
+        subMode = 30
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 31:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iter3_environment"
+        subMode = 31
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 32:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iter4_environment"
+        subMode = 32
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 33:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"iter0_environment_new"
+        subMode = 33
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 34:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"new_iter1_environment_new"
+        subMode = 34
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 35:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"new_iter2_environment_new"
+        subMode = 35
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 36:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"new_iter3_environment_new"
+        subMode = 36
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+    if args.mode == 37:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"new_iter4_environment_new"
+        subMode = 37
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+    if args.mode == 38:
+        # mar09
+        do("mkdir -p outs")
+        do("mkdir -p slurms")
+
+        iteration = f"new_iter5_environment_new"
+        subMode = 38
+        force_setup = "forces_setup.py"
+
+        for pdb in pdb_list:
+            for i in range(2):
+                cmd = f"python mm_run.py setups/{pdb}/extended --to {iteration}/{pdb}/{i} -s 8e6 --tempStart 800 --tempEnd 200 --platform CUDA --reportFrequency 4000 -f {force_setup} --subMode {subMode}"
+                # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
+                out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+                print(out)
+
+
+
+
 
 if args.day == "mar08":
     print("mar08")
@@ -1579,8 +3667,8 @@ if args.day == "mar08":
     import warnings
     warnings.filterwarnings('ignore')
     if args.mode == 1:
-        # cutoff = 400
-        cutoff = 600
+        cutoff = 400
+        # cutoff = 600
         pre = "."
         gamma_pre = f"{pre}/saved_gammas"
         # trial_name = "iter1"
@@ -1590,6 +3678,12 @@ if args.day == "mar08":
         trial_name = "native_iter4"
         trial_name = "new_3"
         trial_name = "new_4"
+        trial_name = "iter2_bugfix"
+        trial_name = "iter3"
+        # trial_name = "iter3_z_weighted"
+        trial_name = "iter4"
+        do(f"cp -r gammas back_gammas_{trial_name}")
+        # do(f"cp -r gammas back_gammas_{trail_name}")
         gamma_file_name = f"{gamma_pre}/{trial_name}_cutoff{cutoff}_impose_Aprime_constraint"
         # gamma_file_name = f"{pre}/iter_2_30"
         data = validate_hamiltonian_wei("phi_list.txt", "protein_list_complete", gamma_file_name, "openMM", 100, mode=0)
@@ -1627,9 +3721,67 @@ if args.day == "mar08":
                 # b = (1-a) * normalized_Z_weight
                 # toFile = f"../phis/{phi}_{protein}_{decoyBiasName}_{decoy_method}_{parameters_string}"
                 # np.savetxt(toFile, b, fmt='%.4f')
-                # b = (1-a) * normalized_Z_weight
+                b = (1-a) * normalized_Z_weight
                 # b = (1-a) * normalized_Z_weight_sq
-                b = (1-a) * normalized_Z_weight_half
+                # b = (1-a) * normalized_Z_weight_half
+                toFile = f"../phis/{phi}_{protein}_{decoyBiasName}_{decoy_method}_{parameters_string}"
+                np.savetxt(toFile, b, fmt='%.4f')
+    if args.mode == 3:
+        cutoff = 400
+        # cutoff = 600
+        pre = "."
+        gamma_pre = f"{pre}/saved_gammas"
+        # trial_name = "iter1"
+        trial_name = "iter2"
+        trial_name = "native_iter2"
+        trial_name = "native_iter3"
+        trial_name = "native_iter4"
+        trial_name = "new_3"
+        trial_name = "new_4"
+        trial_name = "iter2_bugfix"
+        trial_name = "iter3"
+        trial_name = "iter3_z_weighted"
+        gamma_file_name = f"{gamma_pre}/{trial_name}_cutoff{cutoff}_impose_Aprime_constraint"
+        # gamma_file_name = f"{pre}/iter_2_30"
+        data = validate_hamiltonian_wei("phi_list.txt", "protein_list_complete", gamma_file_name, "openMM", 100, mode=0)
+        dataFile = f"optimization_2020.csv"
+        data.to_csv(dataFile)
+    if args.mode == 4:
+        phi_list_file_name = "phi_list.txt"
+        training_set_file = "protein_list_complete"
+        decoyBiasName = "decoyQZBias_2"
+        preDecoyBiasName= "deocyQZBias"
+        decoy_method = "openMM"
+        dataFile = f"optimization_2020.csv"
+        data = pd.read_csv(dataFile, index_col=0)
+        data["normalized_Z_weight"] = (10/(data["Z_scores"] - data["Z_scores"].min() + 10))
+        data["normalized_Z_weight_sq"] = (10/(data["Z_scores"] - data["Z_scores"].min() + 10))**2
+        data["normalized_Z_weight_half"] = (10/(data["Z_scores"] - data["Z_scores"].min() + 10))**0.5
+        phi_list = read_phi_list(phi_list_file_name)
+        training_set = read_column_from_file(training_set_file, 1)
+
+        protein = training_set[0]
+        for i, line in data.iterrows():
+            protein = line["Protein"]
+            normalized_Z_weight = line["normalized_Z_weight"]
+            normalized_Z_weight_sq = line["normalized_Z_weight_sq"]
+            normalized_Z_weight_half = line["normalized_Z_weight_half"]
+            for i_phi_function, phi_and_parameters in enumerate(phi_list):
+                # print(protein, i_phi_function, phi_and_parameters)
+                phi = phi_and_parameters[0]
+                parameters = phi_and_parameters[1]
+                i_phi = phi_list.index(phi_and_parameters)
+                parameters_string = get_parameters_string(parameters)
+                # try:
+                fromFile = f"../phis/{phi}_{protein}_{preDecoyBiasName}_{decoy_method}_{parameters_string}"
+                a = np.loadtxt(fromFile)
+                # print(a)
+                # b = (1-a) * normalized_Z_weight
+                # toFile = f"../phis/{phi}_{protein}_{decoyBiasName}_{decoy_method}_{parameters_string}"
+                # np.savetxt(toFile, b, fmt='%.4f')
+                b = a * normalized_Z_weight
+                # b = (1-a) * normalized_Z_weight_sq
+                # b = (1-a) * normalized_Z_weight_half
                 toFile = f"../phis/{phi}_{protein}_{decoyBiasName}_{decoy_method}_{parameters_string}"
                 np.savetxt(toFile, b, fmt='%.4f')
 
@@ -1679,10 +3831,22 @@ if args.day == "mar05":
     folder_list = ["iteration_0_stronger_exclude_volume"]
     folder_list = ["iteration_1_stronger_exclude", "iteration_1_stronger_exclude_withoutBurial"]
     folder_list = ["iteration_2_stronger_exclude_withoutBurial"]
+    folder_list = ["iteration_2_bug_fixed"]
+    folder_list = ["iteration_3"]
+    folder_list = ["iteration_4"]
+    folder_list = ["iter3_shift_well"]
+    folder_list = ["iter4_shift_well"]
+    folder_list = ["iteration_0_stronger_exclude_volume", "iteration_1_stronger_exclude_withoutBurial_bugfix", "iteration_2_bug_fixed", "iter3_shift_well", "iter4_shift_well"]
+
+    # folder_list = ["iteration_0_stronger_exclude_volume", "iteration_1_stronger_exclude_withoutBurial_bugfix", "iteration_2_bug_fixed"]
+    # folder_list = ["iteration_1_stronger_exclude_withoutBurial_bugfix"]
+    # folder_list = ["iteration_2_stronger_exclude_withoutBurial"]
+    # folder_list = ["iteration_1_stronger_exclude_withoutBurial_bugfix", "iteration_0_stronger_exclude_volume_shift_well"]
     # folder_list = ["iteration_1"]
     # folder_list = ["iteration_2"]
     run_n = 2
-    base_path = "/scratch/wl45/mar_2020"
+    # base_path = "/scratch/wl45/mar_2020"
+    base_path = "/scratch/wl45/apr_2020"
     simulationType = "mass_iterative_run"
     lastN_frame = 50
     print(folder_list)
@@ -1702,8 +3866,8 @@ if args.day == "mar05":
     if args.mode == 1:
         # do("cp /home/wl45/opt/optimization/phi_list_contact.txt phi_list.txt")
         # do("cp ../phi_com.txt phi_list.txt")
-        do("cp ../phi_com_withoutBurial.txt phi_list.txt")
-        # do("cp ~/opt/optimization/phi_com_shift_center_withoutBurial.txt phi_list.txt")
+        # do("cp ../phi_com_withoutBurial.txt phi_list.txt")
+        do("cp ~/opt/optimization/phi_com_shift_center_withoutBurial.txt phi_list.txt")
         do("mkdir proteins_name_list")
         do("mkdir slurms")
         do('mkdir -p outs')
@@ -1745,7 +3909,7 @@ if args.day == "mar05":
         outFile = read_simulation_info(folder_list, pdb_list, simulationType, base_path, run_n)
         # today = datetime.today().strftime('%m-%d')
         outFile = f"{simulationType}.csv"
-    if args.mode == 13:
+    # if args.mode == 13:
         # time.sleep(3600)
         dataFile = f"{simulationType}.csv"
         simulation_folder = simulationType
@@ -1819,7 +3983,12 @@ if args.day == "mar05":
         # folder_list = ["iteration_start_native", "iteration_start_native_iter2",        "iteration_start_native_iter3", "iteration_new_1", "iteration_start_native_iter4"]
         # folder_list += ["iteration_start_native_iter5", "iteration_new_2", "iteration_new_3"]
         # folder_list += ["iteration_new_3"]
-        folder_list = ["iteration_new_4_without_burial_shift_well"]
+        # folder_list = ["iteration_new_4_without_burial_shift_well"]
+
+        folder_list = ["iteration_0_stronger_exclude_volume"]
+        folder_list += ["iteration_1_stronger_exclude_withoutBurial_bugfix", "iteration_2_bug_fixed"]
+        # folder_list += ["iteration_3"]
+        folder_list += ["iter3_shift_well"]
         with open("protein_list_complete", "w") as out:
             for folder in folder_list:
                 for pdb in pdb_list:
@@ -1840,8 +4009,10 @@ if args.day == "mar05":
         # folder_list += ["iteration_new_1", "iteration_new_2", "iteration_new_3", "iteration_new_4_without_burial"]
 
         folder_list = ["iteration_0_stronger_exclude_volume"]
-        folder_list += ["iteration_1_stronger_exclude_withoutBurial"]
-
+        folder_list += ["iteration_1_stronger_exclude_withoutBurial_bugfix", "iteration_2_bug_fixed"]
+        # folder_list += ["iteration_3"]
+        folder_list += ["iter3_shift_well"]
+        folder_list += ["iter4_shift_well"]
         with open("protein_list_complete", "w") as out:
             for folder in folder_list:
                 for pdb in pdb_list:
@@ -1859,6 +4030,17 @@ if args.day == "mar05":
         n_decoys = 50 * run_n
         A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
                                         withBiased=True, oneMinus=True, decoyBiasName='decoysQ', num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
+    if args.mode == 333:
+        # debug, set oneMinus to False.
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list_complete"
+        n_decoys = 50 * run_n
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                        withBiased=True, oneMinus=False, decoyBiasName='decoysQ', num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
         # next: optimization_analysze.py iter{i}
     if args.mode == 4:
         # folder_list = ["iteration_0", "iteration_1", "iteration_2"]
@@ -1881,6 +4063,27 @@ if args.day == "mar05":
         A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
                                         withBiased=True, oneMinus=False, decoyBiasName='deocyQZBias', num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
         # next: optimization_analysze.py iter{i}
+    if args.mode == 41:
+        # folder_list = ["iteration_0", "iteration_1", "iteration_2"]
+        # folder_list = ["iteration_0_cbd", "iteration_1_cbd", "iteration_2_cbd"]
+        # with open("protein_list_complete", "w") as out:
+        #     for folder in folder_list:
+        #         for pdb in pdb_list:
+        #             out.write(f"{pdb}_{folder}\n")
+        with open(f"slurms/run_on_scavenge.slurm", "w") as out:
+            out.write(base_slurm.format(f"python3 ~/opt/gg_server.py -d mar05 -m 441"))
+        replace(f"slurms/run_on_scavenge.slurm", "#SBATCH --mem-per-cpu=1G", "#SBATCH --mem-per-cpu=60G")
+        do(f"sbatch slurms/run_on_scavenge.slurm")
+    if args.mode == 441:
+        from pyCodeLib import *
+        import warnings
+        warnings.filterwarnings('ignore')
+        # complete_proteins = "iter0.txt"
+        complete_proteins = "protein_list_complete"
+        n_decoys = 50 * run_n
+        A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                        withBiased=True, oneMinus=False, decoyBiasName='decoyQZBias_2', num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+        # next: optimization_analysze.py iter{i}
     if args.mode == 5:
         # i = 2
         # i = 2
@@ -1894,7 +4097,17 @@ if args.day == "mar05":
         i = "new_3"
         i = "new_4"
         i = "larger_excl"
-        i = "larger_excl_withoutBurial"
+        # i = "larger_excl_withoutBurial"
+        i = "iter2_bugfix"
+        i = "iter2_bugfix_z_weighted"
+        i = "iter3"
+        i = "iter3_z_weighted"
+        i = "iter3_z_weighted_2"
+        i = "shift_center"
+        i = "iter4"
+        i = "iter4_z_weighted"
+        i = "iter4_shift_center"
+        i = "iter5_shift_center"
         # i = "larger_excl_withoutBurial_iter2"
         # do(f"optimization_analyze.py {i} --proteinList protein_list_complete -c -100")
         # do(f"optimization_analyze.py {i} --proteinList protein_list_complete")
@@ -1912,6 +4125,7 @@ if args.day == "mar05":
         i = "native_iter4"
         i = "larger_excl"
         i = "larger_excl_withoutBurial"
+        i = "iter2_bugfix_z_weighted"
         # i = "larger_excl_withoutBurial_iter2"
         alpha = 0.3
         cutoff = 400
@@ -1940,7 +4154,12 @@ if args.day == "mar05":
         title = f"{trial_name}_cutoff{cutoff_i}"
         show_together_v2(filtered_gamma, figureName, title=title, inferBound=2)
 
-
+    if args.mode == 777:
+        # time.sleep(3600)
+        do("python3 ~/opt/gg_server.py -d mar05 -m 5")
+        do("python3 ~/opt/gg_server.py -d mar05 -m 7")
+        # cd("../../mass_iterative_run")
+        # do("python3 ~/opt/gg_server.py -d mar09 -m 23")
     if args.mode == 7:
         # i = 1
         i = "native_iter3"
@@ -1948,7 +4167,13 @@ if args.day == "mar05":
         i = "new_3"
         i = "new_4"
         i = "larger_excl_withoutBurial_iter2"
+        i = "iter2_bugfix_z_weighted"
+        i = "iter3_z_weighted_2"
+        i = "iter4"
+        i = "shift_center"  # iter3
+        i = "iter0_environment"
         cutoff = 400
+        cutoff = 300
         for pdb in pdb_list:
             do(f"cp Oct26_saved_gammas/{i}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat {base_path}/{simulationType}/setups/{pdb}/{i}_withoutBurial_gamma.dat")
             # do(f"cp Oct26_saved_gammas/{i}_cutoff{cutoff}_impose_Aprime_constraint/gamma.dat {base_path}/{simulationType}/setups/{pdb}/{i}_gamma.dat")
@@ -3536,7 +5761,7 @@ if args.day == "jan05":
                 out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
                 print(out)
 if args.day == "jan01":
-    do("find . -maxdepth 1 -mindepth 1 -type d -exec tar cvf {}.tar {}  \;")
+    do("find . -maxdepth 1 -mindepth 1 -type d -exec tar cvf {}.tar {}  \; &")
 if args.day == "dec31":
     if args.mode == 1:
         # Cornichon
