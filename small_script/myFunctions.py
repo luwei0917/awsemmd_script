@@ -1192,7 +1192,11 @@ def mix_gammas_3(pre, Gamma, preGamma, alpha=None, scale=True, iterGammaName=Non
     # pre = "/Users/weilu/Research/server/march_2019/optimization_weighted_by_q_iter1/"
     gamma_for_simulation = pre + f"iteration_{iteration}_gamma_{percent}.dat"
     burial_gamma_for_simulation = pre + f"iteration_{iteration}_burial_gamma_{percent}.dat"
-    gamma_format_convertion_iteration_to_simulation(iter_gamma, gamma_for_simulation, burial_gamma_for_simulation=burial_gamma_for_simulation)
+    if len(Gamma) != 690:
+        print("not having burial term?")
+        gamma_format_convertion_iteration_to_simulation(iter_gamma, gamma_for_simulation)
+    else:
+        gamma_format_convertion_iteration_to_simulation(iter_gamma, gamma_for_simulation, burial_gamma_for_simulation=burial_gamma_for_simulation)
     if iterGammaName is not None:
         np.savetxt(pre+iterGammaName, iter_gamma)
 
@@ -2178,12 +2182,18 @@ def get_side_chain_center_of_mass(res):
 def convert_all_atom_pdb_to_cbd_representation(all_atom_pdb_file, cbd_representation_file):
     # from a all atom pdb.
     # preserve N, CA, C, O, and place the CB at the center of mass of the side chain
-    parser = PDBParser()
+    parser = PDBParser(QUIET=True)
     # all_atom_pdb_file = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/side_chain_run1/256b/4_0/crystal_structure.pdb"
     structure = parser.get_structure("x", all_atom_pdb_file)
 
     x_com_dic = {}
     for res in structure.get_residues():
+        if res.id[0] != ' ' and len(res.resname) == 3:
+            continue
+        try:
+            ca = res["CA"]
+        except:
+            continue
         chain = res.get_full_id()[2]
         resID = res.get_full_id()[3][1]
         x_com = get_side_chain_center_of_mass(res)
@@ -2191,12 +2201,21 @@ def convert_all_atom_pdb_to_cbd_representation(all_atom_pdb_file, cbd_representa
 
 
     for res in structure.get_residues():
+        if res.id[0] != ' ' and len(res.resname) == 3:
+            continue
+        try:
+            ca = res["CA"]
+        except:
+            continue
         chain = res.get_full_id()[2]
         resID = res.get_full_id()[3][1]
         x_com = x_com_dic[f"{chain}{resID}"]
         if res.resname == "GLY":
             continue
-        res["CB"].set_coord(x_com)
+        try:
+            res["CB"].set_coord(x_com)
+        except:
+            print(res)
     io = PDBIO()
     io.set_structure(structure)
 
@@ -2805,3 +2824,103 @@ def move_data(data_folder, freeEnergy_folder, folder, sub_mode_name="", kmem=0.2
 #         os.chdir("{}/awsemer/simulation/{}/0/".format(protein, int(answer.Run)))
 #         os.system("show.py --frame {} {} -p".format(int(answer.Steps/4000), protein))
 #         os.chdir("../../../../../")
+
+
+def vabs(a):
+    return np.sqrt(pow(a[0],2)+pow(a[1],2)+pow(a[2],2))
+def vector(p1, p2):
+    return [p2[0]-p1[0], p2[1]-p1[1], p2[2]-p1[2]]
+
+def computeQ(ca_atoms_pdb, ca_atoms_pdb_2):
+    sigma_exp = 0.15
+    sigma = []
+    sigma_sq = []
+    n = max(len(ca_atoms_pdb_2), len(ca_atoms_pdb))
+    for i in range(0, n+1):
+        sigma.append( (1+i)**sigma_exp )
+        sigma_sq.append(sigma[-1]*sigma[-1])
+
+    if len(ca_atoms_pdb_2)!=len(ca_atoms_pdb):
+        print("Notice. Length mismatch!")
+        print("Pdb: ", len(ca_atoms_pdb), "trj: ", len(ca_atoms_pdb_2))
+        # exit()
+    # print("hi")
+    max_length = max(len(ca_atoms_pdb_2), len(ca_atoms_pdb))
+    # print(max_length)
+    # ca_atoms = ca_atoms[:max_length]
+    # ca_atoms_pdb = ca_atoms_pdb[:max_length]
+    # print ca_atoms_pdb
+    # print ca_atoms_pdb_2
+    Q = 0
+    norm = 0
+    N = max_length
+    for ia in range(0, N):
+        for ja in range(ia+3, N):
+            if (ia+1) in ca_atoms_pdb and (ja+1) in ca_atoms_pdb:
+                if (ia+1) in ca_atoms_pdb_2 and (ja+1) in ca_atoms_pdb_2:
+                        # print ia-pdbBegin+1, ja-pdbBegin+1
+                    # print ca_atoms_pdb[ia+1]
+                    rn = vabs(vector(ca_atoms_pdb[ia+1], ca_atoms_pdb[ja+1]))
+                    r = vabs(vector(ca_atoms_pdb_2[ia+1], ca_atoms_pdb_2[ja+1]))
+                    dr = r - rn
+
+                    Q = Q + np.exp(-dr * dr / (2 * sigma_sq[ja - ia]))
+                    norm = norm + 1
+    Q = Q / norm
+    return Q
+
+def compute_Q_from_two_pdb(pdb_file, pdb_file2):
+
+    from Bio.PDB.PDBParser import PDBParser
+
+    ca_atoms_pdb = {}
+    pdb_chain_id = []
+    pdb_residue_id = {}
+    p = PDBParser(PERMISSIVE=1, QUIET=True)
+    s = p.get_structure("a", pdb_file)
+    chains = s[0].get_list()
+    #chain = chains[0]
+    ichain = 0
+    for chain in chains:
+        ichain = ichain + 1
+        for res in chain:
+            is_regular_res = res.has_id('CA') and res.has_id('O')
+            res_id = res.get_id()[0]
+            if (res_id==' ' or res_id=='H_MSE' or res_id=='H_M3L' or res_id=='H_CAS') and is_regular_res:
+                residue_id = res.id[1]
+                ca_atoms_pdb[residue_id] = res['CA'].get_coord()
+                pdb_chain_id.append(ichain)
+                pdb_residue_id[res.id[1]] = 1
+
+    s = p.get_structure("b", pdb_file2)
+    ca_atoms_pdb_2 = {}
+    pdb_chain_id_2 = []
+    pdb_residue_id_2 = {}
+    chains = s[0].get_list()
+    #chain = chains[0]
+    ichain = 0
+    for chain in chains:
+        ichain = ichain + 1
+        for res in chain:
+            is_regular_res = res.has_id('CA') and res.has_id('O')
+            res_id = res.get_id()[0]
+            if (res_id==' ' or res_id=='H_MSE' or res_id=='H_M3L' or res_id=='H_CAS' ) and is_regular_res:
+                # ca_atoms.append(res['CA'].get_coord())
+                residue_id_2 = res.id[1]
+                if residue_id_2 in pdb_residue_id:
+                    # print(residue_id_2)
+                    ca_atoms_pdb_2[residue_id_2] = res['CA'].get_coord()
+                    pdb_chain_id_2.append(ichain)
+                    pdb_residue_id_2[res.id[1]] = 1
+                else:
+                    print("no: " + str(residue_id_2)+ pdb_file + " " + pdb_file2)
+    # print("------")
+    if len(ca_atoms_pdb_2)!=len(ca_atoms_pdb):
+        print("Notice. Length mismatch!" + pdb_file + " " + pdb_file2)
+        print("Pdb: ", len(ca_atoms_pdb), "trj: ", len(ca_atoms_pdb_2))
+    if len(ca_atoms_pdb_2)>0:
+        q = computeQ(ca_atoms_pdb, ca_atoms_pdb_2)
+        # print str(round(q,3)),
+        # print(str(round(q,3)) + " ")
+        n_atoms = len(ca_atoms_pdb_2)
+    return round(q,3)

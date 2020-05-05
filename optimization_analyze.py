@@ -91,6 +91,7 @@ pre = "gammas/"
 complete_proteins = args.proteinList
 phi_list = read_phi_list("phi_list.txt")
 training_set = read_column_from_file(complete_proteins, 1)
+# print("training set: ", training_set)
 total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
     phi_list, training_set)
 # print(full_parameters_string)
@@ -183,7 +184,8 @@ def get_filtered_gamma(pre, cutoff, pp):
 # cutoff_list = [100, 200, 300, 400, 500, 600]
 # cutoff_list += [10, 20, 30, 40, 50, 80]
 cutoff_list = list(np.arange(100, total_phis, 100))
-cutoff_list += [630, 650, 670, 690]
+if total_phis == 690:
+    cutoff_list += [630, 650, 670, 690]
 print("cutoff_list: ", cutoff_list)
 do("mkdir -p saved_gammas")
 for cutoff_i in cutoff_list:

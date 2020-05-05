@@ -160,7 +160,7 @@ def phosphorylation(res1globalindex, res2globalindex, res1type, res2type, m, pho
 
     return k_hypercharge, res1type, res2type
 
-def compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, kappa=5.0, hasPhosphorylation=False):
+def compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, kappa=5.0, hasPhosphorylation=False, fixWellCenter=True):
     if hasPhosphorylation:
         import configparser
         config = configparser.ConfigParser()
@@ -182,6 +182,9 @@ def compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, kappa=5.0, h
     density_kappa = 7.0
     # phi_mediated_contact_well = np.zeros((2, 20,20))
     v_mediated = 0
+    if not fixWellCenter:
+        a = pd.read_csv("/Users/weilu/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
+        cb_density = calculate_cb_density_wellCenter(res_list, neighbor_list, a)
     for res1globalindex, res1 in enumerate(res_list):
         res1index = get_local_index(res1)
         res1chain = get_chain(res1)
@@ -231,11 +234,31 @@ def compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, kappa=5.0, h
                     rho_i, rho_j, density_threshold, density_kappa) * protein_gamma
                 _pij_water = prot_water_switchFunc_sigmaWater(
                     rho_i, rho_j, density_threshold, density_kappa) * water_gamma
-                v_mediated += (_pij_protein + _pij_water) * interaction_well(rij, r_min, r_max, kappa)
+
+                if not fixWellCenter:
+                    res1_name = res1.get_resname()
+                    res2_name = res2.get_resname()
+                    if res1_name == "GLY" or res2_name == "GLY":
+                        r_min_res1_res2 = 6.5
+                        r_max_res1_res2 = 9.5
+                    else:
+                        b = a.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
+                        if len(b) == 0:
+                            b = a.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
+                        try:
+                            r_min_res1_res2 = float(b["r_max"]) + 1.5
+                            r_max_res1_res2 = float(b["r_max"]) + 4.5
+                        except:
+                            print(b)
+                    # r_min_res1_res2 = 6.5
+                    # r_max_res1_res2 = 9.5
+                    v_mediated += (_pij_protein + _pij_water) * interaction_well(rij, r_min_res1_res2, r_max_res1_res2, kappa)
+                else:
+                    v_mediated += (_pij_protein + _pij_water) * interaction_well(rij, r_min, r_max, kappa)
     return v_mediated
 
 input_pdb_filename = "/Users/weilu/Research/server_backup/jan_2019/compute_energy/12asA00"
-def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False, r_min=2.5):
+def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False, r_min=2.5, fixWellCenter=True):
     if hasPhosphorylation:
         import configparser
         config = configparser.ConfigParser()
@@ -254,6 +277,8 @@ def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False, r_
     min_seq_sep = 10
     # phi_pairwise_contact_well = np.zeros((20,20))
     v_direct = 0
+    if not fixWellCenter:
+        a = pd.read_csv("/Users/weilu/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
     for res1globalindex, res1 in enumerate(res_list):
         res1index = get_local_index(res1)
         res1chain = get_chain(res1)
@@ -276,7 +301,26 @@ def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False, r_
                     k_hypercharge = 1
                 gamma = gamma_ijm[0][res1type][res2type] * k_hypercharge
     #             phi_pairwise_contact_well[res1type][res2type] += interaction_well(rij, r_min, r_max, kappa)
-                v_direct += gamma * interaction_well(rij, r_min, r_max, kappa)
+                if not fixWellCenter:
+                    res1_name = res1.get_resname()
+                    res2_name = res2.get_resname()
+                    if res1_name == "GLY" or res2_name == "GLY":
+                        r_min_res1_res2 = 2.5
+                        r_max_res1_res2 = 6.5
+                    else:
+                        b = a.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
+                        if len(b) == 0:
+                            b = a.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
+                        try:
+                            r_min_res1_res2 = float(b["r_min"]) - 0.5
+                            r_max_res1_res2 = float(b["r_max"]) + 1.5
+                        except:
+                            print(b)
+                    # r_min_res1_res2 = 2.5
+                    # r_max_res1_res2 = 6.5
+                    v_direct += gamma * interaction_well(rij, r_min_res1_res2, r_max_res1_res2, kappa)
+                else:
+                    v_direct += gamma * interaction_well(rij, r_min, r_max, kappa)
     return v_direct
 
 

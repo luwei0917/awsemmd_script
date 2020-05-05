@@ -148,6 +148,76 @@ def get_aligned_info(p1, p2):
     # print(aligned_length, rmsd, tmscore, seqid)
     return aligned_length, rmsd, tmscore, seqid
 
+if args.day == "may02":
+    if args.mode == 1:
+        pdb_list = ["1r69", "1akr", "1opd", "1ptf", "1tig", "1tmy", "2acy", "5nul"]
+        for pdb in pdb_list:
+            pre = f"setups/{pdb}"
+            fromFile = f"{pre}/crystal_structure.pdb"
+            toFile = f"{pre}/cbd_{pdb}.pdb"
+            convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+            cmd = f"python ~/openmmawsem/helperFunctions/Pdb2Gro.py {pre}/cbd_{pdb}.pdb {pre}/cbd_{pdb}.gro"
+            do(cmd)
+            do(f"cp {pre}/single_frags.mem {pre}/cbd_single_frags.mem")
+            replace(f"{pre}/cbd_single_frags.mem", pdb, f"cbd_{pdb}")
+    if args.mode == 2:
+        # pre = "/Users/weilu/Research/server/feb_2020/casp13_targets/setups/T0953s2-D1"
+        pdb_list = ["1r69", "1akr", "1opd", "1ptf", "1tig", "1tmy", "2acy", "5nul"]
+        for pdb in pdb_list:
+            pre = f"setups/{pdb}"
+            original_openAWSEM_input = f"{pre}/{pdb}-openmmawsem.pdb"
+            new_openAWSEM_input = f"{pre}/cbd-openmmawsem.pdb"
+            all_atom_pdb_file = f"{pre}/crystal_structure-cleaned.pdb"
+            replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file)
+if args.day == "may01":
+    if args.mode == 1:
+        pdb_list = ["1akr", "1opd", "1ptf", "1tig", "1tmy", "2acy", "5nul"]
+        for pdb in pdb_list:
+            folder = f"setups/{pdb}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"mm_create_project.py ../../source/{pdb}.pdb --extended --frag")
+            cd("../..")
+    if args.mode == 2:
+        pdb_list = ["1akr", "1opd", "1ptf", "1tig", "1tmy", "2acy", "5nul"]
+        for pdb in pdb_list:
+            do(f"python mm_evaluate_native.py setups/{pdb}/{pdb} --to native/{pdb}")
+
+if args.day == "apr29":
+    if args.mode == 1:
+        # pre = "/Users/weilu/Research/server/feb_2020/casp13_targets/setups/T0953s2-D1"
+        pre = "./chain_E"
+        pdb = "chainE"
+        original_openAWSEM_input = f"{pre}/{pdb}-openmmawsem.pdb"
+        new_openAWSEM_input = f"{pre}/cbd-openmmawsem.pdb"
+        all_atom_pdb_file = f"{pre}/crystal_structure-cleaned.pdb"
+        replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file)
+    if args.mode == 2:
+        a = "/Users/weilu/Research/server/apr_2020/cornichon_cbd/chain_E/frags.mem"
+        with open(a) as f:
+            b = f.readlines()
+        pdb_list = [c.split()[0].split("/")[-1].split(".")[0] for c in b[4:]]
+        import sys
+        sys.path.insert(0, "/Users/weilu/openmmawsem/helperFunctions/")
+        from Pdb2GroLib import *
+        # pdb_list = ["2ix5a"]
+        pdb_list = list(set(pdb_list))
+        print(len(pdb_list))
+        for pdb in pdb_list:
+            print(pdb)
+            upperPDB = pdb[:4].upper()
+            pre = f"/Users/weilu/openmmawsem/PDBs/"
+            toPre = "/Users/weilu/Research/server/apr_2020/cornichon_cbd/frag_in_cbd"
+            fromFile = f"{pre}/{upperPDB}.pdb"
+            toFile = f"{toPre}/pdbs/cbd_{upperPDB}.pdb"
+            convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+            # cmd = f"python ~/openmmawsem/helperFunctions/Pdb2Gro.py {toPre}/pdbs/cbd_{upperPDB}.pdb {toPre}/{pdb}.gro"
+            pdbFile = toFile
+            groFile = f"{toPre}/frags/{pdb}.gro"
+            chainID = pdb[-1]
+            Pdb2Gro(pdbFile, groFile, chainID.upper())
+
+
 if args.day == "apr24":
     if args.mode == 1:
         relocate(fileLocation="frags.mem", toLocation="../fraglib")

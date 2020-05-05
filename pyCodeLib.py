@@ -275,7 +275,7 @@ def get_interaction_distance_com(res1, res2):
     else:
         x1 = get_side_chain_center_of_mass(res1)
     if res2.resname == "GLY":
-        x2 = res1["CA"].get_coord()
+        x2 = res2["CA"].get_coord()
     else:
         x2 = get_side_chain_center_of_mass(res2)
     return dis(x1, x2)
@@ -825,49 +825,10 @@ def phi_pairwise_contact_well(res_list, neighbor_list, parameter_list):
     phis_to_return = []
     for i in range(20):
         for j in range(i, 20):
-            phis_to_return.append(phi_pairwise_contact_well[i][j])
+            phis_to_return.append(round(phi_pairwise_contact_well[i][j], 4))
     return phis_to_return
 
 
-def calculate_cb_density(res_list, neighbor_list, min_seq_sep=2, rmin=2.5):
-    num_residues = len(res_list)
-    density = np.zeros(num_residues)
-    for res1globalindex, res1 in enumerate(res_list):
-        res1index = get_local_index(res1)
-        res1chain = get_chain(res1)
-        for res2 in get_neighbors_within_radius(neighbor_list, res1, 9.0):
-            res2index = get_local_index(res2)
-            res2chain = get_chain(res2)
-            res2globalindex = get_global_index(res_list, res2)
-            if abs(res2index - res1index) >= min_seq_sep or (res1chain != res2chain):
-                rij = get_interaction_distance(res1, res2)
-                density[res1globalindex] += interaction_well(rij, rmin, 6.5, 5)
-    return density
-
-
-def calculate_cb_weight_density(res_list, neighbor_list, min_seq_sep=2):
-    weight_info = pd.read_csv("~/opt/parameters/amino_acid_side_chain_weight", comment="#", sep="\s+")
-    weight_info["normalized_weight"] = weight_info["weight"] /(weight_info["weight"].min())
-    num_residues = len(res_list)
-    density = np.zeros(num_residues)
-    for res1globalindex, res1 in enumerate(res_list):
-        res1index = get_local_index(res1)
-        res1chain = get_chain(res1)
-        for res2 in get_neighbors_within_radius(neighbor_list, res1, 9.0):
-            res2index = get_local_index(res2)
-            res2chain = get_chain(res2)
-            res2globalindex = get_global_index(res_list, res2)
-            if abs(res2index - res1index) >= min_seq_sep or (res1chain != res2chain):
-                rij = get_interaction_distance(res1, res2)
-                res2type = three_to_one(res2.get_resname())
-                try:
-                    weight = float(weight_info.query(f"oneLetterCode == '{res2type}'")["normalized_weight"])
-                except:
-                    print(res2)
-                    print(res2type)
-                    print(weight_info.query(f"oneLetterCode == '{res2type}'")["normalized_weight"])
-                density[res1globalindex] += weight*interaction_well(rij, 4.5, 6.5, 5)
-    return density
 
 def phi_pairwise_contact_com_well(res_list, neighbor_list, parameter_list):
     r_min, r_max, kappa, min_seq_sep = parameter_list
@@ -895,11 +856,77 @@ def phi_pairwise_contact_com_well(res_list, neighbor_list, parameter_list):
     phis_to_return = []
     for i in range(20):
         for j in range(i, 20):
-            phis_to_return.append(phi_pairwise_contact_well[i][j])
+            phis_to_return.append(round(phi_pairwise_contact_well[i][j],4))
+    return phis_to_return
+
+def phi_pairwise_contact_com_shift_center_well(res_list, neighbor_list, parameter_list):
+    fixWellCenter = False
+    if not fixWellCenter:
+        a = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
+    r_min, r_max, kappa, min_seq_sep = parameter_list
+    r_min = float(r_min)
+    r_max = float(r_max)
+    kappa = float(kappa)
+    min_seq_sep = int(min_seq_sep)
+    phi_pairwise_contact_well = np.zeros((20,20))
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance_com(res1, res2)
+                if not fixWellCenter:
+                    res1_name = res1.get_resname()
+                    res2_name = res2.get_resname()
+                    if res1_name == "GLY" or res2_name == "GLY":
+                        r_min_res1_res2 = 2.5
+                        r_max_res1_res2 = 6.5
+                    else:
+                        b = a.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
+                        if len(b) == 0:
+                            b = a.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
+                        try:
+                            r_min_res1_res2 = float(b["r_min"]) - 0.5
+                            r_max_res1_res2 = float(b["r_max"]) + 1.5
+                        except:
+                            print("problem", b)
+                    phi_pairwise_contact_well[res1type][res2type] += interaction_well(rij, r_min_res1_res2, r_max_res1_res2, kappa)
+                    if not res1type == res2type:
+                        phi_pairwise_contact_well[res2type][res1type] += interaction_well(rij, r_min_res1_res2, r_max_res1_res2, kappa)
+                else:
+                    phi_pairwise_contact_well[res1type][res2type] += interaction_well(rij, r_min, r_max, kappa)
+                    if not res1type == res2type:
+                        phi_pairwise_contact_well[res2type][res1type] += interaction_well(rij, r_min, r_max, kappa)
+
+    phis_to_return = []
+    for i in range(20):
+        for j in range(i, 20):
+            phis_to_return.append(round(phi_pairwise_contact_well[i][j],4))
     return phis_to_return
 
 
-def calculate_com_density(res_list, neighbor_list, min_seq_sep=2, rmin=3.5):
+def calculate_cb_density(res_list, neighbor_list, min_seq_sep=2, rmin=2.5):
+    num_residues = len(res_list)
+    density = np.zeros(num_residues)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, 9.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            if abs(res2index - res1index) >= min_seq_sep or (res1chain != res2chain):
+                rij = get_interaction_distance(res1, res2)
+                density[res1globalindex] += interaction_well(rij, rmin, 6.5, 5)
+    return density
+
+def calculate_com_density(res_list, neighbor_list, min_seq_sep=2, rmin=2.5):
     num_residues = len(res_list)
     density = np.zeros(num_residues)
     for res1globalindex, res1 in enumerate(res_list):
@@ -913,6 +940,63 @@ def calculate_com_density(res_list, neighbor_list, min_seq_sep=2, rmin=3.5):
                 rij = get_interaction_distance_com(res1, res2)
                 density[res1globalindex] += interaction_well(rij, rmin, 6.5, 5)
     return density
+
+
+def calculate_cb_density_wellCenter(res_list, neighbor_list, wellCenterInfo, min_seq_sep=2):
+    num_residues = len(res_list)
+    density = np.zeros(num_residues)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, 9.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            if abs(res2index - res1index) >= min_seq_sep or (res1chain != res2chain):
+                res1_name = res1.get_resname()
+                res2_name = res2.get_resname()
+                if res1_name == "GLY" or res2_name == "GLY":
+                    r_min_res1_res2 = 2.5
+                    r_max_res1_res2 = 6.5
+                else:
+                    b = wellCenterInfo.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
+                    if len(b) == 0:
+                        b = wellCenterInfo.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
+                    try:
+                        r_min_res1_res2 = float(b["r_min"]) - 0.5
+                        r_max_res1_res2 = float(b["r_max"]) + 1.5
+                    except:
+                        print(b)
+                rij = get_interaction_distance(res1, res2)
+                density[res1globalindex] += interaction_well(rij, r_min_res1_res2, r_max_res1_res2, 5)
+    return density
+
+
+def calculate_cb_weight_density(res_list, neighbor_list, min_seq_sep=2):
+    weight_info = pd.read_csv("~/opt/parameters/amino_acid_side_chain_weight", comment="#", sep="\s+")
+    weight_info["normalized_weight"] = weight_info["weight"] /(weight_info["weight"].min())
+    num_residues = len(res_list)
+    density = np.zeros(num_residues)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, 9.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            if abs(res2index - res1index) >= min_seq_sep or (res1chain != res2chain):
+                rij = get_interaction_distance(res1, res2)
+                res2type = three_to_one(res2.get_resname())
+                try:
+                    weight = float(weight_info.query(f"oneLetterCode == '{res2type}'")["normalized_weight"])
+                except:
+                    print(res2)
+                    print(res2type)
+                    print(weight_info.query(f"oneLetterCode == '{res2type}'")["normalized_weight"])
+                density[res1globalindex] += weight*interaction_well(rij, 4.5, 6.5, 5)
+    return density
+
+
 
 def phi_burial_com_well(res_list, neighbor_list, parameter_list):
     kappa = parameter_list[0]
@@ -979,6 +1063,105 @@ def phi_density_mediated_contact_com_well(res_list, neighbor_list, parameter_lis
             for k in range(j, 20):
                 phis_to_return.append(phi_mediated_contact_well[i][j][k])
     return phis_to_return
+
+def calculate_cb_density_com_wellCenter(res_list, neighbor_list, wellCenterInfo, min_seq_sep=2):
+    num_residues = len(res_list)
+    density = np.zeros(num_residues)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, 9.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            if abs(res2index - res1index) >= min_seq_sep or (res1chain != res2chain):
+                res1_name = res1.get_resname()
+                res2_name = res2.get_resname()
+                if res1_name == "GLY" or res2_name == "GLY":
+                    r_min_res1_res2 = 2.5
+                    r_max_res1_res2 = 6.5
+                else:
+                    b = wellCenterInfo.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
+                    if len(b) == 0:
+                        b = wellCenterInfo.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
+                    try:
+                        r_min_res1_res2 = float(b["r_min"]) - 0.5
+                        r_max_res1_res2 = float(b["r_max"]) + 1.5
+                    except:
+                        print(b)
+                rij = get_interaction_distance_com(res1, res2)
+                density[res1globalindex] += interaction_well(rij, r_min_res1_res2, r_max_res1_res2, 5)
+    return density
+
+def phi_density_mediated_contact_com_shift_center_well(res_list, neighbor_list, parameter_list):
+    r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
+    # cb_density = calculate_com_density(res_list, neighbor_list)
+    fixWellCenter = False
+    if not fixWellCenter:
+        a = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
+        cb_density = calculate_cb_density_com_wellCenter(res_list, neighbor_list, a)
+    r_min = float(r_min)
+    r_max = float(r_max)
+    kappa = float(kappa)
+    min_seq_sep = int(min_seq_sep)
+    density_threshold = float(density_threshold)
+    density_kappa = float(density_kappa)
+    phi_mediated_contact_well = np.zeros((2, 20,20))
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            rho_j = cb_density[res2globalindex]
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance_com(res1, res2)
+                if not fixWellCenter:
+                    res1_name = res1.get_resname()
+                    res2_name = res2.get_resname()
+                    if res1_name == "GLY" or res2_name == "GLY":
+                        r_min_res1_res2 = 6.5
+                        r_max_res1_res2 = 9.5
+                    else:
+                        b = a.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
+                        if len(b) == 0:
+                            b = a.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
+                        try:
+                            r_min_res1_res2 = float(b["r_max"]) + 1.5
+                            r_max_res1_res2 = float(b["r_max"]) + 4.5
+                        except:
+                            print(b)
+                    _pij_protein = prot_water_switchFunc_sigmaProt(
+                        rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min_res1_res2, r_max_res1_res2, kappa)
+                    _pij_water = prot_water_switchFunc_sigmaWater(
+                        rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min_res1_res2, r_max_res1_res2, kappa)
+                    phi_mediated_contact_well[0][res1type][res2type] += _pij_protein
+                    phi_mediated_contact_well[1][res1type][res2type] += _pij_water
+                    if not res1type == res2type:
+                        phi_mediated_contact_well[0][res2type][res1type] += _pij_protein
+                        phi_mediated_contact_well[1][res2type][res1type] += _pij_water
+                else:
+                    _pij_protein = prot_water_switchFunc_sigmaProt(
+                        rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
+                    _pij_water = prot_water_switchFunc_sigmaWater(
+                        rho_i, rho_j, density_threshold, density_kappa) * interaction_well(rij, r_min, r_max, kappa)
+                    phi_mediated_contact_well[0][res1type][res2type] += _pij_protein
+                    phi_mediated_contact_well[1][res1type][res2type] += _pij_water
+                    if not res1type == res2type:
+                        phi_mediated_contact_well[0][res2type][res1type] += _pij_protein
+                        phi_mediated_contact_well[1][res2type][res1type] += _pij_water
+    phis_to_return = []
+    for i in range(2):
+        for j in range(20):
+            for k in range(j, 20):
+                phis_to_return.append(phi_mediated_contact_well[i][j][k])
+    return phis_to_return
+
 
 def phi_burial_well(res_list, neighbor_list, parameter_list):
     kappa = parameter_list[0]
@@ -4264,3 +4447,114 @@ def get_filtered_gamma(pre, cutoff, pp):
     filtered_B = np.linalg.inv(filtered_B_inv)
 
     return A, A_prime, filtered_gamma, filtered_B_inv
+
+
+
+def get_contact_gamma_info(gammaFile):
+    # check the gamma.
+    # read in gamma, and sort by size.
+    # gammaFile = "/Users/weilu/Research/server/mar_2020/mass_iterative_optimization/optimization_new_4_withoutBurial/saved_gammas/new_4_cutoff600_impose_Aprime_constraint"
+    gamma = np.loadtxt(gammaFile)
+
+    res_type_map_letters = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G',
+                            'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+
+    inverse_res_type_map = dict(list(zip(list(range(20)), res_type_map_letters)))
+    c = 0
+    info_ = []
+    for i in range(20):
+        for j in range(i, 20):
+            info_.append(["Direct", res_type_map_letters[i], res_type_map_letters[j], c, round(gamma[c],3)])
+            if i != j:
+                info_.append(["Direct", res_type_map_letters[j], res_type_map_letters[i], c, round(gamma[c],3)])
+            c += 1
+    for i in range(20):
+        for j in range(i, 20):
+            info_.append(["Protein", res_type_map_letters[i], res_type_map_letters[j], c, round(gamma[c],3)])
+            if i != j:
+                info_.append(["Protein", res_type_map_letters[j], res_type_map_letters[i], c, round(gamma[c],3)])
+            info_.append(["Water", res_type_map_letters[i], res_type_map_letters[j], c+210, round(gamma[c+210],3)])
+            if i != j:
+                info_.append(["Water", res_type_map_letters[j], res_type_map_letters[i], c+210, round(gamma[c+210],3)])
+            c += 1
+    contact_gammas = pd.DataFrame(info_, columns=["Interaction", "Res1", "Res2", "Index", "Gamma"])
+    return contact_gammas
+
+def get_interaction_data(structure):
+    # get all the pair of interaction, direct and mediated. as a dataFrame.
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    sequence = get_sequence_from_structure(structure)
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    r_min_direct = 2.5
+    r_max_direct = 6.5
+    r_min = 6.5
+    r_max = 9.5
+    kappa = 5.0
+    min_seq_sep = 10
+    density_threshold = 2.6
+    density_kappa = 7.0
+    # phi_mediated_contact_well = np.zeros((2, 20,20))
+    v_mediated = 0
+    data_ = []
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            rho_j = cb_density[res2globalindex]
+
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance(res1, res2)
+                theta = interaction_well(rij, r_min, r_max, kappa)
+                water_theta = prot_water_switchFunc_sigmaWater(rho_i, rho_j, density_threshold, density_kappa) * theta
+                protein_theta = prot_water_switchFunc_sigmaProt(rho_i, rho_j, density_threshold, density_kappa) * theta
+                data_.append([res1.resname, res2.resname, "Protein", round(protein_theta, 3), res1globalindex, res2globalindex])
+                data_.append([res1.resname, res2.resname, "Water", round(water_theta, 3), res1globalindex, res2globalindex])
+                direct_theta = interaction_well(rij, r_min_direct, r_max_direct, kappa)
+                data_.append([res1.resname, res2.resname, "Direct", round(direct_theta, 3), res1globalindex, res2globalindex])
+                # protein_gamma = protein_gamma_ijm[0][res1type][res2type]*k_hypercharge
+                # water_gamma = water_gamma_ijm[0][res1type][res2type]*k_hypercharge
+    data = pd.DataFrame(data_, columns=["Res1", "Res2", "Type", "Theta", "Index1", "Index2"])
+
+    # contact_gammas["Res1"] = contact_gammas.apply(lambda x: one_to_three(x["Res1"]), axis=1)
+    # contact_gammas["Res2"] = contact_gammas.apply(lambda x: one_to_three(x["Res2"]), axis=1)
+    # contact_gammas["Type"] = contact_gammas["Interaction"]
+    # a = data.merge(contact_gammas, on=["Res1", "Res2", "Type"])
+    # a["theta_gamma"] = a["Theta"] * a["Gamma"]
+    return data
+
+def get_predicted_side_chain_state(model, seq, gmm_dic, verbose=True):
+    info_ = []
+    for res in model.get_residues():
+        # if res.get_full_id()[1] != 0:
+        #     continue
+        # x_com = get_side_chain_center_of_mass(res)
+        # resname = res.resname
+        resname = one_to_three(seq[res.id[1]-1])
+        if resname == "GLY":
+            continue
+        try:
+            n = res["N"].get_coord()
+            ca = res["CA"].get_coord()
+            c = res["C"].get_coord()
+        except:
+            if verbose:
+                print("normal? ", res)
+            continue
+        x_com = res["CB"].get_coord()
+        x = np.array([dis(x_com, n), dis(x_com, ca), dis(x_com, c)])
+        r_ca_com = dis(x_com, ca)
+    #     resname = "TYR"
+        if resname == "GLY":
+            prediction = [0, 0, 0]
+        else:
+            prediction = gmm_dic[resname].predict_proba(np.array(x).reshape(1, -1))[0].round(3)
+        info_.append([res.id[1], resname, np.argmax(prediction), prediction[0], prediction[1], prediction[2]])
+    data = pd.DataFrame(info_, columns=["index", "ResType", "inState", "state1", "state2", "state3"])
+    return data

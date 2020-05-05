@@ -73,7 +73,7 @@ def gamma_format_convertion_iteration_to_simulation(iteration_gamma, gamma_for_s
                 # protein, water
                 out.write(f"{gamma[c]:<.5f} {gamma[c+210]:10.5f}\n")
                 c += 1
-    if burial_gamma_for_simulation:
+    if burial_gamma_for_simulation and len(gamma)==690:
         rhoGamma = pd.DataFrame(gamma[630:690].reshape(3,20).T, columns=["rho1", "rho2", "rho3"]).reset_index()
         rhoGamma["oneLetter"] = rhoGamma["index"].apply(lambda x: inverse_res_type_map[x])
         rhoGamma["Residue"] = rhoGamma["index"].apply(lambda x: one_to_three(inverse_res_type_map[x]))
