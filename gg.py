@@ -148,6 +148,20 @@ def get_aligned_info(p1, p2):
     # print(aligned_length, rmsd, tmscore, seqid)
     return aligned_length, rmsd, tmscore, seqid
 
+if args.day == "may05":
+    if args.mode == 1:
+        pdb_list = ["6ud8"]
+        cleanPdb(pdb_list, source="./", addMissingResidues=True, toFolder="cleaned_pdbs/", chain="E", formatName=False, removeTwoEndsMissingResidues=True)
+    if args.mode == 2:
+        do(f"mm_create_project.py ../source/chainE_no_filling.pdb --extended --frag")
+    if args.mode == 3:
+        pre = "./chainE_no_filling"
+        pdb = "chainE_no_filling"
+        original_openAWSEM_input = f"{pre}/{pdb}-openmmawsem.pdb"
+        new_openAWSEM_input = f"{pre}/cbd-openmmawsem.pdb"
+        all_atom_pdb_file = f"{pre}/crystal_structure-cleaned.pdb"
+        replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file)
+
 if args.day == "apr29":
     if args.mode == 1:
         # pre = "/Users/weilu/Research/server/feb_2020/casp13_targets/setups/T0953s2-D1"
@@ -157,6 +171,14 @@ if args.day == "apr29":
         new_openAWSEM_input = f"{pre}/cbd-openmmawsem.pdb"
         all_atom_pdb_file = f"{pre}/crystal_structure-cleaned.pdb"
         replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file)
+
+        fromFile = f"{pre}/crystal_structure.pdb"
+        toFile = f"{pre}/cbd_{pdb}.pdb"
+        convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+        cmd = f"python ~/openmmawsem/helperFunctions/Pdb2Gro.py {pre}/cbd_{pdb}.pdb {pre}/cbd_{pdb}.gro"
+        do(cmd)
+        do(f"cp {pre}/single_frags.mem {pre}/cbd_single_frags.mem")
+        replace(f"{pre}/cbd_single_frags.mem", pdb, f"cbd_{pdb}")
 
 if args.day == "mar06":
     data = pd.read_csv("training_set.csv")
