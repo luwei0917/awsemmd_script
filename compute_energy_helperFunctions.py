@@ -45,7 +45,7 @@ def read_gamma(gammaFile):
     return gamma_direct, gamma_mediated
 
 def change_gamma_format(gamma_direct, gamma_mediated):
-    nwell = 1
+    nwell = 2
     gamma_ijm = np.zeros((nwell, 20, 20))
     water_gamma_ijm = np.zeros((nwell, 20, 20))
     protein_gamma_ijm = np.zeros((nwell, 20, 20))
@@ -53,8 +53,10 @@ def change_gamma_format(gamma_direct, gamma_mediated):
     count = 0
     for i in range(20):
         for j in range(i, 20):
-            gamma_ijm[m][i][j] = gamma_direct[count][0]
-            gamma_ijm[m][j][i] = gamma_direct[count][0]
+            gamma_ijm[0][i][j] = gamma_direct[count][0]
+            gamma_ijm[0][j][i] = gamma_direct[count][0]
+            gamma_ijm[1][i][j] = gamma_direct[count][1]
+            gamma_ijm[1][j][i] = gamma_direct[count][1]
             count += 1
     count = 0
     for i in range(20):
@@ -257,8 +259,10 @@ def compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, kappa=5.0, h
                     v_mediated += (_pij_protein + _pij_water) * interaction_well(rij, r_min, r_max, kappa)
     return v_mediated
 
+
+
 input_pdb_filename = "/Users/weilu/Research/server_backup/jan_2019/compute_energy/12asA00"
-def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False, r_min=2.5, fixWellCenter=True):
+def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False, r_min=2.5, fixWellCenter=True, environment=False):
     if hasPhosphorylation:
         import configparser
         config = configparser.ConfigParser()
@@ -268,9 +272,25 @@ def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False, r_
         phosphorylated_residue_seq = eval(config['phosphorylation']['phosphorylated_residue_seq'])
         # print(m, phosphorylated_residue_index, phosphorylated_residue_seq)
         # print(res_type_map['E'])
+
     res_list = get_res_list(structure)
     neighbor_list = get_neighbor_list(structure)
     sequence = get_sequence_from_structure(structure)
+
+    if environment:
+        isH = {}
+        isP = {}
+        for i in range(20):
+            isH[dindex_to_1[i]] = res_type_map_HP[dindex_to_1[i]]
+            isP[dindex_to_1[i]] = 1 - res_type_map_HP[dindex_to_1[i]]
+        cbd_info = pd.read_csv("/Users/weilu/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
+        density_H = calculate_property_density_with_cbd_info(res_list, neighbor_list, isH, cbd_info).round(3)
+        density_P = calculate_property_density_with_cbd_info(res_list, neighbor_list, isP, cbd_info).round(3)
+        # print(density_H)
+        # print(density_P)
+        # print(isH, isP)
+        density_kappa = 1
+        d_HP0 = 0
     # r_min = 4.5
     r_max = 6.5
     # kappa = 5
@@ -282,6 +302,7 @@ def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False, r_
     for res1globalindex, res1 in enumerate(res_list):
         res1index = get_local_index(res1)
         res1chain = get_chain(res1)
+
         # print(get_interaction_atom(res1).get_vector()[2], type(get_interaction_atom(res1).get_vector()[2]))
         for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
             res2index = get_local_index(res2)
@@ -318,9 +339,24 @@ def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False, r_
                             print(b)
                     # r_min_res1_res2 = 2.5
                     # r_max_res1_res2 = 6.5
-                    v_direct += gamma * interaction_well(rij, r_min_res1_res2, r_max_res1_res2, kappa)
                 else:
-                    v_direct += gamma * interaction_well(rij, r_min, r_max, kappa)
+                    r_max_res1_res2 = r_min
+                    r_max_res1_res2 = r_max
+                if environment:
+                    d_H_i = density_H[res1globalindex]
+                    d_P_i = density_P[res1globalindex]
+                    d_H_j = density_H[res2globalindex]
+                    d_P_j = density_P[res2globalindex]
+                    d_H = d_H_i + d_H_j
+                    d_P = d_P_i + d_P_j
+                    sigma_H = 0.5 * np.tanh(density_kappa * (d_H - d_P - d_HP0)) + 0.5
+                    sigma_P = 1 - sigma_H
+                    gamma_H = gamma_ijm[0][res1type][res2type]
+                    gamma_P = gamma_ijm[1][res1type][res2type]
+                    theta = interaction_well(rij, r_min_res1_res2, r_max_res1_res2, kappa)
+                    v_direct += (gamma_H * sigma_H + gamma_P * sigma_P) * theta
+                else:
+                    v_direct += gamma * interaction_well(rij, r_min_res1_res2, r_max_res1_res2, kappa)
     return v_direct
 
 
@@ -972,7 +1008,7 @@ def get_side_chain_center_of_mass(atoms):
     x_com = total / total_mass
     return x_com
 
-def compute_side_chain_exclude_volume_energy(structure, fileLocation='/Users/weilu/Research/server/mar_2020/cmd_cmd_exclude_volume/cbd_cbd_real_contact_symmetric.csv'):
+def compute_side_chain_exclude_volume_energy(structure, fileLocation='./cbd_cbd_real_contact_symmetric.csv'):
     gamma_se_map_1_letter = {   'A': 0,  'R': 1,  'N': 2,  'D': 3,  'C': 4,
                                 'Q': 5,  'E': 6,  'G': 7,  'H': 8,  'I': 9,
                                 'L': 10, 'K': 11, 'M': 12, 'F': 13, 'P': 14,
@@ -1009,4 +1045,5 @@ def compute_side_chain_exclude_volume_energy(structure, fileLocation='/Users/wei
             if r_max - r_min < 0.1:
                 print(res1, res2, r_max, r_min)
             e += np.heaviside(r_max-r, 0)*((r-r_max)/(r_max-r_min))**2
+        print(res1, cbd_1)
     return e

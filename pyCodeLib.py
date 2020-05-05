@@ -32,7 +32,9 @@ from cycler import cycler
 # For Biopython
 from Bio.PDB import *
 from Bio.PDB.Polypeptide import one_to_three, three_to_one
-
+from Bio.PDB.Polypeptide import d1_to_index
+from Bio.PDB.Polypeptide import dindex_to_1
+from Bio.PDB.Polypeptide import aa3
 
 ##########
 
@@ -860,9 +862,10 @@ def phi_pairwise_contact_com_well(res_list, neighbor_list, parameter_list):
     return phis_to_return
 
 def phi_pairwise_contact_com_shift_center_well(res_list, neighbor_list, parameter_list):
-    fixWellCenter = False
-    if not fixWellCenter:
-        a = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
+    # fixWellCenter = False
+    # if not fixWellCenter:
+    #     a = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
+    #     a = cbd_info
     r_min, r_max, kappa, min_seq_sep = parameter_list
     r_min = float(r_min)
     r_max = float(r_max)
@@ -888,9 +891,9 @@ def phi_pairwise_contact_com_shift_center_well(res_list, neighbor_list, paramete
                         r_min_res1_res2 = 2.5
                         r_max_res1_res2 = 6.5
                     else:
-                        b = a.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
+                        b = cbd_info.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
                         if len(b) == 0:
-                            b = a.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
+                            b = cbd_info.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
                         try:
                             r_min_res1_res2 = float(b["r_min"]) - 0.5
                             r_max_res1_res2 = float(b["r_max"]) + 1.5
@@ -908,6 +911,81 @@ def phi_pairwise_contact_com_shift_center_well(res_list, neighbor_list, paramete
     for i in range(20):
         for j in range(i, 20):
             phis_to_return.append(round(phi_pairwise_contact_well[i][j],4))
+    return phis_to_return
+
+
+
+def phi_pairwise_contact_environment_com_shift_center_well(res_list, neighbor_list, parameter_list):
+    isH = {}
+    isP = {}
+    for i in range(20):
+        isH[dindex_to_1[i]] = 1 - res_type_map_HP[dindex_to_1[i]]
+        isP[dindex_to_1[i]] = res_type_map_HP[dindex_to_1[i]]
+        # isH[dindex_to_1[i]] = res_type_map_HP[dindex_to_1[i]]
+        # isP[dindex_to_1[i]] = 1 - res_type_map_HP[dindex_to_1[i]]
+    # cbd_info = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
+    # cbd_info = globals()["cbd_info"]
+    density_H = calculate_property_density_with_cbd_info(res_list, neighbor_list, isH, cbd_info).round(3)
+    density_P = calculate_property_density_with_cbd_info(res_list, neighbor_list, isP, cbd_info).round(3)
+    # print("phi_pairwise_contact_environment_com_shift_center_well")
+    # print(density_H)
+    # print(density_P)
+    r_min, r_max, kappa, min_seq_sep, d_HP0 = parameter_list
+    r_min = float(r_min)
+    r_max = float(r_max)
+    kappa = float(kappa)
+    min_seq_sep = int(min_seq_sep)
+    density_kappa = 1
+    d_HP0 = float(d_HP0)
+    # d_HP0 = 5.0
+    phi_pairwise_contact_environment_well = np.zeros((2,20,20))
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        d_H_i = density_H[res1globalindex]
+        d_P_i = density_P[res1globalindex]
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            d_H_j = density_H[res2globalindex]
+            d_P_j = density_P[res2globalindex]
+            # if res2index - res1index >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance_com(res1, res2)
+
+                res1_name = res1.get_resname()
+                res2_name = res2.get_resname()
+                if res1_name == "GLY" or res2_name == "GLY":
+                    r_min_res1_res2 = 2.5
+                    r_max_res1_res2 = 6.5
+                else:
+                    b = cbd_info.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
+                    if len(b) == 0:
+                        b = cbd_info.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
+                    try:
+                        r_min_res1_res2 = float(b["r_min"]) - 0.5
+                        r_max_res1_res2 = float(b["r_max"]) + 1.5
+                    except:
+                        print("problem", b)
+                d_H = d_H_i + d_H_j
+                d_P = d_P_i + d_P_j
+                sigma_H = 0.5 * np.tanh(density_kappa * (d_H - d_P - d_HP0)) + 0.5
+                sigma_P = 1 - sigma_H
+                theta = interaction_well(rij, r_min_res1_res2, r_max_res1_res2, kappa)
+                phi_pairwise_contact_environment_well[0][res1type][res2type] += sigma_H * theta
+                phi_pairwise_contact_environment_well[1][res1type][res2type] += sigma_P * theta
+                if not res1type == res2type:
+                    phi_pairwise_contact_environment_well[0][res2type][res1type] += sigma_H * theta
+                    phi_pairwise_contact_environment_well[1][res2type][res1type] += sigma_P * theta
+
+    phis_to_return = []
+    for ii in range(2):
+        for i in range(20):
+            for j in range(i, 20):
+                phis_to_return.append(round(phi_pairwise_contact_environment_well[ii][i][j],4))
     return phis_to_return
 
 
@@ -1022,6 +1100,31 @@ def phi_burial_com_well(res_list, neighbor_list, parameter_list):
             phis_to_return.append(phi_burial[i][j])
     return phis_to_return
 
+def phi_burial_com_shift_center_well(res_list, neighbor_list, parameter_list):
+    # only differnt with phi_burial_com_well is cb_density
+    kappa = parameter_list[0]
+    kappa = float(kappa)
+
+    cb_density = calculate_cb_density_com_wellCenter(res_list, neighbor_list, cbd_info)
+
+    phi_burial = np.zeros((3, 20))
+    rho_table = [[0.0, 3.0], [3.0, 6.0], [6.0, 9.0]]
+    for i in range(3):
+        for res1globalindex, res1 in enumerate(res_list):
+            res1index = get_local_index(res1)
+            res1chain = get_chain(res1)
+            res1type = get_res_type(res_list, res1)
+            res1density = cb_density[res1globalindex]
+            # print res1globalindex, res1index, res1chain, res1type, res1density
+            burial_i = interaction_well(res1density, rho_table[i][0], rho_table[i][1], kappa)
+            phi_burial[i][res1type] += burial_i
+
+    phis_to_return = []
+    for i in range(3):
+        for j in range(20):
+            phis_to_return.append(phi_burial[i][j])
+    return phis_to_return
+
 
 def phi_density_mediated_contact_com_well(res_list, neighbor_list, parameter_list):
     r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
@@ -1098,8 +1201,9 @@ def phi_density_mediated_contact_com_shift_center_well(res_list, neighbor_list, 
     # cb_density = calculate_com_density(res_list, neighbor_list)
     fixWellCenter = False
     if not fixWellCenter:
-        a = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
-        cb_density = calculate_cb_density_com_wellCenter(res_list, neighbor_list, a)
+        # a = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
+        cb_density = calculate_cb_density_com_wellCenter(res_list, neighbor_list, cbd_info)
+
     r_min = float(r_min)
     r_max = float(r_max)
     kappa = float(kappa)
@@ -1128,9 +1232,9 @@ def phi_density_mediated_contact_com_shift_center_well(res_list, neighbor_list, 
                         r_min_res1_res2 = 6.5
                         r_max_res1_res2 = 9.5
                     else:
-                        b = a.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
+                        b = cbd_info.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
                         if len(b) == 0:
-                            b = a.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
+                            b = cbd_info.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
                         try:
                             r_min_res1_res2 = float(b["r_max"]) + 1.5
                             r_max_res1_res2 = float(b["r_max"]) + 4.5
@@ -2576,7 +2680,8 @@ def evaluate_phis_over_training_set_for_decoy_structures_Wei(training_set_file, 
 #         function_to_evaluate, arguments_lists, num_processors)
 #     # for protein in training_set:
 #     #   evaluate_phis_for_protein(protein, phi_list, decoy_method, max_decoys, tm_only=tm_only)
-
+if os.path.exists("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv"):
+    cbd_info = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
 def evaluate_phis_for_protein_Wei(protein, phi_list, decoy_method, max_decoys, multi_seq=False, tm_only=False, sampleK=1000, separateDecoysNum=-1):
         print(protein)
         structure = parse_pdb(os.path.join(structures_directory,protein))
@@ -3700,6 +3805,12 @@ def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_me
     total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
         phi_list, training_set, **kwargs)
     print("Size of phis", total_phis)
+    if not read and withBiased:
+        phi_i_protein_i_decoyQ = np.zeros(
+            (len(training_set), num_decoys, 1))
+        for i_protein, protein in enumerate(training_set):
+            phi_i_protein_i_decoyQ[i_protein] = read_decoyQ_phis(
+                protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, decoyBiasName=decoyBiasName, jackhmmer=jackhmmer, **kwargs)
     if read:
         print("reading native")
         os.system("echo 'Reading native' >> log")
@@ -3712,6 +3823,17 @@ def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_me
         for i_protein, protein in enumerate(training_set):
             phi_native_i_protein[i_protein] = read_native_phi(
                 protein, phi_list, total_phis, jackhmmer=jackhmmer, **kwargs)
+        if withBiased:
+            if oneMinus:
+                phi_native_i_protein *= 1 - np.average(phi_i_protein_i_decoyQ, axis=1)
+                normalization = np.sum(1 - np.average(phi_i_protein_i_decoyQ, axis=1))
+            else:
+                phi_native_i_protein *= np.average(phi_i_protein_i_decoyQ, axis=1)
+                normalization = np.sum(np.average(phi_i_protein_i_decoyQ, axis=1))
+        else:
+            normalization = len(training_set)
+
+        phi_native_i_protein *= (len(training_set) / normalization)
         phi_native = np.average(phi_native_i_protein, axis=0)
 
         # Output to a file;
@@ -3738,14 +3860,10 @@ def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_me
             (len(training_set), num_decoys, total_phis))
 
         for i_protein, protein in enumerate(training_set):
+            print(i_protein, protein)
             phi_i_protein_i_decoy[i_protein] = read_decoy_phis(
                 protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=jackhmmer, **kwargs)
         if withBiased:
-            phi_i_protein_i_decoyQ = np.zeros(
-                (len(training_set), num_decoys, 1))
-            for i_protein, protein in enumerate(training_set):
-                phi_i_protein_i_decoyQ[i_protein] = read_decoyQ_phis(
-                    protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, decoyBiasName=decoyBiasName, jackhmmer=jackhmmer, **kwargs)
             if oneMinus:
                 phi_i_protein_i_decoy *= 1 - phi_i_protein_i_decoyQ
                 normalization = np.sum(1 - phi_i_protein_i_decoyQ)
@@ -4507,20 +4625,24 @@ def get_interaction_data(structure):
             res2globalindex = get_global_index(res_list, res2)
             rho_j = cb_density[res2globalindex]
 
-            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            # if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if abs(res2globalindex - res1globalindex) >= min_seq_sep or (res1chain != res2chain):
+                if res1.resname == res2.resname:
+                    if not (res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex)):
+                        continue
                 res1type = get_res_type(res_list, res1)
                 res2type = get_res_type(res_list, res2)
                 rij = get_interaction_distance(res1, res2)
                 theta = interaction_well(rij, r_min, r_max, kappa)
                 water_theta = prot_water_switchFunc_sigmaWater(rho_i, rho_j, density_threshold, density_kappa) * theta
                 protein_theta = prot_water_switchFunc_sigmaProt(rho_i, rho_j, density_threshold, density_kappa) * theta
-                data_.append([res1.resname, res2.resname, "Protein", round(protein_theta, 3), res1globalindex, res2globalindex])
-                data_.append([res1.resname, res2.resname, "Water", round(water_theta, 3), res1globalindex, res2globalindex])
+                data_.append([res1.resname, res2.resname, "Protein", round(protein_theta, 3), res1globalindex, res2globalindex, rij, res1index, res2index])
+                data_.append([res1.resname, res2.resname, "Water", round(water_theta, 3), res1globalindex, res2globalindex, rij, res1index, res2index])
                 direct_theta = interaction_well(rij, r_min_direct, r_max_direct, kappa)
-                data_.append([res1.resname, res2.resname, "Direct", round(direct_theta, 3), res1globalindex, res2globalindex])
+                data_.append([res1.resname, res2.resname, "Direct", round(direct_theta, 3), res1globalindex, res2globalindex, rij, res1index, res2index])
                 # protein_gamma = protein_gamma_ijm[0][res1type][res2type]*k_hypercharge
                 # water_gamma = water_gamma_ijm[0][res1type][res2type]*k_hypercharge
-    data = pd.DataFrame(data_, columns=["Res1", "Res2", "Type", "Theta", "Index1", "Index2"])
+    data = pd.DataFrame(data_, columns=["Res1", "Res2", "Type", "Theta", "Index1", "Index2", "r", "ResId1", "ResId2"])
 
     # contact_gammas["Res1"] = contact_gammas.apply(lambda x: one_to_three(x["Res1"]), axis=1)
     # contact_gammas["Res2"] = contact_gammas.apply(lambda x: one_to_three(x["Res2"]), axis=1)
@@ -4528,6 +4650,96 @@ def get_interaction_data(structure):
     # a = data.merge(contact_gammas, on=["Res1", "Res2", "Type"])
     # a["theta_gamma"] = a["Theta"] * a["Gamma"]
     return data
+
+def calculate_property_density(res_list, neighbor_list, propertyTable, min_seq_sep=2, rmin=2.5):
+    num_residues = len(res_list)
+    density = np.zeros(num_residues)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, 9.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            if abs(res2index - res1index) >= min_seq_sep or (res1chain != res2chain):
+                rij = get_interaction_distance(res1, res2)
+                hasProperty = propertyTable[three_to_one(res2.resname)]
+                density[res1globalindex] += hasProperty * interaction_well(rij, rmin, 6.5, 5)
+    return density
+
+def get_environment(structure):
+    res_type_map_HP = {
+        'C': 0,
+        'M': 0,
+        'F': 0,
+        'I': 0,
+        'L': 0,
+        'V': 0,
+        'W': 0,
+        'Y': 0,
+        'A': 1,
+        'H': 1,
+        'T': 1,
+        'G': 1,
+        'P': 1,
+        'D': 1,
+        'E': 1,
+        'N': 1,
+        'Q': 1,
+        'R': 1,
+        'K': 1,
+        'S': 1
+    }
+    isH = {}
+    isP = {}
+    for i in range(20):
+        isH[dindex_to_1[i]] = res_type_map_HP[dindex_to_1[i]]
+        isP[dindex_to_1[i]] = 1 - res_type_map_HP[dindex_to_1[i]]
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    sequence = get_sequence_from_structure(structure)
+    density_H = calculate_property_density(res_list, neighbor_list, isH).round(3)
+    density_P = calculate_property_density(res_list, neighbor_list, isP).round(3)
+    environment_info = pd.DataFrame([density_H, density_P], index=["Density_H", "Density_P"]).T.reset_index()
+    return environment_info
+
+
+
+def get_environment(structure):
+    res_type_map_HP = {
+        'C': 0,
+        'M': 0,
+        'F': 0,
+        'I': 0,
+        'L': 0,
+        'V': 0,
+        'W': 0,
+        'Y': 0,
+        'A': 1,
+        'H': 1,
+        'T': 1,
+        'G': 1,
+        'P': 1,
+        'D': 1,
+        'E': 1,
+        'N': 1,
+        'Q': 1,
+        'R': 1,
+        'K': 1,
+        'S': 1
+    }
+    isH = {}
+    isP = {}
+    for i in range(20):
+        isH[dindex_to_1[i]] = res_type_map_HP[dindex_to_1[i]]
+        isP[dindex_to_1[i]] = 1 - res_type_map_HP[dindex_to_1[i]]
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    sequence = get_sequence_from_structure(structure)
+    density_H = calculate_property_density(res_list, neighbor_list, isH).round(3)
+    density_P = calculate_property_density(res_list, neighbor_list, isP).round(3)
+    environment_info = pd.DataFrame([density_H, density_P], index=["Density_H", "Density_P"]).T.reset_index()
+    return environment_info
 
 def get_predicted_side_chain_state(model, seq, gmm_dic, verbose=True):
     info_ = []
@@ -4555,6 +4767,180 @@ def get_predicted_side_chain_state(model, seq, gmm_dic, verbose=True):
             prediction = [0, 0, 0]
         else:
             prediction = gmm_dic[resname].predict_proba(np.array(x).reshape(1, -1))[0].round(3)
-        info_.append([res.id[1], resname, np.argmax(prediction), prediction[0], prediction[1], prediction[2]])
-    data = pd.DataFrame(info_, columns=["index", "ResType", "inState", "state1", "state2", "state3"])
+        info_.append([res.id[1], resname, np.argmax(prediction), prediction[0], prediction[1], prediction[2], x[0], x[1], x[2]])
+    data = pd.DataFrame(info_, columns=["index", "ResName", "inState", "state1", "state2", "state3", "r1", "r2", "r3"])
     return data
+
+
+
+def get_r_min_max(a, res1, res2, type="Direct"):
+    res1_name = res1.get_resname()
+    res2_name = res2.get_resname()
+    if type == "Direct":
+        if res1_name == "GLY" or res2_name == "GLY":
+            r_min_res1_res2 = 2.5
+            r_max_res1_res2 = 6.5
+        else:
+            b = a.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
+            if len(b) == 0:
+                b = a.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
+            try:
+                r_min_res1_res2 = float(b["r_min"]) - 0.5
+                r_max_res1_res2 = float(b["r_max"]) + 1.5
+            except:
+                print("problem", b)
+    else:
+        if res1_name == "GLY" or res2_name == "GLY":
+            r_min_res1_res2 = 6.5
+            r_max_res1_res2 = 9.5
+        else:
+            b = a.query(f"ResName1=='{res1_name}' and ResName2=='{res2_name}'")
+            if len(b) == 0:
+                b = a.query(f"ResName1=='{res2_name}' and ResName2=='{res1_name}'")
+            try:
+                r_min_res1_res2 = float(b["r_max"]) + 1.5
+                r_max_res1_res2 = float(b["r_max"]) + 4.5
+            except:
+                print(b)
+    return r_min_res1_res2, r_max_res1_res2
+
+
+def get_interaction_data_with_cbd_info(structure, cbd_info):
+    # get all the pair of interaction, direct and mediated. as a dataFrame.
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    sequence = get_sequence_from_structure(structure)
+    # cb_density = calculate_cb_density(res_list, neighbor_list)
+    cb_density = calculate_cb_density_com_wellCenter(res_list, neighbor_list, cbd_info)
+    r_min_direct = 2.5
+    r_max_direct = 6.5
+    r_min = 6.5
+    r_max = 9.5
+    kappa = 5.0
+    min_seq_sep = 10
+    density_threshold = 2.6
+    density_kappa = 7.0
+    # phi_mediated_contact_well = np.zeros((2, 20,20))
+    v_mediated = 0
+    data_ = []
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+4.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            rho_j = cb_density[res2globalindex]
+
+            # if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+            if abs(res2globalindex - res1globalindex) >= min_seq_sep or (res1chain != res2chain):
+                if res1.resname == res2.resname:
+                    if not (res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex)):
+                        continue
+                res1type = get_res_type(res_list, res1)
+                res2type = get_res_type(res_list, res2)
+                rij = get_interaction_distance(res1, res2)
+                # theta = interaction_well(rij, r_min, r_max, kappa)
+                r_min_res1_res2, r_max_res1_res2 = get_r_min_max(cbd_info, res1, res2, type="Mediated")
+                theta = interaction_well(rij, r_min_res1_res2, r_max_res1_res2, kappa)
+
+                water_theta = prot_water_switchFunc_sigmaWater(rho_i, rho_j, density_threshold, density_kappa) * theta
+                protein_theta = prot_water_switchFunc_sigmaProt(rho_i, rho_j, density_threshold, density_kappa) * theta
+                data_.append([res1.resname, res2.resname, "Protein", round(protein_theta, 3), res1globalindex, res2globalindex, rij, res1index, res2index])
+                data_.append([res1.resname, res2.resname, "Water", round(water_theta, 3), res1globalindex, res2globalindex, rij, res1index, res2index])
+                r_min_res1_res2, r_max_res1_res2 = get_r_min_max(cbd_info, res1, res2, type="Direct")
+                direct_theta = interaction_well(rij, r_min_res1_res2, r_max_res1_res2, kappa)
+                data_.append([res1.resname, res2.resname, "Direct", round(direct_theta, 3), res1globalindex, res2globalindex, rij, res1index, res2index])
+                # protein_gamma = protein_gamma_ijm[0][res1type][res2type]*k_hypercharge
+                # water_gamma = water_gamma_ijm[0][res1type][res2type]*k_hypercharge
+    data = pd.DataFrame(data_, columns=["Res1", "Res2", "Type", "Theta", "Index1", "Index2", "r", "ResId1", "ResId2"])
+
+    # contact_gammas["Res1"] = contact_gammas.apply(lambda x: one_to_three(x["Res1"]), axis=1)
+    # contact_gammas["Res2"] = contact_gammas.apply(lambda x: one_to_three(x["Res2"]), axis=1)
+    # contact_gammas["Type"] = contact_gammas["Interaction"]
+    # a = data.merge(contact_gammas, on=["Res1", "Res2", "Type"])
+    # a["theta_gamma"] = a["Theta"] * a["Gamma"]
+    return data
+
+
+def calculate_property_density_with_cbd_info(res_list, neighbor_list, propertyTable, cbd_info, useCOM=True, min_seq_sep=2, rmin=2.5):
+    num_residues = len(res_list)
+    density = np.zeros(num_residues)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, 9.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            if abs(res2index - res1index) >= min_seq_sep or (res1chain != res2chain):
+                if useCOM:
+                    rij = get_interaction_distance_com(res1, res2)
+                else:
+                    rij = get_interaction_distance(res1, res2)
+                hasProperty = propertyTable[three_to_one(res2.resname)]
+                r_min_res1_res2, r_max_res1_res2 = get_r_min_max(cbd_info, res1, res2, type="Direct")
+                density[res1globalindex] += hasProperty * interaction_well(rij, r_min_res1_res2, r_max_res1_res2, 5)
+    return density
+
+def get_environment_with_cbd_info(structure, cbd_info):
+    res_type_map_HP = {
+        'C': 0,
+        'M': 0,
+        'F': 0,
+        'I': 0,
+        'L': 0,
+        'V': 0,
+        'W': 0,
+        'Y': 0,
+        'A': 1,
+        'H': 1,
+        'T': 1,
+        'G': 1,
+        'P': 1,
+        'D': 1,
+        'E': 1,
+        'N': 1,
+        'Q': 1,
+        'R': 1,
+        'K': 1,
+        'S': 1
+    }
+    isH = {}
+    isP = {}
+    for i in range(20):
+        isH[dindex_to_1[i]] = 1 - res_type_map_HP[dindex_to_1[i]]
+        isP[dindex_to_1[i]] = res_type_map_HP[dindex_to_1[i]]
+        # isH[dindex_to_1[i]] = res_type_map_HP[dindex_to_1[i]]
+        # isP[dindex_to_1[i]] = 1 - res_type_map_HP[dindex_to_1[i]]
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    sequence = get_sequence_from_structure(structure)
+    density_H = calculate_property_density_with_cbd_info(res_list, neighbor_list, isH, cbd_info).round(3)
+    density_P = calculate_property_density_with_cbd_info(res_list, neighbor_list, isP, cbd_info).round(3)
+    environment_info = pd.DataFrame([density_H, density_P], index=["Density_H", "Density_P"]).T.reset_index()
+    return environment_info
+
+def get_environment_with_cbd_info_complete(structure, cbd_info):
+    isRes = []
+    for i in range(20):
+        isRes_i = {}
+        for j in range(20):
+            if i == j:
+                isRes_i[dindex_to_1[j]] = 1
+            else:
+                isRes_i[dindex_to_1[j]] = 0
+        isRes.append(isRes_i)
+
+    res_list = get_res_list(structure)
+    neighbor_list = get_neighbor_list(structure)
+    sequence = get_sequence_from_structure(structure)
+    density_resType_list = []
+    index_list = []
+    for i in range(20):
+        density_resType_i = calculate_property_density_with_cbd_info(res_list, neighbor_list, isRes[i], cbd_info).round(3)
+        density_resType_list.append(density_resType_i)
+        index_list.append("Density_" + dindex_to_1[i])
+    environment_info = pd.DataFrame(density_resType_list, index=index_list).T.reset_index()
+    return environment_info

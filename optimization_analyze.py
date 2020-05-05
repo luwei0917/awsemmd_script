@@ -24,7 +24,7 @@ parser.add_argument("name", help="name of gamma")
 parser.add_argument("-c", "--constant", type=float, default=0)
 parser.add_argument("--proteinList", type=str, default="protein_list")
 parser.add_argument("--gammaFile", type=str, default="/home/wl45/opt/parameters/original_gamma")
-
+parser.add_argument("-m", "--mode", type=int, default=0)
 # parser.add_argument("-l", "--label", type=str, default="label")
 args = parser.parse_args()
 
@@ -205,5 +205,5 @@ for cutoff_i in cutoff_list:
     np.savetxt(f"{save_gamma_pre}/{trial_name}_cutoff{cutoff_i}_impose_Aprime_constraint", gamma_new)
 
     name = f"{save_gamma_pre}/{trial_name}_cutoff{cutoff_i}_impose_Aprime_constraint"
-    cmd = f"convert_to_simulation_format.py {name} Oct26_{name}"
+    cmd = f"convert_to_simulation_format.py {name} Oct26_{name} -m {args.mode}"
     do(cmd)
