@@ -142,7 +142,7 @@ for i in range(0, n+1):
     sigma_sq.append(sigma[-1]*sigma[-1])
 
 if len(ca_atoms_pdb_2)>0:
-    q = computeQ()
+    q = computeQ(ca_atoms_pdb, ca_atoms_pdb_2)
     # print str(round(q,3)),
     sys.stdout.write(str(round(q,3)) + " ")
     n_atoms = len(ca_atoms_pdb_2)

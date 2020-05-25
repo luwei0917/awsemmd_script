@@ -387,6 +387,20 @@ if args.day == "may06":
         for p in pdb_list:
             pdb = p.lower()
             do(f"cp cleaned/{pdb}_clean.pdb chosen/")
+if args.day == "may22":
+    if args.mode == 1:
+        pdb_list = ["1akr", "1opd", "1ptf", "1tig", "1tmy", "2acy", "5nul"]
+        for pdb in pdb_list:
+            name = pdb
+            cd(f"setups/{pdb}")
+            protein_length = getFromTerminal("wc ssweight").split()[0]
+            print(f"protein: {name}, length: {protein_length}")
+
+            new_line = f"cbd_{name}.gro 1 1 {protein_length} 1"
+            do("cp cbd_frags.mem cbd_frags_include_native.mem")
+            do(f"echo {new_line} >> cbd_frags_include_native.mem")
+            cd("../..")
+
 if args.day == "may05":
     # cornichon
     if args.mode == 1:
