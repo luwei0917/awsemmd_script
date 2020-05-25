@@ -2259,6 +2259,33 @@ def replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_
 
     io.save(new_openAWSEM_input)
     return True
+
+def getFrame(frame, outLocation, movieLocation="movie.pdb"):
+    location = movieLocation
+    with open(location) as f:
+        a = f.readlines()
+    n = len(a)
+    # get the position of every model title
+    model_title_index_list = []
+    for i in range(n):
+        if len(a[i]) >= 5 and a[i][:5] == "MODEL":
+            model_title_index = i
+            model_title_index_list.append(model_title_index)
+    model_title_index_list.append(n)
+    check_array = np.diff(model_title_index_list)
+    if np.allclose(check_array, check_array[0]):
+        size = check_array[0]
+    elif np.allclose(check_array[:-1], check_array[0]) and check_array[-1] == check_array[0] + 1:
+        # this is ok. with extra "END"
+        size = check_array[0]
+    else:
+        print("!!!! Someting is wrong  !!!!")
+        print(check_array)
+    out_a = a[size*frame:size*(frame+1)]
+    print(len(out_a))
+    with open(outLocation, "w") as out:
+        out.write("".join(out_a))
+
 # def get_inside_or_not_table(pdb_file):
 #     parser = PDBParser(PERMISSIVE=1)
 #     structure = parser.get_structure('X', pdb_file)

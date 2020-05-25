@@ -672,3 +672,17 @@ vmdrestoremycolors
 label textsize 1.0
 user add key q {rotate x by 90}
 user add key w {rotate x by -90}
+
+graphics 0 line {-1000 500 15} {1000 500 15} width 2
+graphics 0 line {-1000 500 -15} {1000 500 -15} width 2
+graphics 0 line {-1000 -500 15} {1000 -500 15} width 2
+graphics 0 line {-1000 -500 -15} {1000 -500 -15} width 2
+
+mol modcolor 0 0 ColorID 1
+mol modcolor 1 0 ColorID 7
+mol modcolor 3 0 ColorID 0
+
+display resetview
+rotate x by 90.000000
+rotate x by 90.000000
+rotate x by 90.000000

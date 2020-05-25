@@ -340,7 +340,7 @@ def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False, r_
                     # r_min_res1_res2 = 2.5
                     # r_max_res1_res2 = 6.5
                 else:
-                    r_max_res1_res2 = r_min
+                    r_min_res1_res2 = r_min
                     r_max_res1_res2 = r_max
                 if environment:
                     d_H_i = density_H[res1globalindex]
