@@ -182,6 +182,27 @@ def convert_frag_to_cbd(fragFile):
         do(f"cp {fragFile} cbd_frags.mem")
         replace(f"cbd_frags.mem", "./fraglib/", f"{toPre}/frags/")
 
+
+if args.day == "jun12":
+    pdb = "1su4"
+    if args.mode == 1:
+        # get cbd openAWSEM input.
+        pre = "./"
+        original_openAWSEM_input = f"{pre}/{pdb}-openmmawsem.pdb"
+        new_openAWSEM_input = f"{pre}/cbd-openmmawsem.pdb"
+        all_atom_pdb_file = f"{pre}/crystal_structure-cleaned.pdb"
+        replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file)
+    if args.mode == 2:
+        # get single memory in cbd format
+        pre = "./"
+        fromFile = f"{pre}/crystal_structure.pdb"
+        toFile = f"{pre}/cbd_{pdb}.pdb"
+        convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+        cmd = f"python ~/openmmawsem/helperFunctions/Pdb2Gro.py {pre}/cbd_{pdb}.pdb {pre}/cbd_{pdb}.gro"
+        do(cmd)
+        do(f"cp {pre}/single_frags.mem {pre}/cbd_single_frags.mem")
+        replace(f"{pre}/cbd_single_frags.mem", pdb, f"cbd_{pdb}")
+
 if args.day == "may16":
     # disulfide setups and annealing.
     pdb_list = ["1ppb", "1fs3", "1bpi", "1hn4", "1lmm", "1tcg"]
