@@ -183,6 +183,17 @@ def convert_frag_to_cbd(fragFile):
         replace(f"cbd_frags.mem", "./fraglib/", f"{toPre}/frags/")
 
 
+if args.day == "jun20":
+    pdb_list = ['4y60', '5ke8', '1a1j', '5lxu', '1skn', '6a2h']
+    if args.mode == 1:
+        for pdb in pdb_list:
+            folder = f"setups/{pdb}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"python /Users/weilu/openmmawsem/mm_create_project.py ../../../protein_DNA/cleaned_pdbs/{pdb}.pdb --extended")
+            cd("../..")
+            # do(f"cp gamma_noCysCys.dat {folder}/")
+
 if args.day == "jun12":
     pdb = "1su4"
     if args.mode == 1:
