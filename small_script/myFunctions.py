@@ -21,6 +21,7 @@ from Bio.PDB.PDBIO import PDBIO
 from Bio.PDB.PDBIO import Select
 from Bio.PDB import PDBList
 from Bio.PDB.Polypeptide import three_to_one
+from Bio.Seq import reverse_complement
 import io
 # from pdbfixer import PDBFixer
 # from simtk.openmm.app import PDBFile
@@ -2137,15 +2138,16 @@ def getAllFrames(movieLocation):
 
     return a, n, size
 
-def split_proteins_name_list(pdb_per_txt=1):
-    with open("protein_list") as f:
+def split_proteins_name_list(protein_list="protein_list", toFolder="proteins_name_list", pdb_per_txt=1):
+    with open(protein_list) as f:
         content = f.readlines()
     pos = 0
     i = 0
     n = len(content)
     # n = 100  # for testing
+    os.system(f"mkdir -p {toFolder}")
     while pos < n:
-        with open(f"proteins_name_list/proteins_name_list_{i}.txt", "w") as out:
+        with open(f"{toFolder}/proteins_name_list_{i}.txt", "w") as out:
             for ii in range(pdb_per_txt):
                 if pos < n:
                     out.write(content[pos])
@@ -2244,6 +2246,325 @@ def replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_
 
     io.save(new_openAWSEM_input)
     return True
+
+
+
+
+def convert_to_one(resName):
+    DNA_resNames = ["DA", "DC", "DT", "DG"]
+    if resName in DNA_resNames:
+        return resName[1]
+    else:
+        return three_to_one(resName)
+def isDNARes(resName):
+    DNA_resNames = ["DA", "DC", "DT", "DG"]
+    return resName in DNA_resNames
+
+def writePDB(atoms,pdb_file):
+    with open(pdb_file, 'w+') as pdb:
+        for i, atom in atoms.iterrows():
+            pdb_line = f'{atom.recname:<6}{atom.serial:>5} {atom["name"]:^4}{atom.altLoc:1}'+\
+                    f'{atom.resname:<3} {atom.chainID:1}{atom.resSeq:>4}{atom.iCode:1}   '+\
+                    f'{atom.x:>8.3f}{atom.y:>8.3f}{atom.z:>8.3f}' +\
+                    f'{atom.occupancy:>6.2f}{atom.occupancy:>6.2f}'+' ' * 10 +\
+                    f'{atom.element:>2}{atom.charge:>2}'
+            assert len(pdb_line) == 80, f'An item in the atom table is longer than expected ({len(pdb_line)})\n{pdb_line}'
+            pdb.write(pdb_line + '\n')
+
+
+def create_large_DNA(original_pdb_file, to_DNA_file):
+
+    sys.path.append("/projects/pw8/wl45/open3spn2")
+    sys.path.append("/projects/pw8/wl45/openawsem")
+    sys.path.append("/Users/weilu/open3spn2")
+    sys.path.append("/Users/weilu/openmmawsem")
+    sys.path.append("C:/Users/luwei/Documents/GitHub/open3spn2")
+    sys.path.append("C:/Users/luwei/Documents/GitHub/openawsem")
+
+
+    import open3SPN2
+
+    from Bio.Seq import reverse_complement
+    # os.environ["X3DNA"] = "/Users/weilu/Research/build/x3dna-v2.4"
+    os.environ["X3DNA"] = "/projects/pw8/wl45/build/x3dna-v2.4"
+    # original_pdb_file = "/Users/weilu/Research/server/jun_week3_2020/automatic_man_made_DNA/original_pdbs/6cta.pdb"
+    with open(original_pdb_file) as f:
+        a = f.readlines()
+
+    seq_dic = {}
+    seq_length_dic = {}
+    is_DNA_chain = {}
+    for line in a:
+        if line[:6] != "SEQRES":
+            continue
+            # print(line)
+        ch = line[11]
+        line_index = int(line[7:10])
+        n = int(line[13:17])
+        if line_index == 1:
+            seq_dic[ch] = ""
+            seq_length_dic[ch] = n
+        seq = "".join([convert_to_one(one) for one in line[19:].split()])
+        is_DNA_chain[ch] = np.alltrue([isDNARes(one) for one in line[19:].split()])
+        seq_dic[ch] += seq
+        # print(f"-{ch}-{line_index}-")
+        # print(line, seq)
+    DNA_chain = []
+    for ch, length  in seq_length_dic.items():
+        # print(length, ch)
+        assert length == len(seq_dic[ch])
+        if is_DNA_chain[ch]:
+            DNA_chain.append(seq_dic[ch])
+
+
+    first_chain_seq = DNA_chain[0]
+    second_chain_seq = DNA_chain[1]
+    assert reverse_complement(first_chain_seq[1:]) == second_chain_seq[1:]
+    # Initialize the DNA from a sequence.
+    # DNA type can be changed to 'A' or 'B'
+    print("Seq: ", first_chain_seq)
+    new_seq = "A"*100 + first_chain_seq + "A"*100
+    seq = new_seq
+    dna=open3SPN2.DNA.fromSequence(seq,dna_type='B_curved')
+
+    # Compute the topology for the DNA structure.
+    # Since the dna was generated from the sequence using X3DNA,
+    # it is not necesary to recompute the geometry.
+    dna.computeTopology(template_from_X3DNA=False)
+    writePDB(dna.atoms, to_DNA_file)
+    # dna.writePDB("/Users/weilu/Research/server/jun_week3_2020/automatic_man_made_DNA/setups/DNA_part.pdb")
+
+
+def setup_protein_DNA(pdbFile, toFolder):
+
+    sys.path.append("/projects/pw8/wl45/open3spn2")
+    sys.path.append("/projects/pw8/wl45/openawsem")
+    sys.path.append("/Users/weilu/open3spn2")
+    sys.path.append("/Users/weilu/openmmawsem")
+    sys.path.append("C:/Users/luwei/Documents/GitHub/open3spn2")
+    sys.path.append("C:/Users/luwei/Documents/GitHub/openawsem")
+
+
+    import open3SPN2
+    import ffAWSEM
+
+    ffAWSEM.copy_parameter_files()
+
+    name = os.path.basename(pdbFile)[:-4]
+    pdb = pdbFile
+    os.system(f"mkdir -p {toFolder}")
+    Sname= os.path.join(toFolder, f"with_formated_DNA_{name}")
+    print(f"Creating setups file {Sname}")
+    #Fix the system (adds missing atoms)
+    fix=open3SPN2.fixPDB(pdb)
+
+    #Create a table containing both the proteins and the DNA
+    complex_table=open3SPN2.pdb2table(fix)
+
+    #Coarse Grain the system
+    dna_atoms=open3SPN2.DNA.CoarseGrain(complex_table)
+    protein_atoms=ffAWSEM.Protein.CoarseGrain(complex_table)
+
+    #Merge the models
+
+    Coarse=pd.concat([dna_atoms,protein_atoms],sort=False)
+    Coarse.index=range(len(Coarse))
+    Coarse.serial=list(Coarse.index)
+
+    #Save the protein_sequence
+
+    _AWSEMresidues=['IPR','IGL','NGP']
+    protein_data=Coarse[Coarse.resname.isin(_AWSEMresidues)].copy()
+    resix = (protein_data.chainID + '_' + protein_data.resSeq.astype(str))
+    res_unique = resix.unique()
+    protein_data['resID'] = resix.replace(dict(zip(res_unique, range(len(res_unique)))))
+    protein_sequence=[r.iloc[0]['real_resname'] for i, r in protein_data.groupby('resID')]
+    protein_sequence_one = [three_to_one(a) for a in protein_sequence]
+
+    with open(f'{Sname}_protein.seq','w+') as ps:
+        ps.write(''.join(protein_sequence_one))
+
+    writePDB(Coarse,f'{Sname}_clean.pdb')
+
+
+def get_native_DNA_bonds(original_pdb_file, new_dna_pdb_file, bond_info_file):
+
+
+    sys.path.append("/projects/pw8/wl45/open3spn2")
+    sys.path.append("/projects/pw8/wl45/openawsem")
+    sys.path.append("/Users/weilu/open3spn2")
+    sys.path.append("/Users/weilu/openmmawsem")
+    sys.path.append("C:/Users/luwei/Documents/GitHub/open3spn2")
+    sys.path.append("C:/Users/luwei/Documents/GitHub/openawsem")
+
+
+    import open3SPN2
+
+
+    DNA_resNames = ["DA", "DC", "DT", "DG"]
+    # pdb_file = "/Users/weilu/Research/server/jun_week3_2020/automatic_man_made_DNA/6cta_with_long_DNA.pdb"
+    pdb_file = new_dna_pdb_file
+    dna=open3SPN2.DNA.fromCoarsePDB(pdb_file)
+    new_dna = dna.atoms.reset_index()
+    new_dna_dna_only = new_dna.query("resname in @DNA_resNames")
+    pdb_file = original_pdb_file
+    # pdb_file = "/Users/weilu/Research/server/jun_week3_2020/automatic_man_made_DNA/setups/with_formated_DNA_6cta_clean.pdb"
+    # seq_file = "/Users/weilu/Research/server/jun_week3_2020/man_made_DNA/1mnn_with_long_DNA.seq"
+    dna=open3SPN2.DNA.fromCoarsePDB(pdb_file)
+
+
+    # before, i didn't renumber the residue to start from 1 for every chain.
+    # start_of_second_chain =  int((new_dna_dna_only["resSeq"].max())/2)
+    start_of_second_chain = -1
+    print("I assume that the first DNA chain is chain A, and second DNA chain is chain B")
+    bond_length_cutoff=1.8
+    data = dna.atoms
+    bonds_list = []
+
+    interacting_atom = ["A", "C", "G", "T"]
+    a = data.query("resname in @DNA_resNames").query("name in @interacting_atom").reset_index(drop=True)
+    n_atom = len(a)
+    for i in range(n_atom):
+        dna_res_1 = a.iloc[i]
+        chainID_1 = dna_res_1["chainID"]
+        for j in range(i+1, n_atom):
+            dna_res_2 = a.iloc[j]
+            chainID_2 = dna_res_2["chainID"]
+            if chainID_1 == chainID_2:
+                continue
+
+            atom1_pos = dna_res_1[["x", "y", "z"]].values
+            atom2_pos = dna_res_2[["x", "y", "z"]].values
+            dis = atom1_pos - atom2_pos
+            r = (dis[0]**2 + dis[1]**2 + dis[2]**2)**0.5
+            r /= 10   # convert to nm
+            if r > bond_length_cutoff:
+                # bong length larger than r will be ignored.
+                continue
+            # print(i, j, r)
+            name = dna_res_1["name"]
+            resSeq = dna_res_1["resSeq"] + 100
+            target_atom = new_dna_dna_only.query(f"resSeq=={resSeq} and name=='{name}' and chainID=='A'")
+            if len(target_atom) != 1:
+                print(target_atom)
+            else:
+                serial_1 = int(target_atom["index"])
+
+            name = dna_res_2["name"]
+            resSeq = dna_res_2["resSeq"] + start_of_second_chain + 100
+            target_atom = new_dna_dna_only.query(f"resSeq=={resSeq} and name=='{name}' and chainID=='B'")
+            if len(target_atom) != 1:
+                print(target_atom)
+                pass
+            else:
+                serial_2 = int(target_atom["index"])
+    #         bonds_list.append([dna_res_1["serial"], dna_res_2["serial"], r])
+            bonds_list.append([serial_1, serial_2, r, dna_res_1["name"], dna_res_2["name"], dna_res_1["resSeq"], dna_res_2["resSeq"]])
+            # print(dna_res_1["name"], dna_res_2["name"], dna_res_1["resSeq"], dna_res_2["resSeq"], serial_1, serial_2, r)
+
+    bond_info = pd.DataFrame(bonds_list, columns=["atom1", "atom2", "r", "res1_name", "res2_name", "res1", "res2"])
+    bond_info.to_csv(bond_info_file)
+    # bond_info.to_csv("/Users/weilu/Research/server/jun_week3_2020/man_made_DNA/bond_info_1mnn_with_long_DNA.csv")
+
+
+
+def get_DNA_protein_bonds(original_pdb_file, new_dna_pdb_file, bond_info_file):
+
+
+    sys.path.append("/projects/pw8/wl45/open3spn2")
+    sys.path.append("/projects/pw8/wl45/openawsem")
+    sys.path.append("/Users/weilu/open3spn2")
+    sys.path.append("/Users/weilu/openmmawsem")
+    sys.path.append("C:/Users/luwei/Documents/GitHub/open3spn2")
+    sys.path.append("C:/Users/luwei/Documents/GitHub/openawsem")
+
+
+    import open3SPN2
+
+
+    DNA_resNames = ["DA", "DC", "DT", "DG"]
+    # pdb_file = "/Users/weilu/Research/server/jun_week3_2020/automatic_man_made_DNA/6cta_with_long_DNA.pdb"
+    pdb_file = new_dna_pdb_file
+    dna=open3SPN2.DNA.fromCoarsePDB(pdb_file)
+    new_dna = dna.atoms.reset_index()
+    new_dna_dna_only = new_dna.query("resname in @DNA_resNames")
+    pdb_file = original_pdb_file
+    # pdb_file = "/Users/weilu/Research/server/jun_week3_2020/automatic_man_made_DNA/setups/with_formated_DNA_6cta_clean.pdb"
+    # seq_file = "/Users/weilu/Research/server/jun_week3_2020/man_made_DNA/1mnn_with_long_DNA.seq"
+    dna=open3SPN2.DNA.fromCoarsePDB(pdb_file)
+    data = dna.atoms
+
+    protein_resNames = ["NGP", "IGL", "IPR", "NTER", "CTER"]
+    ca_protein = data.query("resname in @protein_resNames").query("name == 'CA'").reset_index(drop=True)
+    new_ca_protein = new_dna.query("resname in @protein_resNames").query("name == 'CA'").reset_index(drop=True)
+    n_protein_res = len(ca_protein)
+    # print(n_protein_res)
+    assert n_protein_res == len(new_ca_protein)
+
+
+    # before, i didn't renumber the residue to start from 1 for every chain.
+    # start_of_second_chain =  int((new_dna_dna_only["resSeq"].max())/2)
+    # start_of_second_chain = -1
+    print("I assume that the original and new pdb chain ID is the same.")
+    bond_length_cutoff = 1.8
+
+    bonds_list = []
+
+    interacting_atom = ["A", "C", "G", "T"]
+    a = data.query("resname in @DNA_resNames").query("name in @interacting_atom").reset_index(drop=True)
+    n_atom = len(a)
+
+
+    for i in range(n_atom):
+        dna_res_1 = a.iloc[i]
+        chainID_1 = dna_res_1["chainID"]
+        for j in range(n_protein_res):
+            ca_res_2 = ca_protein.iloc[j]
+            chainID_2 = ca_res_2["chainID"]
+
+            atom1_pos = dna_res_1[["x", "y", "z"]].values
+            atom2_pos = ca_res_2[["x", "y", "z"]].values
+            dis = atom1_pos - atom2_pos
+            r = (dis[0]**2 + dis[1]**2 + dis[2]**2)**0.5
+            r /= 10   # convert to nm
+            if r > bond_length_cutoff:
+                # bong length larger than r will be ignored.
+                continue
+            # print(i, j, r)
+            name = dna_res_1["name"]
+            if chainID_1 == "A":
+                shift = 100
+            elif chainID_1 == "B":
+                shift = 99
+            else:
+                print("should be only two DNA, chain A and B")
+            resSeq = dna_res_1["resSeq"] + shift
+            target_atom = new_dna_dna_only.query(f"resSeq=={resSeq} and name=='{name}' and chainID=='{chainID_1}'")
+            if len(target_atom) != 1:
+                # print(target_atom)
+                print(dna_res_1["name"], dna_res_1["resSeq"], name, resSeq)
+            else:
+                serial_1 = int(target_atom["index"])
+
+            name = ca_res_2["name"]
+            resSeq = ca_res_2["resSeq"]
+            target_atom = new_ca_protein.query(f"resSeq=={resSeq} and name=='{name}' and chainID=='{chainID_2}'")
+            if len(target_atom) != 1:
+                # print(dna_res_1, dna_res_2, chainID_1, chainID_2, target_atom)
+                print(dna_res_1["name"], dna_res_1["resSeq"], name, resSeq)
+                pass
+            else:
+                serial_2 = int(target_atom["index"])
+            # bonds_list.append([dna_res_1["serial"], dna_res_2["serial"], r])
+            # print(serial_1, serial_2)
+            bonds_list.append([serial_1, serial_2, r, dna_res_1["name"], ca_res_2["name"], dna_res_1["resSeq"], ca_res_2["resSeq"], chainID_1, chainID_2])
+            # print(dna_res_1["name"], dna_res_2["name"], dna_res_1["resSeq"], dna_res_2["resSeq"], serial_1, serial_2, r)
+
+    bond_info = pd.DataFrame(bonds_list, columns=["DNA_atom_index", "Protein_atom_index", "r", "res1_name", "res2_name", "res1", "res2", "chain1", "chain2"])
+    bond_info.to_csv(bond_info_file)
+    # bond_info.to_csv(bond_info_file)
+
+
 # def get_inside_or_not_table(pdb_file):
 #     parser = PDBParser(PERMISSIVE=1)
 #     structure = parser.get_structure('X', pdb_file)

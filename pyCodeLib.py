@@ -12,6 +12,8 @@ from functools import partial
 import datetime
 import pandas as pd
 
+from Bio.PDB.Polypeptide import three_to_index
+from Bio.PDB.Polypeptide import index_to_three
 
 # MYHOME = "/Users/weilu/Research/optimization/"
 # MYHOME = "/scratch/wl45/oct_2018/03_week/optimization/"
@@ -271,15 +273,22 @@ def get_all_non_H_atoms(res):
         name_list.append(name)
     return set(name_list)
 
+# def get_interaction_distance_com(res1, res2):
+#     if res1.resname == "GLY":
+#         x1 = res1["CA"].get_coord()
+#     else:
+#         x1 = get_side_chain_center_of_mass(res1)
+#     if res2.resname == "GLY":
+#         x2 = res2["CA"].get_coord()
+#     else:
+#         x2 = get_side_chain_center_of_mass(res2)
+#     return dis(x1, x2)
+
 def get_interaction_distance_com(res1, res2):
-    if res1.resname == "GLY":
-        x1 = res1["CA"].get_coord()
-    else:
-        x1 = get_side_chain_center_of_mass(res1)
-    if res2.resname == "GLY":
-        x2 = res2["CA"].get_coord()
-    else:
-        x2 = get_side_chain_center_of_mass(res2)
+    # when Some Amino acids is mutated to GLY.
+    # I want it still use the COM of side chain. not the position of CA.
+    x1 = get_side_chain_center_of_mass(res1)
+    x2 = get_side_chain_center_of_mass(res2)
     return dis(x1, x2)
 
 def get_interaction_distance(res1, res2):
@@ -862,7 +871,7 @@ def phi_pairwise_contact_com_well(res_list, neighbor_list, parameter_list):
     return phis_to_return
 
 def phi_pairwise_contact_com_shift_center_well(res_list, neighbor_list, parameter_list):
-    # fixWellCenter = False
+    fixWellCenter = False
     # if not fixWellCenter:
     #     a = pd.read_csv("/home/wl45/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric.csv")
     #     a = cbd_info
@@ -1540,6 +1549,433 @@ def phi_contact_hybrid_well(res_list, neighbor_list, parameter_list):
 
     return phis_to_return
 
+def get_res_by_globalindex(res_list, index, chain):
+    # the res has to be on the same chain as "chain"
+    if index < 0:
+        return -1
+    try:
+        res = res_list[index]
+    except:
+        return -1
+    if res.get_parent().get_id() == chain:
+        return res
+    else:
+        return -1
+
+def get_interaction_index_from_four_residues(Res1_1, Res1_2, Res2_1, Res2_2):
+    i1 = three_to_index(Res1_1)
+    i2 = three_to_index(Res1_2)
+    j1 = three_to_index(Res2_1)
+    j2 = three_to_index(Res2_2)
+    ii = i1 * 20 + i2
+    jj = j1 * 20 + j2
+    if ii > jj:
+        return f"{ii}_{jj}"
+    else:
+        return f"{jj}_{ii}"
+# if os.path.exists("/home/wl45/dataset/interaction_index.csv"):
+#     b_cutoff_unique = pd.read_csv("/home/wl45/dataset/interaction_index.csv", index_col=0)
+#     interaction_index_dic = {}
+#     for i, index in enumerate(b_cutoff_unique["interaction_index"]):
+#         interaction_index_dic[index] = i
+
+# def phi_gxxxg_well(res_list, neighbor_list, parameter_list):
+#     # focus on anti parallel first. (means i to j+4, i+4 to j)
+#     min_seq_sep = 10
+#     r_min = 2.0
+#     r_max = 6.5
+#     kappa = 5
+#     n_parameters = 701
+#     info_list = []
+#     get_distance_between_two_residues = get_interaction_distance_com
+#     phi_gxxxg_well = np.zeros(n_parameters)
+#     for res1globalindex, res1 in enumerate(res_list):
+#         res1index = get_local_index(res1)
+#         res1chain = get_chain(res1)
+#         for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+#             res2index = get_local_index(res2)
+#             res2chain = get_chain(res2)
+#             res2globalindex = get_global_index(res_list, res2)
+
+#             if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+#                 res1type = get_res_type(res_list, res1)
+#                 res2type = get_res_type(res_list, res2)
+#                 rij = get_distance_between_two_residues(res1, res2)
+#                 res1_2_globalindex = res1globalindex+4
+#                 res2_2_globalindex = res2globalindex-4
+#                 res1_2 = get_res_by_globalindex(res_list, res1_2_globalindex, res1chain)
+#                 res2_2 = get_res_by_globalindex(res_list, res2_2_globalindex, res2chain)
+#                 if res1_2 == -1 or res2_2 == -1:
+#                     continue
+#                 rij_2 = get_distance_between_two_residues(res1_2, res2_2)
+#                 if rij_2 > (r_max+2):
+#                     continue
+
+
+#                 interaction_index = get_interaction_index_from_four_residues(res1.resname, res1_2.resname, res2.resname, res2_2.resname)
+#                 phi_ = interaction_well(rij, r_min, r_max, kappa) * interaction_well(rij_2, r_min, r_max, kappa)
+#                 try:
+#                     index = interaction_index_dic[interaction_index]
+#                     phi_gxxxg_well[index] += phi_
+#                 except:
+#                     phi_gxxxg_well[-1] += phi_
+#                 # print(info_)
+#     phis_to_return = []
+#     for i in range(n_parameters):
+#         phis_to_return.append(round(phi_gxxxg_well[i],4))
+#     return phis_to_return
+
+def get_interaction_index_from_four_residues_v2(res1_1, res1_2, res2_1, res2_2):
+    interaction_index, code = calculate_six_letter_index([three_to_one(res1_1), three_to_one(res1_2), three_to_one(res2_1), three_to_one(res2_2)])
+    return interaction_index
+
+def phi_gxxxg_v2_well(res_list, neighbor_list, parameter_list):
+    # focus on anti parallel first. (means i to j+4, i+4 to j)
+    min_seq_sep = 10
+    r_min = 2.0
+    r_max = 6.5
+    kappa = 5
+    n_parameters = 126
+    info_list = []
+    get_distance_between_two_residues = get_interaction_distance_com
+    phi_gxxxg_well = np.zeros(n_parameters)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                rij = get_distance_between_two_residues(res1, res2)
+                res1_2_globalindex = res1globalindex+4
+                res1_2 = get_res_by_globalindex(res_list, res1_2_globalindex, res1chain)
+                for shift_to_res2_2 in [-4, 4]:
+                    # consider parallel, and anti-parallel.
+                    res2_2_globalindex = res2globalindex + shift_to_res2_2
+                    res2_2 = get_res_by_globalindex(res_list, res2_2_globalindex, res2chain)
+                    if res1_2 == -1 or res2_2 == -1:
+                        continue
+                    rij_2 = get_distance_between_two_residues(res1_2, res2_2)
+                    if rij_2 > (r_max+2):
+                        continue
+                    # interaction_index = get_interaction_index_from_four_residues(res1.resname, res1_2.resname, res2.resname, res2_2.resname)
+                    interaction_index = get_interaction_index_from_four_residues_v2(res1.resname, res1_2.resname, res2.resname, res2_2.resname)
+                    phi_ = interaction_well(rij, r_min, r_max, kappa) * interaction_well(rij_2, r_min, r_max, kappa)
+                    phi_gxxxg_well[interaction_index] += phi_
+                # print(info_)
+    phis_to_return = []
+    for i in range(n_parameters):
+        phis_to_return.append(round(phi_gxxxg_well[i],4))
+    return phis_to_return
+
+
+def encode_four_body_index(res1_1, res1_2, res2_1, res2_2, direction):
+    # if anti-parallel, the order by reading from res2_2 to res2_1
+    if direction == "anti":
+        res2 = three_to_index(res2_2)*20 + three_to_index(res2_1)
+        Res2_letter = res2_2 + "_" + res2_1
+    elif direction == "parallel":
+        res2 = three_to_index(res2_1)*20 + three_to_index(res2_2)
+        Res2_letter = res2_1 + "_" + res2_2
+    res1 = three_to_index(res1_1)*20 + three_to_index(res1_2)
+    Res1_letter = res1_1 + "_" + res1_2
+    # if res2 index is smaller than res1, We will swtich the index. to ensure res1 is less than res2.
+    if res2 < res1:
+        return res2, res1, Res1_letter, Res2_letter
+    else:
+        return res1, res2, Res1_letter, Res2_letter
+
+def get_interaction_index_from_four_residues_v3(res1_1, res1_2, res2_1, res2_2, direction):
+    res1, res2, Res1_letter, Res2_letter = encode_four_body_index(res1_1, res1_2, res2_1, res2_2, direction)
+    return f"{direction}_{res1}_{res2}"
+
+if False and os.path.exists("/home/wl45/dataset/interaction_index_jul12.csv"):
+    b_cutoff_unique = pd.read_csv("/home/wl45/dataset/interaction_index_jul12.csv", index_col=0)
+    interaction_index_dic = {}
+    for i, index in enumerate(b_cutoff_unique["interaction_index"]):
+        interaction_index_dic[index] = i
+def phi_gxxxg_v3_well(res_list, neighbor_list, parameter_list):
+    min_seq_sep = 10
+    r_min = 2.0
+    r_max = 6.5
+    kappa = 5
+    n_parameters = 701
+    info_list = []
+    get_distance_between_two_residues = get_interaction_distance_com
+    phi_gxxxg_well = np.zeros(n_parameters)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+
+            if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+                rij = get_distance_between_two_residues(res1, res2)
+                res1_2_globalindex = res1globalindex+4
+                res1_2 = get_res_by_globalindex(res_list, res1_2_globalindex, res1chain)
+                for shift_to_res2_2, direction in zip([-4, 4], ["anti", "parallel"]):
+                    # consider parallel, and anti-parallel.
+                    res2_2_globalindex = res2globalindex + shift_to_res2_2
+                    res2_2 = get_res_by_globalindex(res_list, res2_2_globalindex, res2chain)
+                    if res1_2 == -1 or res2_2 == -1:
+                        continue
+                    rij_2 = get_distance_between_two_residues(res1_2, res2_2)
+                    if rij_2 > (r_max+2):
+                        continue
+                    # interaction_index = get_interaction_index_from_four_residues(res1.resname, res1_2.resname, res2.resname, res2_2.resname)
+                    # interaction_index = get_interaction_index_from_four_residues_v2(res1.resname, res1_2.resname, res2.resname, res2_2.resname)
+                    interaction_index = get_interaction_index_from_four_residues_v3(res1.resname, res1_2.resname, res2.resname, res2_2.resname, direction)
+                    phi_ = interaction_well(rij, r_min, r_max, kappa) * interaction_well(rij_2, r_min, r_max, kappa)
+                    # phi_gxxxg_well[interaction_index] += phi_
+                    try:
+                        index = interaction_index_dic[interaction_index]
+                        phi_gxxxg_well[index] += phi_
+                    except:
+                        phi_gxxxg_well[-1] += phi_
+                # print(info_)
+    phis_to_return = []
+    for i in range(n_parameters):
+        phis_to_return.append(round(phi_gxxxg_well[i],4))
+    return phis_to_return
+
+
+
+
+from Bio.PDB.Polypeptide import one_to_index
+from Bio.PDB.Polypeptide import three_to_index
+
+def get_400_based_index(res1_1, res1_2):
+    index = three_to_index(res1_1)*20 + three_to_index(res1_2)
+    return index
+def get_overall_index_v4(index1, index2, direction, interaction_index_dic):
+    n = 51
+    # plus 1, total parameters. (51+1)*51/2 = 1326
+    n_shift = 1326
+    new_index1 = interaction_index_dic[f"{direction}_{index1}"]
+    new_index2 = interaction_index_dic[f"{direction}_{index2}"]
+    if new_index1 > new_index2:
+        new_index1, new_index2 = new_index2, new_index1
+    overall_index = ((2*n-(new_index1-1))*(new_index1)/2 + new_index2 - new_index1)
+    if direction == "anti":
+        overall_index += n_shift
+    return int(overall_index)
+interaction_index_dic = {}
+if False and os.path.exists("/home/wl45/dataset/gxxxg_index_dic_v4.csv"):
+    n = 50
+    # res to index
+    # index_dic
+    info = pd.read_csv("/home/wl45/dataset/gxxxg_index_dic_v4.csv", index_col=0)
+    interaction_index_dic = {}
+    for i, line in info.iterrows():
+        # print(i, line["i"])
+        if line["index"] < n:
+            interaction_index_dic[f"{line['Direction']}_{line['i']}"] = line["index"]
+        else:
+            interaction_index_dic[f"{line['Direction']}_{line['i']}"] = n
+def get_interaction_index_from_four_residues_v4(res1_1, res1_2, res2_1, res2_2, direction, interaction_index_dic=interaction_index_dic):
+    # n_shift is 1326 when we use top 50
+    # plus 1, total parameters. (51+1)*51/2 = 1326
+    index1 = get_400_based_index(res1_1, res1_2)
+    if direction == "parallel":
+        index2 = get_400_based_index(res2_1, res2_2)
+    elif direction == "anti":
+        index2 = get_400_based_index(res2_2, res2_1)
+    else:
+        print("unknown direction")
+        raise
+    index = get_overall_index_v4(index1, index2, direction, interaction_index_dic)
+
+    return index
+
+
+def phi_gxxxg_v4_well(res_list, neighbor_list, parameter_list):
+    min_seq_sep = 10
+    r_min = 2.0
+    r_max = 6.5
+    r_cutoff = 8.5
+    kappa = 5
+    n_parameters = 2652
+    info_list = []
+    get_distance_between_two_residues = get_interaction_distance_com
+    phi_gxxxg_well = np.zeros(n_parameters)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_cutoff):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+
+            for shift_to_res2_2, direction in zip([-4, 4], ["anti", "parallel"]):
+                res1_2_globalindex = res1globalindex + 4
+                res1_2 = get_res_by_globalindex(res_list, res1_2_globalindex, res1chain)
+                # for shift_to_res2_2 in [-4, 4]:
+
+                # consider parallel, and anti-parallel.
+                res2_2_globalindex = res2globalindex + shift_to_res2_2
+                res2_2 = get_res_by_globalindex(res_list, res2_2_globalindex, res2chain)
+                if res1_2 == -1 or res2_2 == -1:
+                    continue
+                if direction == "parallel":
+                    group2index = res2globalindex
+                elif direction == "anti":
+                    group2index = res2_2_globalindex
+                sep = group2index - res1globalindex
+                if (res1chain == res2chain and sep >= min_seq_sep) or (res1chain != res2chain and group2index > res1globalindex):
+                    rij = get_distance_between_two_residues(res1, res2)
+
+                    rij_2 = get_distance_between_two_residues(res1_2, res2_2)
+                    if rij_2 > r_cutoff or rij > r_cutoff:
+                        continue
+
+                    # interaction_index = get_interaction_index_from_four_residues(res1.resname, res1_2.resname, res2.resname, res2_2.resname)
+                    # interaction_index = get_interaction_index_from_four_residues_v2(resName_1_1, resName_1_2, resName_2_1, resName_2_2)
+                    interaction_index = get_interaction_index_from_four_residues_v4(res1.resname, res1_2.resname, res2.resname, res2_2.resname, direction)
+                    phi_ = interaction_well(rij, r_min, r_max, kappa) * interaction_well(rij_2, r_min, r_max, kappa)
+                    # phi_gxxxg_well[interaction_index] += phi_
+                    phi_gxxxg_well[interaction_index] += phi_
+
+    phis_to_return = []
+    for i in range(n_parameters):
+        phis_to_return.append(round(phi_gxxxg_well[i],4))
+    return phis_to_return
+
+# res to index
+# index_dic
+if os.path.exists("/home/wl45/dataset/gxxxg_index_dic_v5.csv"):
+    info = pd.read_csv("/home/wl45/dataset/gxxxg_index_dic_v5.csv", index_col=0)
+    interaction_index_dic = {}
+    n = 20
+    for i, line in info.iterrows():
+        # print(i, line["i"])
+        interaction_index_dic[f"{line['Direction']}_{line['i']}"] = line["Group"]
+
+
+def get_400_based_index(res1_1, res1_2):
+    index = three_to_index(res1_1)*20 + three_to_index(res1_2)
+    return index
+def get_overall_index_v5(index1, index2, direction, interaction_index_dic):
+    n = 20
+    # plus 1, total parameters. 21*20/2 = 210
+    n_shift = 210
+    new_index1 = interaction_index_dic[f"{direction}_{index1}"]
+    new_index2 = interaction_index_dic[f"{direction}_{index2}"]
+    if new_index1 > new_index2:
+        new_index1, new_index2 = new_index2, new_index1
+    overall_index = ((2*n-(new_index1-1))*(new_index1)/2 + new_index2 - new_index1)
+    if direction == "anti":
+        overall_index += n_shift
+    return int(overall_index)
+
+def get_interaction_index_from_four_residues_v5(res1_1, res1_2, res2_1, res2_2, direction, interaction_index_dic=interaction_index_dic):
+
+    index1 = get_400_based_index(res1_1, res1_2)
+    if direction == "parallel":
+        index2 = get_400_based_index(res2_1, res2_2)
+    elif direction == "anti":
+        index2 = get_400_based_index(res2_2, res2_1)
+    else:
+        print("unknown direction")
+        raise
+    index = get_overall_index_v5(index1, index2, direction, interaction_index_dic)
+
+    return index
+def phi_gxxxg_v5_well(res_list, neighbor_list, parameter_list):
+    min_seq_sep = 10
+    r_min = 2.0
+    r_max = 6.5
+    r_cutoff = 8.5
+    kappa = 5
+    n_parameters = 420
+    info_list = []
+    get_distance_between_two_residues = get_interaction_distance_com
+    phi_gxxxg_well = np.zeros(n_parameters)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_cutoff):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+
+            for shift_to_res2_2, direction in zip([-4, 4], ["anti", "parallel"]):
+                res1_2_globalindex = res1globalindex + 4
+                res1_2 = get_res_by_globalindex(res_list, res1_2_globalindex, res1chain)
+                # for shift_to_res2_2 in [-4, 4]:
+
+                # consider parallel, and anti-parallel.
+                res2_2_globalindex = res2globalindex + shift_to_res2_2
+                res2_2 = get_res_by_globalindex(res_list, res2_2_globalindex, res2chain)
+                if res1_2 == -1 or res2_2 == -1:
+                    continue
+                if direction == "parallel":
+                    group2index = res2globalindex
+                elif direction == "anti":
+                    group2index = res2_2_globalindex
+                sep = group2index - res1globalindex
+                if (res1chain == res2chain and sep >= min_seq_sep) or (res1chain != res2chain and group2index > res1globalindex):
+                    rij = get_distance_between_two_residues(res1, res2)
+
+                    rij_2 = get_distance_between_two_residues(res1_2, res2_2)
+                    if rij_2 > r_cutoff or rij > r_cutoff:
+                        continue
+
+                    # interaction_index = get_interaction_index_from_four_residues(res1.resname, res1_2.resname, res2.resname, res2_2.resname)
+                    # interaction_index = get_interaction_index_from_four_residues_v2(resName_1_1, resName_1_2, resName_2_1, resName_2_2)
+                    interaction_index = get_interaction_index_from_four_residues_v5(res1.resname, res1_2.resname, res2.resname, res2_2.resname, direction)
+                    phi_ = interaction_well(rij, r_min, r_max, kappa) * interaction_well(rij_2, r_min, r_max, kappa)
+                    # phi_gxxxg_well[interaction_index] += phi_
+                    phi_gxxxg_well[interaction_index] += phi_
+
+    phis_to_return = []
+    for i in range(n_parameters):
+        phis_to_return.append(round(phi_gxxxg_well[i],4))
+    return phis_to_return
+# def phi_gxxxg_v4_well(res_list, neighbor_list, parameter_list):
+#     min_seq_sep = 10
+#     r_min = 2.0
+#     r_max = 6.5
+#     kappa = 5
+#     n_parameters = 2652
+#     info_list = []
+#     get_distance_between_two_residues = get_interaction_distance_com
+#     phi_gxxxg_well = np.zeros(n_parameters)
+#     for res1globalindex, res1 in enumerate(res_list):
+#         res1index = get_local_index(res1)
+#         res1chain = get_chain(res1)
+#         for res2 in get_neighbors_within_radius(neighbor_list, res1, r_max+2.0):
+#             res2index = get_local_index(res2)
+#             res2chain = get_chain(res2)
+#             res2globalindex = get_global_index(res_list, res2)
+
+#             if res2globalindex - res1globalindex >= min_seq_sep or (res1chain != res2chain and res2globalindex > res1globalindex):
+#                 rij = get_distance_between_two_residues(res1, res2)
+#                 res1_2_globalindex = res1globalindex+4
+#                 res1_2 = get_res_by_globalindex(res_list, res1_2_globalindex, res1chain)
+#                 for shift_to_res2_2, direction in zip([-4, 4], ["anti", "parallel"]):
+#                     # consider parallel, and anti-parallel.
+#                     res2_2_globalindex = res2globalindex + shift_to_res2_2
+#                     res2_2 = get_res_by_globalindex(res_list, res2_2_globalindex, res2chain)
+#                     if res1_2 == -1 or res2_2 == -1:
+#                         continue
+#                     rij_2 = get_distance_between_two_residues(res1_2, res2_2)
+#                     if rij_2 > (r_max+2):
+#                         continue
+#                     # interaction_index = get_interaction_index_from_four_residues(res1.resname, res1_2.resname, res2.resname, res2_2.resname)
+#                     # interaction_index = get_interaction_index_from_four_residues_v2(res1.resname, res1_2.resname, res2.resname, res2_2.resname)
+#                     interaction_index = get_interaction_index_from_four_residues_v4(res1.resname, res1_2.resname, res2.resname, res2_2.resname, direction)
+#                     phi_ = interaction_well(rij, r_min, r_max, kappa) * interaction_well(rij_2, r_min, r_max, kappa)
+#                     # phi_gxxxg_well[interaction_index] += phi_
+#                     phi_gxxxg_well[interaction_index] += phi_
+#                 # print(info_)
+#     phis_to_return = []
+#     for i in range(n_parameters):
+#         phis_to_return.append(round(phi_gxxxg_well[i],4))
+#     return phis_to_return
 
 def phi_contact_membrane_well(res_list, neighbor_list, parameter_list):
     r_min, r_max, kappa, min_seq_sep, density_threshold, density_kappa = parameter_list
@@ -3885,6 +4321,164 @@ def calculate_A_B_and_gamma_wl45(training_set_file, phi_list_file_name, decoy_me
 
 
         average_phi_decoy = np.average(phi_i_decoy_reshaped, axis=0)
+        # print("average_phi_decoy", average_phi_decoy)
+        # Output to a file;
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_decoy_summary.txt'
+        np.savetxt(phi_summary_file_name, average_phi_decoy, fmt='%1.5f')
+
+        phi_all_summary_file_name = file_prefix + '_phi_decoy_all_summary.txt'
+        np.savetxt(phi_all_summary_file_name, phi_i_decoy_reshaped, fmt='%1.5f')
+        phi_i_decoy_reshaped = None
+    # A, B, half_B, other_half_B, std_half_B = calculate_A_and_B(
+    #     average_phi_decoy, phi_native, total_phis, num_decoys, phi_i_decoy_reshaped)
+    print("done reading")
+    os.system("echo 'Done reading' >> log")
+    A, B, half_B, other_half_B, std_half_B = calculate_A_and_B_wei(
+        average_phi_decoy, phi_native, phi_i_protein_i_decoy)
+    phi_i_protein_i_decoy = None  # free its memory
+    gamma = np.dot(np.linalg.pinv(B), A)
+
+    # write gamma file
+    file_prefix = "%s%s_%s" % (gammas_directory, training_set_file.split(
+        '/')[-1].split('.')[0], full_parameters_string)
+
+    gamma_file_name = file_prefix + '_gamma'
+#    gamma_file = open(gamma_file_name, 'w')
+    np.savetxt(gamma_file_name, gamma, '%1.5f')
+
+    A_file_name = file_prefix + '_A'
+#    A_file = open(A_file_name, 'w')
+    np.savetxt(A_file_name, A, fmt='%1.5f')
+
+    A_prime_file_name = file_prefix + '_A_prime'
+#    A_file = open(A_file_name, 'w')
+    np.savetxt(A_prime_file_name, average_phi_decoy, fmt='%1.5f')
+
+    B_file_name = file_prefix + '_B'
+#    B_file = open(B_file_name, 'w')
+    np.savetxt(B_file_name, B, fmt='%1.5f')
+
+    half_B_file_name = file_prefix + '_half_B'
+#    gamma_file = open(gamma_file_name, 'w')
+    np.savetxt(half_B_file_name, half_B, '%1.5f')
+
+    other_half_B_file_name = file_prefix + '_other_half_B'
+#    gamma_file = open(gamma_file_name, 'w')
+    np.savetxt(other_half_B_file_name, other_half_B, '%1.5f')
+
+    std_half_B_file_name = file_prefix + '_std_half_B'
+#    gamma_file = open(gamma_file_name, 'w')
+    np.savetxt(std_half_B_file_name, std_half_B, '%1.5f')
+
+    # open("%s%s_%s_gamma.dat" % (gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string), 'w').write(str(gamma).strip('[]').replace('\n', ' '))
+
+    if noise_filtering:
+        filtered_gamma, filtered_B, filtered_lamb, P, lamb = get_filtered_gamma_B_lamb_P_and_lamb(
+            A, B, half_B, other_half_B, std_half_B, total_phis, num_decoys)
+        # gamma_file_name = "%sfiltered_%s_%s_gamma.dat" % (gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string)
+        # gamma_file = open(gamma_file_name, 'w')
+
+        filtered_gamma_file_name = file_prefix + '_gamma_filtered'
+#        filtered_gamma_file = open(filtered_gamma_file_name, 'w')
+        np.savetxt(filtered_gamma_file_name, filtered_gamma, fmt='%1.5f')
+
+        filtered_B_file_name = file_prefix + '_B_filtered'
+#        filtered_B_file = open(filtered_B_file_name, 'w')
+        np.savetxt(filtered_B_file_name, filtered_B, fmt='%1.5f')
+
+        filtered_lamb_file_name = file_prefix + '_lamb_filtered'
+#        filtered_lamb_file = open(filtered_lamb_file_name, 'w')
+        np.savetxt(filtered_lamb_file_name, filtered_lamb, fmt='%1.5f')
+
+        P_file_name = file_prefix + '_P'
+        # print(P)
+        # P_file = open(P_file_name, 'wb')
+        # np.savetxt(P_file, P, fmt='%1.5f')
+        np.savetxt(P_file_name, P, fmt='%1.5f')
+
+        lamb_file_name = file_prefix + '_lamb'
+#        lamb_file = open(lamb_file_name, 'w')
+        np.savetxt(lamb_file_name, lamb, fmt='%1.5f')
+
+        # open("%sfiltered_%s_%s_gamma.dat" % (gammas_directory, training_set_file.split('/')[-1].split('.')[0], full_parameters_string), 'w').write(str(filtered_gamma).strip('[]').replace('\n', ' '))
+
+    if noise_filtering:
+        # return
+        return A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb
+    else:
+        return A, B, gamma
+
+
+def calculate_A_B_and_gamma_wl45_old(training_set_file, phi_list_file_name, decoy_method, num_decoys,
+                                    noise_filtering=True, jackhmmer=False, read=True, withBiased=False, **kwargs):
+    phi_list = read_phi_list(phi_list_file_name)
+    training_set = read_column_from_file(training_set_file, 1)
+    print("Size of training set", len(training_set))
+    os.system(f"echo 'Size {len(training_set)}' >> log")
+    # Find out how many total phi_i there are and get full parameter string
+    total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
+        phi_list, training_set, **kwargs)
+    print("Size of phis", total_phis)
+    if read:
+        print("reading native")
+        os.system("echo 'Reading native' >> log")
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_native_summary.txt'
+        phi_native = np.loadtxt(phi_summary_file_name)
+    else:
+        phi_native_i_protein = np.zeros((len(training_set), total_phis))
+        for i_protein, protein in enumerate(training_set):
+            phi_native_i_protein[i_protein] = read_native_phi(
+                protein, phi_list, total_phis, jackhmmer=jackhmmer, **kwargs)
+        phi_native = np.average(phi_native_i_protein, axis=0)
+
+        # Output to a file;
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_native_summary.txt'
+        np.savetxt(phi_summary_file_name, phi_native, fmt='%1.5f')
+
+    if read:
+        print("Reading phi decoy")
+        os.system("echo 'Reading phi decoy' >> log")
+        # Output to a file;
+        file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(
+            '/')[-1].split('.')[0], full_parameters_string)
+        phi_summary_file_name = file_prefix + '_phi_decoy_summary.txt'
+        average_phi_decoy = np.loadtxt(phi_summary_file_name)
+        phi_all_summary_file_name = file_prefix + '_phi_decoy_all_summary.txt'
+        phi_i_protein_i_decoy = np.zeros(
+            (len(training_set), num_decoys, total_phis))
+        # phi_i_protein_i_decoy = np.loadtxt(phi_all_summary_file_name)
+        phi_i_protein_i_decoy = np.reshape(phi_i_protein_i_decoy, (len(training_set), num_decoys, total_phis))
+    else:
+        phi_i_protein_i_decoy = np.zeros(
+            (len(training_set), num_decoys, total_phis))
+
+        for i_protein, protein in enumerate(training_set):
+            phi_i_protein_i_decoy[i_protein] = read_decoy_phis(
+                protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=jackhmmer, **kwargs)
+        if withBiased:
+            phi_i_protein_i_decoyQ = np.zeros(
+                (len(training_set), num_decoys, 1))
+            for i_protein, protein in enumerate(training_set):
+                phi_i_protein_i_decoyQ[i_protein] = read_decoyQ_phis(
+                    protein, phi_list, total_phis, num_phis, num_decoys, decoy_method, jackhmmer=jackhmmer, **kwargs)
+            phi_i_protein_i_decoy *= 1 - phi_i_protein_i_decoyQ
+            normalization = np.sum(1 - phi_i_protein_i_decoyQ)
+        else:
+            normalization = len(training_set) * num_decoys
+        # The phi_i decoy is constructed as the union of all decoys of all proteins in the training set;
+        phi_i_decoy_reshaped = np.reshape(phi_i_protein_i_decoy,
+                                            (len(training_set) * num_decoys, total_phis))
+        # average_phi_decoy = np.average(phi_i_decoy_reshaped, axis=0)
+        # print("normalization", normalization)
+        # print("phi_i_decoy_reshaped", phi_i_decoy_reshaped)
+
+        average_phi_decoy = np.sum(phi_i_decoy_reshaped, axis=0) / normalization
         # print("average_phi_decoy", average_phi_decoy)
         # Output to a file;
         file_prefix = "%s%s_%s" % (phis_directory, training_set_file.split(

@@ -22,9 +22,11 @@ parser = argparse.ArgumentParser(description="Compute gammas under the optimizat
 # parser.add_argument("OptimizationFolder", help="your optimization folder")
 parser.add_argument("name", help="name of gamma")
 parser.add_argument("-c", "--constant", type=float, default=0)
-parser.add_argument("--proteinList", type=str, default="protein_list")
+parser.add_argument("-p", "--proteinList", type=str, default="protein_list")
 parser.add_argument("--gammaFile", type=str, default="/home/wl45/opt/parameters/original_gamma")
 parser.add_argument("-m", "--mode", type=int, default=0)
+parser.add_argument("--phi_list", type=str, default="phi_list.txt")
+
 # parser.add_argument("-l", "--label", type=str, default="label")
 args = parser.parse_args()
 
@@ -89,7 +91,7 @@ pre = "gammas/"
 # pp = f"protein_list_phi_pairwise_contact_well4.5_6.5_5.0_10phi_density_mediated_contact_well6.5_9.5_5.0_10_2.6_7.0phi_burial_well4.0phi_debye_huckel_well0"
 # complete_proteins = "protein_list"
 complete_proteins = args.proteinList
-phi_list = read_phi_list("phi_list.txt")
+phi_list = read_phi_list(args.phi_list)
 training_set = read_column_from_file(complete_proteins, 1)
 # print("training set: ", training_set)
 total_phis, full_parameters_string, num_phis = get_total_phis_and_parameter_string(
@@ -196,6 +198,7 @@ for cutoff_i in cutoff_list:
     else:
         c = args.constant
     print("A' gamma = constant:", c)
+    do(f"echo 'c {c}\n' >> constant_log")
     B_inv = filtered_B_inv
     lambda_2 = (A_prime.dot(B_inv).dot(A) - c) / (A_prime.dot(B_inv).dot(A_prime))
     gamma_new = B_inv.dot(A-A_prime*lambda_2)
@@ -205,5 +208,7 @@ for cutoff_i in cutoff_list:
     np.savetxt(f"{save_gamma_pre}/{trial_name}_cutoff{cutoff_i}_impose_Aprime_constraint", gamma_new)
 
     name = f"{save_gamma_pre}/{trial_name}_cutoff{cutoff_i}_impose_Aprime_constraint"
-    cmd = f"convert_to_simulation_format.py {name} Oct26_{name} -m {args.mode}"
-    do(cmd)
+    # mode -1 means not to do the convertion.
+    if args.mode != -1:
+        cmd = f"convert_to_simulation_format.py {name} Oct26_{name} -m {args.mode}"
+        do(cmd)

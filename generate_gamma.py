@@ -13,6 +13,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument("-p", "--protein_list", type=str, default="protein_list", help="The name of the protein list")
 parser.add_argument("-m", "--mode", type=int, default=0)
 parser.add_argument("-n", "--n_decoys", type=int, default=1000)
+parser.add_argument("-l", "--label", type=str, default="")
+
 args = parser.parse_args()
 
 
@@ -30,3 +32,17 @@ if args.mode == 2:
     n_decoys = args.n_decoys
     A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
                                     withBiased=True, oneMinus=True, decoyBiasName='decoysQ', num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+if args.mode == 3:
+    # complete_proteins = "iter0.txt"
+    complete_proteins = "protein_list_complete"
+    # n_decoys = 50 * run_n
+    n_decoys = args.n_decoys
+    A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45_old(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                    withBiased=True, num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
+
+if args.mode == 4:
+    complete_proteins = "protein_list_complete"
+    n_decoys = args.n_decoys
+    decoyBiasName = args.label
+    A, B, gamma, filtered_B, filtered_gamma, filtered_lamb, P, lamb = calculate_A_B_and_gamma_wl45(complete_proteins, "phi_list.txt", decoy_method='openMM',
+                                    withBiased=True, oneMinus=False, decoyBiasName=decoyBiasName, num_decoys=n_decoys, noise_filtering=True, jackhmmer=False, read=False, mode=0, multiSeq=False, )
