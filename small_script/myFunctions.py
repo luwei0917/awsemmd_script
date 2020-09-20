@@ -2263,8 +2263,6 @@ def replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_
     return True
 
 
-
-
 def convert_to_one(resName):
     DNA_resNames = ["DA", "DC", "DT", "DG"]
     if resName in DNA_resNames:
