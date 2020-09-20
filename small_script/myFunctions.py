@@ -2184,12 +2184,18 @@ def get_side_chain_center_of_mass(res):
 def convert_all_atom_pdb_to_cbd_representation(all_atom_pdb_file, cbd_representation_file):
     # from a all atom pdb.
     # preserve N, CA, C, O, and place the CB at the center of mass of the side chain
-    parser = PDBParser()
+    parser = PDBParser(QUIET=True)
     # all_atom_pdb_file = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/side_chain_run1/256b/4_0/crystal_structure.pdb"
     structure = parser.get_structure("x", all_atom_pdb_file)
 
     x_com_dic = {}
     for res in structure.get_residues():
+        if res.id[0] != ' ' and len(res.resname) == 3:
+            continue
+        try:
+            ca = res["CA"]
+        except:
+            continue
         chain = res.get_full_id()[2]
         resID = res.get_full_id()[3][1]
         x_com = get_side_chain_center_of_mass(res)
@@ -2197,12 +2203,21 @@ def convert_all_atom_pdb_to_cbd_representation(all_atom_pdb_file, cbd_representa
 
 
     for res in structure.get_residues():
+        if res.id[0] != ' ' and len(res.resname) == 3:
+            continue
+        try:
+            ca = res["CA"]
+        except:
+            continue
         chain = res.get_full_id()[2]
         resID = res.get_full_id()[3][1]
         x_com = x_com_dic[f"{chain}{resID}"]
         if res.resname == "GLY":
             continue
-        res["CB"].set_coord(x_com)
+        try:
+            res["CB"].set_coord(x_com)
+        except:
+            print(res)
     io = PDBIO()
     io.set_structure(structure)
 
@@ -2247,6 +2262,7 @@ def replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_
     io.save(new_openAWSEM_input)
     return True
 
+<<<<<<< HEAD
 
 
 
@@ -2564,6 +2580,33 @@ def get_DNA_protein_bonds(original_pdb_file, new_dna_pdb_file, bond_info_file):
     bond_info.to_csv(bond_info_file)
     # bond_info.to_csv(bond_info_file)
 
+=======
+def getFrame(frame, outLocation, movieLocation="movie.pdb"):
+    location = movieLocation
+    with open(location) as f:
+        a = f.readlines()
+    n = len(a)
+    # get the position of every model title
+    model_title_index_list = []
+    for i in range(n):
+        if len(a[i]) >= 5 and a[i][:5] == "MODEL":
+            model_title_index = i
+            model_title_index_list.append(model_title_index)
+    model_title_index_list.append(n)
+    check_array = np.diff(model_title_index_list)
+    if np.allclose(check_array, check_array[0]):
+        size = check_array[0]
+    elif np.allclose(check_array[:-1], check_array[0]) and check_array[-1] == check_array[0] + 1:
+        # this is ok. with extra "END"
+        size = check_array[0]
+    else:
+        print("!!!! Someting is wrong  !!!!")
+        print(check_array)
+    out_a = a[size*frame:size*(frame+1)]
+    print(len(out_a))
+    with open(outLocation, "w") as out:
+        out.write("".join(out_a))
+>>>>>>> 85c708f75fc669cf056db2a71ca434ad3a6bb609
 
 # def get_inside_or_not_table(pdb_file):
 #     parser = PDBParser(PERMISSIVE=1)

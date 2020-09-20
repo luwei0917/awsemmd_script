@@ -97,7 +97,7 @@ if False:
     e_direct = compute_direct(structure, hasPhosphorylation=True)
     e_burial = compute_burial(structure, hasPhosphorylation=True)
 
-if False:
+if True:
     # fastaFile = "/Users/weilu/Research/server/feb_2020/compare_side_chain_with_and_without/native/256_cbd_submode_7_debug/crystal_structure.fasta"
     fastaFile = "crystal_structure.fasta"
     seq = read_fasta(fastaFile)
@@ -106,7 +106,9 @@ if False:
     print("e_side_chain", e_side_chain)
 
 if True:
-    e_side_chain = compute_side_chain_exclude_volume_energy(structure)
+    # fileLocation='./cbd_cbd_real_contact_symmetric.csv'
+    fileLocation='./cbd_cbd_real_contact_symmetric_may02.csv'
+    e_side_chain = compute_side_chain_exclude_volume_energy(structure, fileLocation=fileLocation)
     print("e_side_chain_exclude_volume", e_side_chain)
 if False:
     e_positive_inside_rule = compute_positive_inside_rule(structure)
@@ -129,7 +131,7 @@ if True:
 
     e_burial = compute_burial(structure, burial_gamma, hasPhosphorylation=False)
 # print("Mediated, Direct, Mediated+Direct, Burial, Mediated+Direct+Burial")
-if True:
+if False:
     # environment
     e_mediated = compute_mediated(structure, protein_gamma_ijm, water_gamma_ijm, hasPhosphorylation=False, fixWellCenter=False)
     e_direct = compute_direct(structure, gamma_ijm, hasPhosphorylation=False, fixWellCenter=False, environment=True)

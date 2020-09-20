@@ -340,7 +340,7 @@ def compute_direct(structure, gamma_ijm, kappa=5.0, hasPhosphorylation=False, r_
                     # r_min_res1_res2 = 2.5
                     # r_max_res1_res2 = 6.5
                 else:
-                    r_max_res1_res2 = r_min
+                    r_min_res1_res2 = r_min
                     r_max_res1_res2 = r_max
                 if environment:
                     d_H_i = density_H[res1globalindex]
@@ -1008,7 +1008,7 @@ def get_side_chain_center_of_mass(atoms):
     x_com = total / total_mass
     return x_com
 
-def compute_side_chain_exclude_volume_energy(structure, fileLocation='/Users/weilu/Research/server/mar_2020/cmd_cmd_exclude_volume/cbd_cbd_real_contact_symmetric.csv'):
+def compute_side_chain_exclude_volume_energy(structure, fileLocation='./cbd_cbd_real_contact_symmetric.csv'):
     gamma_se_map_1_letter = {   'A': 0,  'R': 1,  'N': 2,  'D': 3,  'C': 4,
                                 'Q': 5,  'E': 6,  'G': 7,  'H': 8,  'I': 9,
                                 'L': 10, 'K': 11, 'M': 12, 'F': 13, 'P': 14,
@@ -1045,4 +1045,5 @@ def compute_side_chain_exclude_volume_energy(structure, fileLocation='/Users/wei
             if r_max - r_min < 0.1:
                 print(res1, res2, r_max, r_min)
             e += np.heaviside(r_max-r, 0)*((r-r_max)/(r_max-r_min))**2
+        print(res1, cbd_1)
     return e

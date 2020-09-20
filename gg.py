@@ -57,8 +57,14 @@ with open('gg_cmd.txt', 'a') as f:
     f.write('\n')
 
 
-def do(cmd):
-    subprocess.Popen(cmd, shell=True).wait()
+def do(cmd, get=False, show=True):
+    if get:
+        out = subprocess.Popen(cmd,stdout=subprocess.PIPE,shell=True).communicate()[0].decode()
+        if show:
+            print(out, end="")
+        return out
+    else:
+        return subprocess.Popen(cmd, shell=True).wait()
 cd = os.chdir
 
 # def pick_structure():
@@ -148,6 +154,379 @@ def get_aligned_info(p1, p2):
     # print(aligned_length, rmsd, tmscore, seqid)
     return aligned_length, rmsd, tmscore, seqid
 
+def convert_frag_to_cbd(fragFile):
+    # a = "frags.mem"
+    a = fragFile
+    with open(a) as f:
+        b = f.readlines()
+    pdb_list = [c.split()[0].split("/")[-1].split(".")[0] for c in b[4:]]
+
+    # pdb_list = ["2ix5a"]
+    pdb_list = list(set(pdb_list))
+    print(len(pdb_list))
+    for pdb in pdb_list:
+        print(pdb)
+        upperPDB = pdb[:4].upper()
+        pre = f"/Users/weilu/openmmawsem/PDBs/"
+        toPre = "frag_in_cbd"
+        do(f"mkdir -p {toPre}/pdbs")
+        do(f"mkdir -p {toPre}/frags")
+        fromFile = f"{pre}/{upperPDB}.pdb"
+        toFile = f"{toPre}/pdbs/cbd_{upperPDB}.pdb"
+        convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+        # cmd = f"python ~/openmmawsem/helperFunctions/Pdb2Gro.py {toPre}/pdbs/cbd_{upperPDB}.pdb {toPre}/{pdb}.gro"
+        pdbFile = toFile
+        groFile = f"{toPre}/frags/{pdb}.gro"
+        chainID = pdb[-1]
+        Pdb2Gro(pdbFile, groFile, chainID.upper())
+        do(f"cp {fragFile} cbd_frags.mem")
+        replace(f"cbd_frags.mem", "./fraglib/", f"{toPre}/frags/")
+
+
+if args.day == "jun20":
+    pdb_list = ['4y60', '5ke8', '1a1j', '5lxu', '1skn', '6a2h']
+    if args.mode == 1:
+        for pdb in pdb_list:
+            folder = f"setups/{pdb}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"python /Users/weilu/openmmawsem/mm_create_project.py ../../../protein_DNA/cleaned_pdbs/{pdb}.pdb --extended")
+            cd("../..")
+            # do(f"cp gamma_noCysCys.dat {folder}/")
+
+if args.day == "jun12":
+    pdb = "1su4"
+    if args.mode == 1:
+        # get cbd openAWSEM input.
+        pre = "./"
+        original_openAWSEM_input = f"{pre}/{pdb}-openmmawsem.pdb"
+        new_openAWSEM_input = f"{pre}/cbd-openmmawsem.pdb"
+        all_atom_pdb_file = f"{pre}/crystal_structure-cleaned.pdb"
+        replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file)
+    if args.mode == 2:
+        # get single memory in cbd format
+        pre = "./"
+        fromFile = f"{pre}/crystal_structure.pdb"
+        toFile = f"{pre}/cbd_{pdb}.pdb"
+        convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+        cmd = f"python ~/openmmawsem/helperFunctions/Pdb2Gro.py {pre}/cbd_{pdb}.pdb {pre}/cbd_{pdb}.gro"
+        do(cmd)
+        do(f"cp {pre}/single_frags.mem {pre}/cbd_single_frags.mem")
+        replace(f"{pre}/cbd_single_frags.mem", pdb, f"cbd_{pdb}")
+
+if args.day == "may16":
+    # disulfide setups and annealing.
+    pdb_list = ["1ppb", "1fs3", "1bpi", "1hn4", "1lmm", "1tcg"]
+    pdb_list = ["1ppb_H"]
+    pdb_list = ["1hn4_A"]
+    if args.mode == 1:
+        downloadPdb(pdb_list)
+        cleanPdb(pdb_list, source="original_pdbs/", addMissingResidues=True, toFolder="cleaned_pdbs/", chain=-1, formatName=False, removeTwoEndsMissingResidues=True)
+    if args.mode == 2:
+        for pdb in pdb_list:
+            folder = f"setups/{pdb}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"mm_create_project.py ../../cleaned_pdbs/{pdb}.pdb --extended")
+            cd("../..")
+            do(f"cp gamma_noCysCys.dat {folder}/")
+    if args.mode == 3:
+        # ho frag memeory
+        for pdb in pdb_list:
+            frag_folder = f"frag_memory/{pdb}"
+            do(f"mkdir -p {frag_folder}")
+            cd(frag_folder)
+            do(f"cp ../../setups/{pdb}/{pdb}.fasta .")
+            do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/openmmawsem/database/cullpdb_pc80_res3.0_R1.0_d160504_chains29712 {pdb}.fasta 20 2 9 > logfile")
+
+            sys.path.insert(0, "/Users/weilu/openmmawsem")
+            # name = "1iwg"
+            import openmmawsem
+            import helperFunctions.myFunctions
+            helperFunctions.myFunctions.check_and_correct_fragment_memory("frags.mem")
+
+            do(f"cp frags.mem ../../setups/{pdb}/ho.mem")
+            cd("../..")
+    if args.mode == 4:
+        for pdb in pdb_list:
+            do(f"python mm_run.py setups/{pdb}/{pdb} --to native/{pdb}_ho -f forces_setup_gamma_noCysCys.py --subMode 31 --reportFrequency 10 -s 20")
+    if args.mode == 5:
+        pdb = "1lmm"
+        do(f"python mm_run.py setups/{pdb}/{pdb} --to test/{pdb}_ho -f forces_setup_gamma_noCysCys.py --subMode 31 --reportFrequency 10 -s 20")
+if args.day == "nov29":
+    pdb = "1hn4"
+    pdb = "1lmm"
+    pdb = "1tcg"
+    pdb = args.label
+    if args.mode == 4:
+        for pdb in ["1tcg", "1lmm"]:
+            do(f"gg.py -d nov29 -m 1 -l {pdb}")
+            do(f"gg.py -d nov29 -m 2 -l {pdb}")
+            do(f"gg.py -d nov29 -m 3 -l {pdb}")
+    if args.mode == 1:
+        folder = f"setups/{pdb}"
+        do(f"mkdir -p {folder}")
+        cd(folder)
+        do(f"mm_create_project.py ../../original_pdbs/{pdb}.pdb --extended")
+        cd("../..")
+        do(f"cp gamma_noCysCys.dat {folder}/")
+    if args.mode == 2:
+        # ho frag memeory
+        frag_folder = f"frag_memory/{pdb}"
+        do(f"mkdir -p {frag_folder}")
+        cd(frag_folder)
+        do(f"cp ../../setups/{pdb}/{pdb}.fasta .")
+        do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/openmmawsem/database/cullpdb_pc80_res3.0_R1.0_d160504_chains29712 {pdb}.fasta 20 2 9 > logfile")
+
+        sys.path.insert(0, "/Users/weilu/openmmawsem")
+        # name = "1iwg"
+        import openmmawsem
+        import helperFunctions.myFunctions
+        helperFunctions.myFunctions.check_and_correct_fragment_memory("frags.mem")
+
+        do(f"cp frags.mem ../../setups/{pdb}/ho.mem")
+        cd("../..")
+    if args.mode == 3:
+        do(f"python mm_run.py setups/{pdb}/{pdb} --to native/{pdb}_single -f forces_setup_gamma_noCysCys.py --subMode 1 --reportFrequency 10 -s 20")
+        do(f"python mm_run.py setups/{pdb}/{pdb} --to native/{pdb}_ho -f forces_setup_gamma_noCysCys.py --subMode 31 --reportFrequency 10 -s 20")
+    # if args.mode == 2:
+    #     do(f"cp frags.mem ../../setups/{pdb}/ho.mem")
+    # if args.mode == 3:
+    #     sys.path.insert(0, "/Users/weilu/openmmawsem")
+    #     # name = "1iwg"
+    #     import openmmawsem
+    #     import helperFunctions.myFunctions
+    #     helperFunctions.myFunctions.check_and_correct_fragment_memory("frags.mem")
+
+
+if args.day == "may12":
+    if args.mode == 1:
+        parser = PDBParser(QUIET=True)
+        fileName = "/Users/weilu/Research/server/may_week2_2020/cornichon/source/6ud8.pdb"
+        s = parser.get_structure("X", fileName)
+
+
+        class ResSelect(Select):
+            def accept_residue(self, residue):
+                try:
+                    if residue["CA"].get_coord()[2] < 30:
+                        return 1
+                    else:
+                        return 0
+                except:
+                    if residue.id[0] == "H_ZK1":
+                        return 0
+                    else:
+                        return 1
+
+        io = PDBIO()
+        io.set_structure(s)
+        io.save('/Users/weilu/Research/server/may_week2_2020/cornichon/source/cutoff_z30.pdb', ResSelect())
+    if args.mode == 2:
+        do("pdb_selchain -A,B,C,D,E cutoff_z30.pdb > chainABCDE.pdb")
+        # do("pdb_selchain -E 20200120_171355_2866_6ud8.pdb > chainE.pdb")
+        # do("pdb_selchain -A,B,C,D 20200120_171355_2866_6ud8.pdb > chain_ABCD.pdb")
+    if args.mode == 3:
+        # pdb_list = ["chainE"]
+        pdb_list = ["20200120_171355_2866_6ud8"]
+        cleanPdb(pdb_list, source="./", addMissingResidues=True, toFolder="complete_chainE/", chain="E", formatName=False, removeTwoEndsMissingResidues=False, verbose=True)
+    if args.mode == 4:
+        # pdb_list = ["chainE"]
+        pdb_list = ["combine_chain_ABCD_and_complete_chainE"]
+        cleanPdb(pdb_list, source="./", removeHeterogens=False, addMissingResidues=False, toFolder="cleaned/", chain="ABCDE", formatName=False, removeTwoEndsMissingResidues=False, verbose=True)
+        # then manual combine those two
+
+if args.day == "may08":
+
+    pdb = "6T7A"
+    chosen = ["5KL6", "6CEU", "6TEM", "6L49", "6S01", "6KE9"]
+    pdb_list = chosen
+    if args.mode == 11:
+        downloadPdb(pdb_list)
+    if args.mode == 1:
+        #
+        for p in pdb_list:
+            print(p)
+            pdb = p.lower()
+            # do(f"download.py {pdb}")
+            do(f"mkdir -p setups/{pdb}")
+            cd(f"setups/{pdb}")
+            # cmd = f"python setup_DNA.py original_pdbs/{pdb}.pdb -o cleaned/{pdb}_clean.pdb"
+            cmd = f"mm_create_project.py ../../source/original_pdbs/{pdb}.pdb"
+            do(cmd)
+            cd("../..")
+            # cmd = f"grep 'S   D' cleaned/{pdb}_clean.pdb | wc"
+            # print("DNA")
+            # line = do(cmd, get=True, show=True).strip()
+            # do(f"echo '{line}' > data/{pdb}_DNA.dat")
+
+            # cmd = f"grep 'CA' cleaned/{pdb}_clean.pdb | wc"
+            # print("Protein")
+            # line = do(cmd, get=True, show=True).strip()
+            # do(f"echo '{line}' > data/{pdb}_Protein.dat")
+    if args.mode == 2:
+        for p in pdb_list:
+            pdb = p.lower()
+            do(f"cp cleaned/{pdb}_clean.pdb chosen/")
+
+if args.day == "may07":
+    if args.mode == 1:
+        pdb_list = ["1akr", "1opd", "1ptf", "1tig", "1tmy", "2acy", "5nul"]
+        for pdb in pdb_list:
+            do(f"python mm_evaluate_native.py setups/{pdb}/{pdb} --to native_frag/{pdb} --subMode 0")
+    if args.mode == 2:
+        import sys
+        sys.path.insert(0, "/Users/weilu/openmmawsem/helperFunctions/")
+        from Pdb2GroLib import *
+        pdb_list = ["1akr", "1opd", "1ptf", "1tig", "1tmy", "2acy", "5nul"]
+        for pdb in pdb_list:
+            cd(f"setups/{pdb}")
+            fragFile = "frags.mem"
+            convert_frag_to_cbd(fragFile)
+            cd("../..")
+    if args.mode == 3:
+        pdb_list = ["1akr", "1opd", "1ptf", "1tig", "1tmy", "2acy", "5nul"]
+        for pdb in pdb_list:
+            do(f"python mm_evaluate_native.py setups/{pdb}/{pdb} --to native_frag_cbd/{pdb} --subMode 14 -f forces_setup_cbd.py")
+if args.day == "may06":
+    pdb_list = ['5ITH', '6D1T', '5NNX', '4X9J', '5KL5', '5KL2', '5KL7', '5KL6', '5KL3', '5D5W', '5ZK1', '5D8K', '6OGK', '6NCE', '5GZB', '6AKP', '6AKO', '4XZF', '5L0M', '5BT2', '6JVY', '6A8R', '5D5U', '5K5J', '5K5I', '5VC9', '5K5H', '6F1K', '6TCE', '4USG', '5MEY', '5EG0', '6E94', '6E93', '6DFY', '5EGO', '5Z2T', '6BLW', '5HOD', '4XRM', '6TBZ', '5BNG', '5T01', '5W9Q', '6U81', '6DFB', '5VMU', '5VMW', '5VMV', '5VMY', '5VMX', '5VMZ', '6DF8', '6DF5', '6DF9', '6V8U', '6DFC', '6DFA', '5VA7', '6E8C', '5VA0', '6BQU', '6Q6R', '6C1T', '5UC6', '5EGB', '5ZFW', '5ZFZ', '5ZFY', '6MDX', '6MG3', '6MG2', '5Z6Z', '6CEV', '6CCG', '6CC8', '6CEU', '5LUX', '5TD5', '5CC0', '6CNQ', '4WK8', '6FBR', '6BUX', '4CN2', '4CN5', '6FBQ', '5EYO', '6LFF', '5BUA', '6L6Q', '6L6L', '6ES2', '5LTY', '6ES3', '5CHZ', '4OFA', '4OFH', '4OFE', '5KEG', '6IIR', '6OGJ', '6C1Y', '5EMC', '5EMP', '5EMQ', '4Y0F', '5KL4', '6NCM', '6O3T', '5YBD', '6FQP', '6CNP', '5D8F', '6IIT', '6IIS', '6EL8', '5YJ3', '5BNH', '4XEG', '5CYS', '5JXY', '4YJ0', '4Z7B', '4Z7Z', '5E69', '5E6B', '5E6A', '4Z47', '5E6D', '5E6C', '4Z3A', '4YO2', '5DUI', '5ZYV', '6KI6', '6OD4', '5I50', '6T78', '5T2W', '6U15', '5HF7', '6U16', '6U17', '5D5V', '5ZU1', '5ODG', '5OD6', '6B0O', '6B0P', '6OEB', '6OEA', '6OE7', '6B0Q', '5FF8', '4XRS', '4ZBN', '6FZS', '6OD5', '6B0R']
+    pdb_list = ['5KL6', '6CEU', '4OFA', '5E6A', '5ZOE', '5V09', '5D9Y', '5KFL', '4ROD', '6P94', '6P09', '6BKG', '5XFQ', '5ZKJ', '5SWW', '5ZQF', '5NWA', '6EDB', '5YX2', '6KE9', '5W2C', '5W1C', '5ITU', '5E5A', '5XM0', '5Y0D', '6SE6', '5IIO', '6C0W', '6T7C', '5U1C', '6O96', '6NJ9', '6NOG', '6S01', '6PWX', '5N96', '5N8U', '6ASW', '6T90', '6R25', '5GSE', '6CIL', '6ERG', '6UPK', '4U7D', '3JBX', '6UPL', '6R8Z', '3JBW', '6CG0', '6R92']
+
+    pdb = "6T7A"
+    chosen = ["5KL6", "6CEU", "6TEM", "6L49", "6S01", "6KE9"]
+    pdb_list = chosen
+    if args.mode == 11:
+        downloadPdb(pdb_list)
+    if args.mode == 1:
+        #
+        for p in pdb_list:
+            print(p)
+            pdb = p.lower()
+            # do(f"download.py {pdb}")
+            cmd = f"python setup_DNA.py original_pdbs/{pdb}.pdb -o cleaned/{pdb}_clean.pdb"
+            do(cmd)
+
+            cmd = f"grep 'S   D' cleaned/{pdb}_clean.pdb | wc"
+            print("DNA")
+            line = do(cmd, get=True, show=True).strip()
+            do(f"echo '{line}' > data/{pdb}_DNA.dat")
+
+            cmd = f"grep 'CA' cleaned/{pdb}_clean.pdb | wc"
+            print("Protein")
+            line = do(cmd, get=True, show=True).strip()
+            do(f"echo '{line}' > data/{pdb}_Protein.dat")
+    if args.mode == 2:
+        for p in pdb_list:
+            pdb = p.lower()
+            do(f"cp cleaned/{pdb}_clean.pdb chosen/")
+if args.day == "may22":
+    if args.mode == 1:
+        pdb_list = ["1akr", "1opd", "1ptf", "1tig", "1tmy", "2acy", "5nul"]
+        for pdb in pdb_list:
+            name = pdb
+            cd(f"setups/{pdb}")
+            protein_length = getFromTerminal("wc ssweight").split()[0]
+            print(f"protein: {name}, length: {protein_length}")
+
+            new_line = f"cbd_{name}.gro 1 1 {protein_length} 1"
+            do("cp cbd_frags.mem cbd_frags_include_native.mem")
+            do(f"echo {new_line} >> cbd_frags_include_native.mem")
+            cd("../..")
+
+if args.day == "may05":
+    # cornichon
+    if args.mode == 1:
+        pdb_list = ["6ud8"]
+        cleanPdb(pdb_list, source="./", addMissingResidues=True, toFolder="cleaned_pdbs/", chain="E", formatName=False, removeTwoEndsMissingResidues=True)
+    if args.mode == 2:
+        do(f"mm_create_project.py ../source/chainE_no_filling.pdb --extended --frag --membrane")
+    if args.mode == 3:
+        # get cbd openAWSEM input.
+        pre = "./"
+        pdb = "chainE_no_filling"
+        original_openAWSEM_input = f"{pre}/{pdb}-openmmawsem.pdb"
+        new_openAWSEM_input = f"{pre}/cbd-openmmawsem.pdb"
+        all_atom_pdb_file = f"{pre}/crystal_structure-cleaned.pdb"
+        replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file)
+    if args.mode == 4:
+        # get single memory in cbd format
+        pre = "./"
+        pdb = "chainE_no_filling"
+        fromFile = f"{pre}/crystal_structure.pdb"
+        toFile = f"{pre}/cbd_{pdb}.pdb"
+        convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+        cmd = f"python ~/openmmawsem/helperFunctions/Pdb2Gro.py {pre}/cbd_{pdb}.pdb {pre}/cbd_{pdb}.gro"
+        do(cmd)
+        do(f"cp {pre}/single_frags.mem {pre}/cbd_single_frags.mem")
+        replace(f"{pre}/cbd_single_frags.mem", pdb, f"cbd_{pdb}")
+    if args.mode == 5:
+        # convert all pdb in fras.mem
+        a = "frags.mem"
+        with open(a) as f:
+            b = f.readlines()
+        pdb_list = [c.split()[0].split("/")[-1].split(".")[0] for c in b[4:]]
+        import sys
+        sys.path.insert(0, "/Users/weilu/openmmawsem/helperFunctions/")
+        from Pdb2GroLib import *
+        # pdb_list = ["2ix5a"]
+        pdb_list = list(set(pdb_list))
+        print(len(pdb_list))
+        for pdb in pdb_list:
+            print(pdb)
+            upperPDB = pdb[:4].upper()
+            pre = f"/Users/weilu/openmmawsem/PDBs/"
+            toPre = "frag_in_cbd"
+            do(f"mkdir -p {toPre}/pdbs")
+            do(f"mkdir -p {toPre}/frags")
+            fromFile = f"{pre}/{upperPDB}.pdb"
+            toFile = f"{toPre}/pdbs/cbd_{upperPDB}.pdb"
+            convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+            # cmd = f"python ~/openmmawsem/helperFunctions/Pdb2Gro.py {toPre}/pdbs/cbd_{upperPDB}.pdb {toPre}/{pdb}.gro"
+            pdbFile = toFile
+            groFile = f"{toPre}/frags/{pdb}.gro"
+            chainID = pdb[-1]
+            Pdb2Gro(pdbFile, groFile, chainID.upper())
+    if args.mode == 6:
+        pre = "./"
+        toPre = "frag_in_cbd"
+        do(f"cp {pre}/frags.mem {pre}/cbd_frags.mem")
+        replace(f"{pre}/cbd_frags.mem", "./fraglib/", f"{toPre}/frags/")
+
+if args.day == "may02":
+    if args.mode == 1:
+        pdb_list = ["1r69", "1akr", "1opd", "1ptf", "1tig", "1tmy", "2acy", "5nul"]
+        for pdb in pdb_list:
+            pre = f"setups/{pdb}"
+            fromFile = f"{pre}/crystal_structure.pdb"
+            toFile = f"{pre}/cbd_{pdb}.pdb"
+            convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+            cmd = f"python ~/openmmawsem/helperFunctions/Pdb2Gro.py {pre}/cbd_{pdb}.pdb {pre}/cbd_{pdb}.gro"
+            do(cmd)
+            do(f"cp {pre}/single_frags.mem {pre}/cbd_single_frags.mem")
+            replace(f"{pre}/cbd_single_frags.mem", pdb, f"cbd_{pdb}")
+    if args.mode == 2:
+        # pre = "/Users/weilu/Research/server/feb_2020/casp13_targets/setups/T0953s2-D1"
+        pdb_list = ["1r69", "1akr", "1opd", "1ptf", "1tig", "1tmy", "2acy", "5nul"]
+        for pdb in pdb_list:
+            pre = f"setups/{pdb}"
+            original_openAWSEM_input = f"{pre}/{pdb}-openmmawsem.pdb"
+            new_openAWSEM_input = f"{pre}/cbd-openmmawsem.pdb"
+            all_atom_pdb_file = f"{pre}/crystal_structure-cleaned.pdb"
+            replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file)
+if args.day == "may01":
+    if args.mode == 1:
+        pdb_list = ["1akr", "1opd", "1ptf", "1tig", "1tmy", "2acy", "5nul"]
+        for pdb in pdb_list:
+            folder = f"setups/{pdb}"
+            do(f"mkdir -p {folder}")
+            cd(folder)
+            do(f"mm_create_project.py ../../source/{pdb}.pdb --extended --frag")
+            cd("../..")
+    if args.mode == 2:
+        pdb_list = ["1akr", "1opd", "1ptf", "1tig", "1tmy", "2acy", "5nul"]
+        for pdb in pdb_list:
+            do(f"python mm_evaluate_native.py setups/{pdb}/{pdb} --to native/{pdb}")
+
 if args.day == "apr29":
     if args.mode == 1:
         # pre = "/Users/weilu/Research/server/feb_2020/casp13_targets/setups/T0953s2-D1"
@@ -157,6 +536,107 @@ if args.day == "apr29":
         new_openAWSEM_input = f"{pre}/cbd-openmmawsem.pdb"
         all_atom_pdb_file = f"{pre}/crystal_structure-cleaned.pdb"
         replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file)
+    if args.mode == 2:
+        a = "/Users/weilu/Research/server/apr_2020/cornichon_cbd/chain_E/frags.mem"
+        with open(a) as f:
+            b = f.readlines()
+        pdb_list = [c.split()[0].split("/")[-1].split(".")[0] for c in b[4:]]
+        import sys
+        sys.path.insert(0, "/Users/weilu/openmmawsem/helperFunctions/")
+        from Pdb2GroLib import *
+        # pdb_list = ["2ix5a"]
+        pdb_list = list(set(pdb_list))
+        print(len(pdb_list))
+        for pdb in pdb_list:
+            print(pdb)
+            upperPDB = pdb[:4].upper()
+            pre = f"/Users/weilu/openmmawsem/PDBs/"
+            toPre = "/Users/weilu/Research/server/apr_2020/cornichon_cbd/frag_in_cbd"
+            fromFile = f"{pre}/{upperPDB}.pdb"
+            toFile = f"{toPre}/pdbs/cbd_{upperPDB}.pdb"
+            convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+            # cmd = f"python ~/openmmawsem/helperFunctions/Pdb2Gro.py {toPre}/pdbs/cbd_{upperPDB}.pdb {toPre}/{pdb}.gro"
+            pdbFile = toFile
+            groFile = f"{toPre}/frags/{pdb}.gro"
+            chainID = pdb[-1]
+            Pdb2Gro(pdbFile, groFile, chainID.upper())
+
+
+if args.day == "apr24":
+    if args.mode == 1:
+        relocate(fileLocation="frags.mem", toLocation="../fraglib")
+        replace(f"frags.mem", "/Users/weilu/openmmawsem//Gros/", "../../fraglib/")
+        protein_length = getFromTerminal("wc ssweight").split()[0]
+        # print(f"protein: {name}, length: {protein_length}")
+    if args.mode == 2:
+        sys.path.insert(0, "/Users/weilu/openmmawsem")
+        # name = "1iwg"
+        import openmmawsem
+        import helperFunctions.myFunctions
+        for i in range(7):
+            print(i)
+            pdb = f"movie_frame_{i}.pdb"
+            input_pdb_filename, cleaned_pdb_filename = openmmawsem.prepare_pdb(pdb, "T", keepIds=False)
+            openmmawsem.ensure_atom_order(input_pdb_filename)
+    if args.mode == 3:
+        # do("echo 'ENDMODEL\nMODEL  {i+1}\n' >> openAWSEM_formatted_movie.pdb")
+        do("rm openAWSEM_formatted_movie.pdb")
+        for i in range(7):
+            pdb = f"movie_frame_{i}-openmmawsem.pdb "
+            do(f"cat {pdb} >> openAWSEM_formatted_movie.pdb")
+            # do(f"sed '$d' {pdb} >> openAWSEM_formatted_movie.pdb")
+            # do("echo 'ENDMODEL\nMODEL  {i+1}\n' >> openAWSEM_formatted_movie.pdb")
+if args.day == "apr16":
+    if args.mode == 1:
+        # pdb = "6e67A"
+        for pdb in dataset["hybrid"]:
+            part = "globular"
+            # part = "membrane"
+            with open(f"plot_script/show_{pdb}_{part}.pml", "w") as out:
+                # out.write(f"load native_{part}.pdb\n")
+                a = f"{pdb}_best_{part}"
+                out.write(f"load ../best_Q_structures/{a}.pdb\n")
+                b = f"{pdb}_native_{part}"
+                out.write(f"load ../native_structures/{b}.pdb\n")
+                out.write(f'cealign {a}, {b}\ncmd.spectrum("count",selection="({a})&*/CA")\ncmd.spectrum("count",selection="({b})&*/CA")\n')
+                out.write("orient\n")
+                out.write("set ray_opaque_background, on\n")
+                # out.write("ray 1000, 1000\n")
+                # out.write(f"save {pdb}_{part}.png\n")
+                # out.write("exit\n")
+    if args.mode == 2:
+        part = "globular"
+        for pdb in dataset["hybrid"]:
+            do(f"pymol show_{pdb}_{part}.pml")
+    if args.mode == 3:
+        # pdb = "6e67A"
+        for pdb in dataset["hybrid"]:
+            part = "membrane"
+            # part = "membrane"
+            with open(f"plot_script/show_{pdb}_{part}.pml", "w") as out:
+                # out.write(f"load native_{part}.pdb\n")
+                a = f"{pdb}_best_{part}"
+                out.write(f"load ../best_Q_membrane_structures/{a}.pdb\n")
+                b = f"{pdb}_native_{part}"
+                out.write(f"load ../native_structures/{b}.pdb\n")
+                out.write(f'cealign {a}, {b}\ncmd.spectrum("count",selection="({a})&*/CA")\ncmd.spectrum("count",selection="({b})&*/CA")\n')
+                out.write("orient\n")
+                out.write("set ray_opaque_background, on\n")
+                # out.write("ray 1000, 1000\n")
+                # out.write(f"save {pdb}_{part}.png\n")
+                # out.write("exit\n")
+    if args.mode == 4:
+        part = "membrane"
+        for pdb in dataset["hybrid"]:
+            do(f"pymol show_{pdb}_{part}.pml")
+
+        fromFile = f"{pre}/crystal_structure.pdb"
+        toFile = f"{pre}/cbd_{pdb}.pdb"
+        convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+        cmd = f"python ~/openmmawsem/helperFunctions/Pdb2Gro.py {pre}/cbd_{pdb}.pdb {pre}/cbd_{pdb}.gro"
+        do(cmd)
+        do(f"cp {pre}/single_frags.mem {pre}/cbd_single_frags.mem")
+        replace(f"{pre}/cbd_single_frags.mem", pdb, f"cbd_{pdb}")
 
 if args.day == "mar06":
     data = pd.read_csv("training_set.csv")
