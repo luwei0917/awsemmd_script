@@ -2262,9 +2262,6 @@ def replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_
     io.save(new_openAWSEM_input)
     return True
 
-<<<<<<< HEAD
-
-
 
 def convert_to_one(resName):
     DNA_resNames = ["DA", "DC", "DT", "DG"]
@@ -2580,7 +2577,6 @@ def get_DNA_protein_bonds(original_pdb_file, new_dna_pdb_file, bond_info_file):
     bond_info.to_csv(bond_info_file)
     # bond_info.to_csv(bond_info_file)
 
-=======
 def getFrame(frame, outLocation, movieLocation="movie.pdb"):
     location = movieLocation
     with open(location) as f:
@@ -2606,7 +2602,6 @@ def getFrame(frame, outLocation, movieLocation="movie.pdb"):
     print(len(out_a))
     with open(outLocation, "w") as out:
         out.write("".join(out_a))
->>>>>>> 85c708f75fc669cf056db2a71ca434ad3a6bb609
 
 # def get_inside_or_not_table(pdb_file):
 #     parser = PDBParser(PERMISSIVE=1)
