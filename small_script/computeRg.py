@@ -11,8 +11,12 @@ def computeRg(pdb_file, chain="A"):
     parser = PDBParser()
     structure = parser.get_structure('X', pdb_file)
     chain = list(structure[0][chain_name])
-    n = len(chain)
-    regular_res_list = [res for res in chain  if res.get_id()[0] == ' ']
+    all_res = list(structure.get_residues())
+    # n = len(all_res)
+    # n = len(chain)
+    regular_res_list = [res for res in all_res  if res.get_id()[0] == ' ']
+    n = len(regular_res_list)
+    print("all chains")
     cutoff = 15
     for residue in regular_res_list:
         if residue.get_id()[0] == ' ' and abs(residue["CA"].get_vector()[-1]) < cutoff:

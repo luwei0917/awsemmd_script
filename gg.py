@@ -204,6 +204,195 @@ if args.day == "sep20":
             do(f"cp frags.mem ../../setups/{pdb}/he.mem")
             cd("../..")
 
+if args.day == "nov16":
+    if args.mode == 2:
+        pdb_list = ['5ncq', '1uaz', '5lwe', '6e9o', '5i6x', '3vvo', '4tph', '6m20', '6d32']
+        new_target_set = pd.read_csv("/Users/weilu/Research/data/openMM/membrane_protein_target_set_run1_submode1_11-15.csv").reset_index(drop=True)
+        y = "Q"
+        # d = pd.concat([data, previous_data])
+        # d = pd.concat([data, mixed_iter2, iter1_v1])
+        d = pd.concat([new_target_set])
+        d = d.query("Steps > 1000").reset_index(drop=True)
+        t = d.groupby(["Protein", "Folder"])[y].idxmax().reset_index()
+        max_Q_data = d.iloc[t[y].to_list()].reset_index(drop=True)
+        # sub_data = max_Q_data
+        max_Q_data["Protein_sorted"] = pd.Categorical(max_Q_data["Protein"], pdb_list)
+        print(max_Q_data)
+        for i, line in max_Q_data.iterrows():
+            pdb = line["Protein"]
+            run = line["Run"]
+            folder = line["Folder"]
+            # do(f"scp -r wl45@nots.rice.edu:/scratch/wl45/nov_2020/membrane_protein_target_set/{folder}/{pdb}/{run}/movie.dcd {pdb}_{folder}_{run}.movie.dcd")
+            # do(f"scp -r wl45@nots.rice.edu:/scratch/wl45/nov_2020/membrane_protein_target_set/setups/{pdb}/minimization-openmmawsem.pdb {pdb}.pdb")
+            do(f"scp -r wl45@nots.rice.edu:/scratch/wl45/nov_2020/membrane_protein_target_set/{folder}/{pdb}/{run}/lastFrame.pdb last_frame_{pdb}_{folder}_{run}.pdb")
+    if args.mode == 1:
+        pdb_list = ["2bg9", "1j4n", "1py6_SD", "2bl2", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19"]
+        cmd = " ".join([f"setups/{pdb}/{pdb}-cleaned.pdb" for pdb in pdb_list])
+        do(f"pymol {cmd}")
+if args.day == "nov14":
+    if args.mode == 1:
+        pdb_list = manual_chosen = ['1uaz', '5lwe', '6e9o', '5i6x', '3vvo', '4tph', '6m20', '6d32']
+        for pdb in pdb_list:
+            a = open(f"/Users/weilu/Research/server/nov_2020/membrane_protein_target_set/test/qucik_start_native/{pdb}/native.pdb").readlines()
+            keep = False
+            info = []
+            for line in a:
+                if len(line) < 5:
+                    continue
+                if keep:
+                    info.append(line)
+                if line[:5] == "MODEL":
+                    # print(line)
+                    # print(line.split())
+                    if line.split()[1] == "2":
+                        keep = True
+            with open(f"/Users/weilu/Research/server/nov_2020/membrane_protein_target_set/setups/{pdb}/minimization-openmmawsem.pdb", "w") as out:
+                for line in info:
+                    out.write(line)
+
+if args.day == "nov12":
+    if args.mode == 1:
+        # zim to side
+        # PredictedZim to PredictedZimSide
+        # 3 to down, 2 to middle, 1 to up
+        pdb_list = ["5ncq"]
+        pdb_list = manual_chosen = ['1uaz', '5lwe', '6e9o', '5i6x', '3vvo', '4tph', '6m20', '6d32']
+        for pdb in pdb_list:
+            a = np.loadtxt(f"/Users/weilu/Research/server/nov_2020/membrane_protein_target_set/setups/{pdb}/zimPosition", dtype=int)
+            with open(f"/Users/weilu/Research/server/nov_2020/membrane_protein_target_set/setups/{pdb}/zimPositionSide", "w") as out:
+                for res in a:
+                    if res == 1:
+                        out.write("up\n")
+                    if res == 2:
+                        out.write("middle\n")
+                    if res == 3:
+                        out.write("down\n")
+
+
+if args.day == "nov11":
+    if args.mode == 3:
+        pdb_list = manual_chosen = ['1uaz', '5lwe', '6e9o', '5i6x', '3vvo', '4tph', '6m20', '6d32']
+        for pdb in pdb_list:
+            cmd = f"mkdir -p setups/{pdb}"
+            do(cmd)
+            cd(f"setups/{pdb}")
+            cmd = f"python ~/openmmawsem/mm_create_project.py ~/Dropbox/gxxxg/membrane_protein_target_set_curation/cleaned_manual_adjust/{pdb}.pdb --hybrid"
+            do(cmd)
+            cd("../..")
+    if args.mode == 2:
+        # pdb_list = ["5ncq"]
+        pdb_list = manual_chosen = ['1uaz', '5lwe', '6e9o', '5i6x', '3vvo', '4tph', '6m20', '6d32']
+        source = "/Users/weilu/Dropbox/gxxxg/membrane_protein_target_set_curation/manual_adjust/"
+        toFolder = "/Users/weilu/Dropbox/gxxxg/membrane_protein_target_set_curation/cleaned_manual_adjust/"
+        cleanPdb(pdb_list, source=source, addMissingResidues=False, toFolder=toFolder, chain=-1, formatName=False, removeTwoEndsMissingResidues=True)
+    if args.mode == 1:
+        chosen_list = pd.read_csv("/Users/weilu/Dropbox/gxxxg/chosen_one_from_each_family", index_col=0)
+        pdb_list = chosen_list["pdb"].to_list()
+        for pdb in pdb_list:
+            do(f"cp ../cleaned_membrane_part/{pdb}.pdb {pdb}_cleaned.pdb")
+            do(f"cp ../original/{pdb}.pdb {pdb}_original.pdb")
+            do(f"pymol {pdb}_cleaned.pdb {pdb}_original.pdb")
+if args.day == "nov10":
+    if args.mode == 2:
+        data = pd.read_csv("/Users/weilu/Dropbox/gxxxg/curated_membrane_protein_target_set_curation.csv", index_col=0)
+        os.system("mkdir -p /Users/weilu/Dropbox/gxxxg/membrane_protein_target_set_curation/membrane_part")
+        pdb_list = data["pdbid"].to_list()
+        pdb_list = [pdb[2:6] for pdb in pdb_list]
+        source = "/Users/weilu/Dropbox/gxxxg/membrane_protein_target_set_curation/membrane_part/"
+        toFolder = "/Users/weilu/Dropbox/gxxxg/membrane_protein_target_set_curation/cleaned_membrane_part/"
+        cleanPdb(pdb_list, source=source, addMissingResidues=False, toFolder=toFolder, chain=-1, formatName=False, removeTwoEndsMissingResidues=True)
+    if args.mode == 1:
+        data = pd.read_csv("/Users/weilu/Dropbox/gxxxg/curated_membrane_protein_target_set_curation.csv", index_col=0)
+        os.system("mkdir -p /Users/weilu/Dropbox/gxxxg/membrane_protein_target_set_curation/membrane_part")
+        for pdb in data["pdbid"]:
+            # print(pdb)
+            pdbName = pdb[2:6]
+            do(f"python ~/opt/small_script/extract_membrane_part.py /Users/weilu/Dropbox/gxxxg/membrane_protein_target_set_curation/original/{pdbName}.pdb /Users/weilu/Dropbox/gxxxg/membrane_protein_target_set_curation/membrane_part/{pdbName}.pdb -c 17")
+
+if args.day == "jul06":
+    if args.mode == 1:
+        # get cbd openAWSEM input.
+        # pre = "./"
+        pdb_list = dataset["membrane"]
+        for pdb in pdb_list:
+            pre = f"setups/{pdb}/"
+            original_openAWSEM_input = f"{pre}/{pdb}-openmmawsem.pdb"
+            new_openAWSEM_input = f"{pre}/cbd-openmmawsem.pdb"
+            all_atom_pdb_file = f"{pre}/crystal_structure-cleaned.pdb"
+            replace_CB_coord_with_CBD_for_openAWSEM_input(original_openAWSEM_input, new_openAWSEM_input, all_atom_pdb_file)
+
+            # get single memory in cbd format
+            # pre = "./"
+            fromFile = f"{pre}/crystal_structure.pdb"
+            toFile = f"{pre}/cbd_{pdb}.pdb"
+            convert_all_atom_pdb_to_cbd_representation(fromFile, toFile)
+            cmd = f"python ~/openmmawsem/helperFunctions/Pdb2Gro.py {pre}/cbd_{pdb}.pdb {pre}/cbd_{pdb}.gro"
+            do(cmd)
+            do(f"cp {pre}/single_frags.mem {pre}/cbd_single_frags.mem")
+            # replace(f"{pre}/cbd_single_frags.mem", pdb, f"cbd_{pdb}")
+            replace(f"{pre}/cbd_single_frags.mem", f"{pdb}_A", f"cbd_{pdb}")
+
+if args.day == "jul01":
+    # pdb_list = ["2jo1"]
+    pdb_list = dataset["membrane"]
+    if args.mode == 1:
+        # downloadPdb(pdb_list)
+        # pdb_list = ["2bg9", "1j4n", "1py6", "2bl2", "1rhz", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19", "2rh1"]
+        # pdb_list = ["2xov"]
+        # pdb_list = ["2bs2", "1py6", "1u19", "2rh1"]
+        do("mkdir -p original_pdbs")
+        for pdb in pdb_list:
+            do(f"wget https://opm-assets.storage.googleapis.com/pdb/{pdb}.pdb")
+            do(f"mv {pdb}.pdb original_pdbs/")
+        # cleanPdb(pdb_list, source="original_pdbs", chain=-1, formatName=False)
+    if args.mode == 2:
+        do("mkdir -p extracted")
+        from small_script.extract_pdb import *
+        protein_info_list = []
+        protein_info_list.append(("1py6_SD", "A",77, 199))
+        protein_info_list.append(("1py6", "A",5, 231))
+        protein_info_list.append(("2ic8", "A",91,272))
+        protein_info_list.append(("1occ", "C",71,261))
+        protein_info_list.append(("1pv6", "A", 1, 190))
+        protein_info_list.append(("1j4n", "A",4,119))
+        protein_info_list.append(("2bs2", "C", 21,237))
+        protein_info_list.append(("2bl2", "A", 12, 156))
+        protein_info_list.append(("2bg9", "A", 211, 301))
+        protein_info_list.append(("1iwg", "A", 330, 497))
+        protein_info_list.append(("1rhz", "A", 23, 188))
+        protein_info_list.append(("1kpl", "A", 31, 233))
+        protein_info_list.append(("1u19", "A", 33, 310))
+        for (protein, chain, residue_start, residue_end) in protein_info_list:
+            # do(f"wget {0}{1} -O ~/opt/crystal_structures/membrane_proteins/original_pdb/{1}".format(pdbFileDataBase, protein+".pdb"))
+            # do(f"wget {0}{1} -O {1}".format(pdbFileDataBase, protein+".pdb"))
+            extract_pdb("./", protein, chain, residue_start, residue_end)
+        # cleanPdb(pdb_list, chain=-1, formatName=False)
+        do("rm tmp.pdb")
+    if args.mode == 3:
+        cleanPdb(pdb_list, source="extracted", chain=-1, formatName=False)
+    if args.mode == 4:
+        for pdb in pdb_list:
+            # do(f"getSize.py extracted/{pdb}.pdb")
+            do(f"getSize.py cleaned_pdbs/{pdb}.pdb")
+    if args.mode == 5:
+        for pdb in pdb_list:
+            do(f"mkdir -p setups/{pdb}")
+            cd(f"setups/{pdb}")
+            do(f"~/openmmawsem/mm_create_project.py ../../extracted/{pdb}.pdb --hybrid")
+            cd("../..")
+    if args.mode == 6:
+        for pdb in pdb_list:
+            # do(f"mkdir -p setups/{pdb}")
+            # cd(f"setups/{pdb}")
+            do(f"python mm_run.py setups/{pdb}/{pdb} --to native/{pdb} -s 1e5 -r 2000 --tempStart 300 ")
+            # cd("../..")
+if args.day == "jun21":
+    if args.mode == 1:
+        # fromPdb = "1mnn.pdb"
+        fromPdb = "1mnn-openmmawsem.pdb"
+        toPdb = "shifted_1mnn.pdb"
+        rotation_and_translation(fromPdb, toPdb, rotation_axis=(0,0,0), degree=0, translation=(100,0,0))
+
 if args.day == "jun20":
     pdb_list = ['4y60', '5ke8', '1a1j', '5lxu', '1skn', '6a2h']
     if args.mode == 1:
@@ -844,6 +1033,9 @@ if args.day == "jan03":
     if args.mode == 2:
         for pdb in pdb_list:
             do(f"python mm_run.py setups/{pdb}/{pdb} --to native/{pdb} -s 1e4 --reportFrequency 1000")
+'''
+
+########################################2019################################################
 if args.day == "dec27":
     if args.mode == 1:
         pdb_list = ["6ud8_ABCD_noFill"]
@@ -2275,8 +2467,6 @@ if args.day == "jun04":
                 do(f"show_gamma.py correct_ni_{i}_nj_{j} -o i{i}j{j}")
 
 
-'''
-########################################2019################################################
 if args.day == "may25":
     # pdb_list = dataset["may13"]
     pdb_list = dataset["membrane"]
