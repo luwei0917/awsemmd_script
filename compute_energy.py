@@ -107,7 +107,7 @@ if True:
 
 if True:
     # fileLocation='./cbd_cbd_real_contact_symmetric.csv'
-    fileLocation='./cbd_cbd_real_contact_symmetric_may02.csv'
+    fileLocation='/Users/weilu/opt/parameters/side_chain/cbd_cbd_real_contact_symmetric_may02.csv'
     e_side_chain = compute_side_chain_exclude_volume_energy(structure, fileLocation=fileLocation)
     print("e_side_chain_exclude_volume", e_side_chain)
 if False:

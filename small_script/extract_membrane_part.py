@@ -15,11 +15,13 @@ def extractTransmembrane(toLocation, location, cutoff=15):
     class Transmembrane(Select):
         def accept_residue(self, residue):
             try:
-                if residue.get_id()[0] == ' ' and abs(residue["CA"].get_vector()[-1]) < cutoff:
+                if residue.get_id()[0] == ' ' and abs(float(residue["CA"].get_vector()[-1])) < cutoff:
                     return 1
                 else:
                     return 0
-            except:
+            except Exception as e:
+                print(e)
+                print(residue["CA"].get_vector())
                 print(residue)
                 return 0
     io = PDBIO()
@@ -29,4 +31,4 @@ def extractTransmembrane(toLocation, location, cutoff=15):
 # pdb_file = "1su4.pdb"
 # pdb_file_2 = "1su4_membrane.pdb"
 # extractTransmembrane(pdb_file_2, pdb_file)
-extractTransmembrane(args.to_pdb, args.source_pdb, cutoff=args.cutoff)
+extractTransmembrane(args.to_pdb, args.source_pdb, cutoff=float(args.cutoff))

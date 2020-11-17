@@ -398,12 +398,18 @@ def read_decoy_structures_andQ(structure_file_name):
             Qs.append(Q)
     return structures, Qs
 
-
 def is_hetero(residue):
-    if residue.id[0] != ' ':
-        return True
-    else:
+    if residue.id[0] in [' ', "H_NGP", "H_IPR", "H_IGL"]:
         return False
+    else:
+        print(residue)
+        return True
+
+# def is_hetero(residue):
+#     if residue.id[0] != ' ':
+#         return True
+#     else:
+#         return False
 
 def plot_contact_well(gammas, invert_sign=True, fix_colorbar=True, inferBound=False,
                         vmin=-0.3, vmax=0.3, fix_confidence_colorbar=True, confidence_vmin=0,
