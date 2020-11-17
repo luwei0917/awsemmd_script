@@ -182,6 +182,27 @@ def convert_frag_to_cbd(fragFile):
         do(f"cp {fragFile} cbd_frags.mem")
         replace(f"cbd_frags.mem", "./fraglib/", f"{toPre}/frags/")
 
+if args.day == "sep20":
+    if args.mode == 1:
+        pdb_list = ["2bg9"]
+        # he frag memeory
+        for pdb in pdb_list:
+            frag_folder = f"frag_memory/{pdb}"
+            do(f"mkdir -p {frag_folder}")
+            cd(frag_folder)
+            do(f"cp ../../setups/{pdb}/{pdb}.fasta .")
+            do(f"python ~/openmmawsem/helperFunctions/MultCha_prepFrags_index.py ~/openmmawsem/database/cullpdb_pc80_res3.0_R1.0_d160504_chains29712 {pdb}.fasta 20 1 9 > logfile")
+
+            sys.path.insert(0, "/Users/weilu/openmmawsem")
+            # name = "1iwg"
+            import openmmawsem
+            import helperFunctions.myFunctions
+            helperFunctions.myFunctions.check_and_correct_fragment_memory("frags.mem")
+            helperFunctions.myFunctions.relocate(fileLocation="frags.mem", toLocation="fraglib")
+            # print(f"{__location__}//Gros/")
+            helperFunctions.myFunctions.replace(f"frags.mem", f"{__location__}//Gros/", f"../../frag_memory/{pdb}/fraglib/")
+            do(f"cp frags.mem ../../setups/{pdb}/he.mem")
+            cd("../..")
 
 if args.day == "nov16":
     if args.mode == 2:
@@ -379,7 +400,7 @@ if args.day == "jun20":
             folder = f"setups/{pdb}"
             do(f"mkdir -p {folder}")
             cd(folder)
-            do(f"python /Users/weilu/openmmawsem/mm_create_project.py ../../../protein_DNA/cleaned_pdbs/{pdb}.pdb --extended")
+            do(f"python /Users/weilu/openmmawsem/mm_create_project.py ../../../protein_DNA/cleaned_pdbs/{pdb}.pdb --extended --frag")
             cd("../..")
             # do(f"cp gamma_noCysCys.dat {folder}/")
 
