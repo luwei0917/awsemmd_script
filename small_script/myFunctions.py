@@ -1495,7 +1495,10 @@ def get_gammas(gammaFile="./gamma.dat", memGammaFile="./membrane_gamma_rescaled.
     return gamma_ijm, water_gamma_ijm, protein_gamma_ijm
 
 
-def get_ff_dat(data, location=None, gammaLocation=None):
+def get_ff_dat(data, location=None, gammaLocation=None, mode=0):
+    # mode 0, 1 differ in normalization.
+    # in mode 0, the gamma is average over all legit gamma. (divide by number of legit gamma)
+    # in mode 1, the gamma is average over all MSA. (divide by N)
     res_type_map = {
         'A': 0,
         'C': 4,
@@ -1545,13 +1548,17 @@ def get_ff_dat(data, location=None, gammaLocation=None):
                 direct.append(gamma_ijm[0][res1type][res2type])
                 water.append(water_gamma_ijm[0][res1type][res2type])
                 protein.append(protein_gamma_ijm[0][res1type][res2type])
-            f_direct[i][j] += np.average(direct)
-            f_water[i][j] += np.average(water)
-            f_protein[i][j] += np.average(protein)
+            if mode == 0:
+                normalization = max(len(direct), 1)    # if none, set as 1.
+            if mode == 1:
+                normalization = len(data)
+            f_direct[i][j] = np.sum(direct) / normalization
+            f_water[i][j] = np.sum(water) / normalization
+            f_protein[i][j] = np.sum(protein) / normalization
 
-            f_direct[j][i] += np.average(direct)
-            f_water[j][i] += np.average(water)
-            f_protein[j][i] += np.average(protein)
+            f_direct[j][i] = f_direct[i][j]
+            f_water[j][i] = f_water[i][j]
+            f_protein[j][i] = f_protein[i][j]
 
     for i in range(n):
         for j in range(3):
@@ -1561,12 +1568,16 @@ def get_ff_dat(data, location=None, gammaLocation=None):
                     continue
                 res1type = res_type_map[seq[i]]
                 burial.append(burial_gamma[res1type][j])
-            f_burial[i][j] += np.average(burial)
+            if mode == 0:
+                normalization = max(len(burial), 1)    # if none, set as 1.
+            if mode == 1:
+                normalization = len(data)
+            f_burial[i][j] = np.sum(burial) / normalization
     if location:
-        np.savetxt(location+"/direct.dat", f_direct)
-        np.savetxt(location+"/water.dat", f_water)
-        np.savetxt(location+"/protein.dat", f_protein)
-        np.savetxt(location+"/burial.dat", f_burial)
+        np.savetxt(location+"/direct.dat", f_direct, fmt='%.5f')
+        np.savetxt(location+"/water.dat", f_water, fmt='%.5f')
+        np.savetxt(location+"/protein.dat", f_protein, fmt='%.5f')
+        np.savetxt(location+"/burial.dat", f_burial, fmt='%.5f')
     return f_direct, f_water, f_protein, f_burial
 
 def phosphorylation(res1globalindex, res2globalindex, res1type, res2type, m, phosphorylated_residue_index, phosphorylated_residue_seq):
@@ -3268,3 +3279,96 @@ def compute_Q_from_two_pdb(pdb_file, pdb_file2):
         # print(str(round(q,3)) + " ")
         n_atoms = len(ca_atoms_pdb_2)
     return round(q,3)
+
+def pdbToFasta(pdb, pdbLocation, fastaFile, chains="A"):
+    import textwrap
+    from Bio.PDB.PDBParser import PDBParser
+    from Bio.PDB.Polypeptide import three_to_one
+    # pdb = "1r69"
+    # pdbLocation = "/Users/weilu/Research/server/may_2019/family_fold/1r69.pdb"
+    # chains = "A"
+    # fastaFile = "/Users/weilu/Research/server/may_2019/family_fold/1r69.fasta"
+    s = PDBParser(QUIET=True).get_structure("X", pdbLocation)
+    # m = s[0]  # model 0
+    seq = ""
+    with open(fastaFile, "w") as out:
+        chain = "A"
+        out.write(f">{pdb.upper()}:{chain.upper()}|PDBID|CHAIN|SEQUENCE\n")
+        seq = ""
+        for res in s.get_residues():
+            resName = three_to_one(res.resname)
+            seq += resName
+        out.write("\n".join(textwrap.wrap(seq, width=80))+"\n")
+    return seq
+
+# get Topological prediction
+def get_topo(loc):
+    # loc = "/Users/weilu/Research/server/oct_2020/curated_single_chain_optimization/complete_TM_pred/1ap9_A_topo"
+    with open(loc) as f:
+        a = f.readlines()
+    assert len(a) % 3 == 0
+    chain_count = len(a) // 3
+    seq = ""
+    for i in range(chain_count):
+        seq_i = (a[i*3+2]).strip()
+        seq += seq_i
+    assert np.alltrue([i in ["0", "1", "2"] for i in seq])
+    return seq
+
+# number each helix.
+def number_topo(topo, sym_table):
+    count = 0
+    pre_res = "0"
+    new_topo = ""
+    for res in topo:
+        if res == "0":
+            new_topo += "0"
+        if res == "1" and pre_res == "0":
+            count += 1
+            new_topo += sym_table[count]
+        if res == "1" and pre_res == "1":
+            new_topo += sym_table[count]
+        pre_res = res
+    return new_topo
+
+def extract_topo(structure, topo):
+    all_res = list(structure.get_residues())
+    assert len(topo) == len(all_res)
+    cutoff = 18
+    result_seq = ""
+    result_topo = ""
+    for i, res in enumerate(all_res):
+        try:
+            ca = res["CA"]
+        except:
+            print(res)
+            continue
+        if abs(float(ca.get_vector()[-1])) < cutoff:
+            result_seq += three_to_one(res.get_resname())
+            result_topo += topo[i]
+    return (result_seq, result_topo)
+
+def read_fasta(fastaFile):
+    seq = ""
+    with open(fastaFile, "r") as f:
+        for line in f:
+            if line[0] == ">":
+                pass
+            else:
+                # print(line)
+                seq += line.strip()
+    return seq
+
+def extract_index_within_membrane(structure):
+    index_list = []
+    all_res = list(structure.get_residues())
+    cutoff = 18
+    for i, res in enumerate(all_res):
+        try:
+            ca = res["CA"]
+        except:
+            print(res)
+            continue
+        if abs(float(ca.get_vector()[-1])) < cutoff:
+            index_list.append(i)
+    return np.array(index_list)
