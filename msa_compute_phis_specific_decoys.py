@@ -631,6 +631,7 @@ def get_phi_info_contact_well(res_list, neighbor_list, parameter_list,
     info = pd.DataFrame(info, columns=["phi", "res1", "res2", "Type", "res1_name", "res2_name", "interaction_index"])
     return info
 
+
 def get_phis_from_info_and_sequence(info, sequence, n_parameters=420, get_interaction_index_from_four_residues=None, verbose=False):
     phi_gxxxg_well = np.zeros(n_parameters)
     skip_count = 0

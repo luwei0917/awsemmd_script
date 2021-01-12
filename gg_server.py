@@ -21,6 +21,7 @@ from small_script.myFunctions import *
 from collections import defaultdict
 
 # Useful codes
+# grep "BrokenPipeError" *.out | cut -d: -f1 | xargs head -n 2
 # os.system("awk '{print $NF}' all_wham.dat > e_total")
 # tr " " "\n"
 # sed 1d
@@ -47,15 +48,17 @@ parser.add_argument("-d", "--day", type=str, default="someday")
 parser.add_argument("-l", "--label", type=str, default="label")
 parser.add_argument("--subMode", type=int, default=0)
 parser.add_argument("-t", "--test", action="store_true", default=False)
+parser.add_argument("--flag", type=int, default=0)
 args = parser.parse_args()
 
 # if args.test:
 #     do = print
 # else:
 #     do = os.system
-with open('cmd_gg_server.txt', 'a') as f:
-    f.write(' '.join(sys.argv))
-    f.write('\n')
+if args.flag == 0:
+    with open('cmd_gg_server.txt', 'a') as f:
+        f.write(' '.join(sys.argv))
+        f.write('\n')
 
 
 def do(cmd, get=False, show=True):
@@ -97,6 +100,7 @@ base_slurm = '''\
 #SBATCH --mail-user=luwei0917@gmail.com
 #SBATCH --mail-type=FAIL
 #SBATCH -o outs/slurm-%j.out
+#ADDITIONLNE
 echo "My job ran on:"
 echo $SLURM_NODELIST
 srun {}\n'''
@@ -695,7 +699,7 @@ dataset["optimization_cbd"] = ['1hoe', '1hyp', '1tif', '1vcc', '1by9', '1bdo', '
 # filtered_pdb_list = [x for x in pdb_list if x not in skip_pdb_list]
 dataset["apr11_2020"] = ['1hoe', '1tif', '1vcc', '1by9', '1bdo', '451c', '1cc5', '1bb9', '1pht', '1opd', '1a32', '1ptf', '1cyo', '1tig', '1ctj', '1fna', '1who', '2cbp', '2acy', '1plc', '1bm8', '1opc', '3vub', '1tul', '1kte', '1erv', '1btn', '1a1x', '1bkf', '1ycc', '1sfp', '1kpf', '2mcm', '2pii', '1a6f', '1tmy', '2a0b', '1mai', '1neu', '1dun', '2sak', '1dhn', '1cxc', '1bgf', '1bqk', '3pyp', '1bfg', '1opy', '1rlw', '1rie', '3chy', '1cpq', '1pdo', '1hmt', '1htp', '1c52', '1kuh', '1crb', '1aqt', '2end', '5nul', '1pne', '1lcl', '2sns', '1flp', '1tfe', '1ax8', '1pkp', '1rss', '1jon', '1vls', '1lba', '1aly', '1mba', '2hbg', '1akr', '1osa']
 dataset["membrane_sep_2020"] = ["2bg9", "1j4n", "1py6_SD", "2bl2", "1iwg", "2ic8", "1pv6", "1occ", "1kpl", "2bs2", "1py6", "1u19"]
-
+dataset["membrane_nov_2020"] = ['5ncq', '1uaz', '5lwe', '6e9o', '5i6x', '3vvo', '4tph', '6m20', '6d32']
 
 
 # def returnSteps(p):
@@ -729,7 +733,7 @@ def readList(fileName):
     theList = [b.strip() for b in a]
     return theList
 
-def slurmRun(slurmFileName, cmd, template=scavenge_slurm, memory=1, thread=1, runOnServer=True):
+def slurmRun(slurmFileName, cmd, template=scavenge_slurm, fromMemory=1, memory=1, thread=1, runOnServer=True, ADDITIONLNE=None):
     os.system("mkdir -p outs")
     os.system("mkdir -p slurms")
     if not runOnServer:
@@ -738,9 +742,10 @@ def slurmRun(slurmFileName, cmd, template=scavenge_slurm, memory=1, thread=1, ru
     with open(slurmFileName, "w") as out:
         out.write(template.format(cmd))
         # out.write(scavenge_slurm.format(f"python3 ~/opt/compute_phis.py -m 1 proteins_name_list/proteins_name_list_{name}.txt"))
-    replace(slurmFileName, "#SBATCH --mem-per-cpu=1G", f"#SBATCH --mem-per-cpu={memory}G")
+    replace(slurmFileName, f"#SBATCH --mem-per-cpu={fromMemory}G", f"#SBATCH --mem-per-cpu={memory}G")
     replace(slurmFileName, "#SBATCH --cpus-per-task=1", f"#SBATCH --cpus-per-task={thread}")
-
+    if ADDITIONLNE:
+        replace(slurmFileName, "#ADDITIONLNE", ADDITIONLNE)
     a = getFromTerminal(f"sbatch {slurmFileName}")
     jobId = a.split(" ")[-1].strip()
     return jobId
@@ -1190,6 +1195,212 @@ def combine_A_B_info(pdb_list, n_parameters, subMode, to_gamma_folder, z_score_f
     np.save(f"{to_gamma_folder}/average_A_prime", average_A_prime)
     np.save(f"{to_gamma_folder}/average_B", average_B)
 
+def calculate_A_and_B_single_pdb(average_phi_decoy, phi_native, all_phis):
+    A = average_phi_decoy - phi_native
+    num_decoys, total_phis = all_phis.shape
+    half_B = np.zeros((total_phis, total_phis))
+    std_half_B = np.zeros((total_phis, total_phis))
+    other_half_B = np.zeros((total_phis, total_phis))
+
+    phis_i = all_phis.reshape(num_decoys, total_phis, 1)
+    for j in range(total_phis):
+        phis_j = phis_i[:, j].reshape(num_decoys, 1, 1)
+        half_B[j] += np.average(phis_i * phis_j, axis=0).reshape(total_phis)
+        std_half_B[j] += np.std(phis_i * phis_j, axis=0).reshape(total_phis)
+
+    average_phi = np.average(all_phis, axis=0)
+    other_half_B += average_phi.reshape(total_phis, 1) * average_phi.reshape(1, total_phis)
+    B = half_B - other_half_B
+
+    return A, B, half_B, other_half_B, std_half_B
+
+def combine_A_B_info_from_raw(pdb_list, n_parameters, subMode, to_gamma_folder, start=0, z_score_file=None, normalization=False):
+    n_pdbs = len(pdb_list)
+    print(n_pdbs)
+
+    if subMode == 0:
+        weight = 1
+    elif subMode == 1:
+        data = pd.read_csv("../helix_information.csv", index_col=0)
+        s1 = data.query("Length >= 10 and Length <= 30").reset_index(drop=True)
+        s2 = s1.groupby("Protein")["Helix"].count().reset_index().query("Helix > 3 and Helix < 15").reset_index()
+    elif subMode == 2:
+        weight_array = np.zeros((n_pdbs))
+        for i, pdb in enumerate(pdb_list):
+            pdbName = pdb.split("/")[-1][:-4]
+            chosen_bias = np.load(f"chosen_bias/{pdbName}.npy")
+            weight_array[i] = np.average(chosen_bias)
+        weight_array *= n_pdbs / weight_array.sum()
+        print(weight_array)
+    elif subMode == 3:
+        # based on Z score
+        z = np.loadtxt(z_score_file)
+        min_z = min(z)
+        new_z = 1/(3 + z - min_z)**2
+        data = new_z * len(z) / np.sum(new_z)
+
+    # n_pdbs = 1
+    A_array = np.zeros((n_parameters))
+    A_prime_array = np.zeros((n_parameters))
+    A_native_array = np.zeros((n_parameters))
+    B_array = np.zeros((n_parameters, n_parameters))
+    n_pdbs = 0
+    for i, pdb in enumerate(pdb_list):
+        print(i, pdb, flush=True)
+        if i % 100 == 0:
+            print(i)
+        # weight = data.query(f"Protein=='{pdb}'")["weight"].values[0]
+        if subMode == 0:
+            weight = 1
+        elif subMode == 1:
+            pdbName = pdb.split("/")[-1][:-4]
+            weight = 8 / ( s2.query(f"Protein=='{pdbName}'")["Helix"].values[0] )
+        elif subMode == 2:
+            weight = weight_array[i]
+            print(i, pdb, weight)
+        elif subMode == 3:
+            weight = data[i]
+            print(i, pdb, weight)
+        try:
+            all_phis = np.load(f"phis/{pdb}.npy", allow_pickle=True)
+            native_phis = np.load(f"native_phis/{pdb}.npy", allow_pickle=True)
+            # When do the normalization, be careful about the range of parameters to include.
+            if start != 0:
+                native_phis = native_phis[:,start:]
+                all_phis = all_phis[:,start:]
+            phi_native = np.average(native_phis, axis=0)
+            # When shuffling, sometime the interaction is dropped because the existance of dash.
+            # I think, its better to normalize the phis such that the total phis is conserved.
+            if normalization:
+                phis_sum = np.sum(phi_native)
+                all_phis = all_phis * phis_sum / np.sum(all_phis, axis=1).reshape(-1, 1)
+
+            average_phi_decoy = np.average(all_phis, axis=0)
+
+            A, B, half_B, other_half_B, std_half_B = calculate_A_and_B_single_pdb(average_phi_decoy, phi_native, all_phis)
+            A_prime = average_phi_decoy
+            A_native = phi_native
+            # print(B.shape)
+        except Exception as e:
+            print(e)
+            print("skip ", pdb)
+            continue
+        A_array += A * weight
+        A_prime_array += A_prime * weight
+        A_native_array += A_native * weight
+        B_array += B * weight * weight
+        n_pdbs += 1
+
+    os.system(f"mkdir -p {to_gamma_folder}")
+
+    # os.mkdir(to_gamma_folder)
+    average_A = A_array / n_pdbs
+    average_A_prime = A_prime_array  / n_pdbs
+    average_A_native = A_native_array / n_pdbs
+    average_B = B_array / n_pdbs
+
+    # average_half_B = half_B_array / n_pdbs
+    # average_other_half_B = other_half_B_array / n_pdbs
+    # average_std_half_B = std_half_B_array / n_pdbs
+    np.save(f"{to_gamma_folder}/average_A_native", average_A_native)
+    np.save(f"{to_gamma_folder}/average_A", average_A)
+    np.save(f"{to_gamma_folder}/average_A_prime", average_A_prime)
+    np.save(f"{to_gamma_folder}/average_B", average_B)
+
+def combine_A_B_info_from_raw_debug(pdb_list, n_parameters, subMode, to_gamma_folder, start=0, z_score_file=None, normalization=False):
+    n_pdbs = len(pdb_list)
+    print(n_pdbs)
+
+    if subMode == 0:
+        weight = 1
+    elif subMode == 1:
+        data = pd.read_csv("../helix_information.csv", index_col=0)
+        s1 = data.query("Length >= 10 and Length <= 30").reset_index(drop=True)
+        s2 = s1.groupby("Protein")["Helix"].count().reset_index().query("Helix > 3 and Helix < 15").reset_index()
+    elif subMode == 2:
+        weight_array = np.zeros((n_pdbs))
+        for i, pdb in enumerate(pdb_list):
+            pdbName = pdb.split("/")[-1][:-4]
+            chosen_bias = np.load(f"chosen_bias/{pdbName}.npy")
+            weight_array[i] = np.average(chosen_bias)
+        weight_array *= n_pdbs / weight_array.sum()
+        print(weight_array)
+    elif subMode == 3:
+        # based on Z score
+        z = np.loadtxt(z_score_file)
+        min_z = min(z)
+        new_z = 1/(3 + z - min_z)**2
+        data = new_z * len(z) / np.sum(new_z)
+
+    # n_pdbs = 1
+    A_array = np.zeros((n_parameters))
+    A_prime_array = np.zeros((n_parameters))
+    A_native_array = np.zeros((n_parameters))
+    B_array = np.zeros((n_parameters, n_parameters))
+    n_pdbs = 0
+    for i, pdb in enumerate(pdb_list):
+        print(i, pdb, flush=True)
+        if i % 100 == 0:
+            print(i)
+        # weight = data.query(f"Protein=='{pdb}'")["weight"].values[0]
+        if subMode == 0:
+            weight = 1
+        elif subMode == 1:
+            pdbName = pdb.split("/")[-1][:-4]
+            weight = 8 / ( s2.query(f"Protein=='{pdbName}'")["Helix"].values[0] )
+        elif subMode == 2:
+            weight = weight_array[i]
+            print(i, pdb, weight)
+        elif subMode == 3:
+            weight = data[i]
+            print(i, pdb, weight)
+        try:
+            # all_phis = np.load(f"phis/{pdb}.npy", allow_pickle=True)
+            native_phis = np.load(f"native_phis/{pdb}.npy", allow_pickle=True)
+            # When do the normalization, be careful about the range of parameters to include.
+            if start != 0:
+                native_phis = native_phis[:,start:]
+                all_phis = all_phis[:,start:]
+            phi_native = np.average(native_phis, axis=0)
+            # When shuffling, sometime the interaction is dropped because the existance of dash.
+            # I think, its better to normalize the phis such that the total phis is conserved.
+            if normalization:
+                phis_sum = np.sum(phi_native)
+                all_phis = all_phis * phis_sum / np.sum(all_phis, axis=1).reshape(-1, 1)
+
+            # average_phi_decoy = np.average(all_phis, axis=0)
+
+            # A, B, half_B, other_half_B, std_half_B = calculate_A_and_B_single_pdb(average_phi_decoy, phi_native, all_phis)
+            # A_prime = average_phi_decoy
+            A_native = phi_native
+            # print(B.shape)
+        except Exception as e:
+            print(e)
+            print("skip ", pdb)
+            continue
+        # A_array += A * weight
+        # A_prime_array += A_prime * weight
+        A_native_array += A_native * weight
+        # B_array += B * weight * weight
+        n_pdbs += 1
+
+    os.system(f"mkdir -p {to_gamma_folder}")
+
+    # os.mkdir(to_gamma_folder)
+    average_A = A_array / n_pdbs
+    average_A_prime = A_prime_array  / n_pdbs
+    average_A_native = A_native_array / n_pdbs
+    average_B = B_array / n_pdbs
+
+    # average_half_B = half_B_array / n_pdbs
+    # average_other_half_B = other_half_B_array / n_pdbs
+    # average_std_half_B = std_half_B_array / n_pdbs
+    np.save(f"{to_gamma_folder}/average_A_native", average_A_native)
+    np.save(f"{to_gamma_folder}/average_A", average_A)
+    np.save(f"{to_gamma_folder}/average_A_prime", average_A_prime)
+    np.save(f"{to_gamma_folder}/average_B", average_B)
+
+
 def optimization_setupDecoys_v2(optimizationBasePath, optimizationFolder, folder_list, pdb_list, simulationType, base_path, run_n, lastN_frame,
                     phi_list="../phi_list_environment_complete.txt"):
     # each run is seperate out
@@ -1416,6 +1627,813 @@ def calculate_A_and_B_wei_individual(average_phi_decoy, phi_native, all_phis):
     print(datetime.datetime.now())
     os.system("echo 'End' >> log")
 # workday  zxc
+if args.day == "jan10":
+    pdb = "1le5"
+    # do("python setup.py")
+    if args.mode == 5:
+        simulation_header = "jan12"
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for i in range(10, 20):
+            cmd = f"python bias_to_native_then_relax.py {pdb}_with_long_DNA --kProteinDNA 1 -r {i} --name {simulation_header} -s 2e7 --tempStart 300 --tempEnd 300"
+            # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+            jobId = slurmRun(f"slurms/{simulation_header}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+            print(jobId)
+    if args.mode == 4:
+        simulation_header = "jan12"
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for i in range(10):
+            cmd = f"python bias_to_native_then_relax.py {pdb}_with_long_DNA --kProteinDNA 1 -r {i} --name {simulation_header} -s 2e7 --tempStart 300 --tempEnd 300"
+            # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+            jobId = slurmRun(f"slurms/{simulation_header}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+            print(jobId)
+    if args.mode == 3:
+        simulation_header = "jan11"
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for i in range(10, 20):
+            cmd = f"python bias_to_native_then_relax.py {pdb}_with_long_DNA --kProteinDNA 1 -r {i} --name {simulation_header} -s 1e7 --tempStart 300 --tempEnd 300"
+            # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+            jobId = slurmRun(f"slurms/{simulation_header}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+            print(jobId)
+    if args.mode == 2:
+        simulation_header = "jan11"
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for i in range(10):
+            cmd = f"python bias_to_native_then_relax.py {pdb}_with_long_DNA --kProteinDNA 1 -r {i} --name {simulation_header} -s 1e7 --tempStart 300 --tempEnd 300"
+            # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+            jobId = slurmRun(f"slurms/{simulation_header}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+            print(jobId)
+    if args.mode == 1:
+        simulation_header = "jan10"
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for i in range(10):
+            cmd = f"python bias_to_native_then_relax.py {pdb}_with_long_DNA --kProteinDNA 2 -r {i} --name {simulation_header} -s 1e7 --tempStart 300 --tempEnd 300"
+            # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+            jobId = slurmRun(f"slurms/{simulation_header}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+            print(jobId)
+if args.day == "jan08":
+    pdb = "1le5"
+    # do("python setup.py")
+    if args.mode == 1:
+        simulation_header = "jan05"
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for i in range(1, 10):
+            cmd = f"python bias_to_native_then_relax.py {pdb}_with_long_DNA --kProteinDNA 2 -r {i} --name {simulation_header} -s 1e7 --tempStart 300 --tempEnd 300"
+            # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+            jobId = slurmRun(f"slurms/{simulation_header}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+            print(jobId)
+
+if args.day == "jan04":
+    pdb_list = ["3gut"]
+    pdb = "3gut"
+    setupFolder = "setups"
+
+    if args.mode == 1:
+        # do("mkdir -p original_pdbs")
+        # cd("original_pdbs")
+        # do(f"download.py {pdb}")
+        pdb_list = ["3gut"]
+        sys.path.append("/projects/pw8/wl45/openawsem")
+        from helperFunctions.myFunctions import *
+        # cleanPdb(pdb_list, chain="-1", source="original_pdbs/", toFolder="cleaned_pdbs", verbose=True, keepIds=False, removeHeterogens=True)
+        cleanPdb(pdb_list, chain="ABCDXY", source="original_pdbs/",
+        toFolder="cleaned_pdbs", removeDNAchains=False, verbose=True, keepIds=True, removeHeterogens=True)
+    if args.mode == 2:
+        pdb = "3gut"
+        setupFolder = "setups"
+        pdbFile = f"cleaned_pdbs/{pdb}.pdb"
+        toFolder = "setups"
+        setup_protein_DNA(pdbFile, toFolder)
+        # for Protein only part
+        do(f"mkdir -p protein_only/{pdb}")
+        cd(f"protein_only/{pdb}")
+        do(f"python /projects/pw8/wl45/openawsem/mm_create_project.py ../../cleaned_pdbs/{pdb}.pdb")
+        cd("../..")
+
+        # Generate DNA_part.pdb
+        do("mkdir -p tmp")
+        cd("tmp")
+        do("rm *")
+        original_pdb_file = f"../original_pdbs/{pdb}.pdb"
+        to_DNA_file = f"../{setupFolder}/{pdb}_DNA_part.pdb"
+        create_large_DNA(original_pdb_file, to_DNA_file)
+        do("rm *")
+        cd("..")
+    if args.mode == 22:
+        from pdbfixer import PDBFixer
+        from simtk.openmm.app import PDBFile
+        pdb_filename = f"{setupFolder}/with_formated_DNA_{pdb}_clean.pdb"
+        fixer = PDBFixer(filename=pdb_filename)
+        cleaned_pdb_filename = f"{setupFolder}/with_formated_DNA_{pdb}_clean_renum.pdb"
+        PDBFile.writeFile(fixer.topology, fixer.positions, open(cleaned_pdb_filename, 'w'), keepIds=False)
+    if args.mode == 3:
+        pdb = "3gut"
+        setupFolder = "setups"
+        # fromPdb = "1mnn.pdb"
+        folder = setupFolder
+        # x_shift = 0
+        x_shift = 300
+        # fromPdb = f"{folder}/with_formated_DNA_{pdb}_clean.pdb"
+        fromPdb = f"protein_only/{pdb}/{pdb}-openmmawsem.pdb"
+        toPdb = f"{folder}/shifted_{pdb}.pdb"
+        rotation_and_translation(fromPdb, toPdb, rotation_axis=(0,0,0), degree=0, translation=(x_shift,0,0))
+        # changed_chain = f"{folder}/shifted_{pdb}_become_chain_D.pdb"
+        # do(f"pdb_chain -D {toPdb} > {changed_chain}")
+        # do(f"grep 'ATOM' {changed_chain} > {folder}/{pdb}_Protein_part.pdb")
+        do(f"grep 'ATOM' {toPdb} > {folder}/{pdb}_Protein_part.pdb")
+
+        do(f"cat {folder}/{pdb}_DNA_part.pdb > {folder}/{pdb}_with_long_DNA_raw.pdb")
+        do(f"cat {folder}/{pdb}_Protein_part.pdb >> {folder}/{pdb}_with_long_DNA_raw.pdb")
+
+        from pdbfixer import PDBFixer
+        from simtk.openmm.app import PDBFile
+        pdb_filename = f"{folder}/{pdb}_with_long_DNA_raw.pdb"
+        fixer = PDBFixer(filename=pdb_filename)
+        cleaned_pdb_filename = f"{folder}/{pdb}_with_long_DNA_renumber.pdb"
+        PDBFile.writeFile(fixer.topology, fixer.positions, open(cleaned_pdb_filename, 'w'), keepIds=False)
+        pdb_file = cleaned_pdb_filename
+        def pdb_line(line):
+            return dict(recname=str(line[0:6]).strip(),
+                        serial=int(line[6:11]),
+                        name=str(line[12:16]).strip(),
+                        altLoc=str(line[16:17]),
+                        resname=str(line[17:20]).strip(),
+                        chainID=str(line[21:22]),
+                        resSeq=int(line[22:26]),
+                        iCode=str(line[26:27]),
+                        x=float(line[30:38]),
+                        y=float(line[38:46]),
+                        z=float(line[46:54]),
+                        occupancy=1.0 if line[54:60].strip()=='' else float(line[54:60]), # Change by Shikai on Nov/5/2020, programs like Plumed only recognizes 1.0
+                        tempFactor=1.0 if line[60:66].strip()=='' else float(line[60:66]),
+                        element=str(line[76:78]),
+                        charge=str(line[78:80]))
+        with open(pdb_file, 'r') as pdb_:
+            lines = []
+            for line in pdb_:
+                if len(line) > 6 and line[:6] in ['ATOM  ', 'HETATM']:
+                    lines += [pdb_line(line)]
+        pdb_atoms = pd.DataFrame(lines)
+        atoms = pdb_atoms[['recname', 'serial', 'name', 'altLoc',
+                                'resname', 'chainID', 'resSeq', 'iCode',
+                                'x', 'y', 'z', 'occupancy', 'tempFactor',
+                                'element', 'charge']]
+        def writePDB(atoms,pdb_file):
+            with open(pdb_file, 'w+') as pdb:
+                for i, atom in atoms.iterrows():
+                    pdb_line = f'{atom.recname:<6}{atom.serial:>5} {atom["name"]:^4}{atom.altLoc:1}'+\
+                            f'{atom.resname:<3} {atom.chainID:1}{atom.resSeq:>4}{atom.iCode:1}   '+\
+                            f'{atom.x:>8.3f}{atom.y:>8.3f}{atom.z:>8.3f}' +\
+                            f'{atom.occupancy:>6.2f}{atom.tempFactor:>6.2f}'+' ' * 10 +\
+                            f'{atom.element:>2}{atom.charge:>2}'
+                    assert len(pdb_line) == 80, f'An item in the atom table is longer than expected ({len(pdb_line)})\n{pdb_line}'
+                    pdb.write(pdb_line + '\n')
+        pdb_file = f"{pdb}_with_long_DNA.pdb"
+        writePDB(atoms,pdb_file)
+        do(f"cp setups/with_formated_DNA_{pdb}_protein.seq {pdb}_with_long_DNA.seq")
+        do(f"cp protein_only/{pdb}/single_frags.mem single_frags_{pdb}_with_long_DNA.mem")
+        do(f"cp protein_only/{pdb}/{pdb}_*.gro .")
+
+    if args.mode == 4:
+        pdb = "3gut"
+        setupFolder = "setups"
+        # bonds within DNA
+        original_pdb_file = f"{setupFolder}/with_formated_DNA_{pdb}_clean_renum.pdb"
+        new_dna_pdb_file = f"{pdb}_with_long_DNA.pdb"
+        bond_info_file = f"bond_info_{pdb}_with_long_DNA.csv"
+        get_native_DNA_bonds(original_pdb_file, new_dna_pdb_file, bond_info_file)
+
+    if args.mode == 5:
+        pdb = "3gut"
+        setupFolder = "setups"
+        # bonds within DNA
+        original_pdb_file = f"{setupFolder}/with_formated_DNA_{pdb}_clean_renum.pdb"
+        new_dna_pdb_file = f"{pdb}_with_long_DNA.pdb"
+        bond_info_file = f"DNA_protein_bond_info_{pdb}_with_long_DNA.csv"
+        get_DNA_protein_bonds(original_pdb_file, new_dna_pdb_file, bond_info_file)
+    if args.mode == 6:
+        simulation_header = "jan04"
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for i in range(10):
+            cmd = f"python bias_to_native_then_relax.py {pdb}_with_long_DNA -r {i} --name {simulation_header} -s 1e7 --tempStart 300 --tempEnd 300"
+            # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+            jobId = slurmRun(f"slurms/{simulation_header}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+            print(jobId)
+    if args.mode == 7:
+        simulation_header = "jan05"
+        do("mkdir -p slurms")
+        do("mkdir -p outs")
+        jobIdList = []
+        for i in range(10):
+            cmd = f"python bias_to_native_then_relax.py {pdb}_with_long_DNA --kProteinDNA 2 -r {i} --name {simulation_header} -s 1e7 --tempStart 300 --tempEnd 300"
+            # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+            jobId = slurmRun(f"slurms/{simulation_header}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
+            print(jobId)
+    # if args.mode == 6:
+    #     sys.path.append("/projects/pw8/wl45/openawsem")
+    #     from helperFunctions.myFunctions import *
+    #     pdb_list = ["3gut_with_long_DNA"]
+    #     cleanPdb(pdb_list, chain="-1", source="./",
+    #     toFolder="cleaned_pdbs", removeDNAchains=False, verbose=True, keepIds=False, removeHeterogens=True)
+
+
+if args.day == "dec25":
+    pre = "/scratch/wl45/dec_2020"
+    if args.mode == 1:
+        from pyCodeLib import *
+        pdb_list_file = f"{pre}/curated_single_chain_optimization/pdb_list_nov13"
+        pdb_list = read_column_from_file(pdb_list_file, 1)
+        n = len(pdb_list)
+        native_phis_table = np.zeros((n, 2002))
+        for i, pdb in enumerate(pdb_list):
+            if i % 100 == 0:
+                print(i)
+            a = np.load(f"native_phis/{pdb}.npy", allow_pickle=True)
+            b = np.sum(a, axis=0)
+            native_phis_table[i] = b
+        np.savetxt("native_phis_table", native_phis_table, fmt='%.3f')
+    if args.mode == 2:
+        from pyCodeLib import *
+        pdb_list_file = f"{pre}/curated_single_chain_optimization/pdb_list_nov13"
+        pdb_list = read_column_from_file(pdb_list_file, 1)
+        n = 115
+        native_phis_table = np.zeros((n, 2002))
+        for i in range(n):
+            if i % 100 == 0:
+                print(i)
+            gamma = "gammas_noNormalization"
+            A = np.load(f"{pre}/curated_single_chain_optimization/optimization_msa_submode_35/{gamma}/{i}/average_A.npy", allow_pickle=True)
+            A_prime = np.load(f"{pre}/curated_single_chain_optimization/optimization_msa_submode_35/{gamma}/{i}/average_A_prime.npy", allow_pickle=True)
+
+            native_phis_table[i] = A_prime - A
+        np.savetxt("native_phis_table_from_A_noNormalization", native_phis_table, fmt='%.3f')
+    if args.mode == 3:
+        from pyCodeLib import *
+        pdb_list_file = f"{pre}/curated_single_chain_optimization/pdb_list_nov13"
+        pdb_list = read_column_from_file(pdb_list_file, 1)
+        n = 115
+        native_phis_table = np.zeros((n, 2002))
+        for i in range(n):
+            if i % 100 == 0:
+                print(i)
+            gamma = "gammas_noNormalization"
+            A_native = np.load(f"{pre}/curated_single_chain_optimization/optimization_msa_submode_35/{gamma}/{i}/average_A_native.npy", allow_pickle=True)
+            # A_prime = np.load(f"{pre}/curated_single_chain_optimization/optimization_msa_submode_35/{gamma}/{i}/average_A_prime.npy", allow_pickle=True)
+
+            native_phis_table[i] = A_native
+        np.savetxt("native_phis_table_from_A_noNormalization_2", native_phis_table, fmt='%.3f')
+if args.day == "dec23":
+    pre = "/scratch/wl45/dec_2020"
+    if args.mode == 1:
+        from pyCodeLib import *
+        subMode = 0   # weight all 1.
+        n = args.label
+        normalization = True
+        to_gamma_folder = f"gammas/{n}"
+        # normalization = False
+        # to_gamma_folder = f"gammas_noNormalization/{n}"
+        # to_gamma_folder = f"gammas_debug/{n}"
+        # n_parameters = 3404
+        # n_parameters = 2692
+        n_parameters = 2002
+        pdb_list_file = f"{pre}/curated_single_chain_optimization/name_list_nov13/proteins_name_list_{n}.txt"
+        # pdb_list_file = "/scratch/wl45/nov_2020/curated_single_chain_optimization/pdb_list_random_last500"
+        # print(pdb_list_file)
+        pdb_list = read_column_from_file(pdb_list_file, 1)
+        print(pdb_list)
+        combine_A_B_info_from_raw(pdb_list, n_parameters, subMode, to_gamma_folder, start=0, normalization=normalization)
+    if args.mode == 11:
+        n = split_proteins_name_list(pdb_per_txt=10, toFolder=f"{pre}/curated_single_chain_optimization/name_list_nov13", protein_list=f"{pre}/curated_single_chain_optimization/pdb_list_nov13")
+        print(n)
+        # n = 1
+        for i in range(n):
+            cmd = f"gg_server.py -d dec23 -m 1 -l {i}"
+            jobId = slurmRun(f"slurms/quick.slurm", cmd, memory=6, template=base_slurm)
+            print(jobId)
+
+if args.day == "dec17":
+    pre = "/scratch/wl45/dec_2020"
+    if args.mode == 1:
+        toLocation = "."
+        ## note, the info file generation may or may not include a filter on real contact
+        ## currently, no filter for real contact.
+        n_list = args.label
+        from pyCodeLib import *
+        pdb_list_file = f"{pre}/curated_single_chain_optimization/optimization_msa_submode_33/name_list_nov13/proteins_name_list_{n_list}.txt"
+        pdb_list = read_column_from_file(pdb_list_file, 1)
+        new_info = []
+        skip_count = 0
+        for pdb in pdb_list:
+            info = pd.read_csv(f"{pre}/curated_single_chain_optimization/optimization_msa_submode_31/info_folder_fourBody/{pdb}_fourBody.csv", index_col=0)
+            # msa = np.loadtxt(f"{pre}/curated_single_chain_optimization/extracted_whole_protein_alignments_filtered/{pdb}_filtered_0.05.seqs", dtype=str)
+            t = np.load(f"{pre}/curated_single_chain_optimization/optimization_msa_submode_33/decoys/{pdb}.npy")
+            decoys = np.random.choice(t, size=500, replace=False)
+            n = len(decoys)
+            # n = min(100, n)
+            for sequence in decoys[:n]:
+                for i, line in info.iterrows():
+                    direction = line["direction"]
+
+                    res1_index = int(line["res1"])
+                    res1_2_index = int(line["res1_2"])
+                    res2_index = int(line["res2"])
+                    res2_2_index = int(line["res2_2"])
+                    try:
+                        res1_name = one_to_three(sequence[res1_index])
+                        res1_2_name = one_to_three(sequence[res1_2_index])
+                        res2_name = one_to_three(sequence[res2_index])
+                        res2_2_name = one_to_three(sequence[res2_2_index])
+                    except Exception as e:
+                        print(e)
+                        skip_count += 1
+                        continue
+                    new_info.append([pdb, res1_index, res1_2_index, res2_index, res2_2_index, direction, res1_name, res1_2_name, res2_name, res2_2_name])
+
+        new_info = pd.DataFrame(new_info, columns=["Protein", "res1", "res1_2", "res2", "res2_2", "direction", "res1_name", "res1_2_name", "res2_name", "res2_2_name"])
+        os.system(f"mkdir -p {toLocation}/info_with_decoys")
+        new_info.to_csv(f"{toLocation}/info_with_decoys/complete_{n_list}.csv")
+    if args.mode == 11:
+        n = split_proteins_name_list(pdb_per_txt=30, toFolder="name_list_nov13", protein_list=f"{pre}/curated_single_chain_optimization/pdb_list_nov13")
+        print(n)
+        for i in range(n):
+            cmd = f"gg_server.py -d dec17 -m 1 -l {i}"
+            jobId = slurmRun(f"slurms/quick.slurm", cmd, memory=6, template=scavenge_slurm)
+            print(jobId)
+if args.day == "dec14":
+    if args.mode == 1:
+        # benchmark
+        for i in range(5):
+            cmd = f"mm_run.py openmm/smc1 --to server/smc1_{i} -f forces_setup_with_frag.py -s 1e6 -r 4000 --tempStart 300 --tempEnd 300 --platform CUDA --timeStep 2"
+            jobId = slurmRun(f"slurms/smc1_{i}.slurm", cmd, template=gpu_commons_slurm, fromMemory=10, memory=30)
+
+if args.day == "dec12":
+    if args.mode == 1:
+        # benchmark
+        for i in range(5):
+            cmd = f"mm_run.py 4qqw/4qqw --to server/4qqw_{i} -f forces_setup_with_frag.py -s 1e6 -r 4000 --tempStart 300 --tempEnd 300 --platform CUDA --timeStep 2"
+            jobId = slurmRun(f"slurms/4qqw_{i}.slurm", cmd, template=gpu_commons_slurm, fromMemory=10, memory=30)
+
+if args.day == "dec11":
+    if args.mode == 1:
+        # benchmark
+        for i in range(5):
+            cmd = f"mm_run.py covid_complex/6vxx --to server/6vxx_{i} -f forces_setup_with_frag.py -s 1e6 -r 4000 --tempStart 300 --tempEnd 300 --platform CUDA --timeStep 2"
+            jobId = slurmRun(f"slurms/{i}.slurm", cmd, template=gpu_commons_slurm, fromMemory=10, memory=30)
+
+if args.day == "dec10":
+    pre = "/scratch/wl45/dec_2020"
+    if args.mode == 1:
+        subMode = 0   # weight all 1.
+        n = args.label
+        to_gamma_folder = f"gammas/{n}"
+        # n_parameters = 3404
+        # n_parameters = 2692
+        n_parameters = 2002
+        from pyCodeLib import *
+        pdb_list_file = f"{pre}/curated_single_chain_optimization/name_list_nov13/proteins_name_list_{n}.txt"
+        # pdb_list_file = "/scratch/wl45/nov_2020/curated_single_chain_optimization/pdb_list_random_last500"
+        pdb_list = read_column_from_file(pdb_list_file, 1)
+        combine_A_B_info_from_raw(pdb_list, n_parameters, subMode, to_gamma_folder, start=690, normalization=True)
+    if args.mode == 11:
+        n = split_proteins_name_list(pdb_per_txt=10, toFolder=f"{pre}/curated_single_chain_optimization/name_list_nov13", protein_list=f"{pre}/curated_single_chain_optimization/pdb_list_nov13")
+        print(n)
+        for i in range(n):
+            cmd = f"gg_server.py -d dec10 -m 1 -l {i}"
+            jobId = slurmRun(f"slurms/quick.slurm", cmd, memory=6, template=base_slurm)
+            print(jobId)
+if args.day == "dec09":
+    pre = "/scratch/wl45/dec_2020"
+    if args.mode == 1:
+        from pyCodeLib import *
+        pdb_list_file = f"{pre}/curated_single_chain_optimization/pdb_list_nov13"
+        pdb_list = read_column_from_file(pdb_list_file, 1)
+        for i, pdb in enumerate(pdb_list):
+            if i % 100 == 0:
+                print(i)
+            info = pd.read_csv(f"{pre}/curated_single_chain_optimization/optimization_msa_submode_31/info_folder/{pdb}_complete.csv", index_col=0)
+            chosen = info.query("interactionTerm == 'fourBody'").reset_index(drop=True)
+            chosen.to_csv(f"{pdb}_fourBody.csv")
+
+if args.day == "dec08":
+    pre = "/scratch/wl45/dec_2020"
+    if args.mode == 2:
+        al = []
+        for i in range(39):
+            print(i)
+            a = pd.read_csv(f"complete_{i}.csv", index_col=0)
+            al.append(a)
+        a = pd.concat(al).reset_index(drop=True)
+        a.to_csv("msa100_complete.csv")
+    if args.mode == 1:
+        toLocation = "."
+        ## note, the info file generation may or may not include a filter on real contact
+        ## currently, no filter for real contact.
+        n_list = args.label
+        from pyCodeLib import *
+        pdb_list_file = f"{pre}/curated_single_chain_optimization/optimization_msa_submode_31/name_list_nov13/proteins_name_list_{n_list}.txt"
+        pdb_list = read_column_from_file(pdb_list_file, 1)
+        new_info = []
+        skip_count = 0
+        for pdb in pdb_list:
+            info = pd.read_csv(f"{pre}/curated_single_chain_optimization/optimization_msa_submode_31/info_folder_fourBody/{pdb}_fourBody.csv", index_col=0)
+            msa = np.loadtxt(f"{pre}/curated_single_chain_optimization/extracted_whole_protein_alignments_filtered/{pdb}_filtered_0.05.seqs", dtype=str)
+            n = len(msa)
+            n = min(100, n)
+            for sequence in msa[:n]:
+                for i, line in info.iterrows():
+                    direction = line["direction"]
+
+                    res1_index = int(line["res1"])
+                    res1_2_index = int(line["res1_2"])
+                    res2_index = int(line["res2"])
+                    res2_2_index = int(line["res2_2"])
+                    try:
+                        res1_name = one_to_three(sequence[res1_index])
+                        res1_2_name = one_to_three(sequence[res1_2_index])
+                        res2_name = one_to_three(sequence[res2_index])
+                        res2_2_name = one_to_three(sequence[res2_2_index])
+                    except Exception as e:
+                        print(e)
+                        skip_count += 1
+                        continue
+                    new_info.append([pdb, res1_index, res1_2_index, res2_index, res2_2_index, direction, res1_name, res1_2_name, res2_name, res2_2_name])
+
+        new_info = pd.DataFrame(new_info, columns=["Protein", "res1", "res1_2", "res2", "res2_2", "direction", "res1_name", "res1_2_name", "res2_name", "res2_2_name"])
+        os.system(f"mkdir -p {toLocation}/info_with_MSA")
+        new_info.to_csv(f"{toLocation}/info_with_MSA/complete_{n_list}.csv")
+    if args.mode == 11:
+        n = split_proteins_name_list(pdb_per_txt=30, toFolder="name_list_nov13", protein_list=f"{pre}/curated_single_chain_optimization/pdb_list_nov13")
+        print(n)
+        for i in range(n):
+            cmd = f"gg_server.py -d dec08 -m 1 -l {i}"
+            jobId = slurmRun(f"slurms/quick.slurm", cmd, memory=6, template=scavenge_slurm)
+            print(jobId)
+
+if args.day == "dec07":
+    pre = "/scratch/wl45/dec_2020"
+    if args.mode == 2:
+        # n_parameters = 3404
+        # n_parameters = 2692
+        n_parameters = 2002
+        A_array = np.zeros((n_parameters))
+        A_prime_array = np.zeros(( n_parameters))
+        B_array = np.zeros((n_parameters, n_parameters))
+        n = 115
+        to_gamma_folder = "."
+        for i in range(n):
+            A = np.load(f"{i}/average_A.npy", allow_pickle=True)
+            B = np.load(f"{i}/average_B.npy", allow_pickle=True)
+            A_prime = np.load(f"{i}/average_A_prime.npy", allow_pickle=True)
+            print(i)
+            A_array += A
+            A_prime_array += A_prime
+            B_array += B
+        average_A = A_array / n
+        average_A_prime = A_prime_array  / n
+        average_B = B_array / n
+        # average_half_B = half_B_array / n_pdbs
+        # average_other_half_B = other_half_B_array / n_pdbs
+        # average_std_half_B = std_half_B_array / n_pdbs
+        np.save(f"{to_gamma_folder}/average_A", average_A)
+        np.save(f"{to_gamma_folder}/average_A_prime", average_A_prime)
+        np.save(f"{to_gamma_folder}/average_B", average_B)
+    if args.mode == 22:
+        cmd = f"gg_server.py -d dec07 -m 2"
+        jobId = slurmRun(f"slurms/quick.slurm", cmd, memory=6, template=base_slurm)
+        print(jobId)
+    if args.mode == 1:
+        subMode = 0   # weight all 1.
+        n = args.label
+        to_gamma_folder = f"gammas/{n}"
+        n_parameters = 10790
+        from pyCodeLib import *
+        pdb_list_file = f"{pre}/curated_single_chain_optimization/name_list_nov13/proteins_name_list_{n}.txt"
+        # pdb_list_file = "/scratch/wl45/nov_2020/curated_single_chain_optimization/pdb_list_random_last500"
+        pdb_list = read_column_from_file(pdb_list_file, 1)
+        combine_A_B_info_from_raw(pdb_list, n_parameters, subMode, to_gamma_folder)
+    if args.mode == 11:
+        n = split_proteins_name_list(pdb_per_txt=10, toFolder="name_list_nov13", protein_list=f"{pre}/curated_single_chain_optimization/pdb_list_nov13")
+        print(n)
+        for i in range(n):
+            cmd = f"gg_server.py -d dec07 -m 1 -l {i}"
+            jobId = slurmRun(f"slurms/quick.slurm", cmd, memory=6, template=base_slurm)
+            print(jobId)
+if args.day == "dec05":
+    pre = "/scratch/wl45/dec_2020"
+    if args.mode == 1:
+        subMode = 0   # weight all 1.
+        to_gamma_folder = "gammas"
+        n_parameters = 10790
+        from pyCodeLib import *
+        pdb_list_file = f"{pre}/curated_single_chain_optimization/pdb_list_nov13"
+        # pdb_list_file = "/scratch/wl45/nov_2020/curated_single_chain_optimization/pdb_list_random_last500"
+        pdb_list = read_column_from_file(pdb_list_file, 1)
+        combine_A_B_info_from_raw(pdb_list, n_parameters, subMode, to_gamma_folder)
+    if args.mode == 11:
+        cmd = "gg_server.py -d dec05 -m 1"
+        jobId = slurmRun(f"slurms/quick.slurm", cmd, memory=6, template=base_slurm)
+        print(jobId)
+if args.day == "dec01":
+    pre = "/scratch/wl45/dec_2020"
+    if args.mode == 1:
+        subMode = 0   # weight all 1.
+        to_gamma_folder = "gammas"
+        n_parameters = 210
+        from pyCodeLib import *
+        pdb_list_file = f"{pre}/curated_single_chain_optimization/pdb_list_nov13"
+        # pdb_list_file = "/scratch/wl45/nov_2020/curated_single_chain_optimization/pdb_list_random_last500"
+        pdb_list = read_column_from_file(pdb_list_file, 1)
+        result_list = []
+        for pdb in pdb_list:
+            result_list.append(f"A_B_dic/{pdb}.npy")
+        pdb_list = result_list
+        combine_A_B_info(pdb_list, n_parameters, subMode, to_gamma_folder)
+
+
+    if args.mode == 11:
+        cmd = "gg_server.py -d dec01 -m 1"
+        jobId = slurmRun(f"slurms/quick.slurm", cmd, memory=6, template=base_slurm)
+
+if args.day == "nov29":
+    pre = "/scratch/wl45/dec_2020"
+    # using the most recent protein list.
+    if args.mode == 7:
+        # contact term, with four body term.
+        # No MSA
+        subMode = 35
+        n = split_proteins_name_list(pdb_per_txt=3, toFolder="name_list_nov13", protein_list=f"{pre}/curated_single_chain_optimization/pdb_list_nov13")
+        print(n)
+        # n = 300
+        a = list(range(n))
+        for i in a[:n]:
+            cmd = f"python3 ~/opt/gg_server.py --flag 1 -d nov29 -m 11 --subMode {subMode} -l name_list_nov13/proteins_name_list_{i}.txt"
+            add_line = "#SBATCH --exclude=bc8u23n8"
+            jobId = slurmRun(f"slurms/{subMode}_{i}.slurm", cmd, memory=6, template=base_slurm, ADDITIONLNE=add_line)
+            print(jobId)
+            # time.sleep(2)
+    if args.mode == 6:
+        # contact term, with four body term.
+        # No MSA
+        subMode = 34
+        n = split_proteins_name_list(pdb_per_txt=3, toFolder="name_list_nov13", protein_list=f"{pre}/curated_single_chain_optimization/pdb_list_nov13")
+        print(n)
+        # n = 300
+        a = list(range(n))
+        for i in a[:n]:
+            cmd = f"python3 ~/opt/gg_server.py --flag 1 -d nov29 -m 11 --subMode {subMode} -l name_list_nov13/proteins_name_list_{i}.txt"
+            add_line = "#SBATCH --exclude=bc8u23n8"
+            jobId = slurmRun(f"slurms/{subMode}_{i}.slurm", cmd, memory=6, template=base_slurm, ADDITIONLNE=add_line)
+            print(jobId)
+            # time.sleep(2)
+    if args.mode == 5:
+        # contact term, with four body term.
+        # No MSA
+        subMode = 33
+        n = split_proteins_name_list(pdb_per_txt=3, toFolder="name_list_nov13", protein_list=f"{pre}/curated_single_chain_optimization/pdb_list_nov13")
+        print(n)
+        # n = 300
+        a = list(range(n))
+        for i in a[:n]:
+            cmd = f"python3 ~/opt/gg_server.py --flag 1 -d nov29 -m 11 --subMode {subMode} -l name_list_nov13/proteins_name_list_{i}.txt"
+            add_line = "#SBATCH --exclude=bc8u23n8"
+            jobId = slurmRun(f"slurms/{subMode}_{i}.slurm", cmd, memory=6, template=base_slurm, ADDITIONLNE=add_line)
+            print(jobId)
+            # time.sleep(2)
+    if args.mode == 4:
+        # contact term, with four body term.
+        # No MSA
+        subMode = 32
+        n = split_proteins_name_list(pdb_per_txt=3, toFolder="name_list_nov13", protein_list=f"{pre}/curated_single_chain_optimization/pdb_list_nov13")
+        print(n)
+        # n = 300
+        a = list(range(n))
+        for i in a[:n]:
+            cmd = f"python3 ~/opt/gg_server.py -d nov29 -m 11 --subMode {subMode} -l name_list_nov13/proteins_name_list_{i}.txt"
+            jobId = slurmRun(f"slurms/{subMode}_{i}.slurm", cmd, memory=6, template=base_slurm)
+            print(jobId)
+    if args.mode == 3:
+        # contact term, with four body term.
+        # No MSA
+        subMode = 31
+        n = split_proteins_name_list(pdb_per_txt=3, toFolder="name_list_nov13", protein_list=f"{pre}/curated_single_chain_optimization/pdb_list_nov13")
+        print(n)
+        # n = 300
+        a = list(range(n))
+        for i in a[:n]:
+            cmd = f"python3 ~/opt/gg_server.py -d nov29 -m 11 --subMode {subMode} -l name_list_nov13/proteins_name_list_{i}.txt"
+            jobId = slurmRun(f"slurms/{subMode}_{i}.slurm", cmd, memory=6, template=base_slurm)
+            print(jobId)
+    if args.mode == 2:
+        # compute optimization for NO-MSA gammas. n=210.
+        # mode 30, n_shuffle is 2000, Direct contact only.
+        subMode = 30
+        n = split_proteins_name_list(pdb_per_txt=5, toFolder="name_list_nov13", protein_list="/scratch/wl45/nov_2020/curated_single_chain_optimization/pdb_list_nov13")
+        print(n)
+        # n = 300
+        a = list(range(n))
+        for i in a[:n]:
+            cmd = f"python3 ~/opt/gg_server.py -d nov29 -m 11 --subMode {subMode} -l name_list_nov13/proteins_name_list_{i}.txt"
+            jobId = slurmRun(f"slurms/{subMode}_{i}.slurm", cmd, memory=6, template=base_slurm)
+            print(jobId)
+    if args.mode == 1:
+        # compute optimization for NO-MSA gammas. n=690.
+        # mode 29, n_shuffle is 1000, using COM distance
+        subMode = 29
+        n = split_proteins_name_list(pdb_per_txt=5, toFolder="name_list_nov13", protein_list="/scratch/wl45/nov_2020/curated_single_chain_optimization/pdb_list_nov13")
+        print(n)
+        # n = 300
+        a = list(range(n))
+        for i in a[:n]:
+            cmd = f"python3 ~/opt/gg_server.py -d nov29 -m 11 --subMode {subMode} -l name_list_nov13/proteins_name_list_{i}.txt"
+            jobId = slurmRun(f"slurms/{subMode}_{i}.slurm", cmd, memory=6, template=base_slurm)
+            print(jobId)
+
+    if args.mode == 11:
+        print("compute Phis.")
+        mode = args.subMode
+        pdb_list_file = args.label
+        from pyCodeLib import *
+        pdb_list = read_column_from_file(pdb_list_file, 1)
+        for pdb in pdb_list:
+            # should not use whole_protein_single_chain_dompdb because it contains non-membrane interaction.
+            pdbFile = f"{pre}/curated_single_chain_optimization/database/dompdb/{pdb}"
+            # msaFile = f"/scratch/wl45/nov_2020/curated_single_chain_optimization/alignments_filtered/{pdb}_filtered_0.05.seqs"
+            msaFile = f"{pre}/curated_single_chain_optimization/extracted_whole_protein_alignments_filtered/{pdb}_filtered_0.05.seqs"
+            toLocation = f"{pre}/curated_single_chain_optimization/optimization_msa_submode_{mode}/"
+            cmd = f"python3 /home/wl45/opt/msa_compute_phis.py -m {mode} {pdb} {pdbFile} {msaFile} {toLocation}"
+            print(f"Doing {pdb}")
+            do(cmd)
+
+base_slurm_n8 = '''\
+#!/bin/bash
+#SBATCH --job-name=CTBP_WL
+#SBATCH --account=ctbp-common
+#SBATCH --partition=ctbp-common
+#SBATCH --ntasks=1
+#SBATCH --threads-per-core=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=1-00:00:00
+#SBATCH --mail-user=luwei0917@gmail.com
+#SBATCH --mail-type=FAIL
+#SBATCH -o outs/slurm-%j.out
+echo "My job ran on:"
+echo $SLURM_NODELIST
+srun {}\n'''
+
+if args.day == "nov28":
+    if args.mode == 2:
+        pdb_list = dataset["membrane_nov_2020"]      # ['5ncq', '1uaz', '5lwe', '6e9o', '5i6x', '3vvo', '4tph', '6m20', '6d32']
+        for pdb in pdb_list:
+            do(f"cp ../setups/{pdb}/{pdb}.fasta .")
+            cmd = f"/projects/pw8/wl45/hh-suite/build/bin/hhblits -cpu 8 -i {pdb}.fasta -d ../../../uniclust30_2020_03/UniRef30_2020_03 -o {pdb} -oa3m {pdb}.a3m -n 2"
+            jobId = slurmRun(f"slurms/{pdb}.slurm", cmd, memory=20, template=base_slurm_n8)
+            print(jobId)
+    if args.mode == 1:
+        pdb_list = dataset["membrane_nov_2020"]      # ['5ncq', '1uaz', '5lwe', '6e9o', '5i6x', '3vvo', '4tph', '6m20', '6d32']
+        for pdb in pdb_list:
+            do(f"cp ../setups/{pdb}/{pdb}.fasta .")
+            cmd = f"/projects/pw8/wl45/hh-suite/build/bin/hhblits -i {pdb}.fasta -d ../../../uniclust30_2020_03/UniRef30_2020_03 -o {pdb} -oa3m {pdb}.a3m -n 2"
+            jobId = slurmRun(f"slurms/{pdb}.slurm", cmd, memory=10, template=base_slurm)
+            print(jobId)
+            # jobIdList.append(jobId)
+        # cmd = f"/projects/pw8/wl45/hh-suite/build/bin/hhblits -i fasta/{pdb}.fasta -d ../../uniclust30_2018_08/uniclust30_2018_08 -o {pdb} -oa3m {pdb}.a3m -n 2"
+        # do(cmd)
+        # jobId = slurmRun(f"slurms/{pdb}.slurm", cmd, memory=10)
+        # jobIdList.append(jobId)
+    if args.mode == 6:
+        pdb_list_file = "protein_list_whole_protein"
+        pdb_list = np.loadtxt(pdb_list_file, dtype=str)
+        do("mkdir MSA")
+        for pdb in pdb_list[800:]:
+            do(f"mv {pdb} MSA/")
+            do(f"mv {pdb}.a3m MSA/")
+    if args.mode == 7:
+        pdb_list_file = "protein_list_whole_protein"
+        pdb_list = np.loadtxt(pdb_list_file, dtype=str)
+        do("mkdir -p whole_protein_alignments")
+        for pdb in pdb_list[800:]:
+            a = pdb
+            # print(a)
+            try:
+                data = get_MSA_data(f"MSA/{a}.a3m")
+                with open(f"whole_protein_alignments/{a}.seqs", "w") as out:
+                    for line in data:
+                        out.write(line+"\n")
+            except:
+                print("skipped", pdb)
+
+if args.day == "nov27":
+    if args.mode == 1:
+        pdb_list = ['5ncq', '1uaz', '5lwe', '6e9o', '5i6x', '3vvo', '4tph', '6m20', '6d32']
+        run_list = 20
+
+        folder_list = ["run3_submode4_frag_original_scaled", "run3_submode6_frag_new_contact", "run3_submode7_frag_with_gxxxg"]
+        print(folder_list)
+        base_path = "/scratch/wl45/nov_2020/"
+        simulationType = "membrane_protein_target_set"
+        optimization_convertPDB(base_path, simulationType, folder_list, pdb_list, run_list)
+if args.day == "nov24":
+    if args.mode == 1:
+        pdb_list = ['5ncq', '1uaz', '5lwe', '6e9o', '5i6x', '3vvo', '4tph', '6m20', '6d32']
+        for pdb in pdb_list:
+            cmd = f"python mm_run.py setups/{pdb}/minimization --to test/frag_memory/{pdb} --subMode 4 --platform CPU -s 1e3 -r 200"
+            jobId = slurmRun(f"slurms/frag_{pdb}.slurm", cmd, memory=6, template=base_slurm)
+
+if args.day == "nov18":
+    # was oct12
+    # was aug24
+    # was sep10
+    # pdb_list = ["5ncq"]
+    # pdb_list = manual_chosen = ['1uaz', '5lwe', '6e9o', '5i6x', '3vvo', '4tph', '6m20', '6d32']
+    pdb_list = ['5ncq', '1uaz', '5lwe', '6e9o', '5i6x', '3vvo', '4tph', '6m20', '6d32']
+    n = 20
+    startWith = "extended"
+    force_setup_file = "forces_setup.py"
+    if args.mode == 15:
+        simulation_header = "run2_new_contact_and_gxxxg_mode35_k_05"
+        subMode = 15
+    if args.mode == 14:
+        simulation_header = "run2_new_contact_and_gxxxg_mode35"
+        subMode = 14
+    if args.mode == 13:
+        simulation_header = "run2_new_contact_and_gxxxg_mode32"
+        subMode = 13
+    if args.mode == 12:
+        simulation_header = "run2_new_bin_mode32"
+        subMode = 12
+    if args.mode == 11:
+        simulation_header = "run2_no_MSA_contact_gamma"
+        subMode = 11
+    if args.mode == 10:
+        simulation_header = "run2_submode10_cbd_gamma"
+        subMode = 10
+    if args.mode == 9:
+        simulation_header = "run3_submode9_frag_original"
+        subMode = 9
+    if args.mode == 8:
+        simulation_header = "run3_submode8_frag_with_gxxxg_strong"
+        subMode = 8
+    if args.mode == 7:
+        simulation_header = "run3_submode7_frag_with_gxxxg"
+        subMode = 7
+    if args.mode == 6:
+        simulation_header = "run3_submode6_frag_new_contact"
+        subMode = 6
+    if args.mode == 5:
+        simulation_header = "run3_submode4_frag_original_scaled"
+        subMode = 4
+    if args.mode == 4:
+        simulation_header = "run2_submode3_original_scaled"
+        subMode = 3
+    if args.mode == 3:
+        simulation_header = "run2_submode2_with_gxxxg"
+        subMode = 2
+    if args.mode == 1:
+        simulation_header = "run2_submode0"
+        subMode = 0
+    if args.mode == 2:
+        simulation_header = "run2_submode1_new_contact"
+        subMode = 1
+    do("mkdir -p slurms")
+    do("mkdir -p outs")
+    jobIdList = []
+
+    for i in range(n):
+        for pdb in pdb_list:
+            # startFrom = "cbd"
+            if startWith == "cbd":
+                startFrom = "cbd"
+            elif startWith == "minimization":
+                startFrom = "minimization"
+            elif startWith == "extended":
+                startFrom = "extended"
+            else:
+                startFrom = pdb
+            # if pdb in ["1iwg", "1pv6", "1rhz"]:
+            #     direction = "rev_x"
+            #     # continue
+            # else:
+            #     direction = "x"
+            direction = "x"
+            cmd = f"python mm_run_from_extended.py setups/{pdb}/{startFrom} --to {simulation_header}/{pdb}/{i} -s 1e7 -r 4000 --tempStart 800 --tempEnd 300 -f {force_setup_file} --subMode {subMode} --pullDirection '{direction}' --platform CUDA  --timeStep 2"
+            # jobId = slurmRun(f"slurms/run_{pdb}_{i}.slurm", cmd, template=gpu_base_slurm)
+            jobId = slurmRun(f"slurms/{simulation_header}_{pdb}_{i}_{subMode}.slurm", cmd, template=gpu_commons_slurm)
+
+
 if args.day == "nov16":
     if args.mode == 4:
         subMode = 0   # weight all 1.
@@ -12208,7 +13226,7 @@ if args.day == "feb03":
                 # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
                 out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
                 print(out)
-
+'''
 if args.day == "jan31":
     if args.mode == 1:
         with open("../../cath_dataset_shuffle_optimization/optimization_iter0/protein_list") as f:
@@ -13063,6 +14081,7 @@ if args.day == "jan05":
                 # out = slurmRun(f"slurms/cpu_{iteration}_{pdb}_{i}.slurm", cmd, template=scavenge_slurm)
                 out = slurmRun(f"slurms/gpu_{iteration}_{pdb}_{i}.slurm", cmd, template=gpu_commons_slurm)
                 print(out)
+'''
 if args.day == "jan01":
     do("find . -maxdepth 1 -mindepth 1 -type d -exec tar cvf {}.tar {}  \; &")
 if args.day == "dec31":

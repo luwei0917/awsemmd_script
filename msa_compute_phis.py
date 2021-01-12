@@ -555,6 +555,18 @@ def get_interaction_index_from_four_residues_v9(res1_1, res1_2, res2_1, res2_2, 
 
     return index
 
+def get_interaction_index_from_four_residues_v10(res1_1, res1_2, res2_1, res2_2, direction, shift_from_parallel=None, para_index_look_up_table=None, anti_index_look_up_table=None):
+    res1, res2, Res1_letter, Res2_letter = encode_four_body_index(res1_1, res1_2, res2_1, res2_2, direction)
+    # shift_from_parallel = int(para_index_look_up_table.max())
+    if direction == "parallel":
+        index = para_index_look_up_table[res1, res2] - 1
+    elif direction == "anti":
+        index = anti_index_look_up_table[res1, res2] + shift_from_parallel - 1
+    else:
+        print("unknown direction")
+        raise
+
+    return index
 
 def prot_water_switchFunc_sigmaWater(rho_i, rho_j, rho_0, kappa):
     return 0.25 * (1 - np.tanh(kappa * (rho_i - rho_0))) * (1 - np.tanh(kappa * (rho_j - rho_0)))
@@ -667,16 +679,66 @@ def get_phi_info_contact_well(res_list, neighbor_list, parameter_list,
     info = pd.DataFrame(info, columns=["phi", "res1", "res2", "Type", "res1_name", "res2_name", "interaction_index"])
     return info
 
+
+def get_phi_info_direct_contact_well(res_list, neighbor_list, parameter_list,
+                               n_parameters=210, get_distance_between_two_residues=None):
+    cb_density = calculate_cb_density(res_list, neighbor_list)
+    info = []
+    min_seq_sep = 10
+    r_min_direct = 2.0
+    r_max_direct = 6.5
+    r_min_mediated = 6.5
+    r_max_mediated = 9.5
+    r_cutoff = 12.0
+    kappa = 5
+    density_threshold = 2.6
+    density_kappa = 7.0
+    rho_table = [[0.0, 3.0], [3.0, 6.0], [6.0, 9.0]]
+    burial_kappa= 4.0
+    info_list = []
+    # get_distance_between_two_residues = get_interaction_distance_com
+    phi_contact_well = np.zeros(n_parameters)
+    for res1globalindex, res1 in enumerate(res_list):
+        res1index = get_local_index(res1)
+        res1chain = get_chain(res1)
+        rho_i = cb_density[res1globalindex]
+        res1_name = res1.resname
+        for res2 in get_neighbors_within_radius(neighbor_list, res1, r_cutoff):
+            res2index = get_local_index(res2)
+            res2chain = get_chain(res2)
+            res2globalindex = get_global_index(res_list, res2)
+            rho_j = cb_density[res2globalindex]
+            res2_name = res2.resname
+            sep = res2globalindex - res1globalindex
+            if (res1chain == res2chain and sep >= min_seq_sep) or (res1chain != res2chain and res2globalindex > res1globalindex):
+                rij = get_distance_between_two_residues(res1, res2)
+
+                for interactionType in ["Direct"]:
+                    if interactionType == "Direct":
+                        r_min, r_max = r_min_direct, r_max_direct
+                    else:
+                        r_min, r_max = r_min_mediated, r_max_mediated
+                    interaction_index = get_direct_contact_interaction_index(res1_name, res2_name, interactionType)
+                    phi_ = contact_interaction_well(rij, r_min, r_max, kappa, rho_i, rho_j, density_threshold, density_kappa, interactionType)
+                    phi_contact_well[interaction_index] += phi_
+                    if phi_ > 1e-5:
+                        info.append([phi_, res1globalindex, res2globalindex, interactionType, res1_name, res2_name, interaction_index])
+
+    info = pd.DataFrame(info, columns=["phi", "res1", "res2", "Type", "res1_name", "res2_name", "interaction_index"])
+    return info
+
+
+
 def get_phis_from_info_and_sequence(info, sequence, n_parameters=420, get_interaction_index_from_four_residues=None, verbose=False):
     phi_gxxxg_well = np.zeros(n_parameters)
     skip_count = 0
     for i, line in info.iterrows():
         direction = line["direction"]
 
-        res1_index = line["res1"]
-        res1_2_index = line["res1_2"]
-        res2_index = line["res2"]
-        res2_2_index = line["res2_2"]
+        res1_index = int(line["res1"])
+        res1_2_index = int(line["res1_2"])
+        res2_index = int(line["res2"])
+        res2_2_index = int(line["res2_2"])
         try:
             res1_name = one_to_three(sequence[res1_index])
             res1_2_name = one_to_three(sequence[res1_2_index])
@@ -962,6 +1024,9 @@ sequence = get_sequence_from_structure(structure)
 
 pdb = args.pdb
 toLocation = args.to
+
+# parser.add_argument("--computeAB", type=int, default=1, help="compute and save AB matrix.")
+computeAB = 1       # default is 1, means compute A and B matrix.
 
 if args.mode == -2:
     # contact term, with four body.
@@ -1475,75 +1540,233 @@ if args.mode == 23:
     info = pd.concat([a,b], sort=False).reset_index(drop=True)
     info.to_csv(f"{toLocation}/info_folder/{pdb}_complete.csv")
 
-
-if args.mode == 24:
+if args.mode in [24, 25, 26, 27, 28]:
     # repeat mode 9, but with bug-fixed get_phis_from_info_and_sequence_v2
     # contact term
+    if args.mode == 24:
+        n_shuffle = 3000
+    if args.mode == 25:
+        n_shuffle = 9000
+    if args.mode == 26:
+        n_shuffle = 1000
+    if args.mode == 25:
+        n_shuffle = 200
+    if args.mode == 25:
+        n_shuffle = 50
     n_parameters = 690
     n_msa = 1
     msa = [msa[0]]
-    n_shuffle = 3000
+
     info = get_phi_info_contact_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_interaction_distance,)
     os.system(f"mkdir -p {toLocation}/info_folder")
     info.to_csv(f"{toLocation}/info_folder/{pdb}_contact.csv")
     get_interaction_index_from_four_residues = None
     get_phis_from_info_and_sequence = partial(get_phis_from_info_and_sequence_v2, contact_mode=True)
 
-if args.mode == 25:
-    # n_shuffle is 9000
-    # repeat mode 9, but with bug-fixed get_phis_from_info_and_sequence_v2
-    # contact term
-    n_parameters = 690
-    n_msa = 1
-    msa = [msa[0]]
-    n_shuffle = 9000
-    info = get_phi_info_contact_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_interaction_distance,)
-    os.system(f"mkdir -p {toLocation}/info_folder")
-    info.to_csv(f"{toLocation}/info_folder/{pdb}_contact.csv")
-    get_interaction_index_from_four_residues = None
-    get_phis_from_info_and_sequence = partial(get_phis_from_info_and_sequence_v2, contact_mode=True)
 
-if args.mode == 26:
-    # n_shuffle is 1000
+if args.mode == 29:
+    # copy from mode 26
+    # with new CB location.
     # repeat mode 9, but with bug-fixed get_phis_from_info_and_sequence_v2
     # contact term
     n_parameters = 690
     n_msa = 1
     msa = [msa[0]]
     n_shuffle = 1000
+    get_interaction_distance = get_interaction_distance_com
     info = get_phi_info_contact_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_interaction_distance,)
     os.system(f"mkdir -p {toLocation}/info_folder")
     info.to_csv(f"{toLocation}/info_folder/{pdb}_contact.csv")
     get_interaction_index_from_four_residues = None
     get_phis_from_info_and_sequence = partial(get_phis_from_info_and_sequence_v2, contact_mode=True)
 
-if args.mode == 27:
-    # n_shuffle is 200
+if args.mode == 30:
+    # copy from mode 26
+    # Direct only.
     # repeat mode 9, but with bug-fixed get_phis_from_info_and_sequence_v2
     # contact term
-    n_parameters = 690
+    # no MSA
+    n_parameters = 210
     n_msa = 1
     msa = [msa[0]]
-    n_shuffle = 200
-    info = get_phi_info_contact_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_interaction_distance,)
+    n_shuffle = 2000
+    # get_interaction_distance = get_interaction_distance_com
+    info = get_phi_info_direct_contact_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_interaction_distance,)
     os.system(f"mkdir -p {toLocation}/info_folder")
     info.to_csv(f"{toLocation}/info_folder/{pdb}_contact.csv")
     get_interaction_index_from_four_residues = None
     get_phis_from_info_and_sequence = partial(get_phis_from_info_and_sequence_v2, contact_mode=True)
 
-if args.mode == 28:
-    # n_shuffle is 50
-    # repeat mode 9, but with bug-fixed get_phis_from_info_and_sequence_v2
-    # contact term
-    n_parameters = 690
+if args.mode == 31:
+    # contact term, with four body term.
+    # No MSA
+    n_parameters = int(690 + 10100)
+    # n_msa = 50
     n_msa = 1
     msa = [msa[0]]
-    n_shuffle = 50
+    n_shuffle = 500
+    computeAB = 0
+
+    info_ = []
     info = get_phi_info_contact_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_interaction_distance,)
     os.system(f"mkdir -p {toLocation}/info_folder")
-    info.to_csv(f"{toLocation}/info_folder/{pdb}_contact.csv")
-    get_interaction_index_from_four_residues = None
-    get_phis_from_info_and_sequence = partial(get_phis_from_info_and_sequence_v2, contact_mode=True)
+    a = info.assign(interactionTerm="contact")
+    # info.to_csv(f"{toLocation}/info_folder/{pdb}_contact.csv")
+    info_.append(info)
+
+    shift_index = 690
+    get_interaction_index_from_four_residues = partial(get_interaction_index_from_four_residues_v9, letter_num=10)
+    get_distance_between_two_residues = get_interaction_distance
+    info = get_phi_info_gxxxg_v7_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_distance_between_two_residues, n_parameters=n_parameters, get_interaction_index_from_four_residues=get_interaction_index_from_four_residues)
+    # os.system(f"mkdir -p {toLocation}/info_folder")
+    b = info.assign(interactionTerm="fourBody")
+
+    get_phis_from_info_and_sequence = partial(get_phis_from_info_and_sequence_v3, shift_index=shift_index)
+    info = pd.concat([a,b], sort=False).reset_index(drop=True)
+    info.to_csv(f"{toLocation}/info_folder/{pdb}_complete.csv")
+
+if args.mode == 32:
+    # contact term, with four body term.
+    # use equal frequency bins to assign group.
+
+    para_index_look_up_table = np.loadtxt("para_index_look_up_table", dtype=int)
+    anti_index_look_up_table = np.loadtxt("anti_index_look_up_table", dtype=int)
+    n_parameters_gxxxg = int(para_index_look_up_table.max() + anti_index_look_up_table.max())
+    n_parameters = int(690 + n_parameters_gxxxg)
+    n_msa = 50
+    # n_msa = 1
+    # msa = [msa[0]]
+    # n_shuffle = 500
+    n_shuffle = 10
+    computeAB = 0
+
+    info_ = []
+    info = get_phi_info_contact_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_interaction_distance,)
+    os.system(f"mkdir -p {toLocation}/info_folder")
+    a = info.assign(interactionTerm="contact")
+    # info.to_csv(f"{toLocation}/info_folder/{pdb}_contact.csv")
+    info_.append(info)
+
+    shift_index = 690
+    get_interaction_index_from_four_residues = partial(get_interaction_index_from_four_residues_v10, para_index_look_up_table=para_index_look_up_table, anti_index_look_up_table=anti_index_look_up_table)
+    get_distance_between_two_residues = get_interaction_distance
+    info = get_phi_info_gxxxg_v7_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_distance_between_two_residues,
+                                n_parameters=n_parameters_gxxxg, get_interaction_index_from_four_residues=get_interaction_index_from_four_residues)
+    # os.system(f"mkdir -p {toLocation}/info_folder")
+    b = info.assign(interactionTerm="fourBody")
+
+    get_phis_from_info_and_sequence = partial(get_phis_from_info_and_sequence_v3, shift_index=shift_index)
+    info = pd.concat([a,b], sort=False).reset_index(drop=True)
+    info.to_csv(f"{toLocation}/info_folder/{pdb}_complete.csv")
+
+if args.mode == 33:
+    # contact term, with four body term.
+    # use equal frequency bins to assign group.
+
+    para_index_look_up_table = np.loadtxt("para_index_look_up_table", dtype=int)
+    anti_index_look_up_table = np.loadtxt("anti_index_look_up_table", dtype=int)
+    n_parameters_gxxxg = int(para_index_look_up_table.max() + anti_index_look_up_table.max())
+    n_parameters = int(690 + n_parameters_gxxxg)
+    n_msa = 50
+    # n_msa = 1
+    # msa = [msa[0]]
+    # n_shuffle = 500
+    n_shuffle = 30
+    computeAB = 0
+
+    info_ = []
+    info = get_phi_info_contact_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_interaction_distance,)
+    os.system(f"mkdir -p {toLocation}/info_folder")
+    a = info.assign(interactionTerm="contact")
+    # info.to_csv(f"{toLocation}/info_folder/{pdb}_contact.csv")
+    info_.append(info)
+
+    shift_index = 690
+    shift_from_parallel = int(para_index_look_up_table.max())
+    get_interaction_index_from_four_residues = partial(get_interaction_index_from_four_residues_v10, shift_from_parallel=shift_from_parallel, para_index_look_up_table=para_index_look_up_table, anti_index_look_up_table=anti_index_look_up_table)
+    get_distance_between_two_residues = get_interaction_distance
+    info = get_phi_info_gxxxg_v7_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_distance_between_two_residues,
+                                n_parameters=n_parameters_gxxxg, get_interaction_index_from_four_residues=get_interaction_index_from_four_residues)
+    # os.system(f"mkdir -p {toLocation}/info_folder")
+    b = info.assign(interactionTerm="fourBody")
+
+    get_phis_from_info_and_sequence = partial(get_phis_from_info_and_sequence_v3, shift_index=shift_index)
+    info = pd.concat([a,b], sort=False).reset_index(drop=True)
+    info.to_csv(f"{toLocation}/info_folder/{pdb}_complete.csv")
+
+if args.mode == 34:
+    # contact term, with four body term.
+    # only seperate out the observed frequency is much different from the expected frequency.
+    # the rest are grounded into one group.
+
+    para_index_look_up_table = np.loadtxt("para_index_look_up_table_dec21", dtype=int)
+    anti_index_look_up_table = np.loadtxt("anti_index_look_up_table_dec21", dtype=int)
+    n_parameters_gxxxg = int(para_index_look_up_table.max() + anti_index_look_up_table.max())
+    n_parameters = int(690 + n_parameters_gxxxg)
+    n_msa = 50
+    # n_msa = 1
+    # msa = [msa[0]]
+    # n_shuffle = 500
+    n_shuffle = 30
+    computeAB = 0
+
+    info_ = []
+    info = get_phi_info_contact_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_interaction_distance,)
+    os.system(f"mkdir -p {toLocation}/info_folder")
+    a = info.assign(interactionTerm="contact")
+    # info.to_csv(f"{toLocation}/info_folder/{pdb}_contact.csv")
+    info_.append(info)
+
+    shift_index = 690
+    shift_from_parallel = int(para_index_look_up_table.max())
+    get_interaction_index_from_four_residues = partial(get_interaction_index_from_four_residues_v10, shift_from_parallel=shift_from_parallel, para_index_look_up_table=para_index_look_up_table, anti_index_look_up_table=anti_index_look_up_table)
+    get_distance_between_two_residues = get_interaction_distance
+    info = get_phi_info_gxxxg_v7_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_distance_between_two_residues,
+                                n_parameters=n_parameters_gxxxg, get_interaction_index_from_four_residues=get_interaction_index_from_four_residues)
+    # os.system(f"mkdir -p {toLocation}/info_folder")
+    b = info.assign(interactionTerm="fourBody")
+
+    get_phis_from_info_and_sequence = partial(get_phis_from_info_and_sequence_v3, shift_index=shift_index)
+    info = pd.concat([a,b], sort=False).reset_index(drop=True)
+    info.to_csv(f"{toLocation}/info_folder/{pdb}_complete.csv")
+
+if args.mode == 35:
+    # compared to mode 34, n_msa is 100, n_shuffle is 60, contact term is ignored.
+    # contact term, with four body term.
+    # only seperate out the observed frequency is much different from the expected frequency.
+    # the rest are grounded into one group.
+
+    para_index_look_up_table = np.loadtxt("para_index_look_up_table_dec21", dtype=int)
+    anti_index_look_up_table = np.loadtxt("anti_index_look_up_table_dec21", dtype=int)
+    n_parameters_gxxxg = int(para_index_look_up_table.max() + anti_index_look_up_table.max())
+    n_parameters = int(n_parameters_gxxxg)
+    n_msa = 100
+    # n_msa = 1
+    # msa = [msa[0]]
+    # n_shuffle = 500
+    n_shuffle = 60
+    computeAB = 0
+
+    info_ = []
+    # info = get_phi_info_contact_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_interaction_distance,)
+    os.system(f"mkdir -p {toLocation}/info_folder")
+    # a = info.assign(interactionTerm="contact")
+    # info.to_csv(f"{toLocation}/info_folder/{pdb}_contact.csv")
+    # info_.append(info)
+
+    shift_index = 0
+    shift_from_parallel = int(para_index_look_up_table.max())
+    get_interaction_index_from_four_residues = partial(get_interaction_index_from_four_residues_v10, shift_from_parallel=shift_from_parallel, para_index_look_up_table=para_index_look_up_table, anti_index_look_up_table=anti_index_look_up_table)
+    get_distance_between_two_residues = get_interaction_distance
+    info = get_phi_info_gxxxg_v7_well(res_list, neighbor_list, [], get_distance_between_two_residues=get_distance_between_two_residues,
+                                n_parameters=n_parameters_gxxxg, get_interaction_index_from_four_residues=get_interaction_index_from_four_residues)
+    # os.system(f"mkdir -p {toLocation}/info_folder")
+    b = info.assign(interactionTerm="fourBody")
+
+    get_phis_from_info_and_sequence = partial(get_phis_from_info_and_sequence_v3, shift_index=shift_index)
+    # info = pd.concat([a,b], sort=False).reset_index(drop=True)
+    info = b
+    info.to_csv(f"{toLocation}/info_folder/{pdb}_complete.csv")
 # exit()
 print("n_parameters: ", n_parameters, ", n_msa: ", n_msa, ", n_shuffle: ", n_shuffle, ", mode: ", args.mode)
 # print(info)
@@ -1560,21 +1783,55 @@ random.seed(args.seed)
 chosen_msa = random.sample(list(msa), n_msa)
 chosen_decoys = []
 count = 0
-for idx, seq in enumerate(chosen_msa):
-    native_phis[idx] = get_phis_from_info_and_sequence(info, seq, n_parameters=n_parameters, get_interaction_index_from_four_residues=get_interaction_index_from_four_residues)
-    for i in range(n_shuffle):
-        if args.topo:
-            decoy_seq = helix_swapping(seq, topo_data)
-        else:
-            decoy_seq = shuffle_string(seq)
-        chosen_decoys.append(decoy_seq)
-        phis = get_phis_from_info_and_sequence(info, decoy_seq, n_parameters=n_parameters, get_interaction_index_from_four_residues=get_interaction_index_from_four_residues)
-        decoy_phis[count] = phis
-        count += 1
-
+# When shuffling, sometime the interaction is dropped because the existance of dash.
+# I think, its better to normalize the phis such that the total phis is conserved.
+# When do the normalization, be careful about the range of parameters to include.
+do_normalization = False
+if do_normalization:
+    native_seq = msa[0]
+    phis_with_native_sequence = get_phis_from_info_and_sequence(info, native_seq, n_parameters=n_parameters, get_interaction_index_from_four_residues=get_interaction_index_from_four_residues)
+    phis_sum = np.sum(phis_with_native_sequence)
+    for idx, seq in enumerate(chosen_msa):
+        this_phis = get_phis_from_info_and_sequence(info, seq, n_parameters=n_parameters, get_interaction_index_from_four_residues=get_interaction_index_from_four_residues)
+        native_phis[idx] = np.array(this_phis) / np.sum(this_phis) * phis_sum
+        for i in range(n_shuffle):
+            if args.topo:
+                decoy_seq = helix_swapping(seq, topo_data)
+            else:
+                decoy_seq = shuffle_string(seq)
+            chosen_decoys.append(decoy_seq)
+            phis = get_phis_from_info_and_sequence(info, decoy_seq, n_parameters=n_parameters, get_interaction_index_from_four_residues=get_interaction_index_from_four_residues)
+            decoy_phis[count] = np.array(phis) / np.sum(phis) * phis_sum
+            count += 1
+else:
+    for idx, seq in enumerate(chosen_msa):
+        this_phis = get_phis_from_info_and_sequence(info, seq, n_parameters=n_parameters, get_interaction_index_from_four_residues=get_interaction_index_from_four_residues)
+        native_phis[idx] = this_phis
+        for i in range(n_shuffle):
+            if args.topo:
+                decoy_seq = helix_swapping(seq, topo_data)
+            else:
+                decoy_seq = shuffle_string(seq)
+            chosen_decoys.append(decoy_seq)
+            phis = get_phis_from_info_and_sequence(info, decoy_seq, n_parameters=n_parameters, get_interaction_index_from_four_residues=get_interaction_index_from_four_residues)
+            decoy_phis[count] = phis
+            count += 1
 
 # compute A, B, other_half_B, std_half_B
+
+os.system(f"mkdir -p {toLocation}/decoys")
+os.system(f"mkdir -p {toLocation}/phis")
+os.system(f"mkdir -p {toLocation}/native_phis")
+os.system(f"mkdir -p {toLocation}/chosen_msa")
+
+
 all_phis = decoy_phis
+if computeAB == 0:
+    np.save(f"{toLocation}/decoys/{pdb}.npy", chosen_decoys)
+    np.save(f"{toLocation}/phis/{pdb}.npy", decoy_phis)
+    np.save(f"{toLocation}/native_phis/{pdb}.npy", native_phis)
+    np.save(f"{toLocation}/chosen_msa/{pdb}.npy", chosen_msa)
+    exit()
 average_phi_decoy = np.average(all_phis, axis=0)
 phi_native = np.average(native_phis, axis=0)
 A, B, half_B, other_half_B, std_half_B = calculate_A_and_B_single_pdb(average_phi_decoy, phi_native, all_phis)
@@ -1584,9 +1841,7 @@ A, B, half_B, other_half_B, std_half_B = calculate_A_and_B_single_pdb(average_ph
 # toLocation = "/Users/weilu/Research/server/aug_2020/curated_single_chain_optimization/optimization_msa"
 
 # small chance it will save these information.
-os.system(f"mkdir -p {toLocation}/decoys")
-os.system(f"mkdir -p {toLocation}/phis")
-os.system(f"mkdir -p {toLocation}/chosen_msa")
+
 if random.random() < 0.01:
     np.save(f"{toLocation}/decoys/{pdb}.npy", chosen_decoys)
     np.save(f"{toLocation}/phis/{pdb}.npy", decoy_phis)
